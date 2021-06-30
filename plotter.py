@@ -83,7 +83,8 @@ class Plotter(PlottingTools):
     hist_mc.SetFillColor(ROOT.kAzure-4)
     hist_mc.SetLineColor(2)
 
-    canv = ROOT.TCanvas('canv', 'canv', 900, 800)
+    #canv = ROOT.TCanvas('canv', 'canv', 900, 800)
+    canv = PlottingTools.createTCanvas(self, name='canv', dimx=900, dimy=800)
 
     if do_shape: 
       int_data = hist_data.Integral()
@@ -111,7 +112,8 @@ class Plotter(PlottingTools):
 
     # create the canvas
     canv_name = 'canv_{}_{}_{}_{}'.format(self.quantity.label, outdirlabel.replace('/', '_'), do_log, do_shape)
-    canv = ROOT.TCanvas(canv_name, canv_name, 1200, 1000)
+    #canv = ROOT.TCanvas(canv_name, canv_name, 1200, 1000)
+    canv = PlottingTools.createTCanvas(self, name=canv_name, dimx=1200, dimy=1000)
     ROOT.SetOwnership(canv, False)
     #canv.SetGrid()
     canv.cd()
@@ -388,7 +390,8 @@ class Plotter(PlottingTools):
 
     # create the canvas
     canv_name = 'canv_{}_{}_{}_{}'.format(self.quantity.label, outdirlabel, do_log, do_shape)
-    canv = ROOT.TCanvas(canv_name, canv_name, 1200, 1000)
+    #canv = ROOT.TCanvas(canv_name, canv_name, 1200, 1000)
+    canv = PlottingTools.createTCanvas(self, name=canv_name, dimx=1200, dimy=1000)
     if do_log: canv.SetLogy()
     ROOT.SetOwnership(canv, False)
     #canv.SetGrid()
@@ -472,7 +475,8 @@ class Plotter(PlottingTools):
     f1 = ROOT.TFile.Open(file1, 'READ')
     f2 = ROOT.TFile.Open(file2, 'READ')
 
-    canv = ROOT.TCanvas('canv', 'canv', 900, 800)
+    #canv = ROOT.TCanvas('canv', 'canv', 900, 800)
+    canv = PlottingTools.createTCanvas(self, name='canv', dimx=900, dimy=800)
     if self.do_log: canv.SetLogy()
     if not do_printstat: ROOT.gStyle.SetOptStat(0)
     
@@ -527,11 +531,174 @@ class Plotter(PlottingTools):
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
 
 
+  def plotMatchingDiagram(self, filename, treename, outdirlabel, particle):
+    f = ROOT.TFile.Open(filename, 'READ')
+    tree = PlottingTools.getTree(self, f, treename)
+
+    outputdir = PlottingTools.getOutDir(self, './myPlots/matching_checks', outdirlabel)
+
+    for ientry, entry in enumerate(tree):
+      if ientry > (100 if particle=='muon' else 200): continue
+      # plot the reco particles (for events where a candidate exists)
+      pt_box_reco = []
+      deltaR_limits = []
+      canv = PlottingTools.createTCanvas(self, 'canv_{}'.format(ientry))
+      graph_reco = ROOT.TGraph() 
+      flag_reco = False
+      if entry.nBToMuMuPi < 1: continue
+      flag_reco = True
+      #for imuon in range(0, entry.nMuon):
+      for ipart in range(0, entry.nBToMuMuPi):
+        #print 'reco pt {} eta {} phi {}'.format(entry.Muon_pt[entry.BToMuMuPi_sel_mu_idx[ipart]], entry.Muon_eta[entry.BToMuMuPi_sel_mu_idx[ipart]], entry.Muon_phi[entry.BToMuMuPi_sel_mu_idx[ipart]])
+        #point = graph_reco.GetN()
+        if particle == 'muon':
+          point = graph_reco.GetN()
+          graph_reco.SetPoint(point, entry.Muon_eta[entry.BToMuMuPi_sel_mu_idx[ipart]], entry.Muon_phi[entry.BToMuMuPi_sel_mu_idx[ipart]])
+          pt_info = ROOT.TLatex(entry.Muon_eta[entry.BToMuMuPi_sel_mu_idx[ipart]]+0.05, entry.Muon_phi[entry.BToMuMuPi_sel_mu_idx[ipart]]+0.15, '{}'.format(round(entry.Muon_pt[entry.BToMuMuPi_sel_mu_idx[ipart]], 3)))
+          deltaR_circle = ROOT.TEllipse(entry.Muon_eta[entry.BToMuMuPi_sel_mu_idx[ipart]], entry.Muon_phi[entry.BToMuMuPi_sel_mu_idx[ipart]], 0.3, 0.3)
+          pt_box_reco.append(pt_info)
+          deltaR_limits.append(deltaR_circle)
+        else:
+          point = graph_reco.GetN()
+          graph_reco.SetPoint(point, entry.ProbeTracks_eta[entry.BToMuMuPi_pi_idx[ipart]], entry.ProbeTracks_phi[entry.BToMuMuPi_pi_idx[ipart]])
+          pt_info = ROOT.TLatex(entry.ProbeTracks_eta[entry.BToMuMuPi_pi_idx[ipart]]+0.05, entry.ProbeTracks_phi[entry.BToMuMuPi_pi_idx[ipart]]+0.15, '{}'.format(round(entry.ProbeTracks_pt[entry.BToMuMuPi_pi_idx[ipart]], 3)))
+          deltaR_circle = ROOT.TEllipse(entry.ProbeTracks_eta[entry.BToMuMuPi_pi_idx[ipart]], entry.ProbeTracks_phi[entry.BToMuMuPi_pi_idx[ipart]], 0.1, 0.1)
+          pt_box_reco.append(pt_info)
+          deltaR_limits.append(deltaR_circle)
+        
+      # trigger muon
+      if particle == 'muon':
+        graph_reco_trg = ROOT.TGraph() 
+        for imuon in range(0, entry.nBToMuMuPi):
+          point = graph_reco_trg.GetN()
+          graph_reco_trg.SetPoint(point, entry.Muon_eta[entry.BToMuMuPi_trg_mu_idx[imuon]], entry.Muon_phi[entry.BToMuMuPi_trg_mu_idx[imuon]])
+          pt_info = ROOT.TLatex(entry.Muon_eta[entry.BToMuMuPi_trg_mu_idx[imuon]]+0.05, entry.Muon_phi[entry.BToMuMuPi_trg_mu_idx[imuon]]+0.15, '{}'.format(round(entry.Muon_pt[entry.BToMuMuPi_trg_mu_idx[imuon]], 3)))
+          pt_box_reco.append(pt_info)
+
+      # plot the matched reco particles
+      pt_box_matched = []
+      graph_matched = ROOT.TGraph() 
+      flag_matched = False
+      for ipart in range(0, entry.nBToMuMuPi):
+        if particle == 'muon':
+          if entry.BToMuMuPi_sel_mu_isMatched[ipart] != 1: continue
+          flag_matched = True
+          #if entry.BToMuMuPi_sel_mu_isMatched[entry.BToMuMuPi_sel_mu_idx] != 1: continue
+          point = graph_matched.GetN()
+          graph_matched.SetPoint(point, entry.Muon_eta[entry.BToMuMuPi_sel_mu_idx[ipart]], entry.Muon_phi[entry.BToMuMuPi_sel_mu_idx[ipart]])
+          pt_info = ROOT.TLatex(entry.Muon_eta[entry.BToMuMuPi_sel_mu_idx[ipart]]+0.05, entry.Muon_phi[entry.BToMuMuPi_sel_mu_idx[ipart]]+0.15, '{}'.format(round(entry.Muon_pt[entry.BToMuMuPi_sel_mu_idx[ipart]], 3)))
+        else:
+          if entry.BToMuMuPi_pi_isMatched[ipart] != 1: continue
+          flag_matched = True
+          point = graph_matched.GetN()
+          graph_matched.SetPoint(point, entry.ProbeTracks_eta[entry.BToMuMuPi_pi_idx[ipart]], entry.ProbeTracks_phi[entry.BToMuMuPi_pi_idx[ipart]])
+          pt_info = ROOT.TLatex(entry.ProbeTracks_eta[entry.BToMuMuPi_pi_idx[ipart]]+0.05, entry.ProbeTracks_phi[entry.BToMuMuPi_pi_idx[ipart]]+0.15, '{}'.format(round(entry.ProbeTracks_pt[entry.BToMuMuPi_pi_idx[ipart]], 3)))
+        pt_box_matched.append(pt_info)
+
+      # trigger muon
+      if particle == 'muon':
+        graph_matched_trg = ROOT.TGraph() 
+        flag_matched_trg = False
+        for imuon in range(0, entry.nBToMuMuPi):
+          if entry.BToMuMuPi_trg_mu_isMatched[imuon] != 1: continue
+          flag_matched_trg = True
+          point = graph_matched_trg.GetN()
+          graph_matched_trg.SetPoint(point, entry.Muon_eta[entry.BToMuMuPi_trg_mu_idx[imuon]], entry.Muon_phi[entry.BToMuMuPi_trg_mu_idx[imuon]])
+          pt_info = ROOT.TLatex(entry.Muon_eta[entry.BToMuMuPi_trg_mu_idx[imuon]]+0.05, entry.Muon_phi[entry.BToMuMuPi_trg_mu_idx[imuon]]+0.15, '{}'.format(round(entry.Muon_pt[entry.BToMuMuPi_trg_mu_idx[imuon]], 3)))
+          pt_box_matched.append(pt_info)
+
+      # plot the gen particles
+      pt_box_gen = []
+      flag_gen = False
+      graph_gen = ROOT.TGraph() 
+      for igen in range(0, entry.nGenPart):
+        pdgId = 13 if particle == 'muon' else 211
+        if abs(entry.GenPart_pdgId[igen]) != pdgId: continue
+        #if abs(entry.GenPart_pdgId[entry.GenPart_genPartIdxMother[igen]]) not in [9900015, 521, 511]: continue
+        flag_gen = True
+        #print 'gen pt {} eta {} phi {}'.format(entry.GenPart_pt[igen], entry.GenPart_eta[igen], entry.GenPart_phi[igen])
+        point = graph_gen.GetN()
+        graph_gen.SetPoint(point, entry.GenPart_eta[igen], entry.GenPart_phi[igen])
+        pt_info = ROOT.TLatex(entry.GenPart_eta[igen]-0.05, entry.GenPart_phi[igen]-0.25, '{}, {}'.format(round(entry.GenPart_pt[igen], 3), entry.GenPart_pdgId[entry.GenPart_genPartIdxMother[igen]]))
+        pt_box_gen.append(pt_info)
+
+      if not flag_reco or not flag_gen: continue
+      graph_reco.Draw('AP')  
+      if particle == 'muon': graph_reco_trg.Draw('P same')  
+      if flag_matched: graph_matched.Draw('P same')  
+      if particle == 'muon' and flag_matched_trg: graph_matched_trg.Draw('P same')  
+      graph_gen.Draw('P same')  
+
+      for pt_info in pt_box_reco:
+        pt_info.Draw()
+        pt_info.SetTextSize(0.02)
+        pt_info.SetTextFont(62)
+        pt_info.SetTextColor(ROOT.kBlue+2)
+        pt_info.SetTextAlign(21)
+
+      for pt_info in pt_box_matched:
+        pt_info.Draw()
+        pt_info.SetTextSize(0.02)
+        pt_info.SetTextFont(62)
+        pt_info.SetTextColor(ROOT.kOrange+2)
+        pt_info.SetTextAlign(21)
+
+      for pt_info in pt_box_gen:
+        pt_info.Draw()
+        pt_info.SetTextSize(0.02)
+        pt_info.SetTextFont(62)
+        pt_info.SetTextColor(ROOT.kGreen+2)
+        pt_info.SetTextAlign(21)
+
+      for deltaR_circle in deltaR_limits:
+        #deltaR_circle.Draw()
+        deltaR_circle.SetLineColor(2)
+        deltaR_circle.SetFillColorAlpha(0, 0)
+
+      graph_reco.SetMarkerStyle(41)
+      graph_reco.SetMarkerSize(4)
+      graph_reco.SetMarkerColor(ROOT.kBlue+2)
+
+      if particle == 'muon':
+        graph_reco_trg.SetMarkerStyle(33)
+        graph_reco_trg.SetMarkerSize(4)
+        graph_reco_trg.SetMarkerColor(ROOT.kBlue+2)
+
+      graph_matched.SetMarkerStyle(41)
+      graph_matched.SetMarkerSize(4)
+      graph_matched.SetMarkerColor(ROOT.kOrange+2)
+
+      if particle == 'muon':
+        graph_matched_trg.SetMarkerStyle(33)
+        graph_matched_trg.SetMarkerSize(4)
+        graph_matched_trg.SetMarkerColor(ROOT.kOrange+2)
+
+      graph_gen.SetMarkerStyle(43)
+      graph_gen.SetMarkerSize(4)
+      graph_gen.SetMarkerColor(ROOT.kGreen+2)
+
+      graph_reco.SetTitle('Event {}'.format(ientry))
+      graph_reco.GetXaxis().SetTitle('#eta')
+      graph_reco.GetXaxis().SetLabelSize(0.037)
+      graph_reco.GetXaxis().SetTitleSize(0.042)
+      graph_reco.GetXaxis().SetTitleOffset(1.1)
+      #graph_reco.GetXaxis().SetRangeUser(-5, 5)
+      graph_reco.GetXaxis().SetLimits(-5.,5.)
+      graph_reco.GetYaxis().SetTitle('#phi')
+      graph_reco.GetYaxis().SetLabelSize(0.037)
+      graph_reco.GetYaxis().SetTitleSize(0.042)
+      graph_reco.GetYaxis().SetTitleOffset(1.1)
+      graph_reco.GetYaxis().SetRangeUser(-3.2, 3.2)
+
+      canv.SaveAs('{}/event_{}.png'.format(outputdir, ientry))
+
+
+
 
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  doDataMCComparison = True
+  doDataMCComparison = False
   doSignalBackgroundComparison = False
   plotMCSR = False
   compareTwoDistributions = False
@@ -540,6 +707,15 @@ if __name__ == '__main__':
   plot_SR = True
   plot_CR = False
 
+  plotter = Plotter()
+  #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/test/bparknano.root'
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_loosepreselection_stdtrgmu_v1.root'
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_mu_0p15_0p25.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_mu_0p15_0p25_pi_0p15_0p5.root'
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_updatedgenmatching_mu_0p1_0p25_pi_0p15_0p5_massreldiff_0p1.root'
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged//bparknano_looseselection_stdmatching_0p5.root'
+  #plotter.plotMatchingDiagram(filename=filename, treename='Events', outdirlabel='displaced_dsamuon_0p5', particle='muon')
+  plotter.plotMatchingDiagram(filename=filename, treename='Events', outdirlabel='displaced_pion_0p15_0p5', particle='pion')
 
   if doSignalBackgroundComparison:
     outdirlabel = 'loosepreselection_stdtrgmu_v1'
