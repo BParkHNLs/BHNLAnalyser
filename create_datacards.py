@@ -9,10 +9,11 @@ import sys
 sys.path.append('../../../../BHNLGen/CMSSW_10_2_15/src/HNLsGen/python/.')
 from my_common import getVV
 
+
 class DatacardsMaker(object):
-  def __init__(self, data_file='', signal_file='', do_categories=True, categories=None, outdirlabel=''): # signal_files instead?
+  def __init__(self, data_file='', signal_files='', do_categories=True, categories=None, outdirlabel=''):
     self.data_file = data_file
-    self.signal_file = signal_file 
+    self.signal_files = signal_files 
     self.do_categories = do_categories
     self.categories = categories
     if do_categories and categories == None:
@@ -30,32 +31,48 @@ class DatacardsMaker(object):
     return (part1+part2) #.replace('.', 'p').replace('-', 'm')
 
 
-  def writeCard(self, signal_mass='', signal_coupling='', category=''):
+  def getBackgroundYields(self, data_file, signal_file, baseline_selection='', category=''):
+    background_selection = baseline_selection
+    if self.do_categories:
+      category_selection = self.categories[category]
+      background_selection += ' && {}'.format(category_selection)
+
+    background_yields = ComputeYields(data_file=data_file, signal_file=signal_file, selection=background_selection).computeBkgYieldsFromABCDData()[0] 
+    if background_yields == 0.: background_yields = 1e-9
+
+    return background_yields
+
+
+  def getSignalYields(self, signal_file, baseline_selection='', category=''):
+    signal_selection = 'ismatched==1 && {}'.format(baseline_selection)
+    if self.do_categories:
+      category_selection = self.categories[category]
+      signal_selection += ' && {}'.format(category_selection)
+
+    signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields() 
+
+    return signal_yields
+
+
+  def getSignalMassCoupling(self, signal_point):
+    signal_mass = signal_point.mass
+    signal_ctau = signal_point.ctau
+    signal_v2 = getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+    signal_coupling = self.getCouplingLabel(signal_v2)
+
+    return signal_mass, signal_coupling
+
+
+  def getLabel(self, signal_mass='', signal_coupling='', category=''):
     if not self.do_categories:
       label = 'bhnl_m_{}_v2_{}'.format(signal_mass, signal_coupling)
     else:
       label = 'bhnl_cat_{}_m_{}_v2_{}'.format(category, signal_mass, signal_coupling)
+    return label
+
+
+  def writeCard(self, label, signal_yields, background_yields):
     datacard_name = 'datacard_{}.txt'.format(label)
-
-    baseline_selection = '(trgmu_mu_mass<3.03 || trgmu_mu_mass>3.15) && hnl_charge==0 && b_mass<5.5'
-
-    signal_selection = 'ismatched==1 && {}'.format(baseline_selection)
-    if self.do_categories:
-      category_selection = categories[category]
-      signal_selection += ' && {}'.format(category_selection)
-
-    signal_yields = ComputeYields(signal_file=self.signal_file, selection=signal_selection).computeSignalYields() 
-    #print signal_yields
-
-    background_selection = baseline_selection
-    if self.do_categories:
-      category_selection = categories[category]
-      background_selection += ' && {}'.format(category_selection)
-
-    background_yields = ComputeYields(data_file=self.data_file, signal_file=self.signal_file, selection=background_selection).computeBkgYieldsFromABCDData()[0] 
-    if background_yields == 0.: background_yields = 1e-9
-    #print background_yields
-
     datacard = open('{}/{}'.format(self.outputdir, datacard_name), 'w+')
     datacard.write(
 '''\
@@ -85,31 +102,45 @@ syst_bkg_{lbl}                             lnN           -                      
       )
 
     datacard.close()
-
     print '--> {}/{} created'.format(self.outputdir, datacard_name)
 
 
+  def produceDatacard(self, signal_file='', category='', baseline_selection=''):
+    # get the signal mass/coupling
+    signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
+
+    # get the process label
+    label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
+
+    # get the background yields
+    background_yields = self.getBackgroundYields(data_file=self.data_file, signal_file=signal_file, baseline_selection=baseline_selection, category=category)
+
+    # get the signal yields
+    signal_yields = self.getSignalYields(signal_file=signal_file, baseline_selection=baseline_selection, category=category)
+
+    # create the datacard
+    self.writeCard(label=label, signal_yields=signal_yields, background_yields=background_yields)
+
+
   def process(self):
-    signal_mass = self.signal_file.mass
-    signal_ctau = self.signal_file.ctau
-    signal_v2 = getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
-    signal_coupling = self.getCouplingLabel(signal_v2)
+    baseline_selection = '(trgmu_mu_mass<3.03 || trgmu_mu_mass>3.15) && hnl_charge==0 && b_mass<5.5'
 
     if not self.do_categories:
-      self.writeCard(signal_mass=signal_mass, signal_coupling=signal_coupling)
+      # loop on the signal points
+      for signal_file in signal_files:
+        self.produceDatacard(signal_file=signal_file, baseline_selection=baseline_selection)
+
     else:
       for category in categories:
-        self.writeCard(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
-
+        # loop on the signal points
+        for signal_file in signal_files:
+          self.produceDatacard(signal_file=signal_file, category=category, baseline_selection=baseline_selection)
 
 
 
 if __name__ == '__main__':
 
   data_file = data_samples[0]
-  signal_V20emu = signal_samples[1] 
-  signal_V21 = signal_samples[0] 
-  signal_V26 = signal_samples[2] 
 
   categories = {}
   categories['lxy0to1_OS'] = 'sv_lxy<1 && trgmu_charge!=mu_charge && b_mass>2.7'
@@ -124,56 +155,16 @@ if __name__ == '__main__':
   #categories['lxy0to1_SS'] = 'sv_lxy<1 && trgmu_charge==mu_charge'
   #categories['lxy1to5_SS'] = 'sv_lxy>=1 && sv_lxy<5 && trgmu_charge==mu_charge'
   #categories['lxygt5_SS'] = 'sv_lxy>=5 && trgmu_charge==mu_charge'
-  '''
-  disp3_SS: 
-  b_mass > 1.5
-  deltaR(mu, pi) < 1.5
-  deltaR(trgmu, pi) < 1
-  pi pt > 2
-  dimu invmass > 0.5
-  trgmupi invmass < 4.5
 
-  disp3_OS: 
-  b_mass > 1.5
-  deltaR(mu, pi) < 1.5
-  deltaR(trgmu, pi) < 1
-  pi pt > 2
-  trgmupi invmass < 4.5
-
-
-  disp2_SS: 
-  b_mass > 1.7
-  pi pt > 1
-  dimu invmass > 0.5
-  trgmupi invmass < 4.5
-
-  disp2_OS: 
-  b_mass > 1.7
-  pi pt > 1
-  trgmupi invmass < 4.5
-
-
-  disp1_SS: 
-  b_mass > 2.7
-
-  disp1_OS:
-  '''
-
-  #datacards = DatacardsMaker(data_file=data_file, signal_file=signal_V20emu, do_categories=True, categories=categories, outdirlabel='test_categories').process() 
-  #datacards = DatacardsMaker(data_file=data_file, signal_file=signal_V21, outdirlabel='test').process() 
-  #datacards = DatacardsMaker(data_file=data_file, signal_file=signal_V26, outdirlabel='test').process() 
 
   from samples import signal_samples_limits_m1
   from samples import signal_samples_limits_m3
   from samples import signal_samples_limits_m4p5
   signal_files = signal_samples_limits_m1
-  #for signal_file in signal_files:
-  #  datacards = DatacardsMaker(data_file=data_file, signal_file=signal_file, do_categories=True, categories=categories, outdirlabel='test_categories_selection').process() 
+  datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, categories=categories, outdirlabel='test_categories_selection_code').process() 
 
   signal_files = signal_samples_limits_m3
-  for signal_file in signal_files:
-    datacards = DatacardsMaker(data_file=data_file, signal_file=signal_file, do_categories=False, categories=categories, outdirlabel='test_categories_code').process() 
+  datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=False, categories=categories, outdirlabel='test_categories_selection_code').process() 
 
   signal_files = signal_samples_limits_m4p5
-  #for signal_file in signal_files:
-  #  datacards = DatacardsMaker(data_file=data_file, signal_file=signal_file, do_categories=True, categories=categories, outdirlabel='test_categories_selection').process() 
+  datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, categories=categories, outdirlabel='test_categories_selection_code').process() 
