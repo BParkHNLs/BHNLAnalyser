@@ -6,12 +6,18 @@ from ROOT import gROOT, gStyle
 from copy import copy
 import math
 import numpy as np
+from itertools import product
 
 from common import PlottingTools
 from quantity import quantities_to_plot_small, quantities_to_plot_all, quantities_to_plot_selection, quantities_muonId_study_triggermuon, quantities_muonId_study_displacedmuon, quantities_muonId_study_triggermuon_small, quantities_muonId_study_displacedmuon_small
 from samples import data_samples, data_samples_V02, data_samples_V03, data_samples_loose, data_samples_triggermuon_matching_check, qcd_samples, qcd_samples_V03, qcd_samples_triggermuon_matching_check, signal_samples, signal_samples_loose
 from quantity import Quantity
+from computeYields import ComputeYields
 
+# temporary
+import sys
+sys.path.append('../../../../BHNLGen/CMSSW_10_2_15/src/HNLsGen/python/.')
+from my_common import getVV
 
 
 class Plotter(PlottingTools):
@@ -46,7 +52,7 @@ class Plotter(PlottingTools):
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
 
-    quantity_forweight = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=1000)
+    quantity_forweight = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=13000)
     #f_data = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+self.data_file.filename, 'READ')
     f_data = ROOT.TFile.Open(self.data_file.filename, 'READ')
     hist_data = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity_forweight, branchname='flat', selection=selection)
@@ -198,10 +204,12 @@ class Plotter(PlottingTools):
         hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
         hist_signal = PlottingTools.createHisto(self, f_signal, 'signal_tree', self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='ismatched==1' if selection=='' else 'ismatched==1 &&'+selection)
         hist_signal.Sumw2()
+        print '{} : {} entries'.format(signal_file.filename, int(hist_signal.Integral()))
         if do_shape: 
           int_signal = hist_signal.Integral()
           if int_signal != 0: hist_signal.Scale(1/int_signal)
         legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
+
 
         hist_signal.SetLineWidth(3)
         hist_signal.SetLineColor(signal_file.colour)
@@ -246,18 +254,21 @@ class Plotter(PlottingTools):
     
       hist_mc_tot.Add(hist_mc)
       mc_hists.append(hist_mc)
-
+  
     hist_mc_tot.SetFillColor(ROOT.kAzure-4)
     hist_mc_tot.SetLineColor(1)
-
+    print 'qcd mc: {} entries'.format(int(hist_mc_tot.Integral()))
+  
     if not do_stack:
       legend.AddEntry(hist_mc_tot, 'MC - {}'.format(self.getMCLabel(self.qcd_files[0].label, self.qcd_files[len(self.qcd_files)-1].label)))
-    
+      
     ## create stack histogram  
     hist_mc_stack = ROOT.THStack('hist_mc_stack', '')
 
+
     # compute the mc normalisation weight
     if do_luminorm: lumi_weight = self.getLumiWeight(selection=selection)
+    #lumi_weight = Plotter()self.getLumiWeight(selection=selection)
 
     for hist_mc in mc_hists:
       if do_shape:
@@ -266,6 +277,7 @@ class Plotter(PlottingTools):
       hist_mc_stack.Add(hist_mc)
     if do_shape and int_mc_tot!= 0: hist_mc_tot.Scale(1/int_mc_tot)
     elif do_luminorm: hist_mc_tot.Scale(lumi_weight)
+    #hist_mc_tot.Scale(lumi_weight)
 
     #hist_data = PlottingTools.getRootXAxis(self, hist_data, label_size=0.0, title_size=0.0, offset=0)
     #hist_data = PlottingTools.getRootYAxis(self, hist_data, title='Entries' if not do_shape else 'Normalised to unity', label_size=0.037, title_size=0.042, offset=1.1, ymin=1e-9, ymax=self.getMaxRangeY(hist_data, hist_mc_stack, do_log))
@@ -305,6 +317,7 @@ class Plotter(PlottingTools):
 
     #ROOT.gStyle.SetPadLeftMargin(0.16) 
     ROOT.gStyle.SetOptStat(0)
+
 
     #hist_data.Draw('p')
     if plot_data: hist_data.Draw()
@@ -531,6 +544,190 @@ class Plotter(PlottingTools):
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
 
 
+  def plotYields(self, lumi=0.774, selection='', title='', outdirlabel=''):
+
+    canv = PlottingTools().createTCanvas('canv', dimx=900, dimy=800)
+    canv.SetLogx()
+    canv.SetLogy()
+    canv.SetGrid()
+
+
+    # gen yields
+    gen_coupling_m1 = [5.37675839253e-06, 5.37675839253e-05, 0.000537675839253, 0.00537675839253, 0.0537675839253]
+    #gen_yields_m1 = [0.233520553543, 21.1107914574, 2521.79127222, 198534.792249, 9787694.93131] # wrong weight
+    #gen_yields_m1 = [0.222669464601, 21.7748154625, 2054.4123073, 164459.789617, 5551279.31665] # good weight, without trg mu eff
+    gen_yields_m1 = [0.271587023481, 26.2785112766, 2480.63915671, 186917.31518, 6378867.68389] # good weight, with trg mu eff
+
+    gen_coupling_m3 = [2.2126577747e-06, 2.2126577747e-05, 0.00022126577747, 0.0022126577747]
+    #gen_yields_m3 = [0.0149191801294, 1.05017745728, 41.0813274363, 692.810973848]
+    #gen_yields_m3 = [0.0199334286553, 1.14028241247, 23.582224495, 228.202498809]
+    gen_yields_m3 = [0.0238935820319, 1.63795916047, 37.1400371471, 368.634025203]
+
+    gen_coupling_m4p5 = [2.91378801607e-06, 2.91378801607e-05, 0.000291378801607, 0.00291378801607] 
+    #gen_yields_m4p5 = [0.000314442951588, 0.0164840965898, 0.376472439332, 4.08626422153]
+    #gen_yields_m4p5 = [0.000446445913129, 0.0127053455282, 0.160543306967, 1.68758530476]
+    gen_yields_m4p5 = [0.000825665622275, 0.0250454472786, 0.322614030734, 3.41407673726]
+
+    graph_gen_m1 = ROOT.TGraph()
+    graph_gen_m3 = ROOT.TGraph()
+    graph_gen_m4p5 = ROOT.TGraph()
+
+    for pt in range(0, len(gen_coupling_m1)):
+      point = graph_gen_m1.GetN()
+      graph_gen_m1.SetPoint(point, gen_coupling_m1[pt], gen_yields_m1[pt])
+
+    graph_gen_m1.SetMarkerStyle(22)
+    graph_gen_m1.SetMarkerSize(2)
+    graph_gen_m1.SetMarkerColor(ROOT.kOrange+0)
+    graph_gen_m1.SetLineStyle(9)
+    graph_gen_m1.SetLineWidth(2)
+    graph_gen_m1.SetLineColor(ROOT.kOrange+0)
+
+    for pt in range(0, len(gen_coupling_m3)):
+      point = graph_gen_m3.GetN()
+      graph_gen_m3.SetPoint(point, gen_coupling_m3[pt], gen_yields_m3[pt])
+
+    graph_gen_m3.SetMarkerStyle(22)
+    graph_gen_m3.SetMarkerSize(2)
+    graph_gen_m3.SetMarkerColor(ROOT.kRed+1)
+    graph_gen_m3.SetLineStyle(9)
+    graph_gen_m3.SetLineWidth(2)
+    graph_gen_m3.SetLineColor(ROOT.kRed+1)
+
+    for pt in range(0, len(gen_coupling_m4p5)):
+      point = graph_gen_m4p5.GetN()
+      graph_gen_m4p5.SetPoint(point, gen_coupling_m4p5[pt], gen_yields_m4p5[pt])
+
+    graph_gen_m4p5.SetMarkerStyle(22)
+    graph_gen_m4p5.SetMarkerSize(2)
+    graph_gen_m4p5.SetMarkerColor(ROOT.kRed+4)
+    graph_gen_m4p5.SetLineStyle(9)
+    graph_gen_m4p5.SetLineWidth(2)
+    graph_gen_m4p5.SetLineColor(ROOT.kRed+4)
+
+    from samples import signal_samples_limits_m1 as samples_m1
+    from samples import signal_samples_limits_m3 as samples_m3
+    from samples import signal_samples_limits_m4p5 as samples_m4p5
+
+    graph_dummy = ROOT.TGraph() # move to TGraphAsymmErrors?
+    graph_m1 = ROOT.TGraphAsymmErrors() #ROOT.TGraph() # move to TGraphAsymmErrors?
+    graph_m3 = ROOT.TGraphAsymmErrors() #ROOT.TGraph() # move to TGraphAsymmErrors?
+    graph_m4p5 = ROOT.TGraphAsymmErrors() #ROOT.TGraph() # move to TGraphAsymmErrors?
+
+    graph_dummy.SetPoint(0, 1e-6, 1e-7)
+    graph_dummy.SetPoint(1, 1e-1, 1e10)
+    graph_dummy.SetMarkerStyle(0)
+    graph_dummy.SetMarkerSize(0)
+    graph_dummy.SetMarkerColor(0)
+    #graph_dummy.SetTitle('Event {}'.format(ientry))
+    graph_dummy.GetXaxis().SetTitle('|V^{2}|')
+    graph_dummy.GetXaxis().SetLabelSize(0.037)
+    graph_dummy.GetXaxis().SetTitleSize(0.042)
+    graph_dummy.GetXaxis().SetTitleOffset(1.1)
+    graph_dummy.GetYaxis().SetTitle('Signal yields')
+    graph_dummy.GetYaxis().SetLabelSize(0.037)
+    graph_dummy.GetYaxis().SetTitleSize(0.042)
+    graph_dummy.GetYaxis().SetTitleOffset(1.1)
+
+    print '\n mass 1'
+    for signal_file in samples_m1:
+      # get signal coupling
+      signal_mass = signal_file.mass
+      signal_ctau = signal_file.ctau
+      signal_v2 = getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+
+      # compute the signal yields
+      signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+      signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=327.0e9) 
+
+      # fill graph
+      point = graph_m1.GetN()
+      graph_m1.SetPoint(point, signal_v2, signal_yields)
+      #graph_m1.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
+      graph_m1.SetPointError(point, 0, 0, 0, 0)
+
+    graph_m1.SetMarkerStyle(20)
+    graph_m1.SetMarkerSize(2)
+    graph_m1.SetMarkerColor(ROOT.kOrange+0)
+    graph_m1.SetLineStyle(1)
+    graph_m1.SetLineWidth(2)
+    graph_m1.SetLineColor(ROOT.kOrange+0)
+
+
+    print '\n mass 3'
+    for signal_file in samples_m3:
+      # get signal coupling
+      signal_mass = signal_file.mass
+      signal_ctau = signal_file.ctau
+      signal_v2 = getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+
+      # compute the signal yields
+      signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+      signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=327.0e9) 
+
+      # fill graph
+      point = graph_m3.GetN()
+      graph_m3.SetPoint(point, signal_v2, signal_yields)
+      #graph_m3.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
+      graph_m3.SetPointError(point, 0, 0, 0, 0)
+
+    graph_m3.SetMarkerStyle(20)
+    graph_m3.SetMarkerSize(2)
+    graph_m3.SetMarkerColor(ROOT.kRed+1)
+    graph_m3.SetLineStyle(1)
+    graph_m3.SetLineWidth(2)
+    graph_m3.SetLineColor(ROOT.kRed+1)
+
+    print '\n mass 4.5'
+    for signal_file in samples_m4p5:
+      # get signal coupling
+      signal_mass = signal_file.mass
+      signal_ctau = signal_file.ctau
+      signal_v2 = getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+
+      # compute the signal yields
+      signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+      signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=327.0e9) 
+
+      # fill graph
+      point = graph_m4p5.GetN()
+      graph_m4p5.SetPoint(point, signal_v2, signal_yields)
+      #graph_m4p5.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
+      graph_m4p5.SetPointError(point, 0, 0, 0, 0)
+
+    graph_m4p5.SetMarkerStyle(20)
+    graph_m4p5.SetMarkerSize(2)
+    graph_m4p5.SetMarkerColor(ROOT.kRed+4)
+    graph_m4p5.SetLineStyle(1)
+    graph_m4p5.SetLineWidth(2)
+    graph_m4p5.SetLineColor(ROOT.kRed+4)
+
+    graph_dummy.Draw('AP')  
+    graph_m1.Draw('PL same')  
+    graph_m3.Draw('PL same')  
+    graph_m4p5.Draw('PL same')  
+    graph_gen_m1.Draw('PL same')
+    graph_gen_m3.Draw('PL same')
+    graph_gen_m4p5.Draw('PL same')
+      
+    legend = PlottingTools.getRootTLegend(self, xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
+    legend.AddEntry(graph_m1, 'm=1GeV, reco')
+    legend.AddEntry(graph_gen_m1, 'm=1GeV, gen')
+    legend.AddEntry(graph_m3, 'm=3GeV, reco')
+    legend.AddEntry(graph_gen_m3, 'm=3GeV, gen')
+    legend.AddEntry(graph_m4p5, 'm=4p5GeV, reco')
+    legend.AddEntry(graph_gen_m4p5, 'm=4p5GeV, gen')
+    legend.Draw()
+
+    if not path.exists('./myPlots/yields'):
+      os.system('mkdir -p ./myPlots/yields')
+
+    canv.SaveAs('./myPlots/yields/signal_yields_gen_reco_corr.png')
+    canv.SaveAs('./myPlots/yields/signal_yields_gen_reco_corr.pdf')
+
+
+
+
   def plotMatchingDiagram(self, filename, treename, outdirlabel, particle):
     f = ROOT.TFile.Open(filename, 'READ')
     tree = PlottingTools.getTree(self, f, treename)
@@ -698,24 +895,36 @@ class Plotter(PlottingTools):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  doDataMCComparison = False
+  doDataMCComparison = True
   doSignalBackgroundComparison = False
   plotMCSR = False
   compareTwoDistributions = False
+  plotYields = False
+  plot_matchingDiagram = False
+
   plot_log = False
   plot_categories = False
-  plot_SR = True
-  plot_CR = False
+  plot_SR = False
+  plot_CR = True
 
-  plotter = Plotter()
-  #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/test/bparknano.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_loosepreselection_stdtrgmu_v1.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_mu_0p15_0p25.root'
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_mu_0p15_0p25_pi_0p15_0p5.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_updatedgenmatching_mu_0p1_0p25_pi_0p15_0p5_massreldiff_0p1.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged//bparknano_looseselection_stdmatching_0p5.root'
-  #plotter.plotMatchingDiagram(filename=filename, treename='Events', outdirlabel='displaced_dsamuon_0p5', particle='muon')
-  plotter.plotMatchingDiagram(filename=filename, treename='Events', outdirlabel='displaced_pion_0p15_0p5', particle='pion')
+
+  if plotYields:
+    from samples import signal_samples_limits_m4p5
+    plotter = Plotter(signal_files=signal_samples_limits_m4p5)
+    plotter.plotYields(lumi=41.6, selection='mu_isdsa!=1', title='', outdirlabel='')
+
+    
+
+  if plot_matchingDiagram:
+    plotter = Plotter()
+    #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/test/bparknano.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_loosepreselection_stdtrgmu_v1.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_mu_0p15_0p25.root'
+    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_mu_0p15_0p25_pi_0p15_0p5.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_updatedgenmatching_mu_0p1_0p25_pi_0p15_0p5_massreldiff_0p1.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged//bparknano_looseselection_stdmatching_0p5.root'
+    #plotter.plotMatchingDiagram(filename=filename, treename='Events', outdirlabel='displaced_dsamuon_0p5', particle='muon')
+    plotter.plotMatchingDiagram(filename=filename, treename='Events', outdirlabel='displaced_pion_0p15_0p5', particle='pion')
 
   if doSignalBackgroundComparison:
     outdirlabel = 'loosepreselection_stdtrgmu_v1'
@@ -735,7 +944,7 @@ if __name__ == '__main__':
 
     #white_list_20to300 = ['QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt80to120 (V02)', 'QCD_pt80to120_ext (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt120to170_ext (V02)', 'QCD_pt170to300 (V02)']
     #white_list_15to300 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt170to300 (V02)']
-    white_list_15to300 = ['QCD_pt15to20 (V05)', 'QCD_pt20to30 (V05)', 'QCD_pt30to50 (V05)', 'QCD_pt50to80 (V05)', 'QCD_pt80to120 (V05)', 'QCD_pt120to170 (V05)', 'QCD_pt170to300 (V05)']
+    white_list_15to300 = ['QCD_pt15to20 (V06_29Jun21)', 'QCD_pt20to30 (V06_29Jun21)', 'QCD_pt30to50 (V06_29Jun21)', 'QCD_pt50to80 (V06_29Jun21)', 'QCD_pt80to120 (V06_29Jun21)', 'QCD_pt120to170 (V06_29Jun21)', 'QCD_pt170to300 (V06_29Jun21)']
     white_list_20to300 = ['QCD_pt20to30 (V05)', 'QCD_pt30to50 (V05)', 'QCD_pt50to80 (V05)', 'QCD_pt80to120 (V05)', 'QCD_pt120to170 (V05)', 'QCD_pt170to300 (V05)']
     white_list_30to300 = ['QCD_pt30to50 (V05)', 'QCD_pt50to80 (V05)', 'QCD_pt80to120 (V05)', 'QCD_pt120to170 (V05)', 'QCD_pt170to300 (V05)']
     white_list_30to50 = ['QCD_pt30to50 (V05)']
@@ -748,11 +957,18 @@ if __name__ == '__main__':
     #baseline_selection = 'fabs(mu_dzsig)>1 && fabs(mu_dxysig)>1.5 && hnl_cos2d>0.995 && sv_lxysig>20 && deltaeta_pi_fit_pi<0.015 && deltaphi_pi_fit_pi<0.03 && '
     #baseline_selection = 'fabs(mu_dzsig)>1 && fabs(mu_dxysig)>1.5 && sv_lxysig>20 && deltaeta_pi_fit_pi<0.015 && deltaphi_pi_fit_pi<0.03 && ' # if we want to categorise on cos2D, we dont want this cut to be too high
     #baseline_selection = '(trgmu_mu_mass<3.03 || trgmu_mu_mass>3.15) && (trgmu_mu_mass<3.63 || trgmu_mu_mass>3.73) && '
-    baseline_selection = ''
+    #baseline_selection = 'mu_isdsa !=1 && trgmu_looseid==1 && trgmu_softid==1 && '
+    #baseline_selection = 'mu_isdsa !=1 && '
+    #baseline_selection = 'mu_isdsa !=1 && trgmu_looseid==1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && '
+    #baseline_selection = 'mu_isdsa !=1 && trgmu_looseid==1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && ((mu_isglobalmuon==1 && mu_numberofstations>0 && mu_numberoftrackerlayers<18) || (mu_isglobalmuon!=1 && mu_calocompatibility>0.05 && mu_numberoftrackerlayers>6 && mu_numberoftrackerlayers<16 && mu_numberofvalidpixelhits<6)) && '
+    #baseline_selection = 'mu_isdsa !=1 && trgmu_looseid==1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && mu_isglobalmuon!=1 && mu_calocompatibility>0.05 && mu_numberoftrackerlayers>6 && mu_numberoftrackerlayers<16 && mu_numberofvalidpixelhits<6 && '
+    baseline_selection = 'mu_isdsa !=1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && '
 
     if plot_SR:
-      dirlabel = 'dataV04_QCDV05_SR_v1'
+      #dirlabel = 'dataV05_QCDV06_29Jun21'
+      dirlabel = 'test'
       for quantity in quantities_to_plot_small:
+      #for quantity in quantities_muonId_study_displacedmuon_small:
         plotter = Plotter(quantity=quantity, data_file=data_samples[0], qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
 
         # signal region
@@ -779,22 +995,23 @@ if __name__ == '__main__':
 
 
           # SS categories
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy<1 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}<1cm, SS', outdirlabel=dirlabel+'/lxy0to1_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge==mu_charge', title='Signal Region, (1<l_{xy}<5)cm, SS', outdirlabel=dirlabel+'/lxy1to5_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge==mu_charge', title='Signal Region, (5<l_{xy}<10)cm, SS', outdirlabel=dirlabel+'/lxy5to10_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>5 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}>5cm, SS', outdirlabel=dirlabel+'/lxygt5_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>10 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}>10cm, SS', outdirlabel=dirlabel+'/lxygt10_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy<1 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}<1cm, SS', outdirlabel=dirlabel+'/SR/lxy0to1_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge==mu_charge', title='Signal Region, (1<l_{xy}<5)cm, SS', outdirlabel=dirlabel+'/SR/lxy1to5_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge==mu_charge', title='Signal Region, (5<l_{xy}<10)cm, SS', outdirlabel=dirlabel+'/SR/lxy5to10_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>5 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}>5cm, SS', outdirlabel=dirlabel+'/SR/lxygt5_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>10 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}>10cm, SS', outdirlabel=dirlabel+'/SR/lxygt10_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=False)
 
           if plot_log:
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy<1 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}<1cm, SS', outdirlabel=dirlabel+'/lxy0to1_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge==mu_charge', title='Signal Region, (1<l_{xy}<5)cm, SS', outdirlabel=dirlabel+'/lxy1to5_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge==mu_charge', title='Signal Region, (5<l_{xy}<10)cm, SS', outdirlabel=dirlabel+'/lxy5to10_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>5 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}>5cm, SS', outdirlabel=dirlabel+'/lxygt5_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=True)
-            plotter.plotDataMCComparison(selection='hnl_charge==0 && sv_lxy>10 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}>10cm, SS', outdirlabel=dirlabel+'/lxygt10_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy<1 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}<1cm, SS', outdirlabel=dirlabel+'/SR/lxy0to1_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge==mu_charge', title='Signal Region, (1<l_{xy}<5)cm, SS', outdirlabel=dirlabel+'/SR/lxy1to5_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge==mu_charge', title='Signal Region, (5<l_{xy}<10)cm, SS', outdirlabel=dirlabel+'/SR/lxy5to10_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge==0 && sv_lxy>5 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}>5cm, SS', outdirlabel=dirlabel+'/SR/lxygt5_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=False, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection='hnl_charge==0 && sv_lxy>10 && trgmu_charge==mu_charge', title='Signal Region, l_{xy}>10cm, SS', outdirlabel=dirlabel+'/SR/lxygt10_SS', branchname='flat', plot_data=False, plot_sig=True, plot_ratio=False, do_shape=True, do_stack=False, do_log=True)
 
 
     if plot_CR:
-      dirlabel = 'dataV04_QCDV05_v1'
+      #dirlabel = 'dataV04_QCDV05_v1'
+      dirlabel = 'test'
       for quantity in quantities_to_plot_small:
         plotter = Plotter(quantity=quantity, data_file=data_samples[0], qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
         # control region
@@ -805,32 +1022,32 @@ if __name__ == '__main__':
     
         if plot_categories:
           # OS categories
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy<1 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}<1cm, OS', outdirlabel=dirlabel+'/CR/lxy0to1_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge!=mu_charge', title='Control Region, (1<l_{xy}<5)cm, OS', outdirlabel=dirlabel+'/CR/lxy1to5_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge!=mu_charge', title='Control Region, (5<l_{xy}<10)cm, OS', outdirlabel=dirlabel+'/CR/lxy5to10_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}>5cm, OS', outdirlabel=dirlabel+'/CR/lxygt5_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>10 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}>10cm, OS', outdirlabel=dirlabel+'/CR/lxygt10_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy<1 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}<1cm, OS', outdirlabel=dirlabel+'/CR/lxy0to1_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge!=mu_charge', title='Control Region, (1<l_{xy}<5)cm, OS', outdirlabel=dirlabel+'/CR/lxy1to5_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge!=mu_charge', title='Control Region, (5<l_{xy}<10)cm, OS', outdirlabel=dirlabel+'/CR/lxy5to10_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}>5cm, OS', outdirlabel=dirlabel+'/CR/lxygt5_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>10 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}>10cm, OS', outdirlabel=dirlabel+'/CR/lxygt10_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
 
           if plot_log:
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy<1 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}<1cm, OS', outdirlabel=dirlabel+'/CR/lxy0to1_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge!=mu_charge', title='Control Region, (1<l_{xy}<5)cm, OS', outdirlabel=dirlabel+'/CR/lxy1to5_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge!=mu_charge', title='Control Region, (5<l_{xy}<10)cm, OS', outdirlabel=dirlabel+'/CR/lxy5to10_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}>5cm, OS', outdirlabel=dirlabel+'/CR/lxygt5_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>10 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}>10cm, OS', outdirlabel=dirlabel+'/CR/lxygt10_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy<1 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}<1cm, OS', outdirlabel=dirlabel+'/CR/lxy0to1_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge!=mu_charge', title='Control Region, (1<l_{xy}<5)cm, OS', outdirlabel=dirlabel+'/CR/lxy1to5_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge!=mu_charge', title='Control Region, (5<l_{xy}<10)cm, OS', outdirlabel=dirlabel+'/CR/lxy5to10_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}>5cm, OS', outdirlabel=dirlabel+'/CR/lxygt5_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>10 && trgmu_charge!=mu_charge', title='Control Region, l_{xy}>10cm, OS', outdirlabel=dirlabel+'/CR/lxygt10_OS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
 
           # SS categories
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy<1 && trgmu_charge==mu_charge', title='Control Region, l_{xy}<1cm, SS', outdirlabel=dirlabel+'/CR/lxy0to1_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge==mu_charge', title='Control Region, (1<l_{xy}<5)cm, SS', outdirlabel=dirlabel+'/CR/lxy1to5_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge==mu_charge', title='Control Region, (5<l_{xy}<10)cm, SS', outdirlabel=dirlabel+'/CR/lxy5to10_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && trgmu_charge==mu_charge', title='Control Region, l_{xy}>5cm, SS', outdirlabel=dirlabel+'/CR/lxygt5_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
-          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>10 && trgmu_charge==mu_charge', title='Control Region, l_{xy}>10cm, SS', outdirlabel=dirlabel+'/CR/lxygt10_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy<1 && trgmu_charge==mu_charge', title='Control Region, l_{xy}<1cm, SS', outdirlabel=dirlabel+'/CR/lxy0to1_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge==mu_charge', title='Control Region, (1<l_{xy}<5)cm, SS', outdirlabel=dirlabel+'/CR/lxy1to5_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge==mu_charge', title='Control Region, (5<l_{xy}<10)cm, SS', outdirlabel=dirlabel+'/CR/lxy5to10_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && trgmu_charge==mu_charge', title='Control Region, l_{xy}>5cm, SS', outdirlabel=dirlabel+'/CR/lxygt5_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>10 && trgmu_charge==mu_charge', title='Control Region, l_{xy}>10cm, SS', outdirlabel=dirlabel+'/CR/lxygt10_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
 
           if plot_log:
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy<1 && trgmu_charge==mu_charge', title='Control Region, l_{xy}<1cm, SS', outdirlabel=dirlabel+'/CR/lxy0to1_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge==mu_charge', title='Control Region, (1<l_{xy}<5)cm, SS', outdirlabel=dirlabel+'/CR/lxy1to5_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge==mu_charge', title='Control Region, (5<l_{xy}<10)cm, SS', outdirlabel=dirlabel+'/CR/lxy5to10_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && trgmu_charge==mu_charge', title='Control Region, l_{xy}>5cm, SS', outdirlabel=dirlabel+'/CR/lxygt5_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
-            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>10 && trgmu_charge==mu_charge', title='Control Region, l_{xy}>10cm, SS', outdirlabel=dirlabel+'/CR/lxygt10_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy<1 && trgmu_charge==mu_charge', title='Control Region, l_{xy}<1cm, SS', outdirlabel=dirlabel+'/CR/lxy0to1_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>1 && sv_lxy<5 && trgmu_charge==mu_charge', title='Control Region, (1<l_{xy}<5)cm, SS', outdirlabel=dirlabel+'/CR/lxy1to5_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && sv_lxy<10 && trgmu_charge==mu_charge', title='Control Region, (5<l_{xy}<10)cm, SS', outdirlabel=dirlabel+'/CR/lxy5to10_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>5 && trgmu_charge==mu_charge', title='Control Region, l_{xy}>5cm, SS', outdirlabel=dirlabel+'/CR/lxygt5_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
+            plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>10 && trgmu_charge==mu_charge', title='Control Region, l_{xy}>10cm, SS', outdirlabel=dirlabel+'/CR/lxygt10_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
 
 
 
