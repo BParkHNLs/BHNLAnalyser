@@ -110,7 +110,7 @@ class Plotter(PlottingTools):
     canv.SaveAs('tmp.png')
 
 
-  def plotDataMCComparison(self, selection='', title='', outdirlabel='', branchname='flat', treename='signal_tree', plot_data=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False):
+  def plotDataMCComparison(self, selection='', title='', outdirlabel='', branchname='flat', treename='signal_tree', plot_data=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=True):
     if plot_data and self.data_files == '':
       raise RuntimeError('Please specify on which data sample to run')
     if plot_sig and self.signal_files == '':
@@ -169,7 +169,13 @@ class Plotter(PlottingTools):
     if plot_data:
       hist_data_tot = ROOT.TH1D('hist_data_tot', 'hist_data_tot', self.quantity.nbins, self.quantity.bin_min, self.quantity.bin_max)
       hist_data_tot.Sumw2()
+
       int_data_tot = 0.
+      overflow_data_tot = 0
+      error_overflow_data_tot = 0.
+
+      hist_data_stack = ROOT.THStack('hist_data_stack', '')
+
       for data_file in self.data_files:
         f_data = PlottingTools.getRootFile(self, data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
         hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
@@ -177,9 +183,21 @@ class Plotter(PlottingTools):
         hist_data.Sumw2()
         if do_shape: 
           int_data_tot += hist_data.Integral()
+        if add_overflow:
+          overflow_data_tot += (hist_data.GetBinContent(hist_data.GetNbinsX()) + hist_data.GetBinContent(hist_data.GetNbinsX()+1))
+          error_overflow_data_tot += math.sqrt(math.pow(hist_data.GetBinError(hist_data.GetNbinsX()), 2) + math.pow(hist_data.GetBinError(hist_data.GetNbinsX()+1), 2)) 
+          hist_data.SetBinContent(hist_data.GetNbinsX(), overflow_data_tot)
+          hist_data.SetBinError(hist_data.GetNbinsX(), error_overflow_data_tot)
+          hist_data.SetBinContent(hist_data.GetNbinsX()+1, 0)
+          hist_data.SetBinError(hist_data.GetNbinsX()+1, 0)
+
         hist_data_tot.Add(hist_data)
 
-      if int_data_tot != 0: hist_data_tot.Scale(1./int_data_tot)
+        if do_shape and hist_data.Integral() != 0: 
+          hist_data.Scale(1./hist_data.Integral())
+          hist_data_stack.Add(hist_data)
+
+      if do_shape and int_data_tot != 0.: hist_data_tot.Scale(1./int_data_tot)
 
       legend.AddEntry(hist_data_tot, 'data - {}'.format('g'))#.format(data_file.label))
 
@@ -216,8 +234,15 @@ class Plotter(PlottingTools):
         if do_shape: 
           int_signal = hist_signal.Integral()
           if int_signal != 0: hist_signal.Scale(1/int_signal)
-        legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
+        if add_overflow:
+          overflow_signal = hist_signal.GetBinContent(hist_signal.GetNbinsX()) + hist_signal.GetBinContent(hist_signal.GetNbinsX()+1)
+          error_overflow_signal_tot = math.sqrt(math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()), 2) + math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()+1), 2)) 
+          hist_signal.SetBinContent(hist_signal.GetNbinsX(), overflow_signal_tot)
+          hist_signal.SetBinError(hist_signal.GetNbinsX(), error_overflow_signal_tot)
+          hist_signal.SetBinContent(hist_signal.GetNbinsX()+1, 0)
+          hist_signal.SetBinError(hist_signal.GetNbinsX()+1, 0)
 
+        legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
 
         hist_signal.SetLineWidth(3)
         hist_signal.SetLineColor(signal_file.colour)
@@ -261,7 +286,15 @@ class Plotter(PlottingTools):
 
       if do_shape: 
         int_mc_tot += hist_mc.Integral()
-    
+
+      if add_overflow:
+        overflow_mc = hist_mc.GetBinContent(hist_mc.GetNbinsX()) + hist_mc.GetBinContent(hist_mc.GetNbinsX()+1)
+        error_overflow_mc = math.sqrt(math.pow(hist_mc.GetBinError(hist_mc.GetNbinsX()), 2) + math.pow(hist_mc.GetBinError(hist_mc.GetNbinsX()+1), 2)) 
+        hist_mc.SetBinContent(hist_mc.GetNbinsX(), overflow_mc)
+        hist_mc.SetBinError(hist_mc.GetNbinsX(), error_overflow_mc)
+        hist_mc.SetBinContent(hist_mc.GetNbinsX()+1, 0)
+        hist_mc.SetBinError(hist_mc.GetNbinsX()+1, 0)
+  
       hist_mc_tot.Add(hist_mc)
       mc_hists.append(hist_mc)
   
@@ -281,8 +314,7 @@ class Plotter(PlottingTools):
     #lumi_weight = Plotter()self.getLumiWeight(selection=selection)
 
     for hist_mc in mc_hists:
-      if do_shape:
-        if int_mc_tot != 0: hist_mc.Scale(1/int_mc_tot)
+      if do_shape and int_mc_tot != 0: hist_mc.Scale(1/int_mc_tot)
       elif do_luminorm: hist_mc.Scale(lumi_weight)
       hist_mc_stack.Add(hist_mc)
     if do_shape and int_mc_tot!= 0: hist_mc_tot.Scale(1/int_mc_tot)
@@ -321,7 +353,7 @@ class Plotter(PlottingTools):
     hist_mc_tot.GetYaxis().SetLabelSize(0.033 if not plot_ratio else 0.037)
     hist_mc_tot.GetYaxis().SetTitleSize(0.042)
     hist_mc_tot.GetYaxis().SetTitleOffset(1.3 if not plot_ratio else 1.1)
-    if plot_data: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data, hist_mc_stack, do_log))
+    if plot_data: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_stack, hist_mc_stack, do_log))
     elif plot_sig: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_mc_stack, do_log, use_sig=True))
     else: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_mc_tot, hist_mc_stack, do_log))
 
@@ -1036,6 +1068,7 @@ if __name__ == '__main__':
   plot_categories = False
   plot_SR = False
   plot_CR = True
+  # add add_overflow
 
 
   if plotYields:
@@ -1161,7 +1194,7 @@ if __name__ == '__main__':
         plotter = Plotter(quantity=quantity, data_files=data_samples, qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
         # control region
         # inclusive
-        plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0', title='Control Region, inclusive', outdirlabel=dirlabel+'/CR/incl', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+        plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0', title='Control Region, inclusive', outdirlabel=dirlabel+'/CR/incl', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=True, do_luminorm=False, do_stack=False, do_log=False)
         if plot_log:
           plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0', title='Control Region, inclusive', outdirlabel=dirlabel+'/CR/incl', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=True)
     
