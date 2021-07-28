@@ -9,8 +9,8 @@ import numpy as np
 from itertools import product
 
 from common import PlottingTools
-from quantity import quantities_to_plot_small, quantities_to_plot_all, quantities_to_plot_selection, quantities_muonId_study_triggermuon, quantities_muonId_study_displacedmuon, quantities_muonId_study_triggermuon_small, quantities_muonId_study_displacedmuon_small
-from samples import data_samples, data_samples_V02, data_samples_V03, data_samples_loose, data_samples_triggermuon_matching_check, qcd_samples, qcd_samples_V03, qcd_samples_triggermuon_matching_check, signal_samples, signal_samples_loose
+from quantity import quantities_to_plot_small, quantities_to_plot_all, quantities_to_plot_selection, quantities_muonId_study_triggermuon, quantities_muonId_study_displacedmuon, quantities_muonId_study_triggermuon_small, quantities_muonId_study_displacedmuon_small, quantities_tag_and_probe
+from samples import data_samples, data_samples_V02, data_samples_V03, data_samples_loose, data_samples_triggermuon_matching_check, data_samples_tag_and_probe, qcd_samples, qcd_samples_V03, qcd_samples_triggermuon_matching_check, signal_samples, signal_samples_loose, signal_samples_tag_and_probe
 from quantity import Quantity
 from computeYields import ComputeYields
 
@@ -21,9 +21,9 @@ from my_common import getVV
 
 
 class Plotter(PlottingTools):
-  def __init__(self, quantity='', data_file='', qcd_files='', signal_files='', white_list=''):
+  def __init__(self, quantity='', data_files='', qcd_files='', signal_files='', white_list=''):
     self.quantity = quantity
-    self.data_file = data_file
+    self.data_files = data_files
     self.qcd_files = qcd_files
     self.signal_files = signal_files
     self.white_list = white_list
@@ -47,24 +47,26 @@ class Plotter(PlottingTools):
     return max_range
 
 
-  def getLumiWeight(self, selection):
+  def getLumiWeight(self, selection): # move
     '''
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
 
     quantity_forweight = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=13000)
-    #f_data = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+self.data_file.filename, 'READ')
-    f_data = ROOT.TFile.Open(self.data_file.filename, 'READ')
-    hist_data = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity_forweight, branchname='flat', selection=selection)
-    hist_data.Sumw2()
-    n_obs_data = hist_data.GetBinContent(1)
-    n_err_data = math.sqrt(n_obs_data) #hist_data.GetBinError(1)
+    n_obs_data = 0.
+    n_err_data = 0.
+    for data_file in self.data_files:
+      f_data = PlottingTools.getRootFile(self, data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
+      hist_data = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity_forweight, branchname='flat', selection=selection)
+      hist_data.Sumw2()
+      n_obs_data += hist_data.GetBinContent(1)
+      n_err_data += math.sqrt(n_obs_data) #hist_data.GetBinError(1)
 
     hist_mc_tot = PlottingTools.createWeightedHistoQCDMC(self, qcd_files=self.qcd_files, white_list=self.white_list, quantity=quantity_forweight, selection=selection)
     n_obs_mc = hist_mc_tot.GetBinContent(1)
     n_err_mc = math.sqrt(n_obs_mc) #hist_mc_tot.GetBinError(1)
 
-    weight = n_obs_data / n_obs_mc
+    weight = float(n_obs_data) / float(n_obs_mc)
 
     #if n_obs_data != 0 and n_obs_mc != 0:
     #  err = weight* (n_err_data / n_obs_data + n_err_mc / n_obs_mc)
@@ -108,8 +110,8 @@ class Plotter(PlottingTools):
     canv.SaveAs('tmp.png')
 
 
-  def plotDataMCComparison(self, selection='', title='', outdirlabel='', branchname='flat', plot_data=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False):
-    if plot_data and self.data_file == '':
+  def plotDataMCComparison(self, selection='', title='', outdirlabel='', branchname='flat', treename='signal_tree', plot_data=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False):
+    if plot_data and self.data_files == '':
       raise RuntimeError('Please specify on which data sample to run')
     if plot_sig and self.signal_files == '':
       raise RuntimeError('Please specify on which signal sample to run')
@@ -165,19 +167,25 @@ class Plotter(PlottingTools):
     pad_up.cd()
 
     if plot_data:
-      #f_data = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+self.data_file.filename, 'READ')
-      f_data = ROOT.TFile.Open(self.data_file.filename, 'READ')
-      hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-      hist_data = PlottingTools.createHisto(self, f_data, 'signal_tree', self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
-      hist_data.Sumw2()
-      if do_shape: 
-        int_data = hist_data.Integral()
-        if int_data != 0: hist_data.Scale(1/int_data)
-      legend.AddEntry(hist_data, 'data - {}'.format(self.data_file.label))
+      hist_data_tot = ROOT.TH1D('hist_data_tot', 'hist_data_tot', self.quantity.nbins, self.quantity.bin_min, self.quantity.bin_max)
+      hist_data_tot.Sumw2()
+      int_data_tot = 0.
+      for data_file in self.data_files:
+        f_data = PlottingTools.getRootFile(self, data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
+        hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
+        hist_data = PlottingTools.createHisto(self, f_data, treename, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
+        hist_data.Sumw2()
+        if do_shape: 
+          int_data_tot += hist_data.Integral()
+        hist_data_tot.Add(hist_data)
+
+      if int_data_tot != 0: hist_data_tot.Scale(1./int_data_tot)
+
+      legend.AddEntry(hist_data_tot, 'data - {}'.format('g'))#.format(data_file.label))
 
       ## set the style
-      hist_data.SetLineWidth(0)
-      hist_data.SetMarkerStyle(20)
+      hist_data_tot.SetLineWidth(0)
+      hist_data_tot.SetMarkerStyle(20)
       #hist_data.SetTitle(self.title)
 
       #if not plot_ratio: 
@@ -202,9 +210,9 @@ class Plotter(PlottingTools):
         #f_signal = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+signal_file.filename, 'READ')
         f_signal = ROOT.TFile.Open(signal_file.filename, 'READ')
         hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-        hist_signal = PlottingTools.createHisto(self, f_signal, 'signal_tree', self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='ismatched==1' if selection=='' else 'ismatched==1 &&'+selection)
+        hist_signal = PlottingTools.createHisto(self, f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='ismatched==1' if selection=='' else 'ismatched==1 &&'+selection)
         hist_signal.Sumw2()
-        print '{} : {} entries'.format(signal_file.filename, int(hist_signal.Integral()))
+        #print '{} : {} entries'.format(signal_file.filename, int(hist_signal.Integral()))
         if do_shape: 
           int_signal = hist_signal.Integral()
           if int_signal != 0: hist_signal.Scale(1/int_signal)
@@ -234,8 +242,10 @@ class Plotter(PlottingTools):
       #print qcd_file.label
       #weight_mc = PlottingTools.computeQCDMCWeight(self, PlottingTools.getTree(self, f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_mc = PlottingTools.computeQCDMCWeight(self, f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
+      #weight = '({}) * (weight_hlt)'.format(weight_mc)
+      weight = '({})'.format(weight_mc)
       hist_mc_name = 'hist_mc_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-      hist_mc = PlottingTools.createHisto(self, f_mc, 'signal_tree', self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight_mc) 
+      hist_mc = PlottingTools.createHisto(self, f_mc, treename, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight) 
       hist_mc.Sumw2()
 
       #if qcd_file.label == 'V02_15to20':
@@ -257,7 +267,7 @@ class Plotter(PlottingTools):
   
     hist_mc_tot.SetFillColor(ROOT.kAzure-4)
     hist_mc_tot.SetLineColor(1)
-    print 'qcd mc: {} entries'.format(int(hist_mc_tot.Integral()))
+    #print 'qcd mc: {} entries'.format(int(hist_mc_tot.Integral()))
   
     if not do_stack:
       legend.AddEntry(hist_mc_tot, 'MC - {}'.format(self.getMCLabel(self.qcd_files[0].label, self.qcd_files[len(self.qcd_files)-1].label)))
@@ -319,15 +329,13 @@ class Plotter(PlottingTools):
     ROOT.gStyle.SetOptStat(0)
 
 
-    #hist_data.Draw('p')
-    if plot_data: hist_data.Draw()
+    if plot_data: hist_data_tot.Draw()
     hist_mc_tot.Draw('histo')
     if do_stack:
       hist_mc_stack.Draw('histo same')
     else:
       hist_mc_tot.Draw('histo same')
-    #hist_data.Draw('p same') # making sure data points are always visible
-    if plot_data: hist_data.Draw('same') # making sure data points are always visible
+    if plot_data: hist_data_tot.Draw('same') # making sure data points are always visible
     if plot_sig: 
       for hist_sig in signal_hists:
         hist_sig.Draw('histo same')
@@ -349,15 +357,15 @@ class Plotter(PlottingTools):
     if plot_ratio:
       pad_down.cd()
 
-      hist_ratio = PlottingTools.getRatioHistogram(self, hist_data, hist_mc_tot)
+      hist_ratio = PlottingTools.getRatioHistogram(self, hist_data_tot, hist_mc_tot)
       hist_ratio.Sumw2()
 
       for ibin in range(0, hist_ratio.GetNbinsX()+1):
         #print '{} {}'.format(hist_data.GetBinError(ibin), math.sqrt(hist_data.GetBinContent(ibin)))
-        if hist_data.GetBinContent(ibin) != 0 and hist_mc_tot.GetBinContent(ibin) != 0:
+        if hist_data_tot.GetBinContent(ibin) != 0 and hist_mc_tot.GetBinContent(ibin) != 0:
           #err = hist_ratio.GetBinContent(ibin) * (math.sqrt(hist_data.GetBinContent(ibin))/hist_data.GetBinContent(ibin) + math.sqrt(hist_mc_tot.GetBinContent(ibin))/hist_mc_tot.GetBinContent(ibin))
           #err = math.sqrt((math.sqrt(hist_data.GetBinContent(ibin))/hist_mc_tot.GetBinContent(ibin))**2 + (math.sqrt(hist_mc_tot.GetBinContent(ibin))*hist_data.GetBinContent(ibin)/(hist_mc_tot.GetBinContent(ibin))**2)**2)
-          err = math.sqrt((hist_data.GetBinError(ibin)/hist_mc_tot.GetBinContent(ibin))**2 + (hist_mc_tot.GetBinError(ibin)*hist_data.GetBinContent(ibin)/(hist_mc_tot.GetBinContent(ibin))**2)**2)
+          err = math.sqrt((hist_data_tot.GetBinError(ibin)/hist_mc_tot.GetBinContent(ibin))**2 + (hist_mc_tot.GetBinError(ibin)*hist_data_tot.GetBinContent(ibin)/(hist_mc_tot.GetBinContent(ibin))**2)**2)
         else: 
           err = 0
         if hist_ratio.GetBinContent(ibin) != 0: hist_ratio.SetBinError(ibin, err)
@@ -397,13 +405,12 @@ class Plotter(PlottingTools):
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
 
 
-  def plotSignalBackgroundComparison(self, selection='', title='', outdirlabel='', branchname='nano', do_shape=True, do_log=False):
+  def plotSignalBackgroundComparison(self, selection='', title='', outdirlabel='', branchname='nano', treename='Events', do_shape=True, do_log=False):
     ROOT.gStyle.SetPadLeftMargin(0.12) 
     ROOT.gStyle.SetOptStat(0)
 
     # create the canvas
     canv_name = 'canv_{}_{}_{}_{}'.format(self.quantity.label, outdirlabel, do_log, do_shape)
-    #canv = ROOT.TCanvas(canv_name, canv_name, 1200, 1000)
     canv = PlottingTools.createTCanvas(self, name=canv_name, dimx=1200, dimy=1000)
     if do_log: canv.SetLogy()
     ROOT.SetOwnership(canv, False)
@@ -411,7 +418,7 @@ class Plotter(PlottingTools):
     canv.cd()
 
     # prepare the legend
-    legend = PlottingTools.getRootTLegend(self, xmin=0.49, ymin=0.58, xmax=0.86, ymax=0.83, size=0.027)
+    legend = PlottingTools.getRootTLegend(self, xmin=0.47, ymin=0.58, xmax=0.84, ymax=0.83, size=0.027)
     #legend = PlottingTools.getRootTLegend(self, xmin=0.53, ymin=0.65, xmax=0.9, ymax=0.83, size=0.027)
 
     label_top_right = ROOT.TPaveText(0.5,0.92,0.91,0.93, "brNDC")
@@ -424,20 +431,26 @@ class Plotter(PlottingTools):
     label_top_right.Draw()
 
     # data
-    #f_data = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+self.data_file.filename, 'READ')
-    f_data = ROOT.TFile.Open(self.data_file.filename, 'READ')
-    hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel, do_log, do_shape)
-    hist_data = PlottingTools.createHisto(self, f_data, 'Events', self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
-    hist_data.Sumw2()
-    if do_shape: 
-      int_data = hist_data.Integral()
-      if int_data != 0: hist_data.Scale(1/int_data)
-    legend.AddEntry(hist_data, '{} - data'.format(self.data_file.label))
+    hist_data_tot = ROOT.TH1D('hist_data_tot', 'hist_data_tot', self.quantity.nbins, self.quantity.bin_min, self.quantity.bin_max)
+    hist_data_tot.Sumw2()
+    int_data_tot = 0.
+    for data_file in self.data_files:
+      f_data = PlottingTools.getRootFile(self, data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
+      hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
+      hist_data = PlottingTools.createHisto(self, f_data, treename, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
+      hist_data.Sumw2()
+      if do_shape: 
+        int_data_tot += hist_data.Integral()
+      hist_data_tot.Add(hist_data)
+
+    if int_data_tot != 0: hist_data_tot.Scale(1./int_data_tot)
+
+    legend.AddEntry(hist_data_tot, 'data - {}'.format("/"))#.format(data_file.label))
 
     ## set the style
     #hist_data.SetLineWidth(0)
-    hist_data.SetFillColor(ROOT.kBlue-3)
-    hist_data.SetFillStyle(3005)
+    hist_data_tot.SetFillColor(ROOT.kBlue-3)
+    hist_data_tot.SetFillStyle(3005)
     #hist_data.SetMarkerStyle(20)
     #hist_data.SetTitle(self.title)
 
@@ -447,7 +460,10 @@ class Plotter(PlottingTools):
       #f_signal = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+signal_file.filename, 'READ')
       f_signal = ROOT.TFile.Open(signal_file.filename, 'READ')
       hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel, do_log, do_shape)
-      hist_signal = PlottingTools.createHisto(self, f_signal, 'Events', self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='BToMuMuPi_isMatched==1' if selection=='' else 'BToMuMuPi_isMatched==1 &&'+selection)
+      #weight = 'weight_hlt'
+      weight=-99
+      #hist_signal = PlottingTools.createHisto(self, f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='BToMuMuPi_isMatched==1' if selection=='' else 'BToMuMuPi_isMatched==1 &&'+selection)
+      hist_signal = PlottingTools.createHisto(self, f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection, weight=weight)
       hist_signal.Sumw2()
       if do_shape: 
         int_signal = hist_signal.Integral()
@@ -459,19 +475,20 @@ class Plotter(PlottingTools):
       signal_hists.append(hist_signal)
       #hist_signal.Draw('same')
 
-    hist_data.SetTitle('')
-    hist_data.GetXaxis().SetTitle(quantity.title)
-    hist_data.GetXaxis().SetLabelSize(0.033)
-    hist_data.GetXaxis().SetTitleSize(0.042)
-    hist_data.GetXaxis().SetTitleOffset(1.1)
-    hist_data.GetYaxis().SetTitle('Entries' if not do_shape else 'Normalised to unity')
-    hist_data.GetYaxis().SetLabelSize(0.033)
-    hist_data.GetYaxis().SetTitleSize(0.042)
-    hist_data.GetYaxis().SetTitleOffset(1.3)
-    ymax = max(hist_data.GetMaximum(), signal_hists[0].GetMaximum(), signal_hists[1].GetMaximum(), signal_hists[2].GetMaximum())
-    hist_data.GetYaxis().SetRangeUser(1e-9, ymax+0.15*ymax)
+    hist_data_tot.SetTitle('')
+    hist_data_tot.GetXaxis().SetTitle(quantity.title)
+    hist_data_tot.GetXaxis().SetLabelSize(0.033)
+    hist_data_tot.GetXaxis().SetTitleSize(0.042)
+    hist_data_tot.GetXaxis().SetTitleOffset(1.1)
+    hist_data_tot.GetYaxis().SetTitle('Entries' if not do_shape else 'Normalised to unity')
+    hist_data_tot.GetYaxis().SetLabelSize(0.033)
+    hist_data_tot.GetYaxis().SetTitleSize(0.042)
+    hist_data_tot.GetYaxis().SetTitleOffset(1.3)
+    #ymax = max(hist_data_tot.GetMaximum(), signal_hists[0].GetMaximum(), signal_hists[1].GetMaximum(), signal_hists[2].GetMaximum())
+    ymax = max(hist_data_tot.GetMaximum(), signal_hists[0].GetMaximum())
+    hist_data_tot.GetYaxis().SetRangeUser(1e-9, ymax+0.15*ymax)
 
-    hist_data.Draw('histo')
+    hist_data_tot.Draw('histo')
     for hist_sig in signal_hists:
       hist_sig.Draw('histo same')
 
@@ -890,6 +907,118 @@ class Plotter(PlottingTools):
       canv.SaveAs('{}/event_{}.png'.format(outputdir, ientry))
 
 
+  def plotTriggerMatchingDiagram(self, filename, treename, outdirlabel):
+    f = ROOT.TFile.Open(filename, 'READ')
+    tree = PlottingTools.getTree(self, f, treename)
+
+    outputdir = PlottingTools.getOutDir(self, './myPlots/trigger_matching_checks', outdirlabel)
+
+    for ientry, entry in enumerate(tree):
+      if ientry > 100: continue
+      # plot the unmatched muon
+      pt_box_reco = []
+      #deltaR_limits = []
+      canv = PlottingTools.createTCanvas(self, 'canv_{}'.format(ientry))
+      graph_reco = ROOT.TGraph() 
+      flag_reco = False
+      #if entry.nBToMuMuPi < 1: continue
+      for ipart in range(0, entry.nMuon):
+        #print 'reco pt {} eta {} phi {}'.format(entry.Muon_pt[entry.BToMuMuPi_sel_mu_idx[ipart]], entry.Muon_eta[entry.BToMuMuPi_sel_mu_idx[ipart]], entry.Muon_phi[entry.BToMuMuPi_sel_mu_idx[ipart]])
+        #point = graph_reco.GetN()
+        if entry.Muon_isTriggering[ipart] != 1 and entry.Muon_isDSAMuon[ipart] != 1:
+          flag_reco = True
+          point = graph_reco.GetN()
+          graph_reco.SetPoint(point, entry.Muon_eta[ipart], entry.Muon_phi[ipart])
+          pt_info = ROOT.TLatex(entry.Muon_eta[ipart]+0.05, entry.Muon_phi[ipart]+0.15, '{}'.format(round(entry.Muon_pt[ipart], 3)))
+          #deltaR_circle = ROOT.TEllipse(entry.Muon_eta[entry.BToMuMuPi_sel_mu_idx[ipart]], entry.Muon_phi[entry.BToMuMuPi_sel_mu_idx[ipart]], 0.3, 0.3)
+          pt_box_reco.append(pt_info)
+          #deltaR_limits.append(deltaR_circle)
+      if not flag_reco:
+        graph_reco.SetPoint(0, 0, 0)
+        
+      # plot the matched muon
+      pt_box_matched = []
+      graph_matched = ROOT.TGraph() 
+      flag_matched = False
+      for ipart in range(0, entry.nMuon):
+        if entry.Muon_isTriggering[ipart] == 1 and entry.Muon_isDSAMuon[ipart] != 1:
+          flag_matched = True
+          point = graph_matched.GetN()
+          graph_matched.SetPoint(point, entry.Muon_eta[ipart], entry.Muon_phi[ipart])
+          pt_info = ROOT.TLatex(entry.Muon_eta[ipart]+0.05, entry.Muon_phi[ipart]+0.15, '{}'.format(round(entry.Muon_pt[ipart], 3)))
+          pt_box_matched.append(pt_info)
+
+      # plot the trigger objects
+      pt_box_gen = []
+      flag_gen = False
+      graph_trgobj = ROOT.TGraph() 
+      for itrg in range(0, entry.nTrigObj):
+        if entry.TrigObj_filterBits[itrg] != 1: continue
+        flag_gen = True
+        point = graph_trgobj.GetN()
+        graph_trgobj.SetPoint(point, entry.TrigObj_eta[itrg], entry.TrigObj_phi[itrg])
+        pt_info = ROOT.TLatex(entry.TrigObj_eta[itrg]-0.05, entry.TrigObj_phi[itrg]-0.25, '{}'.format(round(entry.TrigObj_pt[itrg], 3)))
+        pt_box_gen.append(pt_info)
+
+      #if not flag_reco or not flag_gen: continue
+      #if not flag_reco: continue
+      graph_reco.Draw('AP')  
+      if flag_matched: graph_matched.Draw('P same')  
+      if flag_gen: graph_trgobj.Draw('P same')  
+
+      for pt_info in pt_box_reco:
+        pt_info.Draw()
+        pt_info.SetTextSize(0.02)
+        pt_info.SetTextFont(62)
+        pt_info.SetTextColor(ROOT.kBlue+2)
+        pt_info.SetTextAlign(21)
+
+      for pt_info in pt_box_matched:
+        pt_info.Draw()
+        pt_info.SetTextSize(0.02)
+        pt_info.SetTextFont(62)
+        pt_info.SetTextColor(ROOT.kOrange+2)
+        pt_info.SetTextAlign(21)
+
+      for pt_info in pt_box_gen:
+        pt_info.Draw()
+        pt_info.SetTextSize(0.02)
+        pt_info.SetTextFont(62)
+        pt_info.SetTextColor(ROOT.kGreen+2)
+        pt_info.SetTextAlign(21)
+
+      #for deltaR_circle in deltaR_limits:
+      #  #deltaR_circle.Draw()
+      #  deltaR_circle.SetLineColor(2)
+      #  deltaR_circle.SetFillColorAlpha(0, 0)
+
+      graph_reco.SetMarkerStyle(41)
+      graph_reco.SetMarkerSize(4)
+      graph_reco.SetMarkerColor(ROOT.kBlue+2)
+
+      graph_matched.SetMarkerStyle(41)
+      graph_matched.SetMarkerSize(4)
+      graph_matched.SetMarkerColor(ROOT.kOrange+2)
+
+      graph_trgobj.SetMarkerStyle(43)
+      graph_trgobj.SetMarkerSize(4)
+      graph_trgobj.SetMarkerColor(ROOT.kGreen+2)
+
+      graph_reco.SetTitle('Event {}'.format(ientry))
+      graph_reco.GetXaxis().SetTitle('#eta')
+      graph_reco.GetXaxis().SetLabelSize(0.037)
+      graph_reco.GetXaxis().SetTitleSize(0.042)
+      graph_reco.GetXaxis().SetTitleOffset(1.1)
+      #graph_reco.GetXaxis().SetRangeUser(-5, 5)
+      graph_reco.GetXaxis().SetLimits(-3.1,3.1)
+      graph_reco.GetYaxis().SetTitle('#phi')
+      graph_reco.GetYaxis().SetLabelSize(0.037)
+      graph_reco.GetYaxis().SetTitleSize(0.042)
+      graph_reco.GetYaxis().SetTitleOffset(1.1)
+      graph_reco.GetYaxis().SetRangeUser(-3.2, 3.2)
+
+      canv.SaveAs('{}/event_{}.png'.format(outputdir, ientry))
+
 
 
 if __name__ == '__main__':
@@ -901,6 +1030,7 @@ if __name__ == '__main__':
   compareTwoDistributions = False
   plotYields = False
   plot_matchingDiagram = False
+  plot_triggerMatchingDiagram = False
 
   plot_log = False
   plot_categories = False
@@ -926,18 +1056,32 @@ if __name__ == '__main__':
     #plotter.plotMatchingDiagram(filename=filename, treename='Events', outdirlabel='displaced_dsamuon_0p5', particle='muon')
     plotter.plotMatchingDiagram(filename=filename, treename='Events', outdirlabel='displaced_pion_0p15_0p5', particle='pion')
 
+
+  if plot_triggerMatchingDiagram:
+    plotter = Plotter()
+    #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/test/bparknano.root'
+    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_allevts_trgmumatchingchecks_false.root'
+    plotter.plotTriggerMatchingDiagram(filename=filename, treename='Events', outdirlabel='mc_matchcond_false')
+
+
   if doSignalBackgroundComparison:
-    outdirlabel = 'loosepreselection_stdtrgmu_v1'
-    for quantity in quantities_to_plot_selection:
-      plotter = Plotter(quantity=quantity, data_file=data_samples_loose[0], signal_files=signal_samples_loose)
-      plotter.plotSignalBackgroundComparison(outdirlabel=outdirlabel, do_shape=True, do_log=False)
+    #outdirlabel = 'loosepreselection_stdtrgmu_v1'
+    #for quantity in quantities_to_plot_selection:
+    #  plotter = Plotter(quantity=quantity, data_files=data_samples_loose, signal_files=signal_samples_loose)
+    #  plotter.plotSignalBackgroundComparison(outdirlabel=outdirlabel, do_shape=True, do_log=False)
+    #dirlabel = 'test_JPsiToMuMu'
+    dirlabel = 'dataV06_tag_and_probe_v2_A1_2_sf'
+    for quantity in quantities_tag_and_probe:
+      plotter = Plotter(quantity=quantity, data_files=data_samples_tag_and_probe, signal_files=signal_samples_tag_and_probe)
+      plotter.plotSignalBackgroundComparison(outdirlabel=dirlabel, branchname='flat', treename='tree', do_shape=True, do_log=False)
+
 
   #white_list_20to300 = ['QCD_pt20to30 (V04)', 'QCD_pt30to50 (V04)', 'QCD_pt50to80 (V04)', 'QCD_pt80to120 (V04)', 'QCD_pt80to120_ext (V04)', 'QCD_pt120to170 (V04)', 'QCD_pt120to170_ext (V04)', 'QCD_pt170to300 (V04)']
   white_list_20to300 = ['QCD_pt20to30 (V04)', 'QCD_pt30to50 (V04)', 'QCD_pt50to80 (V04)', 'QCD_pt80to120 (V04)', 'QCD_pt120to170 (V04)', 'QCD_pt170to300 (V04)']
   white_list_20to30 = ['QCD_pt20to30 (V02)']
 
   for quantity in quantities_to_plot_small:
-    small_plotter = Plotter(quantity=quantity, data_file=data_samples[0], qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_20to300)
+    small_plotter = Plotter(quantity=quantity, data_files=data_samples, qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_20to300)
     #small_plotter.plotDataMCComparison(selection='hnl_charge!=0 && sv_lxysig>20', title='Control Region', outdirlabel='testing', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=True, do_log=False)
 
   if doDataMCComparison:
@@ -966,10 +1110,10 @@ if __name__ == '__main__':
 
     if plot_SR:
       #dirlabel = 'dataV05_QCDV06_29Jun21'
-      dirlabel = 'test'
+      dirlabel = 'dataV06_tag_and_probe_v2_A1_nosf'
       for quantity in quantities_to_plot_small:
       #for quantity in quantities_muonId_study_displacedmuon_small:
-        plotter = Plotter(quantity=quantity, data_file=data_samples[0], qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
+        plotter = Plotter(quantity=quantity, data_files=data_samples, qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
 
         # signal region
         # inclusive
@@ -1012,8 +1156,9 @@ if __name__ == '__main__':
     if plot_CR:
       #dirlabel = 'dataV04_QCDV05_v1'
       dirlabel = 'test'
+      #dirlabel = 'dataV06_tag_and_probe_v2_A1_sf2'
       for quantity in quantities_to_plot_small:
-        plotter = Plotter(quantity=quantity, data_file=data_samples[0], qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
+        plotter = Plotter(quantity=quantity, data_files=data_samples, qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
         # control region
         # inclusive
         plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0', title='Control Region, inclusive', outdirlabel=dirlabel+'/CR/incl', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
