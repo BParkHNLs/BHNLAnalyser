@@ -36,6 +36,23 @@ class Plotter(PlottingTools):
     return label1[0:label1.find('to')] + label2[label2.find('to'):len(label2)]
 
 
+  def getDataLabel(self, label):
+    idx = 0
+    data_label = ''
+    while idx < len(label):
+      period = label[label.find('Parking', idx)+10:label.find('Parking', idx)+11]
+      run = label[label.find('Run2018', idx)+7:label.find('Run2018', idx)+8]
+      dataset = run+period
+      if idx == 0: data_label = dataset # or idx>len(label)-20:
+      else: data_label += '+{}'.format(dataset)
+      idx = idx + 21
+    data_label = data_label.replace('A1+A2+A3+A4+A5+A6', 'A*')
+    data_label = data_label.replace('B1+B2+B3+B4+B5+B6', 'B*')
+    data_label = data_label.replace('C1+C2+C3+C4+C5', 'C*')
+    data_label = data_label.replace('D1+D2+D3+D4+D5', 'D*')
+    return data_label
+
+
   def getMaxRangeY(self, hist1, hist2, do_log=False, use_sig=False):
     margin = 0.15 if do_log==False else 0.5
     if use_sig: 
@@ -80,6 +97,7 @@ class Plotter(PlottingTools):
     data_file = data_samples[0]
     qcd_files = qcd_samples 
 
+    filename_data = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/F1/ParkingBPH1_Run2018A/merged/flat_bparknano.root'
     filename_data = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/F1/ParkingBPH1_Run2018A/merged/flat_bparknano.root'
     filename_mc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V02/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano.root'
     f_data = ROOT.TFile.Open(filename_data, 'READ')
@@ -175,8 +193,9 @@ class Plotter(PlottingTools):
       error_overflow_data_tot = 0.
 
       hist_data_stack = ROOT.THStack('hist_data_stack', '')
+      data_label = ''
 
-      for data_file in self.data_files:
+      for idata, data_file in enumerate(self.data_files):
         f_data = PlottingTools.getRootFile(self, data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
         hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
         hist_data = PlottingTools.createHisto(self, f_data, treename, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
@@ -192,6 +211,8 @@ class Plotter(PlottingTools):
           hist_data.SetBinError(hist_data.GetNbinsX()+1, 0)
 
         hist_data_tot.Add(hist_data)
+        if idata == 0: data_label = data_file.label[:20]
+        else: data_label += '_{}'.format(data_file.label[:20])
 
         if do_shape and hist_data.Integral() != 0: 
           hist_data.Scale(1./hist_data.Integral())
@@ -199,7 +220,7 @@ class Plotter(PlottingTools):
 
       if do_shape and int_data_tot != 0.: hist_data_tot.Scale(1./int_data_tot)
 
-      legend.AddEntry(hist_data_tot, 'data - {}'.format('g'))#.format(data_file.label))
+      legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label)))
 
       ## set the style
       hist_data_tot.SetLineWidth(0)
@@ -477,7 +498,7 @@ class Plotter(PlottingTools):
 
     if int_data_tot != 0: hist_data_tot.Scale(1./int_data_tot)
 
-    legend.AddEntry(hist_data_tot, 'data - {}'.format("/"))#.format(data_file.label))
+    legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label)))
 
     ## set the style
     #hist_data.SetLineWidth(0)
