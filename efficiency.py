@@ -40,7 +40,7 @@ class EfficiencyAnalyser(PlottingTools):
 
     for entry in tree:
       # only consider events with at least one candidate
-      if entry.nBToMuMuPi == 0: continue
+      #if entry.nBToMuMuPi == 0: continue
         
       #print '\n'
       # retrieve candidate matching information
@@ -50,9 +50,13 @@ class EfficiencyAnalyser(PlottingTools):
       cand_ismatched = 0
       matched_idx = -1
       for icand in range(0, entry.nBToMuMuPi):
+        #if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: trgmu_ismatched = 1
         if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1: trgmu_ismatched = 1
+        #if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: mu_ismatched = 1
         if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1: mu_ismatched = 1
+        #if entry.BToMuMuPi_pi_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: pi_ismatched = 1
         if entry.BToMuMuPi_pi_isMatched[icand] == 1: pi_ismatched = 1
+        #if entry.BToMuMuPi_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: 
         if entry.BToMuMuPi_isMatched[icand] == 1: 
           matched_idx = icand
           cand_ismatched = 1
@@ -71,15 +75,15 @@ class EfficiencyAnalyser(PlottingTools):
       
       # search for hnl and its mother
       for igen in range(0, entry.nGenPart):
-        if entry.GenPart_pdgId[igen] == 9900015: 
+        if abs(entry.GenPart_pdgId[igen]) == 9900015: 
           hnl_idx = igen 
           mother_idx = entry.GenPart_genPartIdxMother[hnl_idx]
 
       # search for trigger muon and hnl daughters
       for igen in range(0, entry.nGenPart):
         if abs(entry.GenPart_pdgId[igen]) == 13 and entry.GenPart_genPartIdxMother[igen] == mother_idx: trgmu_idx = igen
-        if abs(entry.GenPart_pdgId[igen]) == 13 and entry.GenPart_pdgId[entry.GenPart_genPartIdxMother[igen]] == 9900015: mu_idx = igen
-        if abs(entry.GenPart_pdgId[igen]) == 211 and entry.GenPart_pdgId[entry.GenPart_genPartIdxMother[igen]] == 9900015: pi_idx = igen
+        if abs(entry.GenPart_pdgId[igen]) == 13 and entry.GenPart_genPartIdxMother[igen] == hnl_idx: mu_idx = igen
+        if abs(entry.GenPart_pdgId[igen]) == 211 and entry.GenPart_genPartIdxMother[igen] == hnl_idx: pi_idx = igen
 
       # remove e-channel
       if mu_idx == -1: continue
@@ -89,7 +93,7 @@ class EfficiencyAnalyser(PlottingTools):
           # fetch n_deno and n_num with acceptance cuts
           if entry.GenPart_pt[mu_idx] > 1.5 and abs(entry.GenPart_eta[mu_idx]) < 2.5 \
              and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
-             and entry.GenPart_pt[trgmu_idx] > 7.5:
+             and entry.GenPart_pt[trgmu_idx] > 7.:
           #if entry.GenPart_pt[mu_idx] > 3.5 and abs(entry.GenPart_eta[mu_idx]) < 2.5 \
           #   and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
           #   and entry.GenPart_pt[trgmu_idx] > 9.5:
@@ -322,6 +326,11 @@ class EfficiencyAnalyser(PlottingTools):
       graph.GetYaxis().SetLabelSize(0.037)
       graph.GetYaxis().SetTitleSize(0.042)
       graph.GetYaxis().SetTitleOffset(1.1)
+      graph.GetYaxis().SetRangeUser(0, 1)
+
+      #leg = PlottingTools.getRootTLegend(self, xmin=0.5, ymin=0.3, xmax=0.7, ymax=0.5, size=0.035)
+      #leg.AddEntry(graph, 'slimmed muons')
+      #leg.Draw()
 
       label = ROOT.TPaveText(0.5,0.75,0.75,0.8,"brNDC")
       text = 'inclusive pT' if binning == 'displacement' else 'inclusive displacement'
@@ -400,11 +409,21 @@ if __name__ == '__main__':
   #plotHistFromTree(do_shape=True)
 
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection_muononly_alltrgmu.root'
-  filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection_muononly_stdtrgmu.root'
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection_muononly_stdtrgmu.root'
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/Chunk0_n500/bparknano_looseselection_muononly_stdtrgmu_nj1.root'
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/Chunk0_n500/merged/bparknano_looseselection_muononly_stdtrgmu.root'
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_selected_muononly_stdtrgmu.root'
   #filename1 = '/scratch/anlyon/bparknano_looseselection_muononly_alltrgmu.root'
+
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_slimmedmuons_dr0p25.root'
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_updatedgenmatching_mu_0p1_0p25_pi_0p15_0p5_massreldiff_0p1.root'
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_standardgenmatching.root'
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/Chunk0_n500/bparknano_loosepreselection_updatedmatching_dsa_nj1.root'
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_loosepreselection_updatedmatching_dsa.root'
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/big_merged_bparknano_v4.root'
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/big_merged_bparknano_v4.root'
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_updatedgenmatching_v2.root'
+  filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looselection_updatedmatching_fullgen.root'
   #displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 100)]
 
   displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
@@ -419,7 +438,7 @@ if __name__ == '__main__':
 
   #outdirlabel = 'signalV25_looseselection_alltrgmu_tightacceptancecuts_mupt3p5_trgmupt_9p5'
   #outdirlabel = 'signalV25_looseselection_stdtrgmu_styled'
-  outdirlabel = 'testing'
+  outdirlabel = 'signalV25_looseselection_updatedmatching_trgmupt7_fullgen'
 
   #title = 'Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons'
   title = ''
