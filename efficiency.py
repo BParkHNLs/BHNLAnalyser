@@ -47,8 +47,8 @@ class EfficiencyAnalyser(PlottingTools):
       trgmu_ismatched = 0
       mu_ismatched = 0
       pi_ismatched = 0
-      cand_ismatched = 0
-      matched_idx = -1
+      mumupicand_ismatched = 0
+      mupicand_ismatched = 0
       for icand in range(0, entry.nBToMuMuPi):
         #if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: trgmu_ismatched = 1
         if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1: trgmu_ismatched = 1
@@ -58,11 +58,13 @@ class EfficiencyAnalyser(PlottingTools):
         if entry.BToMuMuPi_pi_isMatched[icand] == 1: pi_ismatched = 1
         #if entry.BToMuMuPi_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: 
         if entry.BToMuMuPi_isMatched[icand] == 1: 
-          matched_idx = icand
-          cand_ismatched = 1
+          mumupi_cand_ismatched = 1
+        if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1 and entry.BToMuMuPi_pi_isMatched[icand] == 1 and entry.BToMuMuPi_mupi_mass_reco_gen_reldiff[icand] < 0.5: 
+          mupi_ismatched = 1
 
       matching_cond = {}
-      matching_cond['candidate'] = cand_ismatched==1 
+      matching_cond['mumupi_candidate'] = mumupicand_ismatched==1 
+      matching_cond['mupi_candidate'] = mupicand_ismatched==1
       matching_cond['trigger_muon'] = trgmu_ismatched==1 
       matching_cond['muon'] = mu_ismatched==1 
       matching_cond['pion'] = pi_ismatched==1 
@@ -78,6 +80,7 @@ class EfficiencyAnalyser(PlottingTools):
         if abs(entry.GenPart_pdgId[igen]) == 9900015: 
           hnl_idx = igen 
           mother_idx = entry.GenPart_genPartIdxMother[hnl_idx]
+          break
 
       # search for trigger muon and hnl daughters
       for igen in range(0, entry.nGenPart):
@@ -99,7 +102,8 @@ class EfficiencyAnalyser(PlottingTools):
           #   and entry.GenPart_pt[trgmu_idx] > 9.5:
           #if entry.GenPart_pt[mu_idx] > 0:
                displacement = math.sqrt(pow(entry.GenPart_vx[mu_idx] - entry.GenPart_vx[trgmu_idx], 2) + pow(entry.GenPart_vy[mu_idx] - entry.GenPart_vy[trgmu_idx], 2))
-               if matching == 'candidate': obj_pt = entry.GenPart_pt[hnl_idx]
+               if matching == 'mumupi_candidate': obj_pt = entry.GenPart_pt[mother_idx]
+               elif matching == 'mupi_candidate': obj_pt = entry.GenPart_pt[hnl_idx]
                elif matching == 'trigger_muon': obj_pt = entry.GenPart_pt[trgmu_idx]
                elif matching == 'muon': obj_pt = entry.GenPart_pt[mu_idx]
                elif matching == 'pion': obj_pt = entry.GenPart_pt[pi_idx]
@@ -121,7 +125,8 @@ class EfficiencyAnalyser(PlottingTools):
                and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
                and entry.GenPart_pt[trgmu_idx] > float(cut):
                  n_deno[icut] = n_deno[icut] + 1
-                 if matching == 'candidate' and cand_ismatched == 1: n_num[icut] = n_num[icut] + 1
+                 if matching == 'mumupi_candidate' and mumupicand_ismatched == 1: n_num[icut] = n_num[icut] + 1
+                 elif matching == 'mupi_candidate' and mupicand_ismatched == 1: n_num[icut] = n_num[icut] + 1
                  elif matching == 'trigger_muon' and trgmu_ismatched == 1: n_num[icut] = n_num[icut] + 1
                  elif matching == 'muon' and mu_ismatched == 1: n_num[icut] = n_num[icut] + 1
                  elif matching == 'pion' and pi_ismatched == 1: n_num[icut] = n_num[icut] + 1
@@ -165,8 +170,8 @@ class EfficiencyAnalyser(PlottingTools):
     efficiency, error = self.getEfficiency(displacement_bins=self.displacement_bins, pt_bins=self.pt_bins)
 
     for imatch, matching in enumerate(self.matchings):
-      if matching not in ['candidate', 'trigger_muon', 'muon', 'pion']:
-        raise RuntimeError("Unknown matching strategy. Please choose among ['candidate', 'trigger_muon', 'muon', 'pion']")
+      if matching not in ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']:
+        raise RuntimeError("Unknown matching strategy. Please choose among ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']")
 
       canv = ROOT.TCanvas('2d_canv_{}_{}'.format(matching, self.outdirlabel), '2d_canv_{}'.format(matching, self.outdirlabel), 900, 800)
       #ROOT.SetOwnership(canv, False)
@@ -239,7 +244,8 @@ class EfficiencyAnalyser(PlottingTools):
       hist.GetXaxis().SetLabelSize(0.037)
       hist.GetXaxis().SetTitleSize(0.042)
       hist.GetXaxis().SetTitleOffset(1.1)
-      if matching == 'candidate': ylabel = '#mu#pi pT [GeV]'
+      if matching == 'mumupi_candidate': ylabel = '#mu#mu#pi pT [GeV]'
+      elif matching == 'mupi_candidate': ylabel = '#mu#pi pT [GeV]'
       elif matching == 'trigger_muon': ylabel = 'trigger #mu pT [GeV]'
       elif matching == 'muon': ylabel = '#mu pT [GeV]'
       elif matching == 'pion': ylabel = '#pi pT [GeV]'
@@ -286,8 +292,8 @@ class EfficiencyAnalyser(PlottingTools):
     efficiency, error = self.getEfficiency(displacement_bins=displacement_bins, pt_bins=pt_bins)
 
     for imatch, matching in enumerate(self.matchings):
-      if matching not in ['candidate', 'trigger_muon', 'muon', 'pion']:
-        raise RuntimeError("Unknown matching strategy. Please choose among ['candidate', 'trigger_muon', 'muon', 'pion']")
+      if matching not in ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']:
+        raise RuntimeError("Unknown matching strategy. Please choose among ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']")
 
       canv = ROOT.TCanvas('canv_{}_{}_{}'.format(matching, binning, self.outdirlabel), 'canv_{}_{}_{}'.format(matching, binning, self.outdirlabel), 900, 800)
       #ROOT.SetOwnership(canv, False)
@@ -314,7 +320,8 @@ class EfficiencyAnalyser(PlottingTools):
       graph.SetMarkerStyle(20)
       graph.SetMarkerColor(ROOT.kBlue+2)
       if binning == 'displacement': xlabel = 'l_{xy}(trgmu, mu) [cm]'
-      elif binning == 'pt' and matching == 'candidate': xlabel = '#mu#pi pT [GeV]'
+      elif binning == 'pt' and matching == 'mumupi_candidate': xlabel = '#mu#mu#pi pT [GeV]'
+      elif binning == 'pt' and matching == 'mupi_candidate': xlabel = '#mu#pi pT [GeV]'
       elif binning == 'pt' and matching == 'trigger_muon': xlabel = 'trigger #mu pT [GeV]'
       elif binning == 'pt' and matching == 'muon': xlabel = '#mu pT [GeV]'
       elif binning == 'pt' and matching == 'pion': xlabel = '#pi pT [GeV]'
@@ -351,8 +358,8 @@ class EfficiencyAnalyser(PlottingTools):
     efficiency, error = self.getEfficiency(displacement_bins=None, pt_bins=None)
 
     for imatch, matching in enumerate(self.matchings):
-      if matching not in ['candidate', 'trigger_muon', 'muon', 'pion']:
-        raise RuntimeError("Unknown matching strategy. Please choose among ['candidate', 'trigger_muon', 'muon', 'pion']")
+      if matching not in ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']:
+        raise RuntimeError("Unknown matching strategy. Please choose among ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']")
 
       canv = ROOT.TCanvas('canv_{}_{}'.format(matching, self.outdirlabel), 'canv_{}'.format(matching, self.outdirlabel), 900, 800)
       #ROOT.SetOwnership(canv, False)
@@ -443,12 +450,13 @@ if __name__ == '__main__':
   #title = 'Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons'
   title = ''
 
-  matchings = ['candidate', 'trigger_muon', 'muon', 'pion']
+  #matchings = ['mumupicandidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']
+  matchings = ['mupi_candidate']
   #matchings = ['candidate', 'trigger_muon']
   #matchings = ['trigger_muon']
 
-  EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot2DEfficiency()
-  #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot1DEfficiency(binning='displacement')
+  #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot2DEfficiency()
+  EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot1DEfficiency(binning='displacement')
   #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot1DEfficiency(binning='pt')
 
   #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title='Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel).plot1DEfficiency(binning='pt')
