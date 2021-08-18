@@ -7,8 +7,18 @@ from quantity import Quantity
 
 
 class PlottingTools(object):
+  def getRootFile(self, filename, with_ext=False):
+    if not with_ext:
+      f = ROOT.TFile.Open(filename, 'READ')
+    else:
+      f = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+filename, 'READ')
+    return f
+
+
   def getTree(self, rootfile, tree_name):
     tree = rootfile.Get(tree_name)
+    if not tree:
+      raise RuntimeError('Tree of name "{}" was not found in {}'.format(tree_name, rootfile.GetName()))
     return tree
 
 
@@ -18,10 +28,11 @@ class PlottingTools(object):
     hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
 
     if selection == '' and weight == -99: selection_string = selection
-    else:
-      selection_string = '({})'.format(selection)
-      if weight != -99:
-        selection_string += '*({wght})'.format(wght=weight) # to be adapted! 
+    elif selection != '' and weight == -99: selection_string = '({})'.format(selection)
+    elif selection == ''  and weight != -99: selection_string = '({})'.format(weight)
+    else: selection_string = '({sel}) * ({wght})'.format(sel=selection, wght=weight)
+
+    #print selection_string
 
     qte = quantity.name_flat if branchname != 'nano' else quantity.name_nano
     tree.Project(hist_name, qte, selection_string)
@@ -30,19 +41,20 @@ class PlottingTools(object):
     return hist
 
 
-  def createWeightedHistoQCDMC(self, qcd_files, white_list, quantity, selection):
+  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', selection=''):
     hist_mc_tot = ROOT.TH1D('hist_mc_tot', 'hist_mc_tot', quantity.nbins, quantity.bin_min, quantity.bin_max)
     hist_mc_tot.Sumw2()
 
-    for ifile, qcd_file in enumerate(self.qcd_files):
-      if qcd_file.label not in self.white_list: continue
+    for ifile, qcd_file in enumerate(qcd_files):
+      if qcd_file.label not in white_list: continue
 
-      #f_mc = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+qcd_file.filename, 'READ')
-      f_mc = ROOT.TFile.Open(qcd_file.filename, 'READ')
+      f_mc = self.getRootFile(qcd_file.filename)
       
       #weight_mc = self.computeQCDMCWeight(self.getTree(f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_mc = self.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
-      hist_mc = self.createHisto(f_mc, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight_mc) 
+      weight = '({}) * (weight_hlt)'.format(weight_mc)
+      #weight = '({})'.format(weight_mc)
+      hist_mc = self.createHisto(f_mc, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight) 
       hist_mc.Sumw2()
     
       hist_mc_tot.Add(hist_mc)
@@ -79,8 +91,8 @@ class PlottingTools(object):
     return hist_ratio
 
 
-  def getTCanvas(self, name, dimx, dimy):
-    canv = ROOT.TCanvas(name, name, 1200, 1000)
+  def createTCanvas(self, name, dimx=1200, dimy=1000):
+    canv = ROOT.TCanvas(name, name, dimx, dimy)
     ROOT.SetOwnership(canv, False)
     return canv
 
@@ -93,6 +105,17 @@ class PlottingTools(object):
     legend.SetBorderSize(0)
     return legend
     
+
+  def getTextBox(self, style, xmin, ymin, xmax, ymax, text, colour):
+    box = ROOT.TPaveText(xmin, ymin, xmax, ymax, style)
+    box.AddText(text)
+    box.SetBorderSize(0)
+    box.SetFillColor(ROOT.kWhite)
+    box.SetTextColor(colour)
+    box.SetTextSize(0.11)
+    box.SetTextFont(42)
+    box.SetTextAlign(11)
+    return box
   
   def getRootXAxis(self, hist, title='', label_size=0.037, title_size=0.042, offset=1.1, xmin=-99, xmax=-99): 
     ROOT.SetOwnership(hist, True)
