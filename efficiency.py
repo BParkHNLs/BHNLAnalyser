@@ -10,9 +10,11 @@ from common import PlottingTools
 
 
 class EfficiencyAnalyser(PlottingTools):
-  def __init__(self, filename, treename='Events', matchings=None, cuts=None, displacement_bins=None, pt_bins=None, title='', outdirlabel='default'):
+  def __init__(self, filename, sample_type='flat', process_type='mumupi', add_dsa='yes', matchings=None, cuts=None, displacement_bins=None, pt_bins=None, title='', outdirlabel='default'):
     self.filename = filename
-    self.treename = treename
+    self.sample_type = sample_type
+    self.process_type = process_type
+    self.add_dsa = add_dsa
     self.matchings = matchings
     self.displacement_bins = displacement_bins
     self.pt_bins = pt_bins
@@ -22,9 +24,31 @@ class EfficiencyAnalyser(PlottingTools):
     self.outdirlabel = outdirlabel
     self.outputdir = PlottingTools.getOutDir(self, './myPlots/efficiency', self.outdirlabel)
 
+    self.treename = ''
+    if self.sample_type == 'nano': self.treename = 'Events'
+    else:
+      if self.process_type == 'mumupi': self.treename = 'signal_tree'
+      else: self.treename = 'hnl_tree'
 
-  def getEfficiency(self, displacement_bins=None, pt_bins=None):
-    f = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+self.filename, 'READ')
+    if self.sample_type not in ['flat', 'nano']:
+      raise RuntimeError("Unknown sample type. Please choose among ['flat', 'nano']")
+
+    if self.process_type not in ['mumupi', 'mupi']:
+      raise RuntimeError("Unknown process type. Please choose among ['mumupi', 'mupi']")
+
+    if self.add_dsa not in ['yes', 'no']:
+      raise RuntimeError("Unknown add-dsa decision. Please choose among ['yes', 'no']")
+
+    for matching in self.matchings:
+      if matching not in ['candidate', 'trigger_muon', 'muon', 'pion']:
+        raise RuntimeError("Unknown matching strategy. Please choose among ['candidate', 'trigger_muon', 'muon', 'pion']")
+
+    if path.exists('{}/numbers.txt'.format(self.outputdir)):
+      os.system('rm {}/numbers.txt'.format(self.outputdir))
+
+
+  def getEfficiencyFromNano(self, displacement_bins=None, pt_bins=None):
+    f = PlottingTools.getRootFile(self, self.filename, with_ext=False) 
     tree = PlottingTools.getTree(self, f, self.treename)
 
     if displacement_bins != None and pt_bins != None:
@@ -47,8 +71,7 @@ class EfficiencyAnalyser(PlottingTools):
       trgmu_ismatched = 0
       mu_ismatched = 0
       pi_ismatched = 0
-      mumupicand_ismatched = 0
-      mupicand_ismatched = 0
+      cand_ismatched = 0
       for icand in range(0, entry.nBToMuMuPi):
         #if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: trgmu_ismatched = 1
         if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1: trgmu_ismatched = 1
@@ -58,13 +81,12 @@ class EfficiencyAnalyser(PlottingTools):
         if entry.BToMuMuPi_pi_isMatched[icand] == 1: pi_ismatched = 1
         #if entry.BToMuMuPi_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: 
         if entry.BToMuMuPi_isMatched[icand] == 1: 
-          mumupi_cand_ismatched = 1
-        if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1 and entry.BToMuMuPi_pi_isMatched[icand] == 1 and entry.BToMuMuPi_mupi_mass_reco_gen_reldiff[icand] < 0.5: 
-          mupi_ismatched = 1
+          cand_ismatched = 1
+        #if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1 and entry.BToMuMuPi_pi_isMatched[icand] == 1 and entry.BToMuMuPi_mupi_mass_reco_gen_reldiff[icand] < 0.5: 
+        #  mupi_ismatched = 1
 
       matching_cond = {}
-      matching_cond['mumupi_candidate'] = mumupicand_ismatched==1 
-      matching_cond['mupi_candidate'] = mupicand_ismatched==1
+      matching_cond['candidate'] = cand_ismatched==1 
       matching_cond['trigger_muon'] = trgmu_ismatched==1 
       matching_cond['muon'] = mu_ismatched==1 
       matching_cond['pion'] = pi_ismatched==1 
@@ -102,7 +124,7 @@ class EfficiencyAnalyser(PlottingTools):
           #   and entry.GenPart_pt[trgmu_idx] > 9.5:
           #if entry.GenPart_pt[mu_idx] > 0:
                displacement = math.sqrt(pow(entry.GenPart_vx[mu_idx] - entry.GenPart_vx[trgmu_idx], 2) + pow(entry.GenPart_vy[mu_idx] - entry.GenPart_vy[trgmu_idx], 2))
-               if matching == 'mumupi_candidate': obj_pt = entry.GenPart_pt[mother_idx]
+               if matching == 'candidate': obj_pt = entry.GenPart_pt[mother_idx]
                elif matching == 'mupi_candidate': obj_pt = entry.GenPart_pt[hnl_idx]
                elif matching == 'trigger_muon': obj_pt = entry.GenPart_pt[trgmu_idx]
                elif matching == 'muon': obj_pt = entry.GenPart_pt[mu_idx]
@@ -125,8 +147,7 @@ class EfficiencyAnalyser(PlottingTools):
                and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
                and entry.GenPart_pt[trgmu_idx] > float(cut):
                  n_deno[icut] = n_deno[icut] + 1
-                 if matching == 'mumupi_candidate' and mumupicand_ismatched == 1: n_num[icut] = n_num[icut] + 1
-                 elif matching == 'mupi_candidate' and mupicand_ismatched == 1: n_num[icut] = n_num[icut] + 1
+                 if matching == 'candidate' and cand_ismatched == 1: n_num[icut] = n_num[icut] + 1
                  elif matching == 'trigger_muon' and trgmu_ismatched == 1: n_num[icut] = n_num[icut] + 1
                  elif matching == 'muon' and mu_ismatched == 1: n_num[icut] = n_num[icut] + 1
                  elif matching == 'pion' and pi_ismatched == 1: n_num[icut] = n_num[icut] + 1
@@ -161,82 +182,127 @@ class EfficiencyAnalyser(PlottingTools):
     return efficiency, error
 
 
+  def getEfficiency(self, displacement_bins=None, pt_bins=None):
+    f = PlottingTools.getRootFile(self, self.filename, with_ext=False) 
+    tree = PlottingTools.getTree(self, f, self.treename)
+
+    n_num = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings)))
+    n_deno = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings)))
+    efficiency = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings)))
+    error = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings)))
+
+    for entry in tree:
+      # retrieve candidate matching information
+      trgmu_ismatched = entry.trgmu_ismatched if self.process_type == 'mumupi' else 0
+      mu_ismatched = entry.mu_ismatched
+      pi_ismatched = entry.pi_ismatched
+      cand_ismatched = entry.ismatched # either mumupi candidate or mupi candidate, depending on the sample (BToMuMuPi vs HNLToMuPi)
+
+      matching_cond = {}
+      if self.add_dsa == 'yes':
+        matching_cond['candidate'] = cand_ismatched==1 
+        matching_cond['trigger_muon'] = trgmu_ismatched==1 
+        matching_cond['muon'] = mu_ismatched==1 
+        matching_cond['pion'] = pi_ismatched==1 
+      else:
+        matching_cond['candidate'] = cand_ismatched==1 and entry.mu_isdsa==0 
+        matching_cond['trigger_muon'] = trgmu_ismatched==1 and entry.mu_isdsa==0
+        matching_cond['muon'] = mu_ismatched==1 and entry.mu_isdsa==0
+        matching_cond['pion'] = pi_ismatched==1 and entry.mu_isdsa==0 
+      
+       #if self.add_dsa == 'no':
+      #for matching in self.matchings:
+      #  #matching_cond[matching] = bool(matching_cond[matching] + (entry.mu_isdsa != 1))
+      #if cand_ismatched==1:
+      #  print 'ismatched {} isnotdsa {} tot {} check {}'.format(cand_ismatched==1, entry.mu_isdsa != 1, matching_cond['candidate'], cand_ismatched==1 and entry.mu_isdsa!=1)
+
+      hnl_idx = -1
+      mother_idx = -1
+      trgmu_idx = -1
+      mu_idx = -1
+      pi_idx = -1
+      
+      for imatch, matching in enumerate(self.matchings):
+        # fetch n_deno and n_num with acceptance cuts
+        if entry.gen_mu_pt > 1. and abs(entry.gen_mu_eta) < 2.5 \
+           and entry.gen_pi_pt > 1. and abs(entry.gen_pi_eta) < 2.5:
+             #and entry.gen_trgmu_pt > 7.:
+             displacement = entry.gen_hnl_lxy
+             if matching == 'candidate': obj_pt = entry.gen_hnl_pt if self.process_type == 'mupi' else entry.gen_b_pt
+             elif matching == 'trigger_muon': obj_pt = entry.gen_trgmu_pt
+             elif matching == 'muon': obj_pt = entry.gen_mu_pt
+             elif matching == 'pion': obj_pt = entry.gen_pi_pt
+
+             for ibin_disp, displacement_bin in enumerate(displacement_bins):
+               for ibin_pt, pt_bin in enumerate(pt_bins):
+                 bin_min_disp, bin_max_disp = displacement_bin
+                 bin_min_pt, bin_max_pt = pt_bin
+
+                 if displacement > bin_min_disp and displacement < bin_max_disp and obj_pt > bin_min_pt and obj_pt < bin_max_pt: 
+                   n_deno[ibin_disp][ibin_pt][imatch] = n_deno[ibin_disp][ibin_pt][imatch] + 1
+                   if matching_cond[matching]: n_num[ibin_disp][ibin_pt][imatch] = n_num[ibin_disp][ibin_pt][imatch] + 1
+                   
+    # compute efficiency
+    f = open('{}/numbers.txt'.format(self.outputdir), 'a')
+    f.write('\n')
+    if displacement_bins != None and pt_bins != None:
+      for imatch, matching in enumerate(self.matchings):
+        for ibin_disp, displacement_bin in enumerate(displacement_bins):
+          for ibin_pt, pt_bin in enumerate(pt_bins):
+            efficiency[ibin_disp][ibin_pt][imatch] = float(n_num[ibin_disp][ibin_pt][imatch]) / float(n_deno[ibin_disp][ibin_pt][imatch]) if float(n_deno[ibin_disp][ibin_pt][imatch]) != 0. else 0.
+            if n_num[ibin_disp][ibin_pt][imatch] == 0: n_num[ibin_disp][ibin_pt][imatch] = 1e-11
+            if float(n_num[ibin_disp][ibin_pt][imatch]) != 0 and float(n_deno[ibin_disp][ibin_pt][imatch]) != 0:
+              error[ibin_disp][ibin_pt][imatch] = efficiency[ibin_disp][ibin_pt][imatch] * ( math.sqrt(float(n_num[ibin_disp][ibin_pt][imatch]))/float(n_num[ibin_disp][ibin_pt][imatch])  + math.sqrt(float(n_deno[ibin_disp][ibin_pt][imatch]))/float(n_deno[ibin_disp][ibin_pt][imatch]) )     
+            else:
+              error[ibin_disp][ibin_pt][imatch] = 0
+            # for aesthetics
+            if efficiency[ibin_disp][ibin_pt][imatch] == 0.: efficiency[ibin_disp][ibin_pt][imatch] = 1e-9
+
+      for imatch, matching in enumerate(self.matchings):
+        for ibin_disp, displacement_bin in enumerate(displacement_bins):
+          for ibin_pt, pt_bin in enumerate(pt_bins):
+            f.write('\n{} {} {} {} {} {}+-{}'.format(matching, displacement_bin, pt_bin, n_deno[ibin_disp][ibin_pt][imatch], n_num[ibin_disp][ibin_pt][imatch], efficiency[ibin_disp][ibin_pt][imatch], error[ibin_disp][ibin_pt][imatch]))
+    else:
+      for icut, cut in enumerate(self.cuts):
+        efficiency[icut] = float(n_num[icut]) / float(n_deno[icut]) if float(n_deno[icut]) != 0. else 0. 
+        error[icut] = efficiency[icut] * ( math.sqrt(n_num[icut])/n_num[icut]  + math.sqrt(n_deno[icut])/n_deno[icut] )     
+      #for icut, cut in enumerate(self.cuts):
+      #  print '{} {} {} {}'.format(cut, n_deno[icut], n_num[icut], efficiency[icut])
+    f.close()
+
+    return efficiency, error
+
+
   def plot2DEfficiency(self):
     gStyle.SetPadRightMargin(0.16)
     gStyle.SetPadLeftMargin(0.16)
     gStyle.SetOptStat(0)
     gStyle.SetPaintTextFormat(".2f")
 
-    efficiency, error = self.getEfficiency(displacement_bins=self.displacement_bins, pt_bins=self.pt_bins)
+    efficiency = -99.
+    error = -99.
+    if self.sample_type == 'flat':
+      efficiency, error = self.getEfficiency(displacement_bins=self.displacement_bins, pt_bins=self.pt_bins)
+    else:
+      efficiency, error = self.getEfficiencyFromNano(displacement_bins=self.displacement_bins, pt_bins=self.pt_bins)
 
     for imatch, matching in enumerate(self.matchings):
-      if matching not in ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']:
-        raise RuntimeError("Unknown matching strategy. Please choose among ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']")
-
-      canv = ROOT.TCanvas('2d_canv_{}_{}'.format(matching, self.outdirlabel), '2d_canv_{}'.format(matching, self.outdirlabel), 900, 800)
-      #ROOT.SetOwnership(canv, False)
-
-      #pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
-      #pad.Draw()
-      #pad.cd()
-
-      error_list = []
+      canv_name = '2d_canv_{}_{}'.format(matching, self.outdirlabel)
+      canv = PlottingTools.createTCanvas(self, canv_name, 900, 800)
 
       bin_min_disp, a = self.displacement_bins[0]
       b ,bin_max_disp = self.displacement_bins[len(self.displacement_bins)-1]
       step_disp = (bin_max_disp-bin_min_disp) / (len(self.displacement_bins)-1)
 
-      errors = []
       hist_name = 'hist_{}_{}'.format(matching, self.outdirlabel)
       hist = ROOT.TH2D(hist_name, hist_name, len(self.displacement_bins), 1, 100, len(self.pt_bins), 1, 100)
       for ibin_disp, displacement_bin in enumerate(self.displacement_bins):
         for ibin_pt, pt_bin in enumerate(self.pt_bins):
           hist.Fill(str(displacement_bin), str(pt_bin), efficiency[ibin_disp][ibin_pt][imatch])
 
-          # print the error
-          #bin_min_disp, bin_max_disp = displacement_bin
-          bin_min_pt, bin_max_pt = pt_bin
-          #x1 = (bin_max_disp + bin_min_disp)/2 - (bin_max_disp - bin_min_disp)*0.25
-          #x1 = (bin_max_disp + bin_min_disp)/2.
-          x1 = ibin_disp/float((len(self.displacement_bins)-1)) - ibin_disp/float((len(self.displacement_bins)-1))*0.05
-          x2 = ibin_disp/float((len(self.displacement_bins)-1)) + ibin_disp/float((len(self.displacement_bins)-1))*0.05
-          y1 = ibin_pt/float((len(self.pt_bins)-1)) - ibin_pt/float((len(self.pt_bins)-1))*0.05
-          y2 = ibin_pt/float((len(self.pt_bins)-1)) + ibin_pt/float((len(self.pt_bins)-1))*0.05
-          #x1 = bin_min_disp + ibin_disp*step_disp
-          #print '{} {} {} {}'.format(ibin_disp/float((len(self.displacement_bins)-1)), ibin_disp/float((len(self.displacement_bins)-1))*0.05, x1, x2)
-          #x2 = (bin_max_disp + bin_min_disp)/2 + (bin_max_disp - bin_min_disp)*0.25
-          #y1 = (bin_max_pt + bin_min_pt)/2 - (bin_max_pt - bin_min_pt)*0.25
-          ##print '{} {} {}'.format(bin_min_pt, bin_max_pt, y1)
-          #y1 = (bin_max_pt + bin_min_pt)/2.
-          #y2 = (bin_max_pt + bin_min_pt)/2 + (bin_max_pt - bin_min_pt)*0.25
-          error_print = ROOT.TPaveText(x1, y1, x2, y2, "brNDC")
-          ##error_print = ROOT.TLatex(x1, y1, '#pm {}'.format(round(float(error[ibin_disp][ibin_pt][imatch], 2)))) 
-          #error_print = ROOT.TLatex(x1, y1, 'X')
-          #errors.append(error_print)
-          #error_print.AddText('#pm {}'.format(round(error[ibin_disp][ibin_pt][imatch], 2)))
-          error_print.AddText('X')
-          error_print.SetFillColorAlpha(0, 0)
-          error_list.append(error_print)
-
-      #gStyle.SetPadRightMargin(0.16)
-      #gStyle.SetPadLeftMargin(0.16)
-
-      #hist.SetBarOffset(0.3)
-
       hist.Draw('colz')
       hist.SetMarkerSize(2)
-      #hist.Draw('text,error' +'same')
       hist.Draw('text' +'same')
-
-      #for error in errors:
-      #  error.Draw('same')
-
-      for error in error_list:
-        #error.Draw('same')
-        error.SetBorderSize(0)
-        error.SetTextSize(0.015)
-        error.SetTextFont(62)
-        error.SetTextAlign(11)
 
       hist.SetTitle(self.title)
       #hist.SetTitleSize(0.8)
@@ -244,8 +310,7 @@ class EfficiencyAnalyser(PlottingTools):
       hist.GetXaxis().SetLabelSize(0.037)
       hist.GetXaxis().SetTitleSize(0.042)
       hist.GetXaxis().SetTitleOffset(1.1)
-      if matching == 'mumupi_candidate': ylabel = '#mu#mu#pi pT [GeV]'
-      elif matching == 'mupi_candidate': ylabel = '#mu#pi pT [GeV]'
+      if matching == 'candidate': ylabel = '#mu#pi pT [GeV]' if self.process_type == 'mupi' else '#mu#mu#pi pT [GeV]'
       elif matching == 'trigger_muon': ylabel = 'trigger #mu pT [GeV]'
       elif matching == 'muon': ylabel = '#mu pT [GeV]'
       elif matching == 'pion': ylabel = '#pi pT [GeV]'
@@ -258,15 +323,6 @@ class EfficiencyAnalyser(PlottingTools):
       hist.GetZaxis().SetTitleSize(0.042)
       hist.GetZaxis().SetTitleOffset(1.2)
       hist.GetZaxis().SetRangeUser(-1e-9, 1)
-
-      #gStyle.SetOptStat(0)
-      #ROOT.gStyle.SetPadTopMargin(0.05)
-      #ROOT.gStyle.SetPadBottomMargin(0.13)
-      #ROOT.gStyle.SetPadLeftMargin(0.05)
-      #ROOT.gStyle.SetPadRightMargin(0.70)
-      #gStyle.SetPaintTextFormat(".2f")
-        
-      #ROOT.gStyle = ROOT.gROOT.GetGlobal( "gStyle", 1 )
 
       ROOT.gPad.Modified()
       ROOT.gPad.Update()
@@ -292,13 +348,12 @@ class EfficiencyAnalyser(PlottingTools):
     efficiency, error = self.getEfficiency(displacement_bins=displacement_bins, pt_bins=pt_bins)
 
     for imatch, matching in enumerate(self.matchings):
-      if matching not in ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']:
-        raise RuntimeError("Unknown matching strategy. Please choose among ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']")
+      canv_name = 'canv_{}_{}_{}'.format(matching, binning, self.outdirlabel)
+      canv = PlottingTools.createTCanvas(self, canv_name, 900, 800)
 
-      canv = ROOT.TCanvas('canv_{}_{}_{}'.format(matching, binning, self.outdirlabel), 'canv_{}_{}_{}'.format(matching, binning, self.outdirlabel), 900, 800)
-      #ROOT.SetOwnership(canv, False)
       pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
       pad.Draw()
+      pad.SetGrid()
       pad.cd()
 
       graph = ROOT.TGraphAsymmErrors()
@@ -315,13 +370,12 @@ class EfficiencyAnalyser(PlottingTools):
 
       graph.SetTitle(self.title)
       #graph.SetLineWidth(1.5)
-      graph.SetLineColor(ROOT.kBlue+2)
+      graph.SetLineColor(ROOT.kBlue+2 if self.add_dsa == 'no' else ROOT.kRed)
       #graph.SetMarkerSize(2)
       graph.SetMarkerStyle(20)
-      graph.SetMarkerColor(ROOT.kBlue+2)
+      graph.SetMarkerColor(ROOT.kBlue+2 if self.add_dsa == 'no' else ROOT.kRed)
       if binning == 'displacement': xlabel = 'l_{xy}(trgmu, mu) [cm]'
-      elif binning == 'pt' and matching == 'mumupi_candidate': xlabel = '#mu#mu#pi pT [GeV]'
-      elif binning == 'pt' and matching == 'mupi_candidate': xlabel = '#mu#pi pT [GeV]'
+      elif binning == 'pt' and matching == 'candidate': xlabel = '#mu#pi pT [GeV]' if self.process_type == 'mupi' else '#mu#mu#pi pT [GeV]'
       elif binning == 'pt' and matching == 'trigger_muon': xlabel = 'trigger #mu pT [GeV]'
       elif binning == 'pt' and matching == 'muon': xlabel = '#mu pT [GeV]'
       elif binning == 'pt' and matching == 'pion': xlabel = '#pi pT [GeV]'
@@ -333,17 +387,19 @@ class EfficiencyAnalyser(PlottingTools):
       graph.GetYaxis().SetLabelSize(0.037)
       graph.GetYaxis().SetTitleSize(0.042)
       graph.GetYaxis().SetTitleOffset(1.1)
-      graph.GetYaxis().SetRangeUser(0, 1)
+      graph.GetYaxis().SetRangeUser(0, 0.5)
 
       #leg = PlottingTools.getRootTLegend(self, xmin=0.5, ymin=0.3, xmax=0.7, ymax=0.5, size=0.035)
       #leg.AddEntry(graph, 'slimmed muons')
       #leg.Draw()
 
-      label = ROOT.TPaveText(0.5,0.75,0.75,0.8,"brNDC")
+      label = ROOT.TPaveText(0.6,0.7,0.85,0.8,"brNDC")
+      text_process = 'HNL#rightarrow #mu#pi' if self.process_type == 'mupi' else 'B#rightarrow#mu#mu#pi'
       text = 'inclusive pT' if binning == 'displacement' else 'inclusive displacement'
+      label.AddText(text_process)
       label.AddText(text)
       label.SetBorderSize(0)
-      label.SetFillColor(ROOT.kWhite)
+      label.SetFillColorAlpha(0, 0)
       label.SetTextSize(0.035)
       label.SetTextFont(42)
       label.SetTextAlign(11)
@@ -358,11 +414,9 @@ class EfficiencyAnalyser(PlottingTools):
     efficiency, error = self.getEfficiency(displacement_bins=None, pt_bins=None)
 
     for imatch, matching in enumerate(self.matchings):
-      if matching not in ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']:
-        raise RuntimeError("Unknown matching strategy. Please choose among ['mumupi_candidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']")
+      canv_name = 'canv_{}_{}'.format(matching, self.outdirlabel)
+      canv = PlottingTools.createTCanvas(self, canv_name, 900, 800)
 
-      canv = ROOT.TCanvas('canv_{}_{}'.format(matching, self.outdirlabel), 'canv_{}'.format(matching, self.outdirlabel), 900, 800)
-      #ROOT.SetOwnership(canv, False)
       pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
       pad.Draw()
       pad.cd()
@@ -413,8 +467,6 @@ class EfficiencyAnalyser(PlottingTools):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  #plotHistFromTree(do_shape=True)
-
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection_muononly_alltrgmu.root'
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection_muononly_stdtrgmu.root'
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/Chunk0_n500/bparknano_looseselection_muononly_stdtrgmu_nj1.root'
@@ -430,93 +482,44 @@ if __name__ == '__main__':
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/big_merged_bparknano_v4.root'
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/big_merged_bparknano_v4.root'
   #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_updatedgenmatching_v2.root'
-  filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looselection_updatedmatching_fullgen.root'
-  #displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 100)]
+  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looselection_updatedmatching_fullgen.root'
+
+  #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/plugins/dumper/flat_bparknano.root'
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_motherpdgid_unfittedmass.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_fittedmass_looseselection_originalmatching.root'
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looselection_updatedmatching_fullgen.root'
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_v1.root'
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_minigenmatching_v2.root'
 
   displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
-  #displacement_bins = [(0, 1), (1, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
-  #displacement_bins = [(0, 1), (1, 5), (5, 15), (15, 100)]
   pt_bins = [(1, 7), (7, 10), (10, 15), (15, 30), (30, 100)] 
-  #pt_bins = [(1, 5), (5, 10), (10, 20), (20, 100)] 
 
   cuts_mu_pt = [0., 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
   cuts_trigger_mu_pt = [6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0]
-  #plotAcceptanceScan(filename=filename1, treename='Events', cuts=cuts_mu_pt, matching='candidate', quantity='trigger_muon', title='Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel='signalV25_looseselection_alltrgmu')
 
   #outdirlabel = 'signalV25_looseselection_alltrgmu_tightacceptancecuts_mupt3p5_trgmupt_9p5'
   #outdirlabel = 'signalV25_looseselection_stdtrgmu_styled'
-  outdirlabel = 'signalV25_looseselection_updatedmatching_trgmupt7_fullgen'
+  #outdirlabel = 'signalV25_looseselection_updatedmatching_trgmupt7_fullgen'
+  outdirlabel = 'signalV20_test_unresolved_fittedmass_looseselection_originalmatching_withdsa'
 
   #title = 'Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons'
   title = ''
 
   #matchings = ['mumupicandidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']
-  matchings = ['mupi_candidate']
-  #matchings = ['candidate', 'trigger_muon']
+  #matchings = ['candidate']
+  matchings = ['candidate', 'trigger_muon', 'muon', 'pion']
   #matchings = ['trigger_muon']
 
-  #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot2DEfficiency()
-  EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot1DEfficiency(binning='displacement')
-  #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot1DEfficiency(binning='pt')
+  sample_type = 'flat'
+  process_type = 'mupi'
+  add_dsa = 'yes'
 
+  analyser = EfficiencyAnalyser(filename=filename, sample_type=sample_type, process_type=process_type, add_dsa=add_dsa, matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel)
+
+  #analyser.plot2DEfficiency()
+  analyser.plot1DEfficiency(binning='displacement')
+  #EfficiencyAnalyser(filename=filename, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot1DEfficiency(binning='pt')
   #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title='Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel).plot1DEfficiency(binning='pt')
+
   #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, cuts=cuts_trigger_mu_pt, title='Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel).plotAcceptanceScan(quantity='trigger_muon')
-
-  #plot1DEfficiency(filename=filename1, treename='Events', bins=displacement_bins, matching='trigger_muon', binning='displacement', title='Trigger muon matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename1, treename='Events', bins=displacement_bins, matching='muon', binning='displacement', title='Muon matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename1, treename='Events', bins=displacement_bins, matching='pion', binning='displacement', title='Pion matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-
-  #plot1DEfficiency(filename=filename1, treename='Events', bins=pt_bins, matching='candidate', binning='pt', title='Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename1, treename='Events', bins=pt_bins, matching='trigger_muon', binning='pt', title='Trigger muon matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename1, treename='Events', bins=pt_bins, matching='muon', binning='pt', title='Muon matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename1, treename='Events', bins=pt_bins, matching='pion', binning='pt', title='Pion matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-
-  #plot2DEfficiency(filename=filename1, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='candidate', title='Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-  #plot2DEfficiency(filename=filename1, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='trigger_muon', title='Trigger muon matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-  #plot2DEfficiency(filename=filename1, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='muon', title='Muon matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-  #plot2DEfficiency(filename=filename1, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='pion', title='Pion matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel)
-
-
-  #filename2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_selected_muononly_alltrgmu.root'
-  #outdirlabel = 'signalV25_selected_alltrgmu_tightacceptancecuts_mupt3p5_trgmupt_9p5'
-
-  #plot1DEfficiency(filename=filename2, treename='Events', bins=displacement_bins, matching='candidate', binning='displacement', title='Candidate matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename2, treename='Events', bins=displacement_bins, matching='trigger_muon', binning='displacement', title='Trigger muon matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename2, treename='Events', bins=displacement_bins, matching='muon', binning='displacement', title='Muon matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename2, treename='Events', bins=displacement_bins, matching='pion', binning='displacement', title='Pion matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-
-  #plot1DEfficiency(filename=filename2, treename='Events', bins=pt_bins, matching='candidate', binning='pt', title='Candidate matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename2, treename='Events', bins=pt_bins, matching='trigger_muon', binning='pt', title='Trigger muon matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename2, treename='Events', bins=pt_bins, matching='muon', binning='pt', title='Muon matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-  #plot1DEfficiency(filename=filename2, treename='Events', bins=pt_bins, matching='pion', binning='pt', title='Pion matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-
-  #plot2DEfficiency(filename=filename2, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='candidate', title='Candidate matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-  #plot2DEfficiency(filename=filename2, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='trigger_muon', title='Trigger muon matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-  #plot2DEfficiency(filename=filename2, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='muon', title='Muon matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-  #plot2DEfficiency(filename=filename2, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='pion', title='Pion matching, signal (3GeV,2000mm), selected, all trigger muons', outdirlabel=outdirlabel)
-
-
-
-
-  #plot2DEfficiency(filename=filename1, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='trigger_muon', title='Trigger muon matching, signal (3GeV,184cm), selected, all trigger muons', outdirlabel='signalV20_emu_selected_alltrgmu')
-  #plot2DEfficiency(filename=filename1, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='muon', title='Muon matching, signal (3GeV,184cm), selected, all trigger muons', outdirlabel='signalV20_emu_selected_alltrgmu')
-  #plot2DEfficiency(filename=filename1, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='pion', title='Pion matching, signal (3GeV,184cm), selected, all trigger muons', outdirlabel='signalV20_emu_selected_alltrgmu')
-
-
-  #filename2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_muononly_alltrgmu.root'
-  #displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 100)]
-  #pt_bins = [(1, 5), (5, 10), (10, 15), (15, 20), (20, 100)] #(20, 30), (30, 100)]
-  #plot2DEfficiency(filename=filename2, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='candidate', title='Candidate matching, signal (3GeV,184cm), looseselection, all trigger muons', outdirlabel='signalV20_emu_looseselection_alltrgmu')
-  #plot2DEfficiency(filename=filename2, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='trigger_muon', title='Trigger muon matching, signal (3GeV,184cm), looseselection, all trigger muons', outdirlabel='signalV20_emu_looseselection_alltrgmu')
-  #plot2DEfficiency(filename=filename2, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='muon', title='Muon matching, signal (3GeV,184cm), loose selection, all trigger muons', outdirlabel='signalV20_emu_looseselection_alltrgmu')
-  #plot2DEfficiency(filename=filename2, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='pion', title='Pion matching, signal (3GeV,184cm), looseselection, all trigger muons', outdirlabel='signalV20_emu_looseselection_alltrgmu')
-
-  #filename3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_muononly_stdtrgmu.root'
-  #displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 100)]
-  #pt_bins = [(1, 5), (5, 10), (10, 15), (15, 20), (20, 100)] #(20, 30), (30, 100)]
-  #plot2DEfficiency(filename=filename3, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='candidate', title='Candidate matching, signal (3GeV,184cm), looseselection, standard trigger muons', outdirlabel='signalV20_emu_looseselection_stdtrgmu')
-  #plot2DEfficiency(filename=filename3, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='trigger_muon', title='Trigger muon matching, signal (3GeV,184cm), looseselection, standard trigger muons', outdirlabel='signalV20_emu_looseselection_stdtrgmu')
-  #plot2DEfficiency(filename=filename3, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='muon', title='Muon matching, signal (3GeV,184cm), loose selection, standard trigger muons', outdirlabel='signalV20_emu_looseselection_stdtrgmu')
-  #plot2DEfficiency(filename=filename3, treename='Events', displacement_bins=displacement_bins, pt_bins=pt_bins, matching='pion', title='Pion matching, signal (3GeV,184cm), looseselection, standard trigger muons', outdirlabel='signalV20_emu_looseselection_stdtrgmu')
-
 
