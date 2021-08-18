@@ -18,7 +18,6 @@ class EfficiencyAnalyser(PlottingTools):
     self.matchings = matchings
     self.displacement_bins = displacement_bins
     self.pt_bins = pt_bins
-    #self.bins = bins # for 1D plot bins can either be in displacement or in pt
     self.cuts = cuts
     self.title = title
     self.outdirlabel = outdirlabel
@@ -45,141 +44,6 @@ class EfficiencyAnalyser(PlottingTools):
 
     if path.exists('{}/numbers.txt'.format(self.outputdir)):
       os.system('rm {}/numbers.txt'.format(self.outputdir))
-
-
-  def getEfficiencyFromNano(self, displacement_bins=None, pt_bins=None):
-    f = PlottingTools.getRootFile(self, self.filename, with_ext=False) 
-    tree = PlottingTools.getTree(self, f, self.treename)
-
-    if displacement_bins != None and pt_bins != None:
-      n_num = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings)))  #[[0] * len(displacement_bins)] * len(pt_bins)
-      n_deno = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings))) #[[0] * len(displacement_bins)] * len(pt_bins)
-      efficiency = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings))) #[[0] * len(displacement_bins)] * len(pt_bins)
-      error = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings))) #[[0] * len(displacement_bins)] * len(pt_bins)
-    else:
-      n_num = np.zeros(len(self.cuts))
-      n_deno = np.zeros(len(self.cuts))
-      efficiency = np.zeros(len(self.cuts))
-      error = np.zeros(len(self.cuts))
-
-    for entry in tree:
-      # only consider events with at least one candidate
-      #if entry.nBToMuMuPi == 0: continue
-        
-      #print '\n'
-      # retrieve candidate matching information
-      trgmu_ismatched = 0
-      mu_ismatched = 0
-      pi_ismatched = 0
-      cand_ismatched = 0
-      for icand in range(0, entry.nBToMuMuPi):
-        #if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: trgmu_ismatched = 1
-        if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1: trgmu_ismatched = 1
-        #if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: mu_ismatched = 1
-        if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1: mu_ismatched = 1
-        #if entry.BToMuMuPi_pi_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: pi_ismatched = 1
-        if entry.BToMuMuPi_pi_isMatched[icand] == 1: pi_ismatched = 1
-        #if entry.BToMuMuPi_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: 
-        if entry.BToMuMuPi_isMatched[icand] == 1: 
-          cand_ismatched = 1
-        #if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1 and entry.BToMuMuPi_pi_isMatched[icand] == 1 and entry.BToMuMuPi_mupi_mass_reco_gen_reldiff[icand] < 0.5: 
-        #  mupi_ismatched = 1
-
-      matching_cond = {}
-      matching_cond['candidate'] = cand_ismatched==1 
-      matching_cond['trigger_muon'] = trgmu_ismatched==1 
-      matching_cond['muon'] = mu_ismatched==1 
-      matching_cond['pion'] = pi_ismatched==1 
-
-      hnl_idx = -1
-      mother_idx = -1
-      trgmu_idx = -1
-      mu_idx = -1
-      pi_idx = -1
-      
-      # search for hnl and its mother
-      for igen in range(0, entry.nGenPart):
-        if abs(entry.GenPart_pdgId[igen]) == 9900015: 
-          hnl_idx = igen 
-          mother_idx = entry.GenPart_genPartIdxMother[hnl_idx]
-          break
-
-      # search for trigger muon and hnl daughters
-      for igen in range(0, entry.nGenPart):
-        if abs(entry.GenPart_pdgId[igen]) == 13 and entry.GenPart_genPartIdxMother[igen] == mother_idx: trgmu_idx = igen
-        if abs(entry.GenPart_pdgId[igen]) == 13 and entry.GenPart_genPartIdxMother[igen] == hnl_idx: mu_idx = igen
-        if abs(entry.GenPart_pdgId[igen]) == 211 and entry.GenPart_genPartIdxMother[igen] == hnl_idx: pi_idx = igen
-
-      # remove e-channel
-      if mu_idx == -1: continue
-
-      for imatch, matching in enumerate(self.matchings):
-        if displacement_bins != None and pt_bins != None:
-          # fetch n_deno and n_num with acceptance cuts
-          if entry.GenPart_pt[mu_idx] > 1.5 and abs(entry.GenPart_eta[mu_idx]) < 2.5 \
-             and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
-             and entry.GenPart_pt[trgmu_idx] > 7.:
-          #if entry.GenPart_pt[mu_idx] > 3.5 and abs(entry.GenPart_eta[mu_idx]) < 2.5 \
-          #   and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
-          #   and entry.GenPart_pt[trgmu_idx] > 9.5:
-          #if entry.GenPart_pt[mu_idx] > 0:
-               displacement = math.sqrt(pow(entry.GenPart_vx[mu_idx] - entry.GenPart_vx[trgmu_idx], 2) + pow(entry.GenPart_vy[mu_idx] - entry.GenPart_vy[trgmu_idx], 2))
-               if matching == 'candidate': obj_pt = entry.GenPart_pt[mother_idx]
-               elif matching == 'mupi_candidate': obj_pt = entry.GenPart_pt[hnl_idx]
-               elif matching == 'trigger_muon': obj_pt = entry.GenPart_pt[trgmu_idx]
-               elif matching == 'muon': obj_pt = entry.GenPart_pt[mu_idx]
-               elif matching == 'pion': obj_pt = entry.GenPart_pt[pi_idx]
-
-               for ibin_disp, displacement_bin in enumerate(displacement_bins):
-                 for ibin_pt, pt_bin in enumerate(pt_bins):
-                   bin_min_disp, bin_max_disp = displacement_bin
-                   bin_min_pt, bin_max_pt = pt_bin
-
-                   if displacement > bin_min_disp and displacement < bin_max_disp and obj_pt > bin_min_pt and obj_pt < bin_max_pt: 
-                     n_deno[ibin_disp][ibin_pt][imatch] = n_deno[ibin_disp][ibin_pt][imatch] + 1
-                     #print '{} {}'.format(matching, matching_cond[matching])
-                     if matching_cond[matching]: n_num[ibin_disp][ibin_pt][imatch] = n_num[ibin_disp][ibin_pt][imatch] + 1
-        else:
-          for icut, cut in enumerate(self.cuts):
-            # fetch n_deno and n_num with acceptance cuts
-            #if entry.GenPart_pt[mu_idx] > float(cut) and abs(entry.GenPart_eta[mu_idx]) < 2.5: # \
-            if entry.GenPart_pt[mu_idx] > 1.5 and abs(entry.GenPart_eta[mu_idx]) < 2.5 \
-               and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
-               and entry.GenPart_pt[trgmu_idx] > float(cut):
-                 n_deno[icut] = n_deno[icut] + 1
-                 if matching == 'candidate' and cand_ismatched == 1: n_num[icut] = n_num[icut] + 1
-                 elif matching == 'trigger_muon' and trgmu_ismatched == 1: n_num[icut] = n_num[icut] + 1
-                 elif matching == 'muon' and mu_ismatched == 1: n_num[icut] = n_num[icut] + 1
-                 elif matching == 'pion' and pi_ismatched == 1: n_num[icut] = n_num[icut] + 1
-                   
-    # compute efficiency
-    if displacement_bins != None and pt_bins != None:
-      for imatch, matching in enumerate(self.matchings):
-        for ibin_disp, displacement_bin in enumerate(displacement_bins):
-          for ibin_pt, pt_bin in enumerate(pt_bins):
-            efficiency[ibin_disp][ibin_pt][imatch] = float(n_num[ibin_disp][ibin_pt][imatch]) / float(n_deno[ibin_disp][ibin_pt][imatch]) if float(n_deno[ibin_disp][ibin_pt][imatch]) != 0. else 0.
-            if n_num[ibin_disp][ibin_pt][imatch] == 0: n_num[ibin_disp][ibin_pt][imatch] = 1e-11
-            if float(n_num[ibin_disp][ibin_pt][imatch]) != 0 and float(n_deno[ibin_disp][ibin_pt][imatch]) != 0:
-              error[ibin_disp][ibin_pt][imatch] = efficiency[ibin_disp][ibin_pt][imatch] * ( math.sqrt(float(n_num[ibin_disp][ibin_pt][imatch]))/float(n_num[ibin_disp][ibin_pt][imatch])  + math.sqrt(float(n_deno[ibin_disp][ibin_pt][imatch]))/float(n_deno[ibin_disp][ibin_pt][imatch]) )     
-            else:
-              error[ibin_disp][ibin_pt][imatch] = 0
-            # for aesthetics
-            if efficiency[ibin_disp][ibin_pt][imatch] == 0.: efficiency[ibin_disp][ibin_pt][imatch] = 1e-9
-
-      for imatch, matching in enumerate(self.matchings):
-        print '\n'
-        for ibin_disp, displacement_bin in enumerate(displacement_bins):
-          for ibin_pt, pt_bin in enumerate(pt_bins):
-            print '{} {} {} {} {} {}+-{}'.format(matching, displacement_bin, pt_bin, n_deno[ibin_disp][ibin_pt][imatch], n_num[ibin_disp][ibin_pt][imatch], efficiency[ibin_disp][ibin_pt][imatch], error[ibin_disp][ibin_pt][imatch])
-    else:
-      for icut, cut in enumerate(self.cuts):
-        efficiency[icut] = float(n_num[icut]) / float(n_deno[icut]) if float(n_deno[icut]) != 0. else 0. 
-        error[icut] = efficiency[icut] * ( math.sqrt(n_num[icut])/n_num[icut]  + math.sqrt(n_deno[icut])/n_deno[icut] )     
-
-      #for icut, cut in enumerate(self.cuts):
-      #  print '{} {} {} {}'.format(cut, n_deno[icut], n_num[icut], efficiency[icut])
-
-    return efficiency, error
 
 
   def getEfficiency(self, displacement_bins=None, pt_bins=None):
@@ -210,12 +74,6 @@ class EfficiencyAnalyser(PlottingTools):
         matching_cond['muon'] = mu_ismatched==1 and entry.mu_isdsa==0
         matching_cond['pion'] = pi_ismatched==1 and entry.mu_isdsa==0 
       
-       #if self.add_dsa == 'no':
-      #for matching in self.matchings:
-      #  #matching_cond[matching] = bool(matching_cond[matching] + (entry.mu_isdsa != 1))
-      #if cand_ismatched==1:
-      #  print 'ismatched {} isnotdsa {} tot {} check {}'.format(cand_ismatched==1, entry.mu_isdsa != 1, matching_cond['candidate'], cand_ismatched==1 and entry.mu_isdsa!=1)
-
       hnl_idx = -1
       mother_idx = -1
       trgmu_idx = -1
@@ -266,8 +124,6 @@ class EfficiencyAnalyser(PlottingTools):
       for icut, cut in enumerate(self.cuts):
         efficiency[icut] = float(n_num[icut]) / float(n_deno[icut]) if float(n_deno[icut]) != 0. else 0. 
         error[icut] = efficiency[icut] * ( math.sqrt(n_num[icut])/n_num[icut]  + math.sqrt(n_deno[icut])/n_deno[icut] )     
-      #for icut, cut in enumerate(self.cuts):
-      #  print '{} {} {} {}'.format(cut, n_deno[icut], n_num[icut], efficiency[icut])
     f.close()
 
     return efficiency, error
@@ -305,7 +161,6 @@ class EfficiencyAnalyser(PlottingTools):
       hist.Draw('text' +'same')
 
       hist.SetTitle(self.title)
-      #hist.SetTitleSize(0.8)
       hist.GetXaxis().SetTitle('l_{xy}(trgmu, mu) [cm]')
       hist.GetXaxis().SetLabelSize(0.037)
       hist.GetXaxis().SetTitleSize(0.042)
@@ -369,9 +224,7 @@ class EfficiencyAnalyser(PlottingTools):
       graph.Draw('AP')  
 
       graph.SetTitle(self.title)
-      #graph.SetLineWidth(1.5)
       graph.SetLineColor(ROOT.kBlue+2 if self.add_dsa == 'no' else ROOT.kRed)
-      #graph.SetMarkerSize(2)
       graph.SetMarkerStyle(20)
       graph.SetMarkerColor(ROOT.kBlue+2 if self.add_dsa == 'no' else ROOT.kRed)
       if binning == 'displacement': xlabel = 'l_{xy}(trgmu, mu) [cm]'
@@ -434,9 +287,7 @@ class EfficiencyAnalyser(PlottingTools):
       graph.Draw('AP')  
 
       graph.SetTitle(self.title)
-      #graph.SetLineWidth(1.5)
       graph.SetLineColor(ROOT.kBlue+2)
-      #graph.SetMarkerSize(2)
       graph.SetMarkerStyle(20)
       graph.SetMarkerColor(ROOT.kBlue+2)
       graph.GetXaxis().SetTitle('Cut on {} pT [GeV]'.format(quantity))
@@ -467,23 +318,6 @@ class EfficiencyAnalyser(PlottingTools):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection_muononly_alltrgmu.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection_muononly_stdtrgmu.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/Chunk0_n500/bparknano_looseselection_muononly_stdtrgmu_nj1.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/Chunk0_n500/merged/bparknano_looseselection_muononly_stdtrgmu.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_selected_muononly_stdtrgmu.root'
-  #filename1 = '/scratch/anlyon/bparknano_looseselection_muononly_alltrgmu.root'
-
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_slimmedmuons_dr0p25.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_updatedgenmatching_mu_0p1_0p25_pi_0p15_0p5_massreldiff_0p1.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_standardgenmatching.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/Chunk0_n500/bparknano_loosepreselection_updatedmatching_dsa_nj1.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_loosepreselection_updatedmatching_dsa.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/big_merged_bparknano_v4.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/big_merged_bparknano_v4.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_updatedgenmatching_v2.root'
-  #filename1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looselection_updatedmatching_fullgen.root'
-
   #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/plugins/dumper/flat_bparknano.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_motherpdgid_unfittedmass.root'
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_fittedmass_looseselection_originalmatching.root'
@@ -497,18 +331,11 @@ if __name__ == '__main__':
   cuts_mu_pt = [0., 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
   cuts_trigger_mu_pt = [6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0]
 
-  #outdirlabel = 'signalV25_looseselection_alltrgmu_tightacceptancecuts_mupt3p5_trgmupt_9p5'
-  #outdirlabel = 'signalV25_looseselection_stdtrgmu_styled'
-  #outdirlabel = 'signalV25_looseselection_updatedmatching_trgmupt7_fullgen'
   outdirlabel = 'signalV20_test_unresolved_fittedmass_looseselection_originalmatching_withdsa'
 
-  #title = 'Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons'
   title = ''
 
-  #matchings = ['mumupicandidate', 'mupi_candidate', 'trigger_muon', 'muon', 'pion']
-  #matchings = ['candidate']
   matchings = ['candidate', 'trigger_muon', 'muon', 'pion']
-  #matchings = ['trigger_muon']
 
   sample_type = 'flat'
   process_type = 'mupi'
@@ -518,8 +345,5 @@ if __name__ == '__main__':
 
   #analyser.plot2DEfficiency()
   analyser.plot1DEfficiency(binning='displacement')
-  #EfficiencyAnalyser(filename=filename, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel).plot1DEfficiency(binning='pt')
-  #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title='Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel).plot1DEfficiency(binning='pt')
-
-  #EfficiencyAnalyser(filename=filename1, treename='Events', matchings=matchings, cuts=cuts_trigger_mu_pt, title='Candidate matching, signal (3GeV,2000mm), loose selection, all trigger muons', outdirlabel=outdirlabel).plotAcceptanceScan(quantity='trigger_muon')
+  #analyser.plot1DEfficiency(binning='pt')
 
