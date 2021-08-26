@@ -22,55 +22,6 @@ class ComputeYields(PlottingTools):
     self.white_list = white_list
 
 
-  #def getHistoMC(self, quantity, selection):
-  #  hist_mc_tot = ROOT.TH1D('hist_mc_tot', 'hist_mc_tot', quantity.nbins, quantity.bin_min, quantity.bin_max)
-  #  hist_mc_tot.Sumw2()
-
-  #  for ifile, qcd_file in enumerate(self.qcd_files):
-  #    if qcd_file.label not in self.white_list: continue
-
-  #    f_mc = ROOT.TFile.Open(qcd_file.filename, 'READ')
-      
-  #    #weight_mc = PlottingTools.computeQCDMCWeight(self, PlottingTools.getTree(self, f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
-  #    weight_mc = PlottingTools.computeQCDMCWeight(self, f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
-  #    hist_mc = PlottingTools.createHisto(self, f_mc, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight_mc) 
-  #    hist_mc.Sumw2()
-    
-  #    hist_mc_tot.Add(hist_mc)
-
-  #  return hist_mc_tot
-
-  '''
-  def gamma_total(self, mass,vv): # taken from common.py
-      gamma_total =  HNLDecays(mass=mass,mixing_angle_square=vv).decay_rate['tot']   # GeV
-      return gamma_total
-
-
-  def ctau_from_gamma(self, gamma): # taken from common.py
-      tau_natural = 1. / gamma                  # 1/GeV
-      tau = tau_natural * const_hbar            # s
-      ctau = tau * const_c * 1000               # mm
-      return ctau
-
-
-  def getVV(self, mass=-99.,ctau=-99.,ismaj=True): # taken from common.py  
-    mult = 2. if ismaj else 1. 
-    ref_m = 1. # GeV 
-    ref_vv = 1.  
-    ref_ctau = ctau_from_gamma(mult*gamma_total(mass=ref_m,vv=ref_vv)) 
- 
-    k = ref_ctau * np.power(ref_m,5) * ref_vv 
-     
-    return k/(np.power(mass, 5) * ctau) 
-
-
-  #def getHNLBRs(self, mass):
-  #    #HNL BR tot = sum_B_species(HNL BR)
-
-  #  dec = Decays(mass=mass, mixing_angle_square=1)
-  #'''
-
-
   def computeCrossRatioFromQCDMC(self):
     '''
       Study the correlation of two variables computing the ratio
@@ -498,59 +449,6 @@ class ComputeYields(PlottingTools):
     return efficiency, err_efficiency
 
 
-  #def computeHNLBRs(self):
-  #  from decays import Decays 
-
-  #  # first, the production BRs
-  #  dec = Decays(mass=self.signal_file.mass, mixing_angle_square=1) # we factorise the mixing angle 
-  #  # in our model, we only consider the case where the hnl is produced with a muon
-  #  BR_prod = 1. * dec.BR_tot_mu  + 0. * dec.BR_tot_el # Bc excluded
-  #  print BR_prod
-
-  #  # then, the decay BR = Gamma(N->mupi)/Gamma_tot
-  #  BR_NToMuPi = 0.0119363120843 # from our computation in HNLsGen common.py
-  #  BR_decay = 0.5 * BR_NToMuPi # in our samples, the hnl decays only half of the time into muons
-  #  #gamma_tot = HNLDecays(mass=self.signal_file.mass).decay_rate['tot'] # the total decay rate is computed with 0.5 mu and 0.5 el
-  #  print BR_decay
-
-
-  #def computeCouplingSquare(self):
-  #  '''
-  #    V^2 = 1/tau * 1/Gamma_tot = c/ctau * 1/Gamma_tot
-  #  '''
-
-  #  tau = self.signal_file.ctau * 1e-3 / 299792458.0 
-  #  print 'tau ',tau
-  #  from decays import HNLDecays
-  #  gamma_tot = HNLDecays(mass=self.signal_file.mass).decay_rate['tot'] # the total decay rate is computed with 0.5 mu and 0.5 el
-  #  print gamma_tot
-
-  #  coupling_square = 1.0/(tau * gamma_tot)
-  #  print coupling_square
-  #  return coupling_square
-
-  #def ctau_from_gamma(self, gamma):
-  #    const_hbar = 6.582119569e-22 * 1e-03      # GeV s
-  #    const_c = 299792458.                      # m/s
-  #    tau_natural = 1. / gamma                  # 1/GeV
-  #    tau = tau_natural * const_hbar            # s
-  #    ctau = tau * const_c * 1000               # mm
-  #    return ctau
-
-  #def getVV(self, mass=-99., ctau=-99., ismajorana=True):
-  #    '''
-  #    Helper function to go from ctau,m -> vv
-  #    '''
-  #    mult = 2. if ismajorana else 1.
-  #    ref_m = 1. # GeV
-  #    ref_vv = 1. 
-  #    ref_ctau = self.ctau_from_gamma(mult*gamma_total(mass=ref_m,vv=ref_vv))
-
-  #    k = ref_ctau * np.power(ref_m,5) * ref_vv
-
-  #    return k/(np.power(mass, 5) * ctau)
-
-  #def computeSignalYields(self, mass, lumi, sigma_B_tot, filter_efficiency):
   def computeSignalYields(self, lumi=0.774, sigma_B=327.0e9, isBc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
