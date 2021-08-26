@@ -290,8 +290,8 @@ class Selection(PlottingTools):
     proposed_bkg_entries = self.createHisto(self.files[0], 'bkg', True, self.proposed_cut).GetEntries()
     proposed_sig_entries = self.createHisto(self.files[1], 'sig', True, self.proposed_cut).GetEntries()
 
-    print 'sig1 {} {}'.format(int(initial_sig_entries), int(initial_bkg_entries))
-    print 'sig1 {} {}'.format(int(proposed_sig_entries), int(proposed_bkg_entries))
+    #print 'sig1 {} {}'.format(int(initial_sig_entries), int(initial_bkg_entries))
+    #print 'sig1 {} {}'.format(int(proposed_sig_entries), int(proposed_bkg_entries))
 
     if len(self.files)==1:
       cutflow_line = '{qte} {log} {cut} & -{sig_per}\% & -{bkg_per}\% \\ '.format(
@@ -324,10 +324,10 @@ class Selection(PlottingTools):
       initial_sig2_entries = self.createHisto(self.files[3], 'sig', False).GetEntries()
       proposed_sig2_entries = self.createHisto(self.files[3], 'sig', True, self.proposed_cut).GetEntries()
 
-      print 'sig2 {}'.format(int(initial_sig1_entries))
-      print 'sig2 {}'.format(int(proposed_sig1_entries))
-      print 'sig3 {}'.format(int(initial_sig2_entries))
-      print 'sig3 {}'.format(int(proposed_sig2_entries))
+      #print 'sig2 {}'.format(int(initial_sig1_entries))
+      #print 'sig2 {}'.format(int(proposed_sig1_entries))
+      #print 'sig3 {}'.format(int(initial_sig2_entries))
+      #print 'sig3 {}'.format(int(proposed_sig2_entries))
 
       cutflow_line = '{qte} {log} {cut} {unit} & -{sig0_per}\% & -{sig1_per}\% & -{sig2_per}\% & -{bkg_per}\% \\\ '.format(
           qte = self.quantity.title, 
@@ -476,7 +476,7 @@ if __name__ == '__main__':
 
   #soft_muon = Quantity('b_sel_mu_isSoft', 'mu_isSoft', '==', '', 0, 1)
  
-  printCutflow = False
+  printCutflow = True
   printScan = False
 
   preselection = [] 
@@ -486,7 +486,7 @@ if __name__ == '__main__':
   #Selection(files, trg_mu_pt, npoints=5, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
   #Selection(files, trg_mu_pt, npoints=30).getROCGraph()
   if printCutflow: Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printCutflowLine()
-  Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printCutflowLine()
+  #Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printCutflowLine()
   preselection.append(PreselectedQuantity(trg_mu_pt, cut_trg_mu_pt))
 
   cut_trg_mu_eta = 1.55
@@ -513,7 +513,7 @@ if __name__ == '__main__':
   ###Selection(files, trg_mu_pfiso03rel, preexisting_selection=preselection, proposed_cut=cut_trg_mu_pfiso03rel).printCutflowLine()
   ##preselection.append(PreselectedQuantity(trg_mu_pfiso03rel, cut_trg_mu_pfiso03rel))
   
-  cut_pi_pt = 0.6 # this might be a bit tight
+  cut_pi_pt = 0.7 # this might be a bit tight
   if printScan: Selection(files, pi_pt, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_pt).getScanGraph()
   #Selection(files, pi_pt, npoints=30).getROCGraph()
   if printCutflow: Selection(files, pi_pt, preexisting_selection=preselection, proposed_cut=cut_pi_pt).printCutflowLine()
@@ -660,7 +660,7 @@ if __name__ == '__main__':
   if printScan: Selection(files, hnl_mass_m, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_hnl_mass_m).getScanGraph()
   #Selection(files, hnl_mass_m, npoints=30).getROCGraph()
   if printCutflow: Selection(files, hnl_mass_m, preexisting_selection=preselection, proposed_cut=cut_hnl_mass_m).printCutflowLine()
-  Selection(files, hnl_mass_m, preexisting_selection=preselection, proposed_cut=cut_hnl_mass_m).printCutflowLine()
+  #Selection(files, hnl_mass_m, preexisting_selection=preselection, proposed_cut=cut_hnl_mass_m).printCutflowLine()
   preselection.append(PreselectedQuantity(hnl_mass_m, cut_hnl_mass_m))
 
   ##cut_hnl_mass_p = 0.3 
