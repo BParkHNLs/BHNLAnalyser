@@ -1,20 +1,22 @@
-from common import PlottingTools
+from common import Tools
 import ROOT
 
-class MatchingChecks(PlottingTools):
+class MatchingChecks(Tools):
+  def __init__(self):
+    self.tools = Tools()
 
   def plotMatchingDiagram(self, filename, treename, outdirlabel, particle):
     f = ROOT.TFile.Open(filename, 'READ')
-    tree = PlottingTools.getTree(self, f, treename)
+    tree = self.tools.getTree(f, treename)
 
-    outputdir = PlottingTools.getOutDir(self, './myPlots/matching_checks', outdirlabel)
+    outputdir = self.tools.getOutDir('./myPlots/matching_checks', outdirlabel)
 
     for ientry, entry in enumerate(tree):
       if ientry > (100 if particle=='muon' else 200): continue
       # plot the reco particles (for events where a candidate exists)
       pt_box_reco = []
       deltaR_limits = []
-      canv = PlottingTools.createTCanvas(self, 'canv_{}'.format(ientry))
+      canv = self.tools.createTCanvas('canv_{}'.format(ientry))
       graph_reco = ROOT.TGraph() 
       flag_reco = False
       if entry.nBToMuMuPi < 1: continue
@@ -167,16 +169,16 @@ class MatchingChecks(PlottingTools):
 
   def plotTriggerMatchingDiagram(self, filename, treename, outdirlabel):
     f = ROOT.TFile.Open(filename, 'READ')
-    tree = PlottingTools.getTree(self, f, treename)
+    tree = self.tools.getTree(f, treename)
 
-    outputdir = PlottingTools.getOutDir(self, './myPlots/trigger_matching_checks', outdirlabel)
+    outputdir = self.tools.getOutDir('./myPlots/trigger_matching_checks', outdirlabel)
 
     for ientry, entry in enumerate(tree):
       if ientry > 100: continue
       # plot the unmatched muon
       pt_box_reco = []
       #deltaR_limits = []
-      canv = PlottingTools.createTCanvas(self, 'canv_{}'.format(ientry))
+      canv = self.tools.createTCanvas('canv_{}'.format(ientry))
       graph_reco = ROOT.TGraph() 
       flag_reco = False
       #if entry.nBToMuMuPi < 1: continue

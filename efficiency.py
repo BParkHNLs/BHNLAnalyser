@@ -6,11 +6,12 @@ from ROOT import gROOT, gStyle
 import math
 import numpy as np
 
-from common import PlottingTools
+from common import Tools
 
 
-class EfficiencyAnalyser(PlottingTools):
+class EfficiencyAnalyser(Tools):
   def __init__(self, filename, sample_type='flat', process_type='mumupi', add_dsa='yes', matchings=None, cuts=None, displacement_bins=None, pt_bins=None, title='', outdirlabel='default'):
+    self.tools = Tools()
     self.filename = filename
     self.sample_type = sample_type
     self.process_type = process_type
@@ -21,7 +22,7 @@ class EfficiencyAnalyser(PlottingTools):
     self.cuts = cuts
     self.title = title
     self.outdirlabel = outdirlabel
-    self.outputdir = PlottingTools.getOutDir(self, './myPlots/efficiency', self.outdirlabel)
+    self.outputdir = self.tools.getOutDir('./myPlots/efficiency', self.outdirlabel)
 
     self.treename = ''
     if self.sample_type == 'nano': self.treename = 'Events'
@@ -47,8 +48,8 @@ class EfficiencyAnalyser(PlottingTools):
 
 
   def getEfficiency(self, displacement_bins=None, pt_bins=None):
-    f = PlottingTools.getRootFile(self, self.filename, with_ext=False) 
-    tree = PlottingTools.getTree(self, f, self.treename)
+    f = self.tools.getRootFile(self.filename, with_ext=False) 
+    tree = self.tools.getTree(f, self.treename)
 
     n_num = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings)))
     n_deno = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings)))
@@ -144,7 +145,7 @@ class EfficiencyAnalyser(PlottingTools):
 
     for imatch, matching in enumerate(self.matchings):
       canv_name = '2d_canv_{}_{}'.format(matching, self.outdirlabel)
-      canv = PlottingTools.createTCanvas(self, canv_name, 900, 800)
+      canv = self.tools.createTCanvas(canv_name, 900, 800)
 
       bin_min_disp, a = self.displacement_bins[0]
       b ,bin_max_disp = self.displacement_bins[len(self.displacement_bins)-1]
@@ -204,7 +205,7 @@ class EfficiencyAnalyser(PlottingTools):
 
     for imatch, matching in enumerate(self.matchings):
       canv_name = 'canv_{}_{}_{}'.format(matching, binning, self.outdirlabel)
-      canv = PlottingTools.createTCanvas(self, canv_name, 900, 800)
+      canv = self.tools.createTCanvas(canv_name, 900, 800)
 
       pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
       pad.Draw()
@@ -242,7 +243,7 @@ class EfficiencyAnalyser(PlottingTools):
       graph.GetYaxis().SetTitleOffset(1.1)
       graph.GetYaxis().SetRangeUser(0, 0.5)
 
-      #leg = PlottingTools.getRootTLegend(self, xmin=0.5, ymin=0.3, xmax=0.7, ymax=0.5, size=0.035)
+      #leg = self.tools.getRootTLegend(xmin=0.5, ymin=0.3, xmax=0.7, ymax=0.5, size=0.035)
       #leg.AddEntry(graph, 'slimmed muons')
       #leg.Draw()
 
@@ -268,7 +269,7 @@ class EfficiencyAnalyser(PlottingTools):
 
     for imatch, matching in enumerate(self.matchings):
       canv_name = 'canv_{}_{}'.format(matching, self.outdirlabel)
-      canv = PlottingTools.createTCanvas(self, canv_name, 900, 800)
+      canv = self.tools.createTCanvas(canv_name, 900, 800)
 
       pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
       pad.Draw()

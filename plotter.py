@@ -8,7 +8,7 @@ import math
 import numpy as np
 from itertools import product
 
-from common import PlottingTools
+from common import Tools
 from quantity import quantities_to_plot_small, quantities_to_plot_all, quantities_to_plot_selection, quantities_muonId_study_triggermuon, quantities_muonId_study_displacedmuon, quantities_muonId_study_triggermuon_small, quantities_muonId_study_displacedmuon_small, quantities_tag_and_probe
 from samples import data_samples, data_samples_V02, data_samples_V03, data_samples_loose, data_samples_triggermuon_matching_check, data_samples_tag_and_probe, qcd_samples, qcd_samples_V03, qcd_samples_triggermuon_matching_check, signal_samples, signal_samples_loose, signal_samples_tag_and_probe
 from quantity import Quantity
@@ -20,8 +20,9 @@ sys.path.append('../../../../BHNLGen/CMSSW_10_2_15/src/HNLsGen/python/.')
 from my_common import getVV
 
 
-class Plotter(PlottingTools):
+class Plotter(Tools):
   def __init__(self, quantity='', data_files='', qcd_files='', signal_files='', white_list=''):
+    self.tools = Tools()
     self.quantity = quantity
     self.data_files = data_files
     self.qcd_files = qcd_files
@@ -73,13 +74,13 @@ class Plotter(PlottingTools):
     n_obs_data = 0.
     n_err_data = 0.
     for data_file in self.data_files:
-      f_data = PlottingTools.getRootFile(self, data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
-      hist_data = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity_forweight, branchname='flat', selection=selection)
+      f_data = self.tools.getRootFile(data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
+      hist_data = self.tools.createHisto(f_data, 'signal_tree', quantity_forweight, branchname='flat', selection=selection)
       hist_data.Sumw2()
       n_obs_data += hist_data.GetBinContent(1)
       n_err_data += math.sqrt(n_obs_data) #hist_data.GetBinError(1)
 
-    hist_mc_tot = PlottingTools.createWeightedHistoQCDMC(self, qcd_files=self.qcd_files, white_list=self.white_list, quantity=quantity_forweight, selection=selection)
+    hist_mc_tot = self.tools.createWeightedHistoQCDMC(qcd_files=self.qcd_files, white_list=self.white_list, quantity=quantity_forweight, selection=selection)
     n_obs_mc = hist_mc_tot.GetBinContent(1)
     n_err_mc = math.sqrt(n_obs_mc) #hist_mc_tot.GetBinError(1)
 
@@ -103,14 +104,14 @@ class Plotter(PlottingTools):
     f_data = ROOT.TFile.Open(filename_data, 'READ')
     f_mc = ROOT.TFile.Open(filename_mc, 'READ')
     
-    hist_data = PlottingTools.createHisto(self, f_data, 'signal_tree', 'b_mass')
-    hist_mc = PlottingTools.createHisto(self, f_mc, 'signal_tree', 'b_mass', weight=0) # 609
+    hist_data = self.tools.createHisto(f_data, 'signal_tree', 'b_mass')
+    hist_mc = self.tools.createHisto(f_mc, 'signal_tree', 'b_mass', weight=0) # 609
 
     hist_mc.SetFillColor(ROOT.kAzure-4)
     hist_mc.SetLineColor(2)
 
     #canv = ROOT.TCanvas('canv', 'canv', 900, 800)
-    canv = PlottingTools.createTCanvas(self, name='canv', dimx=900, dimy=800)
+    canv = self.tools.createTCanvas(name='canv', dimx=900, dimy=800)
 
     if do_shape: 
       int_data = hist_data.Integral()
@@ -139,7 +140,7 @@ class Plotter(PlottingTools):
     # create the canvas
     canv_name = 'canv_{}_{}_{}_{}'.format(self.quantity.label, outdirlabel.replace('/', '_'), do_log, do_shape)
     #canv = ROOT.TCanvas(canv_name, canv_name, 1200, 1000)
-    canv = PlottingTools.createTCanvas(self, name=canv_name, dimx=1200, dimy=1000)
+    canv = self.tools.createTCanvas(name=canv_name, dimx=1200, dimy=1000)
     ROOT.SetOwnership(canv, False)
     #canv.SetGrid()
     canv.cd()
@@ -157,10 +158,10 @@ class Plotter(PlottingTools):
 
     # prepare the legend
     if do_stack:
-      #legend = PlottingTools.getRootTLegend(self, xmin=0.53, ymin=0.45, xmax=0.9, ymax=0.83, size=0.027)
-      legend = PlottingTools.getRootTLegend(self, xmin=0.49, ymin=0.45, xmax=0.86, ymax=0.83, size=0.027)
+      #legend = self.tools.getRootTLegend(xmin=0.53, ymin=0.45, xmax=0.9, ymax=0.83, size=0.027)
+      legend = self.tools.getRootTLegend(xmin=0.49, ymin=0.45, xmax=0.86, ymax=0.83, size=0.027)
     else:
-      legend = PlottingTools.getRootTLegend(self, xmin=0.53, ymin=0.65, xmax=0.9, ymax=0.83, size=0.027)
+      legend = self.tools.getRootTLegend(xmin=0.53, ymin=0.65, xmax=0.9, ymax=0.83, size=0.027)
 
     # write the top labels
     label_top_left = ROOT.TPaveText(0.1,0.92,0.5,0.93, "brNDC")
@@ -196,9 +197,9 @@ class Plotter(PlottingTools):
       data_label = ''
 
       for idata, data_file in enumerate(self.data_files):
-        f_data = PlottingTools.getRootFile(self, data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
+        f_data = self.tools.getRootFile(data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
         hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-        hist_data = PlottingTools.createHisto(self, f_data, treename, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
+        hist_data = self.tools.createHisto(f_data, treename, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
         hist_data.Sumw2()
         if do_shape: 
           int_data_tot += hist_data.Integral()
@@ -249,7 +250,7 @@ class Plotter(PlottingTools):
         #f_signal = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+signal_file.filename, 'READ')
         f_signal = ROOT.TFile.Open(signal_file.filename, 'READ')
         hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-        hist_signal = PlottingTools.createHisto(self, f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='ismatched==1' if selection=='' else 'ismatched==1 &&'+selection)
+        hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='ismatched==1' if selection=='' else 'ismatched==1 &&'+selection)
         hist_signal.Sumw2()
         #print '{} : {} entries'.format(signal_file.filename, int(hist_signal.Integral()))
         if do_shape: 
@@ -286,18 +287,18 @@ class Plotter(PlottingTools):
       f_mc = ROOT.TFile.Open(qcd_file.filename, 'READ')
       
       #print qcd_file.label
-      #weight_mc = PlottingTools.computeQCDMCWeight(self, PlottingTools.getTree(self, f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
-      weight_mc = PlottingTools.computeQCDMCWeight(self, f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
+      #weight_mc = self.tools.computeQCDMCWeight(self.tools.getTree(self, f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
+      weight_mc = self.tools.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
       weight = '({}) * (weight_hlt)'.format(weight_mc)
       #weight = '({})'.format(weight_mc)
       hist_mc_name = 'hist_mc_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-      hist_mc = PlottingTools.createHisto(self, f_mc, treename, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight) 
+      hist_mc = self.tools.createHisto(f_mc, treename, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight) 
       hist_mc.Sumw2()
 
       #if qcd_file.label == 'V02_15to20':
-      #  hist_mc = PlottingTools.createHisto(self, f_mc, 'signal_tree', 'b_mass', branchname, weight=1) # 609
+      #  hist_mc = self.tools.createHisto(f_mc, 'signal_tree', 'b_mass', branchname, weight=1) # 609
       #else:
-      #  hist_mc = PlottingTools.createHisto(self, f_mc, 'signal_tree', 'b_mass', branchname, weight=0.001) # 609
+      #  hist_mc = self.tools.createHisto(f_mc, 'signal_tree', 'b_mass', branchname, weight=0.001) # 609
 
       hist_mc.SetFillColor(qcd_file.colour) #ROOT.kAzure-ifile)
       hist_mc.SetLineColor(1)
@@ -342,8 +343,8 @@ class Plotter(PlottingTools):
     elif do_luminorm: hist_mc_tot.Scale(lumi_weight)
     #hist_mc_tot.Scale(lumi_weight)
 
-    #hist_data = PlottingTools.getRootXAxis(self, hist_data, label_size=0.0, title_size=0.0, offset=0)
-    #hist_data = PlottingTools.getRootYAxis(self, hist_data, title='Entries' if not do_shape else 'Normalised to unity', label_size=0.037, title_size=0.042, offset=1.1, ymin=1e-9, ymax=self.getMaxRangeY(hist_data, hist_mc_stack, do_log))
+    #hist_data = self.tools.getRootXAxis(hist_data, label_size=0.0, title_size=0.0, offset=0)
+    #hist_data = self.tools.getRootYAxis(hist_data, title='Entries' if not do_shape else 'Normalised to unity', label_size=0.037, title_size=0.042, offset=1.1, ymin=1e-9, ymax=self.getMaxRangeY(hist_data, hist_mc_stack, do_log))
     #canv.Update()
 
     #hist_data.GetXaxis().SetTitle(quantity.label)
@@ -410,7 +411,7 @@ class Plotter(PlottingTools):
     if plot_ratio:
       pad_down.cd()
 
-      hist_ratio = PlottingTools.getRatioHistogram(self, hist_data_tot, hist_mc_tot)
+      hist_ratio = self.tools.getRatioHistogram(hist_data_tot, hist_mc_tot)
       hist_ratio.Sumw2()
 
       for ibin in range(0, hist_ratio.GetNbinsX()+1):
@@ -428,10 +429,10 @@ class Plotter(PlottingTools):
       hist_ratio.SetTitle('')
       hist_ratio.GetXaxis().SetTitle(self.quantity.title)
 
-      #hist_ratio = PlottingTools.getRootXAxis(self, hist_ratio, title=self.quantity.title, label_size=0.1, title_size=0.13, offset=0.73)
+      #hist_ratio = self.tools.getRootXAxis(hist_ratio, title=self.quantity.title, label_size=0.1, title_size=0.13, offset=0.73)
       #val_min = hist_ratio.GetBinContent(hist_ratio.GetMinimumBin())
       #val_max = hist_ratio.GetBinContent(hist_ratio.GetMaximumBin())
-      #hist_ratio = PlottingTools.getRootYAxis(self, hist_ratio, title='Data/MC', label_size=0.1, title_size=0.13, offset=0.345, ymin=val_min-0.15*val_min, ymax=val_max+0.15*val_max)
+      #hist_ratio = self.tools.getRootYAxis(hist_ratio, title='Data/MC', label_size=0.1, title_size=0.13, offset=0.345, ymin=val_min-0.15*val_min, ymax=val_max+0.15*val_max)
 
       hist_ratio.GetXaxis().SetLabelSize(0.1)
       hist_ratio.GetXaxis().SetTitleSize(0.13)
@@ -452,7 +453,7 @@ class Plotter(PlottingTools):
       line.SetLineWidth(2)
       line.Draw('same')
 
-    outputdir = PlottingTools.getOutDir(self, './myPlots/DataMCComparison', outdirlabel, do_shape, do_luminorm, do_stack, do_log)
+    outputdir = self.tools.getOutDir('./myPlots/DataMCComparison', outdirlabel, do_shape, do_luminorm, do_stack, do_log)
     
     canv.SaveAs('{}/{}.png'.format(outputdir, self.quantity.label))
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
@@ -464,15 +465,15 @@ class Plotter(PlottingTools):
 
     # create the canvas
     canv_name = 'canv_{}_{}_{}_{}'.format(self.quantity.label, outdirlabel, do_log, do_shape)
-    canv = PlottingTools.createTCanvas(self, name=canv_name, dimx=1200, dimy=1000)
+    canv = self.tools.createTCanvas(name=canv_name, dimx=1200, dimy=1000)
     if do_log: canv.SetLogy()
     ROOT.SetOwnership(canv, False)
     #canv.SetGrid()
     canv.cd()
 
     # prepare the legend
-    legend = PlottingTools.getRootTLegend(self, xmin=0.47, ymin=0.58, xmax=0.84, ymax=0.83, size=0.027)
-    #legend = PlottingTools.getRootTLegend(self, xmin=0.53, ymin=0.65, xmax=0.9, ymax=0.83, size=0.027)
+    legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.58, xmax=0.84, ymax=0.83, size=0.027)
+    #legend = self.tools.getRootTLegend(xmin=0.53, ymin=0.65, xmax=0.9, ymax=0.83, size=0.027)
 
     label_top_right = ROOT.TPaveText(0.5,0.92,0.91,0.93, "brNDC")
     label_top_right.SetBorderSize(0)
@@ -488,9 +489,9 @@ class Plotter(PlottingTools):
     hist_data_tot.Sumw2()
     int_data_tot = 0.
     for data_file in self.data_files:
-      f_data = PlottingTools.getRootFile(self, data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
+      f_data = self.tools.getRootFile(data_file.filename, with_ext=False) #  ROOT.TFile.Open(self.data_file.filename, 'READ')
       hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-      hist_data = PlottingTools.createHisto(self, f_data, treename, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
+      hist_data = self.tools.createHisto(f_data, treename, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
       hist_data.Sumw2()
       if do_shape: 
         int_data_tot += hist_data.Integral()
@@ -515,8 +516,8 @@ class Plotter(PlottingTools):
       hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel, do_log, do_shape)
       weight = 'weight_hlt'
       #weight=-99
-      #hist_signal = PlottingTools.createHisto(self, f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='BToMuMuPi_isMatched==1' if selection=='' else 'BToMuMuPi_isMatched==1 &&'+selection)
-      hist_signal = PlottingTools.createHisto(self, f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection, weight=weight)
+      #hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='BToMuMuPi_isMatched==1' if selection=='' else 'BToMuMuPi_isMatched==1 &&'+selection)
+      hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection, weight=weight)
       hist_signal.Sumw2()
       if do_shape: 
         int_signal = hist_signal.Integral()
@@ -548,7 +549,7 @@ class Plotter(PlottingTools):
     ## draw the legend
     legend.Draw('same')
 
-    outputdir = PlottingTools.getOutDir(self, './myPlots/SignalBackgroundComparison', outdirlabel, do_shape, False, False, do_log)
+    outputdir = self.tools.getOutDir('./myPlots/SignalBackgroundComparison', outdirlabel, do_shape, False, False, do_log)
     
     canv.SaveAs('{}/{}.png'.format(outputdir, self.quantity.label))
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
@@ -559,12 +560,12 @@ class Plotter(PlottingTools):
     f2 = ROOT.TFile.Open(file2, 'READ')
 
     #canv = ROOT.TCanvas('canv', 'canv', 900, 800)
-    canv = PlottingTools.createTCanvas(self, name='canv', dimx=900, dimy=800)
+    canv = self.tools.createTCanvas(name='canv', dimx=900, dimy=800)
     if self.do_log: canv.SetLogy()
     if not do_printstat: ROOT.gStyle.SetOptStat(0)
     
-    hist1 = PlottingTools.createHisto(self, f1, tree1, self.quantity, hist_name=legend1, branchname=branchname, selection=selection1)
-    hist2 = PlottingTools.createHisto(self, f2, tree2, self.quantity, hist_name=legend2, branchname=branchname, selection=selection2)
+    hist1 = self.tools.createHisto(f1, tree1, self.quantity, hist_name=legend1, branchname=branchname, selection=selection1)
+    hist2 = self.tools.createHisto(f2, tree2, self.quantity, hist_name=legend2, branchname=branchname, selection=selection2)
     
     if self.do_shape: 
       int1 = hist1.Integral()
@@ -603,12 +604,12 @@ class Plotter(PlottingTools):
 
     hist2.Draw('histo sames')
 
-    legend = PlottingTools.getRootTLegend(self, xmin=0.6, ymin=0.7, xmax=0.85, ymax=0.9, size=0.03)
+    legend = self.tools.getRootTLegend(xmin=0.6, ymin=0.7, xmax=0.85, ymax=0.9, size=0.03)
     legend.AddEntry(hist2, legend2)
     legend.AddEntry(hist1, legend1)
     legend.Draw()
 
-    outputdir = PlottingTools.getOutDir(self, './myPlots/comparison', self.outdirlabel, do_shape=self.do_shape, do_log=self.do_log)
+    outputdir = self.tools.getOutDir('./myPlots/comparison', self.outdirlabel, do_shape=self.do_shape, do_log=self.do_log)
 
     canv.SaveAs('{}/{}.png'.format(outputdir, self.quantity.label))
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
@@ -616,7 +617,7 @@ class Plotter(PlottingTools):
 
   def plotYields(self, lumi=0.774, selection='', title='', outdirlabel=''):
 
-    canv = PlottingTools().createTCanvas('canv', dimx=900, dimy=800)
+    canv = self.tools.createTCanvas('canv', dimx=900, dimy=800)
     canv.SetLogx()
     canv.SetLogy()
     canv.SetGrid()
@@ -780,7 +781,7 @@ class Plotter(PlottingTools):
     graph_gen_m3.Draw('PL same')
     graph_gen_m4p5.Draw('PL same')
       
-    legend = PlottingTools.getRootTLegend(self, xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
+    legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
     legend.AddEntry(graph_m1, 'm=1GeV, reco')
     legend.AddEntry(graph_gen_m1, 'm=1GeV, gen')
     legend.AddEntry(graph_m3, 'm=3GeV, reco')
@@ -843,7 +844,7 @@ if __name__ == '__main__':
 
     #white_list_20to300 = ['QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt80to120 (V02)', 'QCD_pt80to120_ext (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt120to170_ext (V02)', 'QCD_pt170to300 (V02)']
     #white_list_15to300 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt170to300 (V02)']
-    white_list_15to300 = ['QCD_pt15to20 (V06_29Jun21)', 'QCD_pt20to30 (V06_29Jun21)', 'QCD_pt30to50 (V06_29Jun21)', 'QCD_pt50to80 (V06_29Jun21)', 'QCD_pt80to120 (V06_29Jun21)', 'QCD_pt120to170 (V06_29Jun21)', 'QCD_pt170to300 (V06_29Jun21)']
+    white_list_15to300 = ['QCD_pt15to20 (V07_18Aug21)', 'QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
     white_list_20to300 = ['QCD_pt20to30 (V05)', 'QCD_pt30to50 (V05)', 'QCD_pt50to80 (V05)', 'QCD_pt80to120 (V05)', 'QCD_pt120to170 (V05)', 'QCD_pt170to300 (V05)']
     white_list_30to300 = ['QCD_pt30to50 (V05)', 'QCD_pt50to80 (V05)', 'QCD_pt80to120 (V05)', 'QCD_pt120to170 (V05)', 'QCD_pt170to300 (V05)']
     white_list_30to50 = ['QCD_pt30to50 (V05)']
@@ -911,8 +912,8 @@ if __name__ == '__main__':
     if plot_CR:
       #dirlabel = 'dataV04_QCDV05_v1'
       #dirlabel = 'test'
-      dirlabel = 'dataV06_tag_and_probe_v2_A1_6__v2_sf2'
-      for quantity in quantities_to_plot_small:
+      dirlabel = 'dataV07_QCDV07_18Aug21'
+      for quantity in quantities_to_plot_all:
         plotter = Plotter(quantity=quantity, data_files=data_samples, qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
         # control region
         # inclusive

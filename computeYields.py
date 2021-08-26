@@ -3,7 +3,7 @@ import os.path
 from os import path
 import ROOT
 import math
-from common import PlottingTools
+from common import Tools
 from samples import data_samples, data_samples_small, qcd_samples, qcd_samples, signal_samples
 from quantity import Quantity
 #from decays import Decays, HNLDecays
@@ -13,8 +13,9 @@ sys.path.append('../../../../BHNLGen/CMSSW_10_2_15/src/HNLsGen/python/.')
 from my_common import getVV, gamma_partial, gamma_total
 
 
-class ComputeYields(PlottingTools):
+class ComputeYields(Tools):
   def __init__(self, data_file='', qcd_files='', signal_file='', selection='', white_list=''):
+    self.tools = Tools()
     self.data_file = data_file
     self.qcd_files = qcd_files
     self.signal_file = signal_file
@@ -35,20 +36,20 @@ class ComputeYields(PlottingTools):
 
     #hist_mc_tot_A = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge==0')
     #hist_mc_tot_A = self.getHistoMC(quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && hnl_charge==0')
-    #hist_mc_tot_A = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge==0')
-    hist_mc_tot_A = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && sv_prob>0.05')
+    #hist_mc_tot_A = self.tools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge==0')
+    hist_mc_tot_A = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && sv_prob>0.05')
     #hist_mc_tot_B = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge!=0')
     #hist_mc_tot_B = self.getHistoMC(quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && hnl_charge!=0')
-    #hist_mc_tot_B = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge!=0')
-    hist_mc_tot_B = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && sv_prob<0.05')
+    #hist_mc_tot_B = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge!=0')
+    hist_mc_tot_B = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && sv_prob<0.05')
     #hist_mc_tot_C = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge==0')
     #hist_mc_tot_C = self.getHistoMC(quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && hnl_charge==0')
-    #hist_mc_tot_C = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge==0')
-    hist_mc_tot_C = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && sv_prob>0.05')
+    #hist_mc_tot_C = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge==0')
+    hist_mc_tot_C = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && sv_prob>0.05')
     #hist_mc_tot_D = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge!=0')
     #hist_mc_tot_D = self.getHistoMC(quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && hnl_charge!=0')
-    #hist_mc_tot_D = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge!=0')
-    hist_mc_tot_D = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && sv_prob<0.05')
+    #hist_mc_tot_D = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge!=0')
+    hist_mc_tot_D = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && sv_prob<0.05')
 
     n_obs_mc_A = hist_mc_tot_A.GetBinContent(1)
     n_obs_mc_B = hist_mc_tot_B.GetBinContent(1)
@@ -72,12 +73,12 @@ class ComputeYields(PlottingTools):
     '''
 
     f_data = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+self.data_file.filename, 'READ')
-    hist_data = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity, branchname='flat', selection=selection)
+    hist_data = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=selection)
     hist_data.Sumw2()
     n_obs_data = hist_data.GetBinContent(1)
     n_err_data = math.sqrt(n_obs_data) #hist_data.GetBinError(1)
 
-    hist_mc_tot = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=selection)
+    hist_mc_tot = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=selection)
     n_obs_mc = hist_mc_tot.GetBinContent(1)
     n_err_mc = math.sqrt(n_obs_mc) #hist_mc_tot.GetBinError(1)
 
@@ -107,7 +108,7 @@ class ComputeYields(PlottingTools):
 
       f_mc = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+qcd_file.filename, 'READ')
       
-      weight = PlottingTools.computeQCDMCWeight(self, PlottingTools.getTree(self, f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
+      weight = self.tools.computeQCDMCWeight(self.tools.getTree(f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_mc = 1./weight
       lumi_mc += weight_mc
 
@@ -138,12 +139,12 @@ class ComputeYields(PlottingTools):
 
     bin_selection = self.selection
 
-    #hist_data_B = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && b_mass<6.27 && hnl_charge!=0')
-    #hist_data_C = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && b_mass>6.27 && hnl_charge==0')
-    #hist_data_D = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && b_mass>6.27 && hnl_charge!=0')
-    hist_data_B = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && hnl_cos2d>0.993 && sv_prob<0.05')
-    hist_data_C = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && hnl_cos2d<0.993 && sv_prob>0.05')
-    hist_data_D = PlottingTools.createHisto(self, f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && hnl_cos2d<0.993 && sv_prob<0.05')
+    #hist_data_B = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && b_mass<6.27 && hnl_charge!=0')
+    #hist_data_C = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && b_mass>6.27 && hnl_charge==0')
+    #hist_data_D = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && b_mass>6.27 && hnl_charge!=0')
+    hist_data_B = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && hnl_cos2d>0.993 && sv_prob<0.05')
+    hist_data_C = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && hnl_cos2d<0.993 && sv_prob>0.05')
+    hist_data_D = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && hnl_cos2d<0.993 && sv_prob<0.05')
 
     #hist_data.Sumw2()
     n_obs_data_B = hist_data_B.GetBinContent(1)
@@ -243,15 +244,15 @@ class ComputeYields(PlottingTools):
     #hist_mc_tot_C = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge==0')
     #hist_mc_tot_D = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge!=0')
 
-    #hist_mc_tot_A = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge==0')
-    #hist_mc_tot_B = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge!=0')
-    #hist_mc_tot_C = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge==0')
-    #hist_mc_tot_D = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge!=0')
+    #hist_mc_tot_A = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge==0')
+    #hist_mc_tot_B = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge!=0')
+    #hist_mc_tot_C = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge==0')
+    #hist_mc_tot_D = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge!=0')
 
-    hist_mc_tot_A = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && sv_prob>0.05')
-    hist_mc_tot_B = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && sv_prob<0.05')
-    hist_mc_tot_C = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && sv_prob>0.05')
-    hist_mc_tot_D = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && sv_prob<0.05')
+    hist_mc_tot_A = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && sv_prob>0.05')
+    hist_mc_tot_B = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d>0.993 && sv_prob<0.05')
+    hist_mc_tot_C = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && sv_prob>0.05')
+    hist_mc_tot_D = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && hnl_cos2d<0.993 && sv_prob<0.05')
 
     #hist_estimate = ROOT.TH1D('hist_estimate', 'hist_estimate', 100, 0, 5.6)
     hist_estimate = ROOT.TH1D('hist_estimate', 'hist_estimate', 50, bin_min, bin_max)
@@ -269,7 +270,7 @@ class ComputeYields(PlottingTools):
 
     ROOT.gStyle.SetOptStat(0)
 
-    canv = PlottingTools.createTCanvas(self, 'canv', 800, 900)
+    canv = self.tools.createTCanvas('canv', 800, 900)
 
     pad_up = ROOT.TPad("pad_up","pad_up",0,0.25,1,1)
     pad_up.SetBottomMargin(0.03)
@@ -305,7 +306,7 @@ class ComputeYields(PlottingTools):
     hist_estimate.Draw('histo')
     hist_mc_tot_A.Draw('histo same')
 
-    legend = PlottingTools.getRootTLegend(self, xmin=0.55, ymin=0.65, xmax=0.8, ymax=0.85, size=0.043)
+    legend = self.tools.getRootTLegend(xmin=0.55, ymin=0.65, xmax=0.8, ymax=0.85, size=0.043)
     legend.AddEntry(hist_estimate, 'QCD ABCD estimate')
     legend.AddEntry(hist_mc_tot_A, 'QCD true')
     legend.Draw()
@@ -321,7 +322,7 @@ class ComputeYields(PlottingTools):
 
     pad_down.cd()
 
-    hist_ratio = PlottingTools.getRatioHistogram(self, hist_estimate, hist_mc_tot_A)
+    hist_ratio = self.tools.getRatioHistogram(hist_estimate, hist_mc_tot_A)
     hist_ratio.Sumw2()
 
     for ibin in range(0, hist_ratio.GetNbinsX()+1):
@@ -386,7 +387,7 @@ class ComputeYields(PlottingTools):
     #weight, err_weight = self.computeWeightQCDMCtoData(lumi_data=774)
 
     #hist_mc_tot = self.getHistoMC(quantity=quantity, selection='hnl_charge==0' if selection_extra=='' else 'hnl_charge==0 &&' + selection_extra)
-    hist_mc_tot = PlottingTools.createWeightedHistoQCDMC(self, self.qcd_files, self.white_list, quantity=quantity, selection='hnl_charge==0' if selection_extra=='' else 'hnl_charge==0 &&' + selection_extra)
+    hist_mc_tot = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection='hnl_charge==0' if selection_extra=='' else 'hnl_charge==0 &&' + selection_extra)
     n_obs_mc = hist_mc_tot.GetBinContent(1)
     n_err_mc = math.sqrt(n_obs_mc) #hist_mc_tot.GetBinError(1)
 
@@ -420,7 +421,7 @@ class ComputeYields(PlottingTools):
     # get number of generated events
     filename = self.signal_file.filename if not isBc else self.signal_file.filename_Bc
     f = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+filename, 'READ')
-    n_reco = PlottingTools.getNminiAODEvts(self, f)
+    n_reco = self.tools.getNminiAODEvts(f)
     filter_efficiency = self.signal_file.filter_efficiency if not isBc else self.signal_file.filter_efficiency_Bc
     n_gen = n_reco / filter_efficiency
     if self.signal_file.mass == 3.0 and not isBc: 
@@ -430,7 +431,7 @@ class ComputeYields(PlottingTools):
     quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=13000) # go to 13TeV
     weight = self.getCtauWeight()
     #print 'begin'
-    hist_flat_bin = PlottingTools.createHisto(self, f, 'signal_tree', quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight=weight)
+    hist_flat_bin = self.tools.createHisto(f, 'signal_tree', quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight=weight)
     #print 'end'
     #n_selected_bin = hist_flat_bin.Integral() 
     bin_err = ROOT.double(0.)
@@ -752,7 +753,7 @@ if __name__ == '__main__':
     from samples import signal_samples_effscan_m1 as samples_m1
     from samples import signal_samples_effscan_m4p5 as samples
 
-    canv = PlottingTools().createTCanvas('canv', 800, 800)
+    canv = self.tools.createTCanvas('canv', 800, 800)
     #canv = ROOT.TCanvas()
     canv.SetLogx()
     canv.SetLogy()

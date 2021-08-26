@@ -3,7 +3,7 @@ import ROOT
 import os
 import os.path
 from os import path
-from common import PlottingTools
+from common import Tools
 
 
 
@@ -22,7 +22,7 @@ class Quantity(object): # make it inherit from utils Quantity and add logic
 class Selection(PlottingTools):
   def __init__(self, files, quantity, preexisting_selection=None, npoints=50, sample_type='flat', write_cut_analysis=False, proposed_cut=None):
     # have separate files for signal and background ! for the moment keeping it like that
-    self.tools                 = PlottingTools()
+    self.tools                 = Tools()
     self.files                 = files
     self.quantity              = quantity
     self.preexisting_selection = preexisting_selection

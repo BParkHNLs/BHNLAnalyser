@@ -6,7 +6,7 @@ import ROOT
 from quantity import Quantity
 
 
-class PlottingTools(object):
+class Tools(object):
   def getRootFile(self, filename, with_ext=False):
     if not with_ext:
       f = ROOT.TFile.Open(filename, 'READ')
