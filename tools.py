@@ -199,3 +199,44 @@ class Tools(object):
       ROOT.kOrange-3,
       ROOT.kOrange+8
     ]
+
+
+  def ctau_from_gamma(self, gamma):
+    const_hbar = 6.582119569e-22 * 1e-03
+    const_c = 299792458.                             
+    tau_natural = 1. / gamma        # 1/GeV
+    tau = tau_natural * const_hbar  # s
+    ctau = tau * const_c * 1000     # mm
+    return ctau
+
+
+  def gamma_total(self, mass, vv):
+    '''
+    Total width for N (Dirac)
+    '''
+    from decays import HNLDecays
+    gamma_total =  HNLDecays(mass=mass,mixing_angle_square=vv).decay_rate['tot']  # GeV
+    return gamma_total
+
+
+  def gamma_partial(self, mass, vv):
+    '''
+    Partial width for N->mupi (Dirac)
+    '''
+    from decays import HNLDecays
+    gamma_partial = HNLDecays(mass=mass,mixing_angle_square=vv).decay_rate['mupi'] # GeV
+    return gamma_partial
+
+
+  def getVV(self, mass=-99.,ctau=-99., ismaj=True):
+    '''
+    Helper function to go from ctau,m -> vv
+    '''
+    mult = 2. if ismaj else 1.
+    ref_m = 1. # GeV
+    ref_vv = 1. 
+    ref_ctau = self.tau_from_gamma(mult*self.gamma_total(mass=ref_m,vv=ref_vv))
+    k = ref_ctau * np.power(ref_m,5) * ref_vv
+    return k/(np.power(mass, 5) * ctau)
+
+

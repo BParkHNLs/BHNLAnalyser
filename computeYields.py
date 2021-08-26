@@ -8,9 +8,9 @@ from samples import data_samples, data_samples_small, qcd_samples, qcd_samples, 
 from quantity import Quantity
 #from decays import Decays, HNLDecays
 
-import sys
-sys.path.append('../../../../BHNLGen/CMSSW_10_2_15/src/HNLsGen/python/.')
-from my_common import getVV, gamma_partial, gamma_total
+#import sys
+#sys.path.append('../../../../BHNLGen/CMSSW_10_2_15/src/HNLsGen/python/.')
+#from my_common import getVV, gamma_partial, gamma_total
 
 
 class ComputeYields(Tools):
@@ -466,7 +466,7 @@ class ComputeYields(Tools):
     sigma_Btot_approx = sigma_Bcharged / frag_Bcharged
 
     ## coupling for mass 3 and ctau 184mm, 0.5 mu 0.5 el
-    v_square = getVV(mass=self.signal_file.mass, ctau=self.signal_file.ctau, ismaj=True) #1.17457274924e-05 # obtained with HNLsGen common.py
+    v_square = self.tools.getVV(mass=self.signal_file.mass, ctau=self.signal_file.ctau, ismaj=True) #1.17457274924e-05 # obtained with HNLsGen common.py
     #print 'v2: ',v_square
 
     ## total production branching ratio
@@ -514,7 +514,7 @@ class ComputeYields(Tools):
 
 
     ## total decay branching ratio
-    BR_NToMuPi = gamma_partial(mass=self.signal_file.mass, vv=v_square) / gamma_total(mass=self.signal_file.mass, vv=v_square) #0.0119363120843 # obtained with HNLsGen common.py
+    BR_NToMuPi = self.tools.gamma_partial(mass=self.signal_file.mass, vv=v_square) / self.tools.gamma_total(mass=self.signal_file.mass, vv=v_square) #0.0119363120843 # obtained with HNLsGen common.py
     #print 'BR_NToMuPi ',BR_NToMuPi
 
     #NToMuPi_fraction = 0.5 if self.signal_file.mass == 3. else 1.
@@ -575,7 +575,7 @@ if __name__ == '__main__':
 
   yields = ComputeYields(data_file=data_samples[0], qcd_files=qcd_samples, selection='sv_lxysig>20', white_list=white_list_15to300)
   #vv = yields.getVV(mass=3., ctau=184, ismajorana=True)
-  vv = getVV(mass=4.5, ctau=1.2, ismaj=True)
+  vv = self.tools.getVV(mass=4.5, ctau=1.2, ismaj=True)
 
   #yields.validateABCDOnQCDMC()
 
@@ -762,7 +762,7 @@ if __name__ == '__main__':
     for sample in samples:
       sig_incl = ComputeYields(signal_file=sample, selection='ismatched==1')
       eff, err_eff = sig_incl.getSignalEfficiency()/sample.filter_efficiency
-      v_square = getVV(mass=sample.mass, ctau=sample.ctau, ismaj=True)
+      v_square = self.tools.getVV(mass=sample.mass, ctau=sample.ctau, ismaj=True)
       point = graph.GetN()
       graph.SetPoint(point, v_square, eff)
       print '{} {}'.format(v_square, eff)
