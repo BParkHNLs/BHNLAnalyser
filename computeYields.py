@@ -3,7 +3,7 @@ import os.path
 from os import path
 import ROOT
 import math
-from common import Tools
+from tools import Tools
 from samples import data_samples, data_samples_small, qcd_samples, qcd_samples, signal_samples
 from quantity import Quantity
 #from decays import Decays, HNLDecays

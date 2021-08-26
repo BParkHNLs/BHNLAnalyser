@@ -6,7 +6,7 @@ from ROOT import gROOT, gStyle
 import math
 import numpy as np
 
-from common import Tools
+from tools import Tools
 
 
 class EfficiencyAnalyser(Tools):
