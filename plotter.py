@@ -221,10 +221,10 @@ class Plotter(Tools):
 
       if do_shape and int_data_tot != 0.: hist_data_tot.Scale(1./int_data_tot)
 
-      legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label) if len(self.data_files)>1 else data_file.filename))
+      legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label) if len(self.data_files)>1 else data_file.label))
 
       ## set the style
-      hist_data_tot.SetLineWidth(0)
+      #hist_data_tot.SetLineWidth(0)
       hist_data_tot.SetMarkerStyle(20)
       #hist_data.SetTitle(self.title)
 
@@ -393,6 +393,13 @@ class Plotter(Tools):
     if plot_sig: 
       for hist_sig in signal_hists:
         hist_sig.Draw('histo same')
+
+    # draw error bars
+    hist_mc_tot_err = hist_mc_tot.Clone('hist_mc_tot_err')
+    hist_mc_tot_err.SetLineWidth(0)
+    hist_mc_tot_err.SetFillStyle(3244)
+    hist_mc_tot_err.SetFillColor(ROOT.kGray+2)
+    hist_mc_tot_err.Draw('E2 same')
 
     ## draw the legend
     legend.Draw('same')
@@ -863,6 +870,7 @@ if __name__ == '__main__':
     #baseline_selection = 'mu_isdsa !=1 && trgmu_looseid==1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && ((mu_isglobalmuon==1 && mu_numberofstations>0 && mu_numberoftrackerlayers<18) || (mu_isglobalmuon!=1 && mu_calocompatibility>0.05 && mu_numberoftrackerlayers>6 && mu_numberoftrackerlayers<16 && mu_numberofvalidpixelhits<6)) && '
     #baseline_selection = 'mu_isdsa !=1 && trgmu_looseid==1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && mu_isglobalmuon!=1 && mu_calocompatibility>0.05 && mu_numberoftrackerlayers>6 && mu_numberoftrackerlayers<16 && mu_numberofvalidpixelhits<6 && '
     baseline_selection = 'mu_isdsa !=1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && '
+    #baseline_selection = 'mu_isdsa != 1 && '
 
     if plot_SR:
       #dirlabel = 'dataV05_QCDV06_29Jun21'
@@ -912,8 +920,8 @@ if __name__ == '__main__':
     if plot_CR:
       #dirlabel = 'dataV04_QCDV05_v1'
       #dirlabel = 'test'
-      dirlabel = 'dataV07_QCDV07_18Aug21'
-      for quantity in quantities_to_plot_all:
+      dirlabel = 'dataV07_QCDV07_18Aug21_sf_study15Sep21_A1_v0'
+      for quantity in quantities_to_plot_small:
         plotter = Plotter(quantity=quantity, data_files=data_samples, qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
         # control region
         # inclusive
