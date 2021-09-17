@@ -10,7 +10,7 @@ from itertools import product
 
 from tools import Tools
 from quantity import quantities_to_plot_small, quantities_to_plot_all, quantities_to_plot_selection, quantities_muonId_study_triggermuon, quantities_muonId_study_displacedmuon, quantities_muonId_study_triggermuon_small, quantities_muonId_study_displacedmuon_small, quantities_tag_and_probe
-from samples import data_samples, data_samples_V02, data_samples_V03, data_samples_loose, data_samples_triggermuon_matching_check, data_samples_tag_and_probe, qcd_samples, qcd_samples_V03, qcd_samples_triggermuon_matching_check, signal_samples, signal_samples_loose, signal_samples_tag_and_probe
+from samples import data_samples, data_samples_V02, data_samples_V03, data_samples_loose, data_samples_triggermuon_matching_check, data_samples_tag_and_probe, qcd_samples, qcd_samples_V03, qcd_samples_triggermuon_matching_check, signal_samples, signal_samples_loose, signal_samples_tag_and_probe, signal_samples_tag_and_probe_BToJPsiKstar
 from quantity import Quantity
 from computeYields import ComputeYields
 
@@ -30,7 +30,7 @@ class Plotter(Tools):
     self.white_list = white_list
 
 
-  def getMCLabel(self, label1, label2):
+  def getQCDMCLabel(self, label1, label2):
     '''
       based on MC label of the format ptXXtoYY 
     '''
@@ -325,7 +325,7 @@ class Plotter(Tools):
     #print 'qcd mc: {} entries'.format(int(hist_mc_tot.Integral()))
   
     if not do_stack:
-      legend.AddEntry(hist_mc_tot, 'MC - {}'.format(self.getMCLabel(self.qcd_files[0].label, self.qcd_files[len(self.qcd_files)-1].label)))
+      legend.AddEntry(hist_mc_tot, 'MC - {}'.format(self.getQCDMCLabel(self.white_list[0], self.white_list[len(self.white_list)-1])))
       
     ## create stack histogram  
     hist_mc_stack = ROOT.THStack('hist_mc_stack', '')
@@ -375,9 +375,9 @@ class Plotter(Tools):
     hist_mc_tot.GetYaxis().SetLabelSize(0.033 if not plot_ratio else 0.037)
     hist_mc_tot.GetYaxis().SetTitleSize(0.042)
     hist_mc_tot.GetYaxis().SetTitleOffset(1.3 if not plot_ratio else 1.1)
-    #if plot_data: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_stack, hist_mc_stack, do_log))
-    #elif plot_sig: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_mc_stack, do_log, use_sig=True))
-    #else: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_mc_tot, hist_mc_stack, do_log))
+    if plot_data: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_stack, hist_mc_stack, do_log))
+    elif plot_sig: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_mc_stack, do_log, use_sig=True))
+    else: hist_mc_tot.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_mc_tot, hist_mc_stack, do_log))
 
     #ROOT.gStyle.SetPadLeftMargin(0.16) 
     ROOT.gStyle.SetOptStat(0)
@@ -506,7 +506,7 @@ class Plotter(Tools):
 
     if int_data_tot != 0: hist_data_tot.Scale(1./int_data_tot)
 
-    legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label) if len(self.data_files)>1 else data_file.filename))
+    legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label) if len(self.data_files)>1 else data_file.label))
 
     ## set the style
     #hist_data.SetLineWidth(0)
@@ -529,7 +529,8 @@ class Plotter(Tools):
       if do_shape: 
         int_signal = hist_signal.Integral()
         if int_signal != 0: hist_signal.Scale(1/int_signal)
-      legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
+      #legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
+      legend.AddEntry(hist_signal, 'MC - {}'.format(signal_file.label))
 
       hist_signal.SetLineWidth(3)
       hist_signal.SetLineColor(signal_file.colour)
@@ -828,19 +829,22 @@ if __name__ == '__main__':
 
 
   if doSignalBackgroundComparison:
+    #baseline_selection = 'trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1'
+    baseline_selection = '' 
     #outdirlabel = 'loosepreselection_stdtrgmu_v1'
     #for quantity in quantities_to_plot_selection:
     #  plotter = Plotter(quantity=quantity, data_files=data_samples_loose, signal_files=signal_samples_loose)
     #  plotter.plotSignalBackgroundComparison(outdirlabel=outdirlabel, do_shape=True, do_log=False)
     #dirlabel = 'test_JPsiToMuMu'
-    dirlabel = 'dataV06_tag_and_probe_v2_A1_2_sf4'
+    dirlabel = 'dataV06_tag_and_probe_v2_BToJPsiKstar_V0_sf_study15Sep21_A1_v1'
+    #dirlabel = 'dataV07_BToJPsiKstar_V0_sf_study15Sep21_A1_v1'
     for quantity in quantities_tag_and_probe:
-      plotter = Plotter(quantity=quantity, data_files=data_samples_tag_and_probe, signal_files=signal_samples_tag_and_probe)
-      plotter.plotSignalBackgroundComparison(outdirlabel=dirlabel, branchname='flat', treename='tree', do_shape=True, do_log=False)
+      plotter = Plotter(quantity=quantity, data_files=data_samples_tag_and_probe, signal_files=signal_samples_tag_and_probe_BToJPsiKstar)
+      plotter.plotSignalBackgroundComparison(outdirlabel=dirlabel, branchname='flat', treename='tree', selection=baseline_selection, do_shape=True, do_log=False)
 
 
   #white_list_20to300 = ['QCD_pt20to30 (V04)', 'QCD_pt30to50 (V04)', 'QCD_pt50to80 (V04)', 'QCD_pt80to120 (V04)', 'QCD_pt80to120_ext (V04)', 'QCD_pt120to170 (V04)', 'QCD_pt120to170_ext (V04)', 'QCD_pt170to300 (V04)']
-  white_list_20to300 = ['QCD_pt20to30 (V04)', 'QCD_pt30to50 (V04)', 'QCD_pt50to80 (V04)', 'QCD_pt80to120 (V04)', 'QCD_pt120to170 (V04)', 'QCD_pt170to300 (V04)']
+  white_list_20to300 = ['QCD_pt30to50 (V04)', 'QCD_pt50to80 (V04)', 'QCD_pt80to120 (V04)', 'QCD_pt120to170 (V04)', 'QCD_pt170to300 (V04)']
   white_list_20to30 = ['QCD_pt20to30 (V02)']
 
   for quantity in quantities_to_plot_small:
@@ -851,7 +855,8 @@ if __name__ == '__main__':
 
     #white_list_20to300 = ['QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt80to120 (V02)', 'QCD_pt80to120_ext (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt120to170_ext (V02)', 'QCD_pt170to300 (V02)']
     #white_list_15to300 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt170to300 (V02)']
-    white_list_15to300 = ['QCD_pt15to20 (V07_18Aug21)', 'QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
+    #white_list_15to300 = ['QCD_pt15to20 (V07_18Aug21)', 'QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
+    white_list_15to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
     white_list_20to300 = ['QCD_pt20to30 (V05)', 'QCD_pt30to50 (V05)', 'QCD_pt50to80 (V05)', 'QCD_pt80to120 (V05)', 'QCD_pt120to170 (V05)', 'QCD_pt170to300 (V05)']
     white_list_30to300 = ['QCD_pt30to50 (V05)', 'QCD_pt50to80 (V05)', 'QCD_pt80to120 (V05)', 'QCD_pt120to170 (V05)', 'QCD_pt170to300 (V05)']
     white_list_30to50 = ['QCD_pt30to50 (V05)']
@@ -920,7 +925,7 @@ if __name__ == '__main__':
     if plot_CR:
       #dirlabel = 'dataV04_QCDV05_v1'
       #dirlabel = 'test'
-      dirlabel = 'dataV07_QCDV07_18Aug21_sf_study15Sep21_A1_v0'
+      dirlabel = 'dataV07_QCDV07_18Aug21_sf_study15Sep21_A1_v5_otherQCDrange_20_300'
       for quantity in quantities_to_plot_small:
         plotter = Plotter(quantity=quantity, data_files=data_samples, qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
         # control region
