@@ -27,8 +27,8 @@ class QCDMCSample(object):
     self.filter_efficiency = filter_efficiency
     self.colour = colour
 
-
-signal_samples = [
+signal_samples = {}
+signal_samples['private'] = [
   SignalSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_selected_stdtrgmu_full_v1.root',
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_newselection_stdtrgmu_v1.root',
@@ -73,7 +73,7 @@ signal_samples = [
   ]
 
 
-signal_samples_loose_dsaonly = [
+signal_samples['loose_dsaonly'] = [
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
       label = '4.5GeV, 1.2mm (V21)',
@@ -105,7 +105,7 @@ signal_samples_loose_dsaonly = [
   ]
 
 
-signal_samples_tag_and_probe = [
+signal_samples['tag_and_probe'] = [
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/merged/flat_bparknano_tag_and_probe_v2_tag_fired_DST_DoubleMu1i_sf.root',
       label = 'V15_control, fixed tag trigger',
@@ -119,7 +119,7 @@ signal_samples_tag_and_probe = [
 ]
 
 
-signal_samples_tag_and_probe_BToJPsiKstar = [
+signal_samples['tag_and_probe_BToJPsiKstar'] = [
   #SignalSample(
   #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/BToJPsiKstar_V0/BdToJpsiKstar_BMuonFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_signal_sf_study15Sep21_A1_v1.root',
   #    label = 'BToJPsiKstar (V0), B->#mu#mu#pi',
@@ -132,7 +132,7 @@ signal_samples_tag_and_probe_BToJPsiKstar = [
       ),
 ]
 
-signal_samples_limits_m4p5 = [
+signal_samples['limits_m4p5'] = [
   SignalSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Jun21.root',
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_18Aug21.root',
@@ -213,7 +213,7 @@ signal_samples_limits_m4p5 = [
   ]
 
 
-signal_samples_limits_m4p5_large = [
+signal_samples['limits_m4p5_large'] = [
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Jun21.root',
       filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21_Bc/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Jun21.root',
@@ -397,7 +397,7 @@ signal_samples_limits_m4p5_large = [
   #    ),
   ]
 
-signal_samples_limits_m3 = [
+signal_samples['limits_m3'] = [
 SignalSample(
     #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
     filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_18Aug21.root',
@@ -474,7 +474,7 @@ SignalSample(
 ]
 
 
-signal_samples_limits_m3_large = [
+signal_samples['limits_m3_large'] = [
 SignalSample(
     filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
     filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
@@ -654,7 +654,7 @@ SignalSample(
 ]
 
 
-signal_samples_limits_m1 = [
+signal_samples['limits_m1'] = [
   SignalSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_18Aug21.root',
@@ -740,7 +740,7 @@ signal_samples_limits_m1 = [
   ]
 
 
-signal_samples_limits_m1_large = [
+signal_samples['limits_m1_large'] = [
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
       mass = 1.0,
@@ -926,187 +926,7 @@ signal_samples_limits_m1_large = [
   ]
 
 
-signal_samples_limits = [
-  SignalSample(
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_selected_updatedgenmatching.root',
-      label = '3GeV, 184mm (V20_emu)',
-      mass = 3,
-      ctau = 184,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      colour = ROOT.kRed+1,
-      ),
-  SignalSample(
-      mass = 3,
-      ctau = 10,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      ),
-  SignalSample(
-      mass = 3,
-      ctau = 1,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      ),
-  SignalSample(
-      mass = 3,
-      ctau = 0.1,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      ),
-  SignalSample(
-      mass = 3,
-      ctau = 0.01,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      ),
-  SignalSample(
-      mass = 3,
-      ctau = 0.001,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      ),
-  SignalSample(
-      mass = 3,
-      ctau = 1e-3,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      ),
-  SignalSample(
-      mass = 3,
-      ctau = 1e-4,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      ),
-  SignalSample(
-      mass = 3,
-      ctau = 1e-5,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      ),
-  SignalSample(
-      mass = 3,
-      ctau = 1e-6,
-      resolution = 0.0243,
-      filter_efficiency = 3.93e-03,
-      ),
-  SignalSample(
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_selected_updatedgenmatching.root',
-      label = '4.5GeV, 1.2mm',
-      mass = 4.5,
-      ctau = 1.2,
-      resolution = 0.0373,
-      filter_efficiency = 3.91e-04,
-      colour = ROOT.kRed+4,
-      ),
-  SignalSample(
-      mass = 4.5,
-      ctau = 1e-1,
-      resolution = 0.0373,
-      filter_efficiency = 3.91e-04,
-      ),
-  SignalSample(
-      mass = 4.5,
-      ctau = 1e-2,
-      resolution = 0.0373,
-      filter_efficiency = 3.91e-04,
-      ),
-  SignalSample(
-      mass = 4.5,
-      ctau = 1e-3,
-      resolution = 0.0373,
-      filter_efficiency = 3.91e-04,
-      ),
-  SignalSample(
-      mass = 4.5,
-      ctau = 1e-5,
-      resolution = 0.0373,
-      filter_efficiency = 3.91e-04,
-      ),
-  SignalSample(
-      mass = 4.5,
-      ctau = 1e-6,
-      resolution = 0.0373,
-      filter_efficiency = 3.91e-04,
-      ),
-  SignalSample(
-      mass = 4.5,
-      ctau = 1e-7,
-      resolution = 0.0373,
-      filter_efficiency = 3.91e-04,
-      ),
-  SignalSample(
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_selected_updatedgenmatching.root',
-      label = '1GeV, 10^{4}mm',
-      mass = 1,
-      ctau = 1e4,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      colour = ROOT.kOrange+0
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1e3,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1e2,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1e1,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1e-1,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1e-2,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1e-3,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1e-4,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1e-5,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  SignalSample(
-      mass = 1,
-      ctau = 1e-6,
-      resolution = 0.0104,
-      filter_efficiency = 2.40e-04,
-      ),
-  ]
-
-signal_samples_loose = [
+signal_samples['loose'] = [
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/bparknano_loosepreselection_stdtrgmu_v1.root',
       label = '4.5GeV, 1.2mm',
@@ -1131,7 +951,8 @@ signal_samples_loose = [
       ),
   ]
 
-data_samples_F1 = [
+data_samples = {}
+data_samples['F1'] = [
   DataSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/F1/ParkingBPH1_Run2018A/merged/flat_bparknano_largestPt_SS.root',
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/F1/ParkingBPH1_Run2018A/merged/flat_bparknano.root',
@@ -1140,7 +961,7 @@ data_samples_F1 = [
       ),
   ]
 
-data_samples_V02 = [
+data_samples['V02'] = [
   DataSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V02/ParkingBPH1_Run2018A/merged/flat_bparknano_selected_selCos2d_nonNullChargeCR.root',
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V02/ParkingBPH1_Run2018A/merged/flat_bparknano_selected_selCos2d.root',
@@ -1148,14 +969,14 @@ data_samples_V02 = [
       ),
   ]
 
-data_samples_V03 = [
+data_samples['V03'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V03/ParkingBPH1_Run2018A/merged/flat_bparknano_selected_stdtrgmu_full_v1.root',
       label = 'ParkingBPH1_Run2018A (V03)',
       ),
   ]
 
-data_samples_V04 = [
+data_samples['V04'] = [
   DataSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V04/ParkingBPH1_Run2018A/merged/flat_bparknano_newselection_stdtrgmu_v1.root',
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V04/ParkingBPH1_Run2018A/merged/flat_bparknano_selected_updatedmatching.root',
@@ -1163,7 +984,7 @@ data_samples_V04 = [
       ),
   ]
 
-data_samples_V05 = [
+data_samples['V05_29Jun21'] = [
   #DataSample(
   #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V05_29Jun21/ParkingBPH1_Run2018B/merged/flat_bparknano_29Jun21_hlt_weights.root',
   #    label = 'ParkingBPH1_Run2018B (V05_29Jun21)',
@@ -1194,49 +1015,51 @@ data_samples_V05 = [
       ),
   ]
 
-data_samples = [
+data_samples['V07_18Aug21'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/flat_bparknano_18Aug21_nodsa.root',
       label = 'ParkingBPH1_Run2018A (V07_18Aug21)',
       ),
   ]
 
-data_samples_triggermuon_matching_check = [
+data_samples['triggermuon_matching_check'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V02/ParkingBPH4_Run2018B/merged/flat_bparknano_for_triggermuon_matching_study.root',
       label = 'Relaxed trigger muon matching',
       ),
   ]
 
-data_samples_small = [
+data_samples['small'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V03/ParkingBPH1_Run2018A/Chunk0_n500/flat/flat_bparknano_selected_stdtrgmu_full_partial.root',
       label = 'ParkingBPH1_Run2018A (V03)',
       ),
   ]
 
-data_samples_loose = [
+data_samples['loose'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V03/ParkingBPH4_Run2018B/Chunk0_n10/bparknano_loosepreselection_v2_nj1.root',
       label = 'background',
       ),
   ]
 
-data_samples_tag_and_probe = [
+data_samples['tag_and_probe'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V06_tag_and_probe/ParkingBPH1_Run2018A/merged/flat_bparknano_tag_and_probe_v2_tag_fired_DST_DoubleMu1.root',
       label = 'ParkingBPH1_Run2018A (V06)',
       ),
   ]
 
-data_samples_loose_dsaonly = [
+data_samples['loose_dsaonly'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/bparknano_looseselection_dsaonly.root',
       label = 'ParkingBPH1_Run2018A (1file)',
       ),
   ]
 
-qcd_samples = [
+
+qcd_samples = {}
+qcd_samples['V07_18Aug21'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21.root',
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
@@ -1301,7 +1124,7 @@ qcd_samples = [
       ),
   ]
 
-qcd_samples_V06 = [
+qcd_samples['V06_29Jun21'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V06_29Jun21/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_29Jun21_trigger_scale_factor_A1_6_v2.root',
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V06_29Jun21/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_29Jun21_sf_study15Sep21_A1_6_v1.root',
@@ -1367,7 +1190,7 @@ qcd_samples_V06 = [
       ),
   ]
 
-qcd_samples_V05 = [
+qcd_samples['V05'] = [
   QCDMCSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V05/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_newselection_stdtrgmu_v1_corr.root',
       label = 'QCD_pt15to20 (V05)',
@@ -1434,7 +1257,7 @@ qcd_samples_V05 = [
   ]
 
 
-qcd_samples_triggermuon_matching_check = [
+qcd_samples['triggermuon_matching_check'] = [
   QCDMCSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V02/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_for_triggermuon_matching_study.root',
       label = 'QCD_pt15to20 (V02)',
@@ -1502,7 +1325,7 @@ qcd_samples_triggermuon_matching_check = [
   ]
 
 
-qcd_samples_V04 = [
+qcd_samples['V04'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V04/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_selected_stdtrgmu_full_nonNullChargeCR.root',
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V04/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_selected_stdtrgmu_full_v1.root',
@@ -1577,7 +1400,7 @@ qcd_samples_V04 = [
       ),
   ]
 
-qcd_samples_V03 = [
+qcd_samples['V03'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V03/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_selected_selCos2d_nonNullChargeCR.root',
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V03/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_selected_selCos2d.root',
@@ -1653,7 +1476,7 @@ qcd_samples_V03 = [
   ]
 
 
-qcd_samples_V02 = [
+qcd_samples['V02'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V02/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_largestPt_SS.root',
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V02/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano.root',
