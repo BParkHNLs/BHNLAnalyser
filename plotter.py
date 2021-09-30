@@ -14,11 +14,6 @@ from samples import data_samples, data_samples_V02, data_samples_V03, data_sampl
 from quantity import Quantity
 from computeYields import ComputeYields
 
-# temporary
-import sys
-sys.path.append('../../../../BHNLGen/CMSSW_10_2_15/src/HNLsGen/python/.')
-from my_common import getVV
-
 
 class Plotter(Tools):
   def __init__(self, quantity='', data_files='', qcd_files='', signal_files='', white_list=''):
@@ -765,7 +760,7 @@ class Plotter(Tools):
       # get signal coupling
       signal_mass = signal_file.mass
       signal_ctau = signal_file.ctau
-      signal_v2 = getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+      signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
       signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
@@ -790,7 +785,7 @@ class Plotter(Tools):
       # get signal coupling
       signal_mass = signal_file.mass
       signal_ctau = signal_file.ctau
-      signal_v2 = getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+      signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
       signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
@@ -814,7 +809,7 @@ class Plotter(Tools):
       # get signal coupling
       signal_mass = signal_file.mass
       signal_ctau = signal_file.ctau
-      signal_v2 = getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+      signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
       signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
@@ -861,8 +856,8 @@ class Plotter(Tools):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  doDataMCComparison = False
-  doSignalBackgroundComparison = True
+  doDataMCComparison = True
+  doSignalBackgroundComparison = False
   plotMCSR = False
   compareTwoDistributions = False
   plotYields = False
