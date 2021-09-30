@@ -15,8 +15,6 @@ quantities_to_plot_small = [
   #Quantity(name_nano='BToMuMuPi_mass', name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0.55, bin_max=8),
   Quantity(name_nano='BToMuMuPi_pt', name_flat='b_pt', label='b_pt', title='#mu#mu#pi pT [GeV]', nbins=60, bin_min=0, bin_max=80),
   Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=0., bin_max=5.4),
-  #Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=110, bin_min=0., bin_max=1.),
-  #Quantity(name_nano='BToMuMuPi_sv_lxy_sig', name_flat='sv_lxysig', label='sv_lxysig', title='significance of the displaced vertex lxy', nbins=80, bin_min=0, bin_max=250),
   Quantity(name_nano='BToMuMuPi_trg_mu_pt', name_flat='trgmu_pt', label='trgmu_pt', title='trigger #mu pT [GeV]', nbins=60, bin_min=6, bin_max=20),
   #Quantity(name_nano='fabs(BToMuMuPi_sel_mu_dzS)', name_flat='fabs(trgmu_dzsig)', label='trgmu_dzsig', title='displaced #mu impact parameter significance on z', nbins=60, bin_min=0, bin_max=15),
   #Quantity(name_nano='fabs(BToMuMuPi_sel_mu_dxyS)', name_flat='fabs(trgmu_dxysig)', label='trgmu_dxysig', title='displaced #mu impact parameter significance on xy', nbins=60, bin_min=0, bin_max=15),
@@ -36,27 +34,6 @@ quantities_to_plot_small = [
   #Quantity(name_nano='BToMuMuPi_trgmu_pi_mass', name_flat='trgmu_pi_mass', label='trgmu_pi_mass', title='trg#mu#pi invariant mass [GeV]', nbins=90, bin_min=0, bin_max=7),
   #Quantity(name_nano='Muon_pfiso03Rel_all[BToMuMuPi_trg_mu_idx]', name_flat='trgmu_pfiso03_rel', label='trgmu_pfiso03_rel', title='trigger #mu relative PF iso03', nbins=90, bin_min=0, bin_max=2),
   #Quantity(name_nano='Muon_pfiso03Rel_all[BToMuMuPi_sel_mu_idx]', name_flat='mu_pfiso03_rel', label='mu_pfiso03_rel', title='displaced #mu relative PF iso03', nbins=90, bin_min=0, bin_max=3),
-  Quantity(name_nano='BToMuMuPi_dr_mu_pi', name_flat='deltar_mu_pi', label='deltar_mu_pi', title='#Delta R(#mu, #pi)', nbins=30, bin_min=0, bin_max=3.),
-  Quantity(name_nano='BToMuMuPi_dr_trgmu_hnl', name_flat='deltar_trgmu_hnl', label='deltar_trgmu_hnl', title='#Delta R(trg#mu, hnl)', nbins=30, bin_min=0, bin_max=0.5),
-  Quantity(name_nano='BToMuMuPi_dr_trgmu_mu', name_flat='deltar_trgmu_mu', label='deltar_trgmu_mu', title='#Delta R(trg#mu, #mu)', nbins=30, bin_min=0, bin_max=1.6),
-  Quantity(name_nano='BToMuMuPi_dr_trgmu_pi', name_flat='deltar_trgmu_pi', label='deltar_trgmu_pi', title='#Delta R(trg#mu, #pi)', nbins=30, bin_min=0, bin_max=1.6),
-
-  Quantity(name_nano='fabs(BToMuMuPi_deta_mu_pi)', name_flat='fabs(deltaeta_mu_pi)', label='deltaeta_mu_pi', title='|#Delta#eta(#mu, #pi)|', nbins=30, bin_min=0, bin_max=2.),
-  Quantity(name_nano='fabs(BToMuMuPi_deta_trgmu_hnl)', name_flat='fabs(deltaeta_trgmu_hnl)', label='deltaeta_trgmu_hnl', title='|#Delta#eta(trg#mu, hnl)|', nbins=30, bin_min=0, bin_max=0.6),
-  Quantity(name_nano='fabs(BToMuMuPi_deta_trgmu_mu)', name_flat='fabs(deltaeta_trgmu_mu)', label='deltaeta_trgmu_mu', title='|#Delta#eta(trg#mu, #mu)|', nbins=30, bin_min=0, bin_max=1.),
-  Quantity(name_nano='fabs(BToMuMuPi_deta_trgmu_pi)', name_flat='fabs(deltaeta_trgmu_pi)', label='deltaeta_trgmu_pi', title='|#Delta#eta(trg#mu, #pi)| ', nbins=30, bin_min=0, bin_max=1.8),
-
-  Quantity(name_nano='fabs(BToMuMuPi_dphi_mu_pi)', name_flat='fabs(deltaphi_mu_pi)', label='deltaphi_mu_pi', title='|#Delta#phi(#mu, #pi)|', nbins=30, bin_min=0, bin_max=3.2),
-  Quantity(name_nano='fabs(BToMuMuPi_dphi_trgmu_hnl)', name_flat='fabs(deltaphi_trgmu_hnl)', label='deltaphi_trgmu_hnl', title='|#Delta#phi(trg#mu, hnl)|', nbins=30, bin_min=0, bin_max=0.5),
-  Quantity(name_nano='fabs(BToMuMuPi_dphi_trgmu_mu)', name_flat='fabs(deltaphi_trgmu_mu)', label='deltaphi_trgmu_mu', title='|#Delta#phi(trg#mu, #mu)|', nbins=30, bin_min=0, bin_max=1.),
-  Quantity(name_nano='fabs(BToMuMuPi_dphi_trgmu_pi)', name_flat='fabs(deltaphi_trgmu_pi)', label='deltaphi_trgmu_pi', title='|#Delta#phi(trg#mu, #pi)|', nbins=30, bin_min=0, bin_max=3.2),
-
-  Quantity(name_nano='fabs(BToMuMuPi_dpt_pi_fit_pi)', name_flat='fabs(deltapt_pi_fit_pi)', label='deltapt_pi_fit_pi', title='|#Delta pT(#pi, fitted #pi)|', nbins=30, bin_min=0, bin_max=0.02),
-  Quantity(name_nano='fabs(BToMuMuPi_dpt_mu_fit_mu)', name_flat='fabs(deltapt_mu_fit_mu)', label='deltapt_mu_fit_mu', title='|#Delta pT(#mu, fitted #mu)|', nbins=30, bin_min=0, bin_max=0.08),
-  Quantity(name_nano='fabs(BToMuMuPi_deta_pi_fit_pi)', name_flat='fabs(deltaeta_pi_fit_pi)', label='deltaeta_pi_fit_pi', title='|#Delta#eta(#pi, fitted #pi)|', nbins=30, bin_min=0, bin_max=0.001),
-  Quantity(name_nano='fabs(BToMuMuPi_deta_mu_fit_mu)', name_flat='fabs(deltaeta_mu_fit_mu)', label='deltaeta_mu_fit_mu', title='|#Delta#eta(#mu, fitted #mu)|', nbins=30, bin_min=0, bin_max=0.002),
-  Quantity(name_nano='fabs(BToMuMuPi_dphi_pi_fit_pi)', name_flat='fabs(deltaphi_pi_fit_pi)', label='deltaphi_pi_fit_pi', title='|#Delta#phi(#pi, fitted #pi)|', nbins=30, bin_min=0, bin_max=0.015),
-  Quantity(name_nano='fabs(BToMuMuPi_dphi_mu_fit_mu)', name_flat='fabs(deltaphi_mu_fit_mu)', label='deltaphi_mu_fit_mu', title='|#Delta#phi(#mu, fitted #mu)|', nbins=30, bin_min=0, bin_max=0.01),
   ]
 
 
