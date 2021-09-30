@@ -27,7 +27,7 @@ git clone git@github.com:BParkHNLs/BHNLAnalyser.git
 ```
 
 
-### After first installation:
+### After first installation
 ```
 cd CMSSW_10_2_15/src/HiggsAnalysis/CombinedLimit/BHNAnalyser
 cmsenv
