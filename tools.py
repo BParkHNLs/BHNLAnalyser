@@ -52,8 +52,8 @@ class Tools(object):
       
       #weight_mc = self.computeQCDMCWeight(self.getTree(f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_mc = self.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
-      weight = '({}) * (weight_hlt)'.format(weight_mc)
-      #weight = '({})'.format(weight_mc)
+      #weight = '({}) * (weight_hlt)'.format(weight_mc)
+      weight = '({})'.format(weight_mc)
       hist_mc = self.createHisto(f_mc, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight) 
       hist_mc.Sumw2()
     
