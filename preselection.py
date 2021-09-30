@@ -19,8 +19,8 @@ class Quantity(object): # make it inherit from utils Quantity and add logic
     self.binMax = binMax
                               
 
-class Selection(PlottingTools):
-  def __init__(self, files, quantity, preexisting_selection=None, npoints=50, sample_type='flat', write_cut_analysis=False, proposed_cut=None):
+class Selection(Tools):
+  def __init__(self, files, quantity, preexisting_selection=None, npoints=50, sample_type='nano', write_cut_analysis=False, proposed_cut=None):
     # have separate files for signal and background ! for the moment keeping it like that
     self.tools                 = Tools()
     self.files                 = files
@@ -77,7 +77,7 @@ class Selection(PlottingTools):
     cut_variable = self.quantity.name_nano if self.sample_type == 'nano' else self.quantity.name_flat
 
     if self.sample_type == 'nano':
-      baseline_selection = 'BToMuMuPi_isMatched==1' if str_=='sig' else 'BToMuMuPi_isMatched>-99'
+      baseline_selection = 'BToMuMuPi_isMatched==1 && BToMuMuPi_hnl_charge==0' if str_=='sig' else 'BToMuMuPi_isMatched>-99'
     else:
       baseline_selection = 'ismatched==1 && mu_isdsa==1' if str_=='sig' else 'ismatched>-99 && mu_isdsa==1'
     
@@ -290,8 +290,8 @@ class Selection(PlottingTools):
     proposed_bkg_entries = self.createHisto(self.files[0], 'bkg', True, self.proposed_cut).GetEntries()
     proposed_sig_entries = self.createHisto(self.files[1], 'sig', True, self.proposed_cut).GetEntries()
 
-    #print 'sig1 {} {}'.format(int(initial_sig_entries), int(initial_bkg_entries))
-    #print 'sig1 {} {}'.format(int(proposed_sig_entries), int(proposed_bkg_entries))
+    print 'sig1 {} {}'.format(int(initial_sig_entries), int(initial_bkg_entries))
+    print 'sig1 {} {}'.format(int(proposed_sig_entries), int(proposed_bkg_entries))
 
     if len(self.files)==1:
       cutflow_line = '{qte} {log} {cut} & -{sig_per}\% & -{bkg_per}\% \\ '.format(
@@ -324,10 +324,10 @@ class Selection(PlottingTools):
       initial_sig2_entries = self.createHisto(self.files[3], 'sig', False).GetEntries()
       proposed_sig2_entries = self.createHisto(self.files[3], 'sig', True, self.proposed_cut).GetEntries()
 
-      #print 'sig2 {}'.format(int(initial_sig1_entries))
-      #print 'sig2 {}'.format(int(proposed_sig1_entries))
-      #print 'sig3 {}'.format(int(initial_sig2_entries))
-      #print 'sig3 {}'.format(int(proposed_sig2_entries))
+      print 'sig2 {}'.format(int(initial_sig1_entries))
+      print 'sig2 {}'.format(int(proposed_sig1_entries))
+      print 'sig3 {}'.format(int(initial_sig2_entries))
+      print 'sig3 {}'.format(int(proposed_sig2_entries))
 
       cutflow_line = '{qte} {log} {cut} {unit} & -{sig0_per}\% & -{sig1_per}\% & -{sig2_per}\% & -{bkg_per}\% \\\ '.format(
           qte = self.quantity.title, 
@@ -377,26 +377,26 @@ class PreselectedQuantity(object):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
   file_background = FileCollection(
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_16Aug21/ParkingBPH1_Run2018A/merged/flat_bparknano_1file_looseselection.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/bparknano_looseselection_dsaonly.root',
       process = 'background',
       )
 
   file_m3 = FileCollection(
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_looseselection.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
       process = 'signal',
       signal_mass = 3,
       signal_ctau = 184,
       )
 
   file_m4p5 = FileCollection(
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_looseselection.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
       process = 'signal',
       signal_mass = 4.5,
       signal_ctau = 1.2,
       )
 
   file_m1 = FileCollection(
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_looseselection.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
       process = 'signal',
       signal_mass = 1,
       signal_ctau = 184,
@@ -440,9 +440,9 @@ if __name__ == '__main__':
   mu_eta = Quantity('abs(Muon_eta[BToMuMuPi_sel_mu_idx])', 'abs(mu_eta)', 'mu_eta', 'displaced muon |#eta|', '<', '', 0, 2.5)
   mu_ip3d = Quantity('BToMuMuPi_sel_mu_ip3d', 'mu_ip3d', 'mu_ip3d', 'displaced muon IP (3D)', '>', 'cm', 0, 0.5)
   mu_sip3d = Quantity('BToMuMuPi_sel_mu_sip3d', 'mu_ip3dsig', 'mu_sip3d', 'displaced muon IP significance (3D)', '>', '', 0, 15)
-  mu_dz = Quantity('abs(BToMuMuPi_sel_mu_dz)', 'abs(mu_dz)', 'mu_dz', 'displaced muon |IP| on z', '>', 'cm', 0, 0.015)
+  mu_dz = Quantity('abs(Muon_dz[BToMuMuPi_sel_mu_idx])', 'abs(mu_dz)', 'mu_dz', 'displaced muon |IP| on z', '>', 'cm', 0, 0.015)
   mu_dzS = Quantity('abs(Muon_dzS[BToMuMuPi_sel_mu_idx])', 'abs(mu_dzsig)', 'mu_dzS', 'displaced muon |IP| significance on z', '>', '', 0, 5)
-  mu_dxy = Quantity('abs(BToMuMuPi_sel_mu_dxy)', 'abs(mu_dxy)', 'mu_dxy', 'displaced muon |IP| on xy', '>', 'cm', 0, 1)
+  mu_dxy = Quantity('abs(Muon_dxy[BToMuMuPi_sel_mu_idx])', 'abs(mu_dxy)', 'mu_dxy', 'displaced muon |IP| on xy', '>', 'cm', 0, 1)
   mu_dxyS = Quantity('abs(Muon_dxyS[BToMuMuPi_sel_mu_idx])', 'abs(mu_dxysig)', 'mu_dxyS', 'displaced muon |IP| significance on xy', '>', '', 0, 2)
   mu_pfiso03rel = Quantity('Muon_pfiso03Rel_all[BToMuMuPi_sel_mu_idx]', 'mu_pfiso03rel', 'mu_pfiso03rel', 'displaced muon relative PF iso03', '<', '', 0, 20)
 
@@ -474,9 +474,14 @@ if __name__ == '__main__':
   deta_mu_fit_mu  = Quantity('abs(BToMuMuPi_deta_mu_fit_mu)', 'abs(deltaeta_mu_fit_mu)', 'deta_mu_fit_mu', '|#Delta #eta(#mu, fit#mu)|', '<', '', 0, 0.1) 
   dphi_mu_fit_mu  = Quantity('abs(BToMuMuPi_dphi_mu_fit_mu)', 'abs(deltaphi_mu_fit_mu)', 'dphi_mu_fit_mu', '|#Delta #Phi(#mu, fit#mu)|', '<', '', 0, 0.1) 
 
+  deta_mu_pi  = Quantity('abs(BToMuMuPi_deta_mu_pi)', 'abs(deltaeta_mu_pi)', 'deta_mu_pi', '|#Delta #eta(#mu, #pi)|', '<', '', 0, 1.8) 
+  deta_trgmu_pi  = Quantity('abs(BToMuMuPi_deta_trgmu_pi)', 'abs(deltaeta_trgmu_pi)', 'deta_trgmu_pi', '|#Delta #eta(trg#mu, #pi)|', '<', '', 0, 1.8) 
+  dphi_mu_pi  = Quantity('abs(BToMuMuPi_dphi_mu_pi)', 'abs(deltaphi_mu_pi)', 'dphi_mu_pi', '|#Delta #phi(#mu, #pi)|', '<', '', 0, 3) 
+  dphi_trgmu_pi  = Quantity('abs(BToMuMuPi_dphi_trgmu_pi)', 'abs(deltaphi_trgmu_pi)', 'dphi_trgmu_pi', '|#Delta #phi(trg#mu, #pi)|', '<', '', 0, 3) 
+
   #soft_muon = Quantity('b_sel_mu_isSoft', 'mu_isSoft', '==', '', 0, 1)
  
-  printCutflow = True
+  printCutflow = False
   printScan = False
 
   preselection = [] 
@@ -489,7 +494,7 @@ if __name__ == '__main__':
   #Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printCutflowLine()
   preselection.append(PreselectedQuantity(trg_mu_pt, cut_trg_mu_pt))
 
-  cut_trg_mu_eta = 1.55
+  cut_trg_mu_eta = 1.5
   if printScan: Selection(files, trg_mu_eta, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_trg_mu_eta).getScanGraph()
   #Selection(files, trg_mu_eta, npoints=30).getROCGraph()
   if printCutflow: Selection(files, trg_mu_eta, preexisting_selection=preselection, proposed_cut=cut_trg_mu_eta).printCutflowLine()
@@ -555,7 +560,7 @@ if __name__ == '__main__':
   #Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printCutflowLine()
   preselection.append(PreselectedQuantity(pi_dxyS, cut_pi_dxyS))
   
-  cut_pi_DCASig = 0.5
+  cut_pi_DCASig = 1
   if printScan: Selection(files, pi_DCASig, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).getScanGraph()
   #Selection(files, pi_DCASig, npoints=30).getROCGraph()
   if printCutflow: Selection(files, pi_DCASig, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).printCutflowLine()
@@ -576,7 +581,7 @@ if __name__ == '__main__':
   #Selection(files, mu_eta, preexisting_selection=preselection, proposed_cut=cut_mu_eta).printCutflowLine()
   preselection.append(PreselectedQuantity(mu_eta, cut_mu_eta))
 
-  cut_mu_dz = 0.0015
+  cut_mu_dz = 0.001
   if printScan: Selection(files, mu_dz, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_mu_dz).getScanGraph()
   #Selection(files, mu_dz, npoints=30).getROCGraph()
   if printCutflow: Selection(files, mu_dz, preexisting_selection=preselection, proposed_cut=cut_mu_dz).printCutflowLine()
@@ -595,7 +600,7 @@ if __name__ == '__main__':
   #Selection(files, mu_dzS, npoints=30).getROCGraph()
   if printCutflow: Selection(files, mu_dzS, preexisting_selection=preselection, proposed_cut=cut_mu_dzS).printCutflowLine()
   #Selection(files, mu_dzS, preexisting_selection=preselection, proposed_cut=cut_mu_dzS).printCutflowLine()
-  #preselection.append(PreselectedQuantity(mu_dzS, cut_mu_dzS)) # note added for dsa muons
+  #preselection.append(PreselectedQuantity(mu_dzS, cut_mu_dzS)) # not added for dsa muons
 
   cut_mu_dxyS = 0.5
   if printScan: Selection(files, mu_dxyS, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_mu_dxyS).getScanGraph()
@@ -662,6 +667,34 @@ if __name__ == '__main__':
   if printCutflow: Selection(files, hnl_mass_m, preexisting_selection=preselection, proposed_cut=cut_hnl_mass_m).printCutflowLine()
   #Selection(files, hnl_mass_m, preexisting_selection=preselection, proposed_cut=cut_hnl_mass_m).printCutflowLine()
   preselection.append(PreselectedQuantity(hnl_mass_m, cut_hnl_mass_m))
+
+  cut_deta_mu_pi = 1 
+  if printScan: Selection(files, deta_mu_pi, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_deta_mu_pi).getScanGraph()
+  #Selection(files, deta_mu_pi, npoints=30).getROCGraph()
+  if printCutflow: Selection(files, deta_mu_pi, preexisting_selection=preselection, proposed_cut=cut_deta_mu_pi).printCutflowLine()
+  Selection(files, deta_mu_pi, preexisting_selection=preselection, proposed_cut=cut_deta_mu_pi).printCutflowLine()
+  preselection.append(PreselectedQuantity(deta_mu_pi, cut_deta_mu_pi))
+
+  cut_deta_trgmu_pi = 0.8
+  if printScan: Selection(files, deta_trgmu_pi, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_deta_trgmu_pi).getScanGraph()
+  #Selection(files, deta_trgmu_pi, npoints=30).getROCGraph()
+  if printCutflow: Selection(files, deta_trgmu_pi, preexisting_selection=preselection, proposed_cut=cut_deta_trgmu_pi).printCutflowLine()
+  Selection(files, deta_trgmu_pi, preexisting_selection=preselection, proposed_cut=cut_deta_trgmu_pi).printCutflowLine()
+  preselection.append(PreselectedQuantity(deta_trgmu_pi, cut_deta_trgmu_pi))
+
+  cut_dphi_mu_pi = 1 
+  if printScan: Selection(files, dphi_mu_pi, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_dphi_mu_pi).getScanGraph()
+  #Selection(files, dphi_mu_pi, npoints=30).getROCGraph()
+  if printCutflow: Selection(files, dphi_mu_pi, preexisting_selection=preselection, proposed_cut=cut_dphi_mu_pi).printCutflowLine()
+  Selection(files, dphi_mu_pi, preexisting_selection=preselection, proposed_cut=cut_dphi_mu_pi).printCutflowLine()
+  preselection.append(PreselectedQuantity(dphi_mu_pi, cut_dphi_mu_pi))
+
+  #cut_dphi_trgmu_pi = 0.7 
+  #if printScan: Selection(files, dphi_trgmu_pi, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_dphi_trgmu_pi).getScanGraph()
+  ##Selection(files, dphi_trgmu_pi, npoints=30).getROCGraph()
+  #if printCutflow: Selection(files, dphi_trgmu_pi, preexisting_selection=preselection, proposed_cut=cut_dphi_trgmu_pi).printCutflowLine()
+  #Selection(files, dphi_trgmu_pi, preexisting_selection=preselection, proposed_cut=cut_dphi_trgmu_pi).printCutflowLine()
+  #preselection.append(PreselectedQuantity(dphi_trgmu_pi, cut_dphi_trgmu_pi))
 
   ##cut_hnl_mass_p = 0.3 
   ##if printScan: Selection(files, hnl_mass_p, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_hnl_mass_p).getScanGraph()
@@ -818,7 +851,7 @@ if __name__ == '__main__':
   ##Selection(files, dr_mu_pi, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=0.8).getROCGraph()
   ##preselection.append(PreselectedQuantity(dr_mu_pi, cut_dr_mu_pi))
 
-  #print Selection(files, b_mass, npoints=2, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=0).getPreselectionString('sig')
+  print Selection(files, b_mass, npoints=2, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=0).getPreselectionString('sig')
 
 
 
