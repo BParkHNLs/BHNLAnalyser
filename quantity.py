@@ -13,13 +13,13 @@ class Quantity(object):
 
 quantities_to_plot_small = [
   #Quantity(name_nano='BToMuMuPi_mass', name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0.55, bin_max=8),
-  #Quantity(name_nano='BToMuMuPi_pt', name_flat='b_pt', label='b_pt', title='#mu#mu#pi pT [GeV]', nbins=100, bin_min=0, bin_max=80),
+  Quantity(name_nano='BToMuMuPi_pt', name_flat='b_pt', label='b_pt', title='#mu#mu#pi pT [GeV]', nbins=60, bin_min=0, bin_max=80),
   Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=0., bin_max=5.4),
   #Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=110, bin_min=0., bin_max=1.),
   #Quantity(name_nano='BToMuMuPi_sv_lxy_sig', name_flat='sv_lxysig', label='sv_lxysig', title='significance of the displaced vertex lxy', nbins=80, bin_min=0, bin_max=250),
   Quantity(name_nano='BToMuMuPi_trg_mu_pt', name_flat='trgmu_pt', label='trgmu_pt', title='trigger #mu pT [GeV]', nbins=60, bin_min=6, bin_max=20),
-  Quantity(name_nano='fabs(BToMuMuPi_sel_mu_dzS)', name_flat='fabs(trgmu_dzsig)', label='trgmu_dzsig', title='displaced #mu impact parameter significance on z', nbins=60, bin_min=0, bin_max=15),
-  Quantity(name_nano='fabs(BToMuMuPi_sel_mu_dxyS)', name_flat='fabs(trgmu_dxysig)', label='trgmu_dxysig', title='displaced #mu impact parameter significance on xy', nbins=60, bin_min=0, bin_max=15),
+  #Quantity(name_nano='fabs(BToMuMuPi_sel_mu_dzS)', name_flat='fabs(trgmu_dzsig)', label='trgmu_dzsig', title='displaced #mu impact parameter significance on z', nbins=60, bin_min=0, bin_max=15),
+  #Quantity(name_nano='fabs(BToMuMuPi_sel_mu_dxyS)', name_flat='fabs(trgmu_dxysig)', label='trgmu_dxysig', title='displaced #mu impact parameter significance on xy', nbins=60, bin_min=0, bin_max=15),
   #Quantity(name_nano='BToMuMuPi_fit_pi_pt', name_flat='pi_pt', label='pi_pt', title='displaced #pi pT [GeV]', nbins=50, bin_min=0, bin_max=10),
   #Quantity(name_nano='BToMuMuPi_trgmu_mu_mass', name_flat='trgmu_mu_mass', label='trgmu_mu_mass', title='dimuon invariant mass [GeV]', nbins=40, bin_min=0, bin_max=5),
 
@@ -36,6 +36,27 @@ quantities_to_plot_small = [
   #Quantity(name_nano='BToMuMuPi_trgmu_pi_mass', name_flat='trgmu_pi_mass', label='trgmu_pi_mass', title='trg#mu#pi invariant mass [GeV]', nbins=90, bin_min=0, bin_max=7),
   #Quantity(name_nano='Muon_pfiso03Rel_all[BToMuMuPi_trg_mu_idx]', name_flat='trgmu_pfiso03_rel', label='trgmu_pfiso03_rel', title='trigger #mu relative PF iso03', nbins=90, bin_min=0, bin_max=2),
   #Quantity(name_nano='Muon_pfiso03Rel_all[BToMuMuPi_sel_mu_idx]', name_flat='mu_pfiso03_rel', label='mu_pfiso03_rel', title='displaced #mu relative PF iso03', nbins=90, bin_min=0, bin_max=3),
+  Quantity(name_nano='BToMuMuPi_dr_mu_pi', name_flat='deltar_mu_pi', label='deltar_mu_pi', title='#Delta R(#mu, #pi)', nbins=30, bin_min=0, bin_max=3.),
+  Quantity(name_nano='BToMuMuPi_dr_trgmu_hnl', name_flat='deltar_trgmu_hnl', label='deltar_trgmu_hnl', title='#Delta R(trg#mu, hnl)', nbins=30, bin_min=0, bin_max=0.5),
+  Quantity(name_nano='BToMuMuPi_dr_trgmu_mu', name_flat='deltar_trgmu_mu', label='deltar_trgmu_mu', title='#Delta R(trg#mu, #mu)', nbins=30, bin_min=0, bin_max=1.6),
+  Quantity(name_nano='BToMuMuPi_dr_trgmu_pi', name_flat='deltar_trgmu_pi', label='deltar_trgmu_pi', title='#Delta R(trg#mu, #pi)', nbins=30, bin_min=0, bin_max=1.6),
+
+  Quantity(name_nano='fabs(BToMuMuPi_deta_mu_pi)', name_flat='fabs(deltaeta_mu_pi)', label='deltaeta_mu_pi', title='|#Delta#eta(#mu, #pi)|', nbins=30, bin_min=0, bin_max=2.),
+  Quantity(name_nano='fabs(BToMuMuPi_deta_trgmu_hnl)', name_flat='fabs(deltaeta_trgmu_hnl)', label='deltaeta_trgmu_hnl', title='|#Delta#eta(trg#mu, hnl)|', nbins=30, bin_min=0, bin_max=0.6),
+  Quantity(name_nano='fabs(BToMuMuPi_deta_trgmu_mu)', name_flat='fabs(deltaeta_trgmu_mu)', label='deltaeta_trgmu_mu', title='|#Delta#eta(trg#mu, #mu)|', nbins=30, bin_min=0, bin_max=1.),
+  Quantity(name_nano='fabs(BToMuMuPi_deta_trgmu_pi)', name_flat='fabs(deltaeta_trgmu_pi)', label='deltaeta_trgmu_pi', title='|#Delta#eta(trg#mu, #pi)| ', nbins=30, bin_min=0, bin_max=1.8),
+
+  Quantity(name_nano='fabs(BToMuMuPi_dphi_mu_pi)', name_flat='fabs(deltaphi_mu_pi)', label='deltaphi_mu_pi', title='|#Delta#phi(#mu, #pi)|', nbins=30, bin_min=0, bin_max=3.2),
+  Quantity(name_nano='fabs(BToMuMuPi_dphi_trgmu_hnl)', name_flat='fabs(deltaphi_trgmu_hnl)', label='deltaphi_trgmu_hnl', title='|#Delta#phi(trg#mu, hnl)|', nbins=30, bin_min=0, bin_max=0.5),
+  Quantity(name_nano='fabs(BToMuMuPi_dphi_trgmu_mu)', name_flat='fabs(deltaphi_trgmu_mu)', label='deltaphi_trgmu_mu', title='|#Delta#phi(trg#mu, #mu)|', nbins=30, bin_min=0, bin_max=1.),
+  Quantity(name_nano='fabs(BToMuMuPi_dphi_trgmu_pi)', name_flat='fabs(deltaphi_trgmu_pi)', label='deltaphi_trgmu_pi', title='|#Delta#phi(trg#mu, #pi)|', nbins=30, bin_min=0, bin_max=3.2),
+
+  Quantity(name_nano='fabs(BToMuMuPi_dpt_pi_fit_pi)', name_flat='fabs(deltapt_pi_fit_pi)', label='deltapt_pi_fit_pi', title='|#Delta pT(#pi, fitted #pi)|', nbins=30, bin_min=0, bin_max=0.02),
+  Quantity(name_nano='fabs(BToMuMuPi_dpt_mu_fit_mu)', name_flat='fabs(deltapt_mu_fit_mu)', label='deltapt_mu_fit_mu', title='|#Delta pT(#mu, fitted #mu)|', nbins=30, bin_min=0, bin_max=0.08),
+  Quantity(name_nano='fabs(BToMuMuPi_deta_pi_fit_pi)', name_flat='fabs(deltaeta_pi_fit_pi)', label='deltaeta_pi_fit_pi', title='|#Delta#eta(#pi, fitted #pi)|', nbins=30, bin_min=0, bin_max=0.001),
+  Quantity(name_nano='fabs(BToMuMuPi_deta_mu_fit_mu)', name_flat='fabs(deltaeta_mu_fit_mu)', label='deltaeta_mu_fit_mu', title='|#Delta#eta(#mu, fitted #mu)|', nbins=30, bin_min=0, bin_max=0.002),
+  Quantity(name_nano='fabs(BToMuMuPi_dphi_pi_fit_pi)', name_flat='fabs(deltaphi_pi_fit_pi)', label='deltaphi_pi_fit_pi', title='|#Delta#phi(#pi, fitted #pi)|', nbins=30, bin_min=0, bin_max=0.015),
+  Quantity(name_nano='fabs(BToMuMuPi_dphi_mu_fit_mu)', name_flat='fabs(deltaphi_mu_fit_mu)', label='deltaphi_mu_fit_mu', title='|#Delta#phi(#mu, fitted #mu)|', nbins=30, bin_min=0, bin_max=0.01),
   ]
 
 
@@ -146,20 +167,20 @@ quantities_to_plot_all = [
 
 
 quantities_to_plot_selection = [
-  #Quantity(name_nano='BToMuMuPi_sv_lxy_sig', name_flat='sv_lxysig', label='sv_lxysig', title='significance of the displaced vertex lxy', nbins=60, bin_min=0, bin_max=350),
+  Quantity(name_nano='BToMuMuPi_sv_lxy_sig', name_flat='sv_lxysig', label='sv_lxysig', title='significance of the displaced vertex lxy', nbins=60, bin_min=0, bin_max=350),
 
-  #Quantity(name_nano='BToMuMuPi_sv_prob', name_flat='sv_prob', label='sv_prob', title='displaced vertex probability', nbins=90, bin_min=0, bin_max=0.1),
+  Quantity(name_nano='BToMuMuPi_sv_prob', name_flat='sv_prob', label='sv_prob', title='displaced vertex probability', nbins=90, bin_min=0, bin_max=0.1),
 
-  #Quantity(name_nano='BToMuMuPi_mass', name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0.55, bin_max=8),
+  Quantity(name_nano='BToMuMuPi_mass', name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0.55, bin_max=8),
 
-  ##Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=0.55, bin_max=6.5),
+  Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=0.55, bin_max=6.5),
   ##Quantity(name_nano='BToMuMuPi_hnl_pt', name_flat='hnl_pt', label='hnl_pt_large', title='#mu#pi pT [GeV]', nbins=200, bin_min=0, bin_max=250),
   ##Quantity(name_nano='BToMuMuPi_hnl_eta', name_flat='hnl_eta', label='hnl_eta', title='#mu#pi #eta', nbins=80, bin_min=-2, bin_max=2),
 
-  #Quantity(name_nano='BToMuMuPi_hnl_cos2D', name_flat='hnl_cos2d', label='hnl_cos2d', title='#mu#pi cos2D', nbins=30, bin_min=0.99, bin_max=1),
+  Quantity(name_nano='BToMuMuPi_hnl_cos2D', name_flat='hnl_cos2d', label='hnl_cos2d', title='#mu#pi cos2D', nbins=30, bin_min=0.99, bin_max=1),
 
-  #Quantity(name_nano='BToMuMuPi_trg_mu_pt', name_flat='trgmu_pt', label='trgmu_pt', title='trigger #mu pT [GeV]', nbins=60, bin_min=6, bin_max=20),
-  #Quantity(name_nano='BToMuMuPi_trg_mu_eta', name_flat='trgmu_eta', label='trgmu_eta', title='trigger #mu #eta', nbins=40, bin_min=-2, bin_max=2),
+  Quantity(name_nano='BToMuMuPi_trg_mu_pt', name_flat='trgmu_pt', label='trgmu_pt', title='trigger #mu pT [GeV]', nbins=60, bin_min=6, bin_max=20),
+  Quantity(name_nano='BToMuMuPi_trg_mu_eta', name_flat='trgmu_eta', label='trgmu_eta', title='trigger #mu #eta', nbins=40, bin_min=-2, bin_max=2),
 
   #Quantity(name_nano='BToMuMuPi_fit_mu_pt', name_flat='mu_pt', label='mu_pt', title='displaced #mu pT [GeV]', nbins=50, bin_min=0, bin_max=30),
   #Quantity(name_nano='BToMuMuPi_fit_mu_eta', name_flat='mu_eta', label='mu_eta', title='displaced #mu #eta', nbins=40, bin_min=-3, bin_max=3),
@@ -203,8 +224,8 @@ quantities_to_plot_selection = [
   #Quantity(name_nano='fabs(BToMuMuPi_dphi_pi_fit_pi)', name_flat='fabs(deltaphi_pi_fit_pi)', label='deltaphi_pi_fit_pi', title='|#Delta#phi(#pi, fitted #pi)|', nbins=30, bin_min=0, bin_max=0.1),
   #Quantity(name_nano='fabs(BToMuMuPi_dphi_mu_fit_mu)', name_flat='fabs(deltaphi_mu_fit_mu)', label='deltaphi_mu_fit_mu', title='|#Delta#phi(#mu, fitted #mu)|', nbins=30, bin_min=0, bin_max=0.2),
 
-  Quantity(name_nano='Muon_pfiso03Rel_all[BToMuMuPi_trg_mu_idx]', name_flat='trgmu_pfiso03_rel', label='trgmu_pfiso03_rel', title='trigger #mu relative PF iso03', nbins=60, bin_min=0, bin_max=2),
-  Quantity(name_nano='Muon_pfiso03Rel_all[BToMuMuPi_sel_mu_idx]', name_flat='mu_pfiso03_rel', label='mu_pfiso03_rel', title='displaced #mu relative PF iso03', nbins=60, bin_min=0, bin_max=3),
+  #Quantity(name_nano='Muon_pfiso03Rel_all[BToMuMuPi_trg_mu_idx]', name_flat='trgmu_pfiso03_rel', label='trgmu_pfiso03_rel', title='trigger #mu relative PF iso03', nbins=60, bin_min=0, bin_max=2),
+  #Quantity(name_nano='Muon_pfiso03Rel_all[BToMuMuPi_sel_mu_idx]', name_flat='mu_pfiso03_rel', label='mu_pfiso03_rel', title='displaced #mu relative PF iso03', nbins=60, bin_min=0, bin_max=3),
   ]
 
 
@@ -307,6 +328,21 @@ quantities_muonId_study_displacedmuon = [
   #Quantity(name_nano='Muon_pfiso04Rel_n[BToMuMuPi_sel_mu_idx]', name_flat='', label='pfiso04Rel_n', title='pfiso04Rel_n', nbins=50, bin_min=0, bin_max=10),
   #Quantity(name_nano='Muon_pfiso04Rel_pho[BToMuMuPi_sel_mu_idx]', name_flat='', label='pfiso04Rel_pho', title='pfiso04Rel_pho', nbins=50, bin_min=0, bin_max=10),
   #Quantity(name_nano='Muon_pfiso04Rel_pu[BToMuMuPi_sel_mu_idx]', name_flat='', label='pfiso04Rel_pu', title='pfiso04Rel_pu', nbins=50, bin_min=0, bin_max=10),
+]
+
+quantities_trackId = [
+  Quantity(name_nano='ProbeTracks_chi2[BToMuMuPi_pi_idx]', name_flat='', label='pi_chi2', title='pi #chi^{2}', nbins=100, bin_min=0, bin_max=30),
+  Quantity(name_nano='ProbeTracks_ndof[BToMuMuPi_pi_idx]', name_flat='', label='pi_ndof', title='pi ndof', nbins=40, bin_min=0, bin_max=40),
+  Quantity(name_nano='ProbeTracks_normalisedChi2[BToMuMuPi_pi_idx]', name_flat='', label='pi_normalisedChi2', title='pi #chi^{2}/ndof', nbins=30, bin_min=0, bin_max=5),
+  Quantity(name_nano='ProbeTracks_numberOfValidHits[BToMuMuPi_pi_idx]', name_flat='', label='pi_numberOfValidHits', title='pi numberOfValidHits', nbins=35, bin_min=0, bin_max=35),
+  Quantity(name_nano='ProbeTracks_chi2[BToMuMuPi_pi_idx]', name_flat='', label='pi_chi2', title='pi #chi^{2}', nbins=100, bin_min=0, bin_max=30),
+  Quantity(name_nano='ProbeTracks_numberOfLostHits[BToMuMuPi_pi_idx]', name_flat='', label='pi_numberOfLostHits', title='pi numberOfLostHits', nbins=3, bin_min=0, bin_max=3),
+  Quantity(name_nano='ProbeTracks_numberOfValidPixelHit[BToMuMuPi_pi_idx]', name_flat='', label='pi_numberOfValidPixelHit', title='pi numberOfValidPixelHit', nbins=10, bin_min=0, bin_max=10),
+  Quantity(name_nano='ProbeTracks_numberOfTrackerLayers[BToMuMuPi_pi_idx]', name_flat='', label='pi_numberOfTrackerLayers', title='pi numberOfTrackerLayers', nbins=21, bin_min=0, bin_max=21),
+  Quantity(name_nano='ProbeTracks_numberOfPixelLayers[BToMuMuPi_pi_idx]', name_flat='', label='pi_numberOfPixelLayers', title='pi numberOfPixelLayers', nbins=6, bin_min=0, bin_max=6),
+  Quantity(name_nano='ProbeTracks_qualityIndex[BToMuMuPi_pi_idx]', name_flat='', label='pi_qualityIndex', title='pi qualityIndex', nbins=6, bin_min=0, bin_max=6),
+  Quantity(name_nano='ProbeTracks_highPurityFlag[BToMuMuPi_pi_idx]', name_flat='', label='pi_highPurityFlag', title='pi highPurityFlag', nbins=2, bin_min=0, bin_max=2),
+  Quantity(name_nano='ProbeTracks_validFraction[BToMuMuPi_pi_idx]', name_flat='', label='pi_validFraction', title='pi validFraction', nbins=35, bin_min=0.6, bin_max=1),
 ]
 
 quantities_tag_and_probe = [
