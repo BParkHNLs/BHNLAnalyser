@@ -9,8 +9,8 @@ import numpy as np
 from itertools import product
 
 from tools import Tools
-from quantity import quantities_to_plot_small, quantities_to_plot_all, quantities_to_plot_selection, quantities_muonId_study_triggermuon, quantities_muonId_study_displacedmuon, quantities_muonId_study_triggermuon_small, quantities_muonId_study_displacedmuon_small, quantities_tag_and_probe
-from samples import data_samples, data_samples_V02, data_samples_V03, data_samples_loose, data_samples_triggermuon_matching_check, data_samples_tag_and_probe, qcd_samples, qcd_samples_V03, qcd_samples_triggermuon_matching_check, signal_samples, signal_samples_loose, signal_samples_tag_and_probe, signal_samples_tag_and_probe_BToJPsiKstar
+from quantity import quantities_to_plot_small, quantities_to_plot_all, quantities_to_plot_selection, quantities_muonId_study_triggermuon, quantities_muonId_study_displacedmuon, quantities_muonId_study_triggermuon_small, quantities_muonId_study_displacedmuon_small, quantities_tag_and_probe, quantities_trackId
+from samples import data_samples, data_samples_V02, data_samples_V03, data_samples_loose, data_samples_triggermuon_matching_check, data_samples_tag_and_probe, data_samples_loose_dsaonly, qcd_samples, qcd_samples_V03, qcd_samples_triggermuon_matching_check, signal_samples, signal_samples_loose, signal_samples_tag_and_probe, signal_samples_tag_and_probe_BToJPsiKstar, signal_samples_loose_dsaonly
 from quantity import Quantity
 from computeYields import ComputeYields
 
@@ -289,8 +289,8 @@ class Plotter(Tools):
       #print qcd_file.label
       #weight_mc = self.tools.computeQCDMCWeight(self.tools.getTree(self, f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_mc = self.tools.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
-      weight = '({}) * (weight_hlt)'.format(weight_mc)
-      #weight = '({})'.format(weight_mc)
+      #weight = '({}) * (weight_hlt)'.format(weight_mc)
+      weight = '({})'.format(weight_mc)
       hist_mc_name = 'hist_mc_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
       hist_mc = self.tools.createHisto(f_mc, treename, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight) 
       hist_mc.Sumw2()
@@ -466,7 +466,7 @@ class Plotter(Tools):
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
 
 
-  def plotSignalBackgroundComparison(self, selection='', title='', outdirlabel='', branchname='nano', treename='Events', do_shape=True, do_log=False):
+  def plotSignalBackgroundComparison(self, selection='', title='', outdirlabel='', branchname='nano', treename='Events', plot_ratio=False, do_shape=True, do_log=False):
     ROOT.gStyle.SetPadLeftMargin(0.12) 
     ROOT.gStyle.SetOptStat(0)
 
@@ -477,6 +477,19 @@ class Plotter(Tools):
     ROOT.SetOwnership(canv, False)
     #canv.SetGrid()
     canv.cd()
+
+    # define the pads
+    pad_up = ROOT.TPad("pad_up","pad_up",0,0.25,1,1) if plot_ratio else ROOT.TPad("pad_up","pad_up",0.02,0,1,1)
+    if plot_ratio: pad_up.SetBottomMargin(0.03)
+    if do_log: pad_up.SetLogy()
+    pad_up.Draw()
+    canv.cd()
+    if plot_ratio:
+      pad_down = ROOT.TPad("pad_down","pad_down",0,0,1,0.25)
+      pad_down.SetBottomMargin(0.25)
+      pad_down.Draw()
+
+    pad_up.cd()
 
     # prepare the legend
     legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.58, xmax=0.84, ymax=0.83, size=0.027)
@@ -521,16 +534,16 @@ class Plotter(Tools):
       #f_signal = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+signal_file.filename, 'READ')
       f_signal = ROOT.TFile.Open(signal_file.filename, 'READ')
       hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel, do_log, do_shape)
-      weight = 'weight_hlt'
-      #weight=-99
-      #hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='BToMuMuPi_isMatched==1' if selection=='' else 'BToMuMuPi_isMatched==1 &&'+selection)
-      hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection, weight=weight)
+      #weight = 'weight_hlt'
+      weight=-99
+      hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection='BToMuMuPi_isMatched==1 && BToMuMuPi_hnl_charge==0' if selection=='' else 'BToMuMuPi_isMatched==1 && BToMuMuPi_hnl_charge==0 &&'+selection)
+      #hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection, weight=weight)
       hist_signal.Sumw2()
       if do_shape: 
         int_signal = hist_signal.Integral()
         if int_signal != 0: hist_signal.Scale(1/int_signal)
-      #legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
-      legend.AddEntry(hist_signal, 'MC - {}'.format(signal_file.label))
+      legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
+      #legend.AddEntry(hist_signal, 'MC - {}'.format(signal_file.label))
 
       hist_signal.SetLineWidth(3)
       hist_signal.SetLineColor(signal_file.colour)
@@ -556,6 +569,45 @@ class Plotter(Tools):
 
     ## draw the legend
     legend.Draw('same')
+
+    # plot the ratio
+    if plot_ratio:
+      pad_down.cd()
+
+      hist_ratio = self.tools.getRatioHistogram(hist_data_tot, hist_signal)
+      hist_ratio.Sumw2()
+
+      for ibin in range(0, hist_ratio.GetNbinsX()+1):
+        if hist_data_tot.GetBinContent(ibin) != 0 and hist_signal.GetBinContent(ibin) != 0:
+          err = math.sqrt((hist_data_tot.GetBinError(ibin)/hist_signal.GetBinContent(ibin))**2 + (hist_signal.GetBinError(ibin)*hist_data_tot.GetBinContent(ibin)/(hist_signal.GetBinContent(ibin))**2)**2)
+        else: 
+          err = 0
+        if hist_ratio.GetBinContent(ibin) != 0: hist_ratio.SetBinError(ibin, err)
+
+      hist_ratio.SetLineWidth(2)
+      hist_ratio.SetMarkerStyle(20)
+      hist_ratio.SetTitle('')
+      hist_ratio.GetXaxis().SetTitle(self.quantity.title)
+
+      hist_ratio.GetXaxis().SetLabelSize(0.1)
+      hist_ratio.GetXaxis().SetTitleSize(0.13)
+      hist_ratio.GetXaxis().SetTitleOffset(0.73)
+      hist_ratio.GetYaxis().SetTitle('Data/MC')
+      hist_ratio.GetYaxis().SetLabelSize(0.1)
+      hist_ratio.GetYaxis().SetTitleSize(0.13)
+      hist_ratio.GetYaxis().SetTitleOffset(0.345)
+      val_min = hist_ratio.GetBinContent(hist_ratio.GetMinimumBin())
+      val_max = hist_ratio.GetBinContent(hist_ratio.GetMaximumBin())
+      #hist_ratio.GetYaxis().SetRangeUser(val_min-0.15*val_min, val_max+0.15*val_max)
+      hist_ratio.GetYaxis().SetRangeUser(0.5, 1.5)
+
+      hist_ratio.Draw('PE')
+
+      ## draw line at ratio = 1
+      line = ROOT.TLine(self.quantity.bin_min, 1, self.quantity.bin_max, 1)
+      line.SetLineColor(4)
+      line.SetLineWidth(2)
+      line.Draw('same')
 
     outputdir = self.tools.getOutDir('./myPlots/SignalBackgroundComparison', outdirlabel, do_shape, False, False, do_log)
     
@@ -809,8 +861,8 @@ class Plotter(Tools):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  doDataMCComparison = True
-  doSignalBackgroundComparison = False
+  doDataMCComparison = False
+  doSignalBackgroundComparison = True
   plotMCSR = False
   compareTwoDistributions = False
   plotYields = False
@@ -830,17 +882,20 @@ if __name__ == '__main__':
 
   if doSignalBackgroundComparison:
     #baseline_selection = 'trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1'
-    baseline_selection = '' 
-    #outdirlabel = 'loosepreselection_stdtrgmu_v1'
-    #for quantity in quantities_to_plot_selection:
-    #  plotter = Plotter(quantity=quantity, data_files=data_samples_loose, signal_files=signal_samples_loose)
-    #  plotter.plotSignalBackgroundComparison(outdirlabel=outdirlabel, do_shape=True, do_log=False)
+    baseline_selection = 'BToMuMuPi_trg_mu_pt>7 && fabs(BToMuMuPi_trg_mu_eta)<1.5 && ProbeTracks_pt[BToMuMuPi_pi_idx]>0.7 && abs(ProbeTracks_eta[BToMuMuPi_pi_idx])<2 && abs(BToMuMuPi_pi_dz)>0.005 && abs(BToMuMuPi_pi_dxy)>0.001 && abs(BToMuMuPi_pi_dzS)>1.5 && abs(BToMuMuPi_pi_dxyS)>0.5 && BToMuMuPi_pi_DCASig>1 && Muon_pt[BToMuMuPi_sel_mu_idx]>2 && abs(Muon_eta[BToMuMuPi_sel_mu_idx])<2 && abs(Muon_dz[BToMuMuPi_sel_mu_idx])>0.001 && abs(Muon_dxy[BToMuMuPi_sel_mu_idx])>0.1 && BToMuMuPi_sv_prob>0.001 && BToMuMuPi_hnl_cos2D>0.95 && BToMuMuPi_mass<8 && BToMuMuPi_hnl_mass<6.3' 
+    dirlabel = 'preselection_dsa_withpreselectionapplied'
+    for quantity in quantities_to_plot_small:
+      plotter = Plotter(quantity=quantity, data_files=data_samples_loose_dsaonly, signal_files=signal_samples_loose_dsaonly)
+      #plotter.plotSignalBackgroundComparison(outdirlabel=dirlabel, branchname='nano', treename='Events', selection=baseline_selection, plot_ratio=False, do_shape=True, do_log=False)
+    for quantity in quantities_trackId:
+      plotter = Plotter(quantity=quantity, data_files=data_samples_loose_dsaonly, signal_files=signal_samples_loose_dsaonly)
+      plotter.plotSignalBackgroundComparison(outdirlabel=dirlabel, branchname='nano', treename='Events', selection=baseline_selection, plot_ratio=False, do_shape=True, do_log=False)
     #dirlabel = 'test_JPsiToMuMu'
-    dirlabel = 'dataV06_tag_and_probe_v2_BToJPsiKstar_V0_sf_study15Sep21_A1_v1'
+    #dirlabel = 'dataV06_tag_and_probe_v2_BToJPsiKstar_V0_sf_study15Sep21_A1_v1'
     #dirlabel = 'dataV07_BToJPsiKstar_V0_sf_study15Sep21_A1_v1'
-    for quantity in quantities_tag_and_probe:
-      plotter = Plotter(quantity=quantity, data_files=data_samples_tag_and_probe, signal_files=signal_samples_tag_and_probe_BToJPsiKstar)
-      plotter.plotSignalBackgroundComparison(outdirlabel=dirlabel, branchname='flat', treename='tree', selection=baseline_selection, do_shape=True, do_log=False)
+    #for quantity in quantities_tag_and_probe:
+    #  plotter = Plotter(quantity=quantity, data_files=data_samples_tag_and_probe, signal_files=signal_samples_tag_and_probe_BToJPsiKstar)
+    #  plotter.plotSignalBackgroundComparison(outdirlabel=dirlabel, branchname='flat', treename='tree', selection=baseline_selection, plot_ratio=True, do_shape=True, do_log=False)
 
 
   #white_list_20to300 = ['QCD_pt20to30 (V04)', 'QCD_pt30to50 (V04)', 'QCD_pt50to80 (V04)', 'QCD_pt80to120 (V04)', 'QCD_pt80to120_ext (V04)', 'QCD_pt120to170 (V04)', 'QCD_pt120to170_ext (V04)', 'QCD_pt170to300 (V04)']
