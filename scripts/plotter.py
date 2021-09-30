@@ -9,10 +9,12 @@ import numpy as np
 from itertools import product
 
 from tools import Tools
-from quantity import quantities_to_plot_small, quantities_to_plot_all, quantities_to_plot_selection, quantities_muonId_study_triggermuon, quantities_muonId_study_displacedmuon, quantities_muonId_study_triggermuon_small, quantities_muonId_study_displacedmuon_small, quantities_tag_and_probe, quantities_trackId
-from samples import data_samples, data_samples_V02, data_samples_V03, data_samples_loose, data_samples_triggermuon_matching_check, data_samples_tag_and_probe, data_samples_loose_dsaonly, qcd_samples, qcd_samples_V03, qcd_samples_triggermuon_matching_check, signal_samples, signal_samples_loose, signal_samples_tag_and_probe, signal_samples_tag_and_probe_BToJPsiKstar, signal_samples_loose_dsaonly
-from quantity import Quantity
 from computeYields import ComputeYields
+
+import sys
+sys.path.append('../objects')
+from quantity import *
+from samples import *
 
 
 class Plotter(Tools):

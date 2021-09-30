@@ -6,11 +6,10 @@ import math
 
 from computeYields import ComputeYields
 from tools import Tools
-from samples import data_samples, signal_samples, signal_samples_limits, qcd_samples
 
-#import sys
-#sys.path.append('../../../../BHNLGen/CMSSW_10_2_15/src/HNLsGen/python/.')
-#from my_common import getVV
+import sys
+sys.path.append('../objects')
+from samples import *
 
 
 class DatacardsMaker(Tools):

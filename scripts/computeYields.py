@@ -4,13 +4,11 @@ from os import path
 import ROOT
 import math
 from tools import Tools
-from samples import data_samples, data_samples_small, qcd_samples, qcd_samples, signal_samples
-from quantity import Quantity
-#from decays import Decays, HNLDecays
 
-#import sys
-#sys.path.append('../../../../BHNLGen/CMSSW_10_2_15/src/HNLsGen/python/.')
-#from my_common import getVV, gamma_partial, gamma_total
+import sys
+sys.path.append('../objects')
+from samples import *
+from quantity import Quantity
 
 
 class ComputeYields(Tools):
