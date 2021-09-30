@@ -16,8 +16,7 @@ class Fitter(Tools):
   def performFit(self):
     # open the file and get the tree
     inputfile = ROOT.TFile.Open(self.filename)
-    #treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
-    treename = 'hnl_tree' if self.file_type == 'flat' else 'Events'
+    treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     tree = self.tools.getTree(inputfile, treename)
 
     # get signal mass
@@ -319,14 +318,25 @@ if __name__ == '__main__':
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_fittedmass_looseselection_originalmatching.root'
   label = 'unresolved_fittedmass_looseselection_originalmatching_nodsa'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  fitter.performFit()
+  #fitter.performFit()
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_resolved_motherpdgid_unfittedmass.root'
   label = 'resolved_nodsa'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  outdirlabel = 'genmatching_comparison'
+  outdirlabel = 'matching_study_resolved_vs_unresolved'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root'
+  label = 'resolved_nodsa'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_18Aug21.root'
+  label = 'unresolved_nodsa'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  fitter.performFit()
+
+  #outdirlabel = 'genmatching_comparison'
 
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_selected_updatedgenmatching.root'
   #title = 'Updated gen-matching'
