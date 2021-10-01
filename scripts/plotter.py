@@ -13,8 +13,50 @@ from computeYields import ComputeYields
 
 import sys
 sys.path.append('../objects')
-from quantity import *
-from samples import *
+from quantity import Quantity, quantities
+from samples import data_samples, qcd_samples, signal_samples
+from categories import categories
+from selection import selection
+
+
+def getOptions():
+  from argparse import ArgumentParser
+  parser = ArgumentParser(description='Script to produce the main analysis plots', add_help=True)
+  parser.add_argument('--outdirlabel'     , type=str, dest='outdirlabel'     , help='name of the outdir'                                            , default=None)
+  parser.add_argument('--data_label'      , type=str, dest='data_label'      , help='which data samples to consider?'                               , default='V07_18Aug21')
+  parser.add_argument('--qcd_label'       , type=str, dest='qcd_label'       , help='which qcd samples to consider?'                                , default='V07_18Aug21')
+  parser.add_argument('--signal_label'    , type=str, dest='signal_label'    , help='which signal samples to consider?'                             , default='private')
+  parser.add_argument('--quantities_label', type=str, dest='quantities_label', help='which quantity collection to consider?'                        , default='small')
+  parser.add_argument('--selection_label' , type=str, dest='selection_label' , help='apply a baseline selection_label?'                             , default='standard')
+  parser.add_argument('--categories_label', type=str, dest='categories_label', help='which phase space categorisation?'                             , default='standard')
+  parser.add_argument('--sample_type'     , type=str, dest='sample_type'     , help='run the plotter on a nano or flat sample?'                     , default='flat', choices=['nano', 'flat'])
+  parser.add_argument('--white_list '     , type=str, dest='white_list'      , help='pthat range to consider for qcd samples'                       , default='')
+  parser.add_argument('--plot_CR'         ,           dest='plot_CR'         , help='plot QCDMC/data in the CR'                , action='store_true', default=False)
+  parser.add_argument('--plot_SR'         ,           dest='plot_SR'         , help='plot QCDMC/signal in the SR'              , action='store_true', default=False)
+  parser.add_argument('--plot_ratio'      ,           dest='plot_ratio'      , help='plots the ratio'                          , action='store_true', default=False)
+  parser.add_argument('--do_shape'        ,           dest='do_shape'        , help='normalise to unity'                       , action='store_true', default=False)
+  parser.add_argument('--do_luminorm'     ,           dest='do_luminorm'     , help='normalise to the luminosity'              , action='store_true', default=False)
+  parser.add_argument('--do_stack'        ,           dest='do_stack'        , help='create stack histtogram'                  , action='store_true', default=False)
+  parser.add_argument('--do_log'          ,           dest='do_log'          , help='put the Y axis in log scale'              , action='store_true', default=False)
+  parser.add_argument('--add_overflow'    ,           dest='add_overflow'    , help='add overflow bin'                         , action='store_true', default=False)
+  #parser.add_argument('--submit_batch', dest='submit_batch', help='submit on the batch?', action='store_true', default=False)
+  return parser.parse_args()
+
+
+def checkParser(opt):
+  '''
+    This function checks the validaty of the parser, and determines whether the parser was used by
+    checking the outdirlabel against its default
+  '''
+  used_parser = (opt.outdirlabel != None)
+  if used_parser and opt.plot_CR == False and opt.plot_SR == False:
+    raise RuntimeError('Please indicate the kind of plots you want to produce with --plot_CR and/or --plot_SR')
+
+  if used_parser and opt.do_shape == opt.do_luminorm:
+    raise RuntimeError('Invalid arguments for --do_shape ({}) and --do_luminorm ({}) \nPlease only set exactly one option to True at a time'.format(opt.do_shape, opt.do_luminorm))
+
+  return used_parser
+
 
 
 class Plotter(Tools):
@@ -854,23 +896,116 @@ class Plotter(Tools):
     canv.SaveAs('./myPlots/yields/signal_yields_gen_reco_corr.pdf')
 
 
+def printInfo(opt):
+  print '-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.'
+  print '                   Running the plotter                          '
+  print '\n'
+  print ' data samples:    {}'.format(opt.data_label)
+  print ' qcd samples:     {}'.format(opt.qcd_label)
+  print ' signal samples:  {}'.format(opt.signal_label)
+  print '\n'
+  print ' categorisation:  {}'.format(opt.categories_label)
+  print ' quantities:      {}'.format(opt.quantities_label)
+  print ' selection:       {}'.format(opt.selection_label)
+  print '\n'
+  print ' outdir label:    {}'.format(opt.outdirlabel)
+  print '-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.'
+  print '\n'
 
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  doDataMCComparison = True
-  doSignalBackgroundComparison = False
-  plotMCSR = False
-  compareTwoDistributions = False
-  plotYields = False
+  opt = getOptions()
+  used_parser = checkParser(opt)
+  if used_parser:
+    printInfo(opt)
 
-  plot_log = False
-  plot_categories = False
-  plot_SR = False
-  plot_CR = True
-  # add add_overflow
+    dirlabel = opt.outdirlabel
+    quantities = quantities[opt.quantities_label]
+    categories = categories[opt.categories_label]
+    data_files = data_samples[opt.data_label]
+    qcd_files = qcd_samples[opt.qcd_label]
+    signal_files = signal_samples[opt.signal_label]
+
+    baseline_selection = selection[opt.selection_label].flat if opt.sample_type == 'flat' else selection[opt.selection_label].nano
+    
+    # to be modified
+    white_list_15to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
+    
+    for category in categories:
+      category_definition = category.definition_flat if opt.sample_type == 'flat' else category.definition_nano
+
+      for quantity in quantities:
+        plotter = Plotter(quantity=quantity, data_files=data_files, qcd_files=qcd_files, signal_files=signal_files, white_list=white_list_15to300)
+        if opt.plot_CR:
+          title = 'Control Region, {}'.format(category.title)
+          outdirlabel = dirlabel+'/CR/{}'.format(category.label)
+          region_definition = 'hnl_charge != 0'
+          plot_data = True
+          plot_sig = False
+
+          plotter.plotDataMCComparison(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
+                                       title = title, 
+                                       outdirlabel = outdirlabel, 
+                                       branchname = opt.sample_type, 
+                                       plot_data = plot_data, 
+                                       plot_sig = plot_sig, 
+                                       plot_ratio = opt.plot_ratio, 
+                                       do_shape = opt.do_shape, 
+                                       do_luminorm = opt.do_luminorm, 
+                                       do_stack = opt.do_stack, 
+                                       do_log = opt.do_log,
+                                       add_overflow = opt.add_overflow
+                                       )
 
 
+        if opt.plot_SR:
+          title = 'Signal Region, {}'.format(category.title)
+          outdirlabel = dirlabel+'/SR/{}'.format(category.label)
+          region_definition = 'hnl_charge == 0'
+          plot_data = False
+          plot_sig = True
+
+          plotter.plotDataMCComparison(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
+                                       title = title, 
+                                       outdirlabel = outdirlabel, 
+                                       branchname = opt.sample_type, 
+                                       plot_data = plot_data, 
+                                       plot_sig = plot_sig, 
+                                       plot_ratio = opt.plot_ratio, 
+                                       do_shape = opt.do_shape, 
+                                       do_luminorm = opt.do_luminorm, 
+                                       do_stack = opt.do_stack, 
+                                       do_log = opt.do_log,
+                                       add_overflow = opt.add_overflow
+                                       )
+    
+  else:
+
+    doDataMCComparison = True
+    doSignalBackgroundComparison = False
+    plotMCSR = False
+    compareTwoDistributions = False
+    plotYields = False
+
+    plot_log = False
+    plot_categories = False
+    plot_SR = False
+    plot_CR = True
+    # add add_overflow
+
+    if doDataMCComparison:
+      white_list_15to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
+      #baseline_selection = 'mu_isdsa !=1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && '
+      baseline_selection = ''
+      if plot_CR:
+        dirlabel = 'test'
+        for quantity in quantities_to_plot_small:
+          plotter = Plotter(quantity=quantity, data_files=data_samples, qcd_files=qcd_samples, signal_files=signal_samples, white_list=white_list_15to300)
+          plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0', title='Control Region, inclusive', outdirlabel=dirlabel+'/CR/incl', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=False)
+
+
+  '''
   if plotYields:
     from samples import signal_samples_limits_m4p5
     plotter = Plotter(signal_files=signal_samples_limits_m4p5)
@@ -1016,51 +1151,6 @@ if __name__ == '__main__':
             plotter.plotDataMCComparison(selection=baseline_selection+'hnl_charge!=0 && sv_lxy>10 && trgmu_charge==mu_charge', title='Control Region, l_{xy}>10cm, SS', outdirlabel=dirlabel+'/CR/lxygt10_SS', branchname='flat', plot_data=True, plot_sig=False, plot_ratio=True, do_shape=False, do_luminorm=True, do_stack=False, do_log=True)
 
 
-
-
-  '''
-    white_list_15to20 = ['QCD_pt15to20 (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to20', selection='hnl_charge!=0', white_list=white_list_15to20, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to20', selection='hnl_charge!=0', white_list=white_list_15to20, do_shape=True, do_stack=True, do_log=True) 
-
-    white_list_15to30 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to30', selection='hnl_charge!=0', white_list=white_list_15to30, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to30', selection='hnl_charge!=0', white_list=white_list_15to30, do_shape=True, do_stack=True, do_log=True) 
-
-    white_list_15to50 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to50', selection='hnl_charge!=0', white_list=white_list_15to50, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to50', selection='hnl_charge!=0', white_list=white_list_15to50, do_shape=True, do_stack=True, do_log=True) 
-
-    white_list_15to80 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to80', selection='hnl_charge!=0', white_list=white_list_15to80, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to80', selection='hnl_charge!=0', white_list=white_list_15to80, do_shape=True, do_stack=True, do_log=True) 
-
-    white_list_15to120 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt80to120 (V02)', 'QCD_pt80to120_ext (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to120', selection='hnl_charge!=0', white_list=white_list_15to120, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to120', selection='hnl_charge!=0', white_list=white_list_15to120, do_shape=True, do_stack=True, do_log=True) 
-
-    white_list_15to170 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt80to120 (V02)', 'QCD_pt80to120_ext (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt120to170_ext (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to170', selection='hnl_charge!=0', white_list=white_list_15to170, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to170', selection='hnl_charge!=0', white_list=white_list_15to170, do_shape=True, do_stack=True, do_log=True) 
-
-    white_list_15to300 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt80to120 (V02)', 'QCD_pt80to120_ext (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt120to170_ext (V02)', 'QCD_pt170to300 (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to300', selection='hnl_charge!=0', white_list=white_list_15to300, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt15to300', selection='hnl_charge!=0', white_list=white_list_15to300, do_shape=True, do_stack=True, do_log=True) 
-
-    white_list_20to300 = ['QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt80to120 (V02)', 'QCD_pt80to120_ext (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt120to170_ext (V02)', 'QCD_pt170to300 (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt20to300', selection='hnl_charge!=0', white_list=white_list_20to300, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt20to300', selection='hnl_charge!=0', white_list=white_list_20to300, do_shape=True, do_stack=True, do_log=True) 
-
-    white_list_30to300 = ['QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt80to120 (V02)', 'QCD_pt80to120_ext (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt120to170_ext (V02)', 'QCD_pt170to300 (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt30to300', selection='hnl_charge!=0', white_list=white_list_30to300, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt30to300', selection='hnl_charge!=0', white_list=white_list_30to300, do_shape=True, do_stack=True, do_log=True) 
-
-    white_list_20to50 = ['QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)']
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt20to50', selection='hnl_charge!=0', white_list=white_list_20to50, do_shape=True, do_stack=True, do_log=False) 
-    plotDataMCComparison(quantity, title='Data / MC comparison in the SS Control Region', outdirlabel='SS_CR_pt20to50', selection='hnl_charge!=0', white_list=white_list_20to50, do_shape=True, do_stack=True, do_log=True) 
-    '''
-
-
 if plotMCSR:
   for quantity in quantities_to_plot_small:
     #white_list_15to300 = ['QCD_pt15to20 (V02)', 'QCD_pt20to30 (V02)', 'QCD_pt30to50 (V02)', 'QCD_pt50to80 (V02)', 'QCD_pt80to120 (V02)', 'QCD_pt80to120_ext (V02)', 'QCD_pt120to170 (V02)', 'QCD_pt120to170_ext (V02)', 'QCD_pt170to300 (V02)']
@@ -1103,6 +1193,7 @@ if compareTwoDistributions:
     #selection = ' && Muon_inTimeMuon[BToMuMuPi_sel_mu_idx] && ((Muon_isGlobalMuon[BToMuMuPi_sel_mu_idx]==1 || Muon_isTrackerMuon[BToMuMuPi_sel_mu_idx]==1) && Muon_trackerHighPurityFlag[BToMuMuPi_sel_mu_idx]==1 && Muon_validHitFraction[BToMuMuPi_sel_mu_idx]>0.75)'
     selection = ''
     #plotTwoSamples(quantity, file1=file1, file2=file1, branchname='nano', tree1='Events', tree2='Events', selection1='nBToMuMuPi>0 && Muon_pt[BToMuMuPi_trg_mu_idx]>7'+selection, selection2='nBToMuMuPi>0 && Muon_pt[BToMuMuPi_trg_mu_idx]>7 && BToMuMuPi_isMatched==1'+selection, legend1='all', legend2='matched', title='', outdirlabel=outdirlabel, do_shape=True, do_log=False, do_printstat=True)
+  '''
 
 
 
