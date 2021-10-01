@@ -71,7 +71,6 @@ class Tools(object):
     return n_reco_evts
 
 
-  #def computeQCDMCWeight(self, tree, cross_section, filter_efficiency):
   def computeQCDMCWeight(self, rootfile, cross_section, filter_efficiency):
     '''
       QCD MC weight defined as cross-section / nb of generated events
@@ -84,6 +83,36 @@ class Tools(object):
     ##n_reco_evts = self.getTree(rootfile, 'signal_tree').GetEntries()
     n_genevts = n_reco_evts / filter_efficiency
     weight = cross_section / n_genevts
+    return weight
+
+
+  def getLumiWeight(self, data_files, qcd_files, white_list, selection):
+    '''
+      weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
+    '''
+
+    quantity_forweight = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=13000)
+    n_obs_data = 0.
+    n_err_data = 0.
+    for data_file in data_files:
+      f_data = self.getRootFile(data_file.filename, with_ext=False)
+      hist_data = self.createHisto(f_data, 'signal_tree', quantity_forweight, branchname='flat', selection=selection)
+      hist_data.Sumw2()
+      n_obs_data += hist_data.GetBinContent(1)
+      n_err_data += hist_data.GetBinError(1)
+
+    # TODO add weight on mc
+    hist_mc_tot = self.createWeightedHistoQCDMC(qcd_files=qcd_files, white_list=white_list, quantity=quantity_forweight, selection=selection)
+    n_obs_mc = hist_mc_tot.GetBinContent(1)
+    n_err_mc = hist_mc_tot.GetBinError(1)
+
+    weight = float(n_obs_data) / float(n_obs_mc) if float(n_obs_mc)!= 0. else 0.
+
+    #if n_obs_data != 0 and n_obs_mc != 0:
+    #  err = weight* (n_err_data / n_obs_data + n_err_mc / n_obs_mc)
+    #else: 
+    #  err = 0
+
     return weight
 
 
@@ -108,16 +137,26 @@ class Tools(object):
     return legend
     
 
-  def getTextBox(self, style, xmin, ymin, xmax, ymax, text, colour):
+  def getTextBox(self, style, xmin, ymin, xmax, ymax, text, size=0.11, colour=ROOT.kBlack):
     box = ROOT.TPaveText(xmin, ymin, xmax, ymax, style)
     box.AddText(text)
     box.SetBorderSize(0)
-    box.SetFillColor(ROOT.kWhite)
+    box.SetFillColorAlpha(0, 0)
     box.SetTextColor(colour)
-    box.SetTextSize(0.11)
+    box.SetTextSize(size)
     box.SetTextFont(42)
     box.SetTextAlign(11)
     return box
+
+
+  def printLatexBox(self, x, y, text, size=0.04):
+    box = ROOT.TLatex()
+    box.SetNDC()
+    box.SetTextFont(42)
+    box.SetTextAlign(22) 
+    box.SetTextSize(size)    
+    box.DrawLatex(x, y, text)
+  
   
   def getRootXAxis(self, hist, title='', label_size=0.037, title_size=0.042, offset=1.1, xmin=-99, xmax=-99): 
     ROOT.SetOwnership(hist, True)
@@ -139,6 +178,24 @@ class Tools(object):
     if ymin != -99 and ymax != -99:
       hist.GetXaxis().SetRangeUser(ymin, ymax)
     return hist
+
+
+  def printCMSTag(self, pad, cms_tag, size=0.55):
+    pad.cd()
+    tag = ROOT.TLatex()
+    tag.SetNDC()
+    # print CMS
+    tag.SetTextFont(61)
+    tag.SetTextAlign(11) 
+    tag.SetTextSize(size*pad.GetTopMargin())    
+    tag.DrawLatex(pad.GetLeftMargin(), 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), 'CMS')
+    # print CMS tag
+    tag.SetTextFont(52)
+    tag.SetTextSize(0.9*size*pad.GetTopMargin())
+    tag.SetTextAlign(11)
+    tag.DrawLatex(pad.GetLeftMargin()+0.08, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), cms_tag)      
+    pad.Update()
+
 
 
   #def getRatioGraph(self, hist1, hist2):
@@ -165,6 +222,7 @@ class Tools(object):
     if not path.exists(outputdir):
       os.system('mkdir -p {}'.format(outputdir))
     os.system('cp ../data/index.php {}'.format(outputdir))
+    os.system('cp ../data/index.php {}/..'.format(outputdir))
 
     norm = None
     if do_shape: norm = 'shape'
@@ -187,20 +245,6 @@ class Tools(object):
     os.system('cp ../data/index.php {}'.format(outputdir))
 
     return outputdir
-
-
-  def getColour(self):
-    return [
-      ROOT.kBlue+2,
-      ROOT.kBlue-11,
-      ROOT.kBlue-9,
-      ROOT.kBlue-10,
-      ROOT.kRed-10,
-      ROOT.kOrange-9,
-      ROOT.kOrange+6,
-      ROOT.kOrange-3,
-      ROOT.kOrange+8
-    ]
 
 
   def ctau_from_gamma(self, gamma):
@@ -234,10 +278,11 @@ class Tools(object):
     '''
     Helper function to go from ctau,m -> vv
     '''
+    import numpy as np
     mult = 2. if ismaj else 1.
     ref_m = 1. # GeV
     ref_vv = 1. 
-    ref_ctau = self.tau_from_gamma(mult*self.gamma_total(mass=ref_m,vv=ref_vv))
+    ref_ctau = self.ctau_from_gamma(mult*self.gamma_total(mass=ref_m,vv=ref_vv))
     k = ref_ctau * np.power(ref_m,5) * ref_vv
     return k/(np.power(mass, 5) * ctau)
 
