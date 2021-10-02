@@ -13,11 +13,10 @@ from samples import *
 
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_file='', signal_files='', do_shape_analysis=True, do_categories=True, categories=None, add_Bc=False, outdirlabel=''):
+  def __init__(self, data_file='', signal_files='', do_categories=True, categories=None, add_Bc=False, outdirlabel=''):
     self.tools = Tools()
     self.data_file = data_file
     self.signal_files = signal_files 
-    self.do_shape_analysis = do_shape_analysis
     self.do_categories = do_categories
     self.categories = categories
     if do_categories and categories == None:
@@ -93,8 +92,6 @@ class DatacardsMaker(Tools):
   def writeCard(self, label, signal_yields, background_yields):
     datacard_name = 'datacard_{}.txt'.format(label)
     datacard = open('{}/{}'.format(self.outputdir, datacard_name), 'w+')
-    #--------------------------------------------------------------------------------------------------------------------------------------------
-    #shapes *          {lbl}   shape_{lbl}.root   $PROCESS $PROCESS_$SYSTEMATIC
     datacard.write(
 '''\
 imax 1 number of bins
@@ -161,159 +158,11 @@ syst_bkg_{lbl}                             lnN           -                      
       for signal_file in signal_files:
         self.produceDatacard(signal_file=signal_file, baseline_selection=baseline_selection)
 
-
-        if self.do_shape_analysis:
-          signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
-          label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling)
-
-          rootfile_name = 'shape_{}.root'.format(label)
-          root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'RECREATE')  
-          root_file.cd()
-
-          from quantity import Quantity
-          sigma = signal_file.resolution
-          quantity = Quantity(name_flat='hnl_mass', nbins=80, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
-
-          # data
-          data_hist = ROOT.TH1D('data_obs', 'data_obs', quantity.nbins, quantity.bin_min, quantity.bin_max)
-          root_file.cd()
-          data_hist.Write()
-
-          # signal shape
-          f = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+signal_file.filename, 'READ')
-          
-          filename = signal_file.filename
-          original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
-          target_ctau = signal_file.ctau
-          ctau_weight = -99
-          if float(original_ctau) != float(target_ctau):
-            ctau_weight = '({ctau0} / {ctau1} * exp((1./{ctau0} - 1./{ctau1}) * gen_hnl_ct))'.format(ctau0=original_ctau, ctau1=target_ctau)
-
-          signal_selection = 'ismatched==1 && {}'.format(baseline_selection)
-          hist_sig = self.tools.createHisto(f, 'signal_tree', quantity, hist_name='sig', branchname='flat', selection=signal_selection, weight=ctau_weight)
-          
-          signal_yields = self.getSignalYields(signal_file=signal_file, baseline_selection=baseline_selection)
-          hist_sig.Scale(signal_yields/hist_sig.Integral())
-          root_file.cd() 
-          hist_sig.Write()
-
-
-          # background shape
-          int_mc_tot = 0.
-          hist_mc_tot = ROOT.TH1D('qcd', 'qcd', quantity.nbins, quantity.bin_min, quantity.bin_max)
-          hist_mc_tot.Sumw2()
-
-          background_selection = baseline_selection
-          for ifile, qcd_file in enumerate(qcd_samples):
-            f_mc = ROOT.TFile.Open(qcd_file.filename, 'READ')
-            
-            weight_mc = self.tools.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
-            hist_mc_name = 'hist'
-            hist_mc = self.tools.createHisto(f_mc, 'signal_tree', quantity, hist_name=hist_mc_name, branchname='flat', selection=background_selection, weight=weight_mc) 
-            hist_mc.Sumw2()
-
-            int_mc_tot += hist_mc.Integral()
-          
-            hist_mc_tot.Add(hist_mc)
-
-          background_yields = self.getBackgroundYields(data_file=self.data_file, signal_file=signal_file, baseline_selection=baseline_selection)
-          hist_mc_tot.Scale(background_yields/int_mc_tot)
-          root_file.cd()
-          hist_mc_tot.Write()
-
-          #root_file.Write()
-          root_file.Close()
-    
-          print '--> {}/{} created'.format(self.outputdir, rootfile_name)
-          
-
     else:
       for category in categories:
         # loop on the signal points
         for signal_file in signal_files:
           self.produceDatacard(signal_file=signal_file, category=category, baseline_selection=baseline_selection)
-
-          #label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
-          #if self.do_shape_analysis:
-          #  root_file = ROOT.TFile('shape_{}.root'.format(label), 'RECREATE')  
-          #  root_file.cd()
-
-            # signal shape
-
-          if self.do_shape_analysis:
-            signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
-            label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
-
-            rootfile_name = 'shape_{}.root'.format(label)
-            root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'RECREATE')  
-            root_file.cd()
-
-            from quantity import Quantity
-            sigma = signal_file.resolution
-            quantity = Quantity(name_flat='hnl_mass', nbins=80, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
-
-            # data
-            data_hist = ROOT.TH1D('data_obs', 'data_obs', quantity.nbins, quantity.bin_min, quantity.bin_max)
-            root_file.cd()
-            data_hist.Write()
-
-            # signal shape
-            f = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+signal_file.filename, 'READ')
-            
-            filename = signal_file.filename
-            original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
-            target_ctau = signal_file.ctau
-            ctau_weight = -99
-            if float(original_ctau) != float(target_ctau):
-              ctau_weight = '({ctau0} / {ctau1} * exp((1./{ctau0} - 1./{ctau1}) * gen_hnl_ct))'.format(ctau0=original_ctau, ctau1=target_ctau)
-
-            signal_selection = 'ismatched==1 && {}'.format(baseline_selection)
-            category_selection = self.categories[category]
-            signal_selection += ' && {}'.format(category_selection)
-            hist_sig = self.tools.createHisto(f, 'signal_tree', quantity, hist_name='sig', branchname='flat', selection=signal_selection, weight=ctau_weight)
-            
-            signal_yields = self.getSignalYields(signal_file=signal_file, baseline_selection=baseline_selection, category=category)
-            hist_sig.Scale(signal_yields/hist_sig.Integral())
-            root_file.cd() 
-            hist_sig.Write()
-
-
-            # background shape
-            int_mc_tot = 0.
-            hist_mc_tot = ROOT.TH1D('qcd', 'qcd', quantity.nbins, quantity.bin_min, quantity.bin_max)
-            hist_mc_tot.Sumw2()
-
-            background_selection = baseline_selection
-            background_selection += ' && {}'.format(category_selection)
-            for ifile, qcd_file in enumerate(qcd_samples):
-              f_mc = ROOT.TFile.Open(qcd_file.filename, 'READ')
-              
-              weight_mc = self.tools.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
-              hist_mc_name = 'hist'
-              hist_mc = self.tools.createHisto(f_mc, 'signal_tree', quantity, hist_name=hist_mc_name, branchname='flat', selection=background_selection, weight=weight_mc) 
-              hist_mc.Sumw2()
-
-              int_mc_tot += hist_mc.Integral()
-            
-              hist_mc_tot.Add(hist_mc)
-
-            background_yields = self.getBackgroundYields(data_file=self.data_file, signal_file=signal_file, baseline_selection=baseline_selection, category=category)
-            #if background_yields == 1e-09 and int_mc_tot==0.:
-            #  print 'ok'
-            #elif background_yields == 1e-09 and int_mc_tot!=0.:
-            #  print 'not ok'
-
-            if background_yields == 1e-09: 
-              hist_mc_tot.Fill(signal_file.mass)
-            if int_mc_tot != 0.: hist_mc_tot.Scale(background_yields/int_mc_tot)
-            if int_mc_tot==0. and background_yields == 1e-09: hist_mc_tot.Scale(1e-09)
-            root_file.cd()
-            hist_mc_tot.Write()
-
-            #root_file.Write()
-            root_file.Close()
-      
-            print '--> {}/{} created'.format(self.outputdir, rootfile_name)
 
 
 if __name__ == '__main__':
@@ -371,10 +220,10 @@ if __name__ == '__main__':
   dirlabel = 'categories_selection_19Aug21_fulllumi_combineddsa'
 
   signal_files = signal_samples_limits_m1
-  datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, do_shape_analysis=False, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
+  datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
 
   #signal_files = signal_samples_limits_m3
-  #datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, do_shape_analysis=False, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
+  #datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
 
   #signal_files = signal_samples_limits_m4p5
-  #datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, do_shape_analysis=False, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
+  #datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
