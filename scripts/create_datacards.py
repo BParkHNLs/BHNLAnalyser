@@ -9,20 +9,24 @@ from tools import Tools
 
 import sys
 sys.path.append('../objects')
-from samples import *
+from samples import signal_samples, data_samples
+from categories import categories
+from selection import selection
+from ABCD_regions import ABCD_regions
 
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_file='', signal_files='', do_categories=True, categories=None, add_Bc=False, outdirlabel=''):
+  def __init__(self, data_file='', signal_files='', baseline_selection='', do_categories=True, categories=None, add_Bc=False, outdirlabel=''):
     self.tools = Tools()
     self.data_file = data_file
     self.signal_files = signal_files 
+    self.baseline_selection = baseline_selection
     self.do_categories = do_categories
     self.categories = categories
     if do_categories and categories == None:
-      raise RuntimeError('Please fill the dictionnary with the different categories')
+      raise RuntimeError('Please indicate which categories dictionnary to use')
     self.add_Bc = add_Bc
-    self.outputdir = './datacards/{}'.format(outdirlabel)
+    self.outputdir = '../outputs/{}/datacards'.format(outdirlabel)
     if not path.exists(self.outputdir):
       os.system('mkdir -p {}'.format(self.outputdir))
 
@@ -32,17 +36,20 @@ class DatacardsMaker(Tools):
     part1 = coupling[:coupling.find('e')]
     part1 = str(round(float(part1), 1))
     part2 = coupling[coupling.find('e'):]
-    return (part1+part2) #.replace('.', 'p').replace('-', 'm')
+    return (part1+part2)
 
 
-  def getBackgroundYields(self, data_file, signal_file, baseline_selection='', category=''):
-    background_selection = baseline_selection
+  def getBackgroundYields(self, data_file, signal_file, category=''):
+    background_selection = self.baseline_selection
     if self.do_categories:
-      category_selection = self.categories[category]
+      category_selection = category.cutbased_selection
       background_selection += ' && {}'.format(category_selection)
+    print background_selection
 
     # ABCD method
-    background_yields = ComputeYields(data_file=data_file, signal_file=signal_file, selection=background_selection).computeBkgYieldsFromABCDData()[0] 
+    # for the moment keep it hardcoded
+    ABCD_region = ABCD_regions['cos2d_svprob']
+    background_yields = ComputeYields(data_file=data_file, signal_file=signal_file, selection=background_selection).computeBkgYieldsFromABCDData(ABCD_regions=ABCD_region)[0] 
 
     # TF method
     #from samples import qcd_samples
@@ -51,19 +58,20 @@ class DatacardsMaker(Tools):
 
     if background_yields == 0.: background_yields = 1e-9
 
-    if background_yields != 1e-9: background_yields = background_yields * 41.6/(0.774 * 0.1) # added 10percent since we only use Chunk2
+    #TODO add flag that indicates to scale to given lumi
+    #if background_yields != 1e-9: background_yields = background_yields * 41.6/(0.774 * 0.1) # added 10percent since we only use Chunk2
+    if background_yields != 1e-9: background_yields = background_yields * 41.6/0.774
 
     return background_yields
 
 
-  def getSignalYields(self, signal_file, baseline_selection='', category=''):
-    signal_selection = 'ismatched==1 && {}'.format(baseline_selection)
+  def getSignalYields(self, signal_file, category=''):
+    signal_selection = 'ismatched==1 && hnl_charge==0 && {}'.format(self.baseline_selection) # condition on the charge added in the context of the dsa study
     if self.do_categories:
-      category_selection = self.categories[category]
+      category_selection = category.cutbased_selection
       signal_selection += ' && {}'.format(category_selection)
 
     signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, isBc=False)[0] 
-    #signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields()[0]
     if self.add_Bc and signal_file.filename_Bc != '':
       signal_yields += ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, isBc=True)[0]
 
@@ -85,7 +93,7 @@ class DatacardsMaker(Tools):
     if not self.do_categories:
       label = 'bhnl_m_{}_v2_{}'.format(signal_mass, signal_coupling)
     else:
-      label = 'bhnl_cat_{}_m_{}_v2_{}'.format(category, signal_mass, signal_coupling)
+      label = 'bhnl_cat_{}_m_{}_v2_{}'.format(category.label, signal_mass, signal_coupling)
     return label
 
 
@@ -123,7 +131,7 @@ syst_bkg_{lbl}                             lnN           -                      
     print '--> {}/{} created'.format(self.outputdir, datacard_name)
 
 
-  def produceDatacard(self, signal_file='', category='', baseline_selection=''):
+  def produceDatacard(self, signal_file='', category=''):
     # get the signal mass/coupling
     signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
 
@@ -131,10 +139,10 @@ syst_bkg_{lbl}                             lnN           -                      
     label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
 
     # get the background yields
-    background_yields = self.getBackgroundYields(data_file=self.data_file, signal_file=signal_file, baseline_selection=baseline_selection, category=category)
+    background_yields = self.getBackgroundYields(data_file=self.data_file, signal_file=signal_file, category=category)
 
     # get the signal yields
-    signal_yields = self.getSignalYields(signal_file=signal_file, baseline_selection=baseline_selection, category=category)
+    signal_yields = self.getSignalYields(signal_file=signal_file, category=category)
 
     #print '{} {}'.format(signal_mass, background_yields)
 
@@ -151,25 +159,26 @@ syst_bkg_{lbl}                             lnN           -                      
 
     #baseline_selection = 'hnl_charge==0 && b_mass<6.4 && deltar_mu_pi>0.1 && deltar_mu_pi<1.7 && deltar_trgmu_mu<1 && deltar_trgmu_pi<1.5 && pi_pt>0.8 && trgmu_looseid==1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && ((mu_isglobalmuon==1 && mu_numberofstations>0 && mu_numberoftrackerlayers<18) || (mu_isglobalmuon!=1 && mu_calocompatibility>0.05 && mu_numberoftrackerlayers>6 && mu_numberoftrackerlayers<16 && mu_numberofvalidpixelhits<6))' # used for sensitivity
     #baseline_selection = 'mu_isdsa!=1 && hnl_charge==0 && b_mass<6.4 && deltar_mu_pi>0.1 && deltar_mu_pi<1.7 && deltar_trgmu_mu<1 && deltar_trgmu_pi<1.5 && pi_pt>0.8'
-    baseline_selection = 'hnl_charge==0 && b_mass<6.4'
+    #baseline_selection = 'hnl_charge==0 && b_mass<6.4'
 
     if not self.do_categories:
       # loop on the signal points
       for signal_file in signal_files:
-        self.produceDatacard(signal_file=signal_file, baseline_selection=baseline_selection)
+        self.produceDatacard(signal_file=signal_file)
 
     else:
       for category in categories:
         # loop on the signal points
         for signal_file in signal_files:
-          self.produceDatacard(signal_file=signal_file, category=category, baseline_selection=baseline_selection)
+          self.produceDatacard(signal_file=signal_file, category=category)
 
 
 if __name__ == '__main__':
 
-  data_file = data_samples[0]
+  data_file = data_samples['V07_18Aug21'][0]
 
-  categories = {}
+  categories = categories['standard']
+  baseline_selection = selection['standard'].flat
   #categories['lxy0to1_OS'] = 'sv_lxy<1 && trgmu_charge!=mu_charge && b_mass>2.7'
   #categories['lxy1to5_OS'] = 'sv_lxy>=1 && sv_lxy<5 && trgmu_charge!=mu_charge && b_mass>1.7 && pi_pt>1 && trgmu_pi_mass<4.5 '
   #categories['lxygt5_OS'] = 'sv_lxy>=5 && trgmu_charge!=mu_charge && b_mass>1.5 && deltar_mu_pi<1.5 && deltar_trgmu_pi<1 && pi_pt>2 && trgmu_pi_mass<4.5'
@@ -185,18 +194,19 @@ if __name__ == '__main__':
   #categories['lxy1to5_SS'] = 'sv_lxy>=1 && sv_lxy<5 && trgmu_charge==mu_charge && b_mass>1.7 && b_pt>10 && deltaphi_trgmu_hnl>0.015 && pi_dcasig>8 && sv_lxysig>30 && pi_pt>1'
   #categories['lxygt5_SS'] = 'sv_lxy>=5 && trgmu_charge==mu_charge && b_mass>0.8 && pi_dcasig>8 && sv_lxysig>40 && pi_pt>1.3'
 
-  categories['lxy0to1_OS_dsa'] = 'mu_isdsa==1 && sv_lxy<1 && trgmu_charge!=mu_charge '
-  categories['lxy1to5_OS_dsa'] = 'mu_isdsa==1 && sv_lxy>=1 && sv_lxy<5 && trgmu_charge!=mu_charge'
-  categories['lxygt5_OS_dsa'] = 'mu_isdsa==1 && sv_lxy>=5 && trgmu_charge!=mu_charge'
-  categories['lxy0to1_SS_dsa'] = 'mu_isdsa==1 && sv_lxy<1 && trgmu_charge==mu_charge'
-  categories['lxy1to5_SS_dsa'] = 'mu_isdsa==1 && sv_lxy>=1 && sv_lxy<5 && trgmu_charge==mu_charge'
-  categories['lxygt5_SS_dsa'] = 'mu_isdsa==1 && sv_lxy>=5 && trgmu_charge==mu_charge'
-  categories['lxy0to1_OS_nodsa'] = 'mu_isdsa!=1 && sv_lxy<1 && trgmu_charge!=mu_charge && b_mass>2.0 && deltaphi_trgmu_hnl<0.45 && deltaphi_trgmu_pi<2 '
-  categories['lxy1to5_OS_nodsa'] = 'mu_isdsa!=1 && sv_lxy>=1 && sv_lxy<5 && trgmu_charge!=mu_charge && b_mass>1.7 && b_pt>10 && pi_dcasig>8 && sv_lxysig>30 && pi_pt>1'
-  categories['lxygt5_OS_nodsa'] = 'mu_isdsa!=1 && sv_lxy>=5 && trgmu_charge!=mu_charge && b_mass>1.2 && pi_dcasig>8 && sv_lxysig>40 && pi_pt>1.3'
-  categories['lxy0to1_SS_nodsa'] = 'mu_isdsa!=1 && sv_lxy<1 && trgmu_charge==mu_charge && b_mass>2.75 && deltaphi_trgmu_hnl>0.015 && deltaphi_trgmu_hnl<0.45 && deltaphi_trgmu_pi<2'
-  categories['lxy1to5_SS_nodsa'] = 'mu_isdsa!=1 && sv_lxy>=1 && sv_lxy<5 && trgmu_charge==mu_charge && b_mass>1.7 && b_pt>10 && deltaphi_trgmu_hnl>0.015 && pi_dcasig>8 && sv_lxysig>30 && pi_pt>1'
-  categories['lxygt5_SS_nodsa'] = 'mu_isdsa!=1 && sv_lxy>=5 && trgmu_charge==mu_charge && b_mass>0.8 && pi_dcasig>8 && sv_lxysig>40 && pi_pt>1.3'
+  # used for first dsa study
+  #categories['lxy0to1_OS_dsa'] = 'mu_isdsa==1 && sv_lxy<1 && trgmu_charge!=mu_charge '
+  #categories['lxy1to5_OS_dsa'] = 'mu_isdsa==1 && sv_lxy>=1 && sv_lxy<5 && trgmu_charge!=mu_charge'
+  #categories['lxygt5_OS_dsa'] = 'mu_isdsa==1 && sv_lxy>=5 && trgmu_charge!=mu_charge'
+  #categories['lxy0to1_SS_dsa'] = 'mu_isdsa==1 && sv_lxy<1 && trgmu_charge==mu_charge'
+  #categories['lxy1to5_SS_dsa'] = 'mu_isdsa==1 && sv_lxy>=1 && sv_lxy<5 && trgmu_charge==mu_charge'
+  #categories['lxygt5_SS_dsa'] = 'mu_isdsa==1 && sv_lxy>=5 && trgmu_charge==mu_charge'
+  #categories['lxy0to1_OS_nodsa'] = 'mu_isdsa!=1 && sv_lxy<1 && trgmu_charge!=mu_charge && b_mass>2.0 && deltaphi_trgmu_hnl<0.45 && deltaphi_trgmu_pi<2 '
+  #categories['lxy1to5_OS_nodsa'] = 'mu_isdsa!=1 && sv_lxy>=1 && sv_lxy<5 && trgmu_charge!=mu_charge && b_mass>1.7 && b_pt>10 && pi_dcasig>8 && sv_lxysig>30 && pi_pt>1'
+  #categories['lxygt5_OS_nodsa'] = 'mu_isdsa!=1 && sv_lxy>=5 && trgmu_charge!=mu_charge && b_mass>1.2 && pi_dcasig>8 && sv_lxysig>40 && pi_pt>1.3'
+  #categories['lxy0to1_SS_nodsa'] = 'mu_isdsa!=1 && sv_lxy<1 && trgmu_charge==mu_charge && b_mass>2.75 && deltaphi_trgmu_hnl>0.015 && deltaphi_trgmu_hnl<0.45 && deltaphi_trgmu_pi<2'
+  #categories['lxy1to5_SS_nodsa'] = 'mu_isdsa!=1 && sv_lxy>=1 && sv_lxy<5 && trgmu_charge==mu_charge && b_mass>1.7 && b_pt>10 && deltaphi_trgmu_hnl>0.015 && pi_dcasig>8 && sv_lxysig>30 && pi_pt>1'
+  #categories['lxygt5_SS_nodsa'] = 'mu_isdsa!=1 && sv_lxy>=5 && trgmu_charge==mu_charge && b_mass>0.8 && pi_dcasig>8 && sv_lxysig>40 && pi_pt>1.3'
 
   #categories['lxy0to1_OS'] = 'sv_lxy<1 && trgmu_charge!=mu_charge && b_mass>2.7'
   #categories['lxy1to5_OS'] = 'sv_lxy>=1 && sv_lxy<5 && trgmu_charge!=mu_charge && b_mass>1.7 && pi_pt>1'
@@ -212,18 +222,15 @@ if __name__ == '__main__':
   #categories['lxygt5_SS'] = 'sv_lxy>=5 && trgmu_charge==mu_charge'
 
 
-  from samples import signal_samples_limits_m1, signal_samples_limits_m1_large
-  from samples import signal_samples_limits_m3, signal_samples_limits_m3_large
-  from samples import signal_samples_limits_m4p5, signal_samples_limits_m4p5_large
-
   #dirlabel = 'test_categories_selection_29Jun21_fulllumi_muonid'
-  dirlabel = 'categories_selection_19Aug21_fulllumi_combineddsa'
+  #dirlabel = 'categories_selection_19Aug21_fulllumi_combineddsa'
+  dirlabel = 'test'
 
-  signal_files = signal_samples_limits_m1
-  datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
+  signal_files = signal_samples['limits_m1']
+  datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, baseline_selection=baseline_selection, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
 
-  #signal_files = signal_samples_limits_m3
-  #datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
+  #signal_files = signal_samples['limits_m3']
+  #datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, baseline_selection=baseline_selection, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
 
-  #signal_files = signal_samples_limits_m4p5
-  #datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
+  #signal_files = signal_samples['limits_m4p5']
+  #datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, baseline_selection=baseline_selection, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
