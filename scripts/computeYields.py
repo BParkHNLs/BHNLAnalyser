@@ -153,60 +153,6 @@ class ComputeYields(Tools):
 
     return int(n_obs_data_A), int(n_err_data_A)
 
-
-  def computeBkgYieldsFromABCDQCDMC(self): # to remove?
-    '''
-      Estimate background yields from data using the ABCD method
-      A = b_mass < 6.27 && hnl_charge == 0 (SR)
-      B = b_mass < 6.27 && hnl_charge != 0 
-      C = b_mass > 6.27 && hnl_charge == 0 
-      D = b_mass > 6.27 && hnl_charge != 0 
-
-      N_A = N_B * N_C/N_D
-    '''
-    #FIXME make it so that the code can run on multiple data files
-    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=1000)
-
-    bin_selection = self.selection
-    hist_mc_tot_A = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge==0')
-    hist_mc_tot_B = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass<6.27 && hnl_charge!=0')
-    hist_mc_tot_C = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge==0')
-    hist_mc_tot_D = self.getHistoMC(quantity=quantity, selection=self.selection+' && b_mass>6.27 && hnl_charge!=0')
-
-    #hist_mc_tot_A = self.getHistoMC(quantity=quantity, selection='b_mass<6.27 && hnl_charge==0')
-    #hist_mc_tot_A = self.getHistoMC(quantity=quantity, selection='sv_prob>0.05 && hnl_charge==0')
-    #hist_mc_tot_A = self.getHistoMC(quantity=quantity, selection='b_mass<6.27 && hnl_mass<5.4')
-    #hist_mc_tot_B = self.getHistoMC(quantity=quantity, selection='b_mass<6.27 && hnl_charge!=0')
-    #hist_mc_tot_B = self.getHistoMC(quantity=quantity, selection='sv_prob>0.05 && hnl_charge!=0')
-    #hist_mc_tot_B = self.getHistoMC(quantity=quantity, selection='b_mass<6.27 && hnl_mass>5.4')
-    #hist_mc_tot_C = self.getHistoMC(quantity=quantity, selection='b_mass>6.27 && hnl_charge==0')
-    #hist_mc_tot_C = self.getHistoMC(quantity=quantity, selection='sv_prob<0.05 && hnl_charge==0')
-    #hist_mc_tot_C = self.getHistoMC(quantity=quantity, selection='b_mass>6.27 && hnl_mass<5.4')
-    #hist_mc_tot_D = self.getHistoMC(quantity=quantity, selection='b_mass>6.27 && hnl_charge!=0')
-    #hist_mc_tot_D = self.getHistoMC(quantity=quantity, selection='sv_prob<0.05 && hnl_charge!=0')
-    #hist_mc_tot_D = self.getHistoMC(quantity=quantity, selection='b_mass>6.27 && hnl_mass>5.4')
-
-    n_obs_mc_A = hist_mc_tot_A.GetBinContent(1)
-    n_obs_mc_B = hist_mc_tot_B.GetBinContent(1)
-    n_obs_mc_C = hist_mc_tot_C.GetBinContent(1)
-    n_obs_mc_D = hist_mc_tot_D.GetBinContent(1)
-
-    n_err_mc_A = hist_mc_tot_A.GetBinError(1) #math.sqrt(n_obs_mc_A) 
-    n_err_mc_B = hist_mc_tot_B.GetBinError(1) #math.sqrt(n_obs_mc_B) 
-    n_err_mc_C = hist_mc_tot_C.GetBinError(1) #math.sqrt(n_obs_mc_C) 
-    n_err_mc_D = hist_mc_tot_D.GetBinError(1) #math.sqrt(n_obs_mc_D) 
-
-    n_obs_mc_A = n_obs_mc_B * (n_obs_mc_C / n_obs_mc_D) 
-    n_err_mc_A = n_obs_mc_A * (n_err_mc_B / n_obs_mc_B + n_err_mc_C / n_obs_mc_C + n_err_mc_D / n_obs_mc_D)
-
-    n_real_mc_A = hist_mc_tot_A.GetBinContent(1)
-    n_realerr_mc_A = hist_mc_tot_A.GetBinError(1)
-
-    print 'ABCD estimation SR: {} +- {}'.format(int(n_obs_mc_A), int(n_err_mc_A))
-    print 'True SR: {} +- {}'.format(int(n_real_mc_A), int(n_realerr_mc_A))
-
-    #return int(n_obs_mc_A), int(n_err_mc_A)
-
   ###
   # BACKGROUND ABCD VALIDATION 
   ###
