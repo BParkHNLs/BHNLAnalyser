@@ -438,7 +438,6 @@ if __name__ == '__main__':
   do_computeBkgYieldsABCD = False
   do_testClosureABCD = True
   do_computeSigYields = False
-  plotEfficiencyScan = False
 
   #baseline_selection = 'b_mass<5.3 && fabs(mu_dzsig)>1 && fabs(mu_dxysig)>1.5 && sv_lxysig>20 && deltaeta_pi_fit_pi<0.015 && deltaphi_pi_fit_pi<0.03' # if we want to categorise on cos2D, we dont want this cut to be too high
   #baseline_selection = '(trgmu_mu_mass<3.03 || trgmu_mu_mass>3.15) && hnl_cos2d>0.993 && sv_prob>0.05 && trgmu_mu_mass<5.4'
@@ -492,50 +491,3 @@ if __name__ == '__main__':
       sig_yields = sig.computeSignalYields(lumi=41.6)[0]
       print 'signal yields, {}: {}'.format(category.title, sig_yields)
  
-
-  if plotEfficiencyScan:
-    from samples import signal_samples_effscan_m3 as samples_m3
-    from samples import signal_samples_effscan_m1 as samples_m1
-    from samples import signal_samples_effscan_m4p5 as samples
-
-    canv = self.tools.createTCanvas('canv', 800, 800)
-    #canv = ROOT.TCanvas()
-    canv.SetLogx()
-    canv.SetLogy()
-    graph = ROOT.TGraph() 
-
-    for sample in samples:
-      sig_incl = ComputeYields(signal_file=sample, selection='ismatched==1')
-      eff, err_eff = sig_incl.getSignalEfficiency()/sample.filter_efficiency
-      v_square = self.tools.getVV(mass=sample.mass, ctau=sample.ctau, ismaj=True)
-      point = graph.GetN()
-      graph.SetPoint(point, v_square, eff)
-      print '{} {}'.format(v_square, eff)
-
-    graph.Draw('AP')
-    graph.SetMarkerStyle(43)
-    graph.SetMarkerSize(4)
-    graph.SetMarkerColor(ROOT.kRed+2)
-      
-    graph.GetYaxis().SetLimits(1e-6, 2e-3)
-    graph.GetYaxis().SetLimits(1e-5, 1.5)
-
-    if not path.exists('./myPlots/recoEfficiencyScan'):
-      os.system('mkdir -p ./myPlots/recoEfficiencyScan')
-    
-    canv.SaveAs('./myPlots/recoEfficiencyScan/mass_4p5.png')
-
-    #print 'MC lxy<1, SS, {} +- {}'.format(mc_yields_disp1_SS[0], mc_yields_disp1_SS[1])
-    #print 'data lxy<1, SS, {} +- {}'.format(mc_yields_disp1_SS_data[0], mc_yields_disp1_SS_data[1])
-
-    #print 'lxy<1, SS, {}'.format(computeYields(data_file=data_samples[0], qcd_files=qcd_samples, selection='sv_lxy<1 && trgmu_charge==mu_charge', white_list=white_list_20to300))
-    #print '1<lxy<5, SS, {}'.format(computeYields(data_file=data_samples[0], qcd_files=qcd_samples, selection='sv_lxy>1 && sv_lxy<5 && trgmu_charge==mu_charge', white_list=white_list_20to300))
-    #print 'lxy>5, SS, {}'.format(computeYields(data_file=data_samples[0], qcd_files=qcd_samples, selection='sv_lxy>5 && trgmu_charge==mu_charge', white_list=white_list_20to300))
-
-    #print 'lxy<1, OS, {}'.format(computeYields(data_file=data_samples[0], qcd_files=qcd_samples, selection='sv_lxy<1 && trgmu_charge!=mu_charge', white_list=white_list_20to300))
-    #print '1<lxy<5, OS, {}'.format(computeYields(data_file=data_samples[0], qcd_files=qcd_samples, selection='sv_lxy>1 && sv_lxy<5 && trgmu_charge!=mu_charge', white_list=white_list_20to300))
-    #print 'lxy>5, OS, {}'.format(computeYields(data_file=data_samples[0], qcd_files=qcd_samples, selection='sv_lxy>5 && trgmu_charge!=mu_charge', white_list=white_list_20to300))
-
-
-    #print computeYields(data_file=data_samples[0], qcd_files=qcd_samples, selection='sv_lxy>10', white_list=white_list_20to300)
-    #print computeYields(data_file=data_samples[0], qcd_files=qcd_samples, selection='sv_lxy>15', white_list=white_list_20to300)
