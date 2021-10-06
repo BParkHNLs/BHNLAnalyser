@@ -86,7 +86,7 @@ class DatacardsMaker(Tools):
   def getBackgroundYields(self, data_file, signal_file, category=''):
     background_selection = self.baseline_selection
     if self.do_categories:
-      category_selection = category.cutbased_selection
+      category_selection = category.definition_flat + '&& ' + category.cutbased_selection
       background_selection += ' && {}'.format(category_selection)
 
     # ABCD method
@@ -109,7 +109,7 @@ class DatacardsMaker(Tools):
   def getSignalYields(self, signal_file, category=''):
     signal_selection = 'ismatched==1 && hnl_charge==0 && {}'.format(self.baseline_selection) # condition on the charge added in the context of the dsa study
     if self.do_categories:
-      category_selection = category.cutbased_selection
+      category_selection = category.definition_flat + '&& ' + category.cutbased_selection
       signal_selection += ' && {}'.format(category_selection)
 
     signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, isBc=False)[0] 
@@ -255,10 +255,11 @@ if __name__ == '__main__':
 
     For an interactive usage of the script, use the code below
     '''
-    data_file = data_samples['V07_18Aug21'][0]
+    #data_file = data_samples['V07_18Aug21'][0]
+    data_file = data_samples['V05_29Jun21'][0]
 
     categories = categories['standard']
-    baseline_selection = selection['standard'].flat
+    baseline_selection = selection['mass_charge'].flat
     #categories['lxy0to1_OS'] = 'sv_lxy<1 && trgmu_charge!=mu_charge && b_mass>2.7'
     #categories['lxy1to5_OS'] = 'sv_lxy>=1 && sv_lxy<5 && trgmu_charge!=mu_charge && b_mass>1.7 && pi_pt>1 && trgmu_pi_mass<4.5 '
     #categories['lxygt5_OS'] = 'sv_lxy>=5 && trgmu_charge!=mu_charge && b_mass>1.5 && deltar_mu_pi<1.5 && deltar_trgmu_pi<1 && pi_pt>2 && trgmu_pi_mass<4.5'
@@ -303,11 +304,11 @@ if __name__ == '__main__':
 
 
     #dirlabel = 'test_categories_selection_29Jun21_fulllumi_muonid'
-    #dirlabel = 'categories_selection_19Aug21_fulllumi_combineddsa'
-    dirlabel = 'test'
+    dirlabel = 'categories_selection_19Aug21_fulllumi_combineddsa'
 
+    ABCD_regions = ABCD_regions['cos2d_svprob'] 
     signal_files = signal_samples['limits_m1']
-    datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, baseline_selection=baseline_selection, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
+    datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, baseline_selection=baseline_selection, ABCD_regions=ABCD_regions, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
 
     #signal_files = signal_samples['limits_m3']
     #datacards = DatacardsMaker(data_file=data_file, signal_files=signal_files, baseline_selection=baseline_selection, do_categories=True, categories=categories, add_Bc=False, outdirlabel=dirlabel).process() 
