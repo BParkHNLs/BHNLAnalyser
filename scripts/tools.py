@@ -116,6 +116,18 @@ class Tools(object):
     return weight
 
 
+  def getCtauWeight(self, signal_file):
+    filename = signal_file.filename # might need to be modified later on for Bc
+    original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
+    target_ctau = signal_file.ctau
+
+    ctau_weight = -99
+    if float(original_ctau) != float(target_ctau):
+      ctau_weight = '({ctau0} / {ctau1} * exp((1./{ctau0} - 1./{ctau1}) * gen_hnl_ct))'.format(ctau0=original_ctau, ctau1=target_ctau)
+
+    return ctau_weight
+
+
   def getRatioHistogram(self, hist1, hist2): 
     hist_ratio = hist1.Clone('hist_ratio')
     hist_ratio.Divide(hist2)
