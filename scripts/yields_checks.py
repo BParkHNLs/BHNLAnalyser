@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from os import path
 from tools import Tools
-from computeYields import ComputeYields
+from compute_yields import ComputeYields
 sys.path.append('../objects')
 from samples import signal_samples
 

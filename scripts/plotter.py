@@ -9,7 +9,6 @@ import numpy as np
 from itertools import product
 
 from tools import Tools
-from computeYields import ComputeYields
 
 import sys
 sys.path.append('../objects')
@@ -549,7 +548,7 @@ if __name__ == '__main__':
           plot_data = True
           plot_qcd = False
           plot_sig = True
-          plot_ratio = False
+          plot_ratio = opt.plot_ratio
 
           plotter.plot(selection = baseline_selection + ' && ' + category_definition, 
                        title = title, 

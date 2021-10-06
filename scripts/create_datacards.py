@@ -4,7 +4,7 @@ from os import path
 import ROOT
 import math
 
-from computeYields import ComputeYields
+from compute_yields import ComputeYields
 from tools import Tools
 
 import sys
