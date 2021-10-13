@@ -13,6 +13,7 @@ from categories import categories
 from ABCD_regions import ABCD_regions
 from selection import selection
 
+#TODO apply weights 
 
 class ComputeYields(Tools):
   def __init__(self, data_file='', qcd_files='', signal_file='', selection='', white_list=''):
@@ -35,11 +36,11 @@ class ComputeYields(Tools):
     f_data = self.tools.getRootFile(self.data_file.filename)
     hist_data = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=selection)
     hist_data.Sumw2()
-    n_obs_data = hist_data.GetBinContent(1)
+    n_obs_data = hist_data.Integral()
     n_err_data = math.sqrt(n_obs_data) #hist_data.GetBinError(1)
 
     hist_mc_tot = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=selection)
-    n_obs_mc = hist_mc_tot.GetBinContent(1)
+    n_obs_mc = hist_mc_tot.Integral()
     n_err_mc = math.sqrt(n_obs_mc) #hist_mc_tot.GetBinError(1)
 
     if n_obs_mc != 0:
@@ -78,15 +79,13 @@ class ComputeYields(Tools):
     return weight, err
 
 
-  def computeBkgYieldsFromMC(self):
+  def computeBkgYieldsFromMC(self, mass, resolution):
     '''
       QCD MC (background) yields are computed as N_exp(SR) = N_obs(SR) * weight(CR)
     '''
 
     # defining mass window
-    mass = self.signal_file.mass
-    sigma = self.signal_file.resolution
-    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*sigma, bin_max=mass+2*sigma)
+    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
 
     selection_extra = self.selection
 
@@ -95,7 +94,7 @@ class ComputeYields(Tools):
     #weight, err_weight = self.computeWeightQCDMCtoData(lumi_data=774)
 
     hist_mc_tot = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection='hnl_charge==0' if selection_extra=='' else 'hnl_charge==0 &&' + selection_extra)
-    n_obs_mc = hist_mc_tot.GetBinContent(1)
+    n_obs_mc = hist_mc_tot.Integral()
     n_err_mc = math.sqrt(n_obs_mc) #hist_mc_tot.GetBinError(1)
 
     n_exp_mc = n_obs_mc * weight
@@ -110,7 +109,7 @@ class ComputeYields(Tools):
   # BACKGROUND ABCD METHOD 
   ###
 
-  def computeBkgYieldsFromABCDData(self, ABCD_regions):
+  def computeBkgYieldsFromABCDData(self, mass, resolution, ABCD_regions):
     '''
       Estimate background yields from data using the ABCD method
       A = b_mass < 6.27 && hnl_charge == 0 (SR)
@@ -123,23 +122,23 @@ class ComputeYields(Tools):
     f_data = self.tools.getRootFile(self.data_file.filename)
 
     # defining mass window
-    mass = self.signal_file.mass
-    sigma = self.signal_file.resolution
-    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*sigma, bin_max=mass+2*sigma)
+    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
 
     bin_selection = self.selection
 
-    hist_data_B = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' &&'+ABCD_regions.CR_B_selection)
+    hist_data_B = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_B_selection)
     hist_data_C = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_C_selection)
     hist_data_D = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_D_selection)
 
-    n_obs_data_B = hist_data_B.GetBinContent(1)
-    n_obs_data_C = hist_data_C.GetBinContent(1)
-    n_obs_data_D = hist_data_D.GetBinContent(1)
+    n_obs_data_B = hist_data_B.Integral()
+    n_obs_data_C = hist_data_C.Integral()
+    n_obs_data_D = hist_data_D.Integral()
 
-    n_err_data_B = math.sqrt(hist_data_B.GetBinContent(1))
-    n_err_data_C = math.sqrt(hist_data_C.GetBinContent(1))
-    n_err_data_D = math.sqrt(hist_data_D.GetBinContent(1))
+    n_err_data_B = math.sqrt(n_obs_data_B)
+    n_err_data_C = math.sqrt(n_obs_data_C)
+    n_err_data_D = math.sqrt(n_obs_data_D)
+
+    #print '{} * ({} / {})'.format(n_obs_data_B, n_obs_data_C, n_obs_data_D)
 
     if n_obs_data_D != 0:
       n_obs_data_A = n_obs_data_B * (n_obs_data_C / n_obs_data_D) 
@@ -167,24 +166,33 @@ class ComputeYields(Tools):
     mass = self.signal_file.mass
     sigma = self.signal_file.resolution
     quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*sigma, bin_max=mass+2*sigma)
+    #quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=6.4)
 
     hist_mc_tot_A = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && '+ABCD_regions.SR_selection)
     hist_mc_tot_B = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && '+ABCD_regions.CR_B_selection)
     hist_mc_tot_C = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && '+ABCD_regions.CR_C_selection)
     hist_mc_tot_D = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && '+ABCD_regions.CR_D_selection)
 
-    n_obs_mc_A = hist_mc_tot_A.GetBinContent(1)
-    n_obs_mc_B = hist_mc_tot_B.GetBinContent(1)
-    n_obs_mc_C = hist_mc_tot_C.GetBinContent(1)
-    n_obs_mc_D = hist_mc_tot_D.GetBinContent(1)
+    n_obs_mc_A = hist_mc_tot_A.Integral()
+    n_obs_mc_B = hist_mc_tot_B.Integral()
+    n_obs_mc_C = hist_mc_tot_C.Integral()
+    n_obs_mc_D = hist_mc_tot_D.Integral()
 
     n_err_mc_A = hist_mc_tot_A.GetBinError(1) #math.sqrt(n_obs_mc_A) 
     n_err_mc_B = hist_mc_tot_B.GetBinError(1) #math.sqrt(n_obs_mc_B) 
     n_err_mc_C = hist_mc_tot_C.GetBinError(1) #math.sqrt(n_obs_mc_C) 
     n_err_mc_D = hist_mc_tot_D.GetBinError(1) #math.sqrt(n_obs_mc_D) 
 
-    ratio = n_obs_mc_A*n_obs_mc_D/(n_obs_mc_B*n_obs_mc_C)
-    err = ratio * (n_err_mc_A/n_obs_mc_A + n_err_mc_B/n_obs_mc_B + n_err_mc_C/n_obs_mc_C + n_err_mc_D/n_obs_mc_D)
+    print '{} * {} / ({} * {})'.format(n_obs_mc_A, n_obs_mc_D, n_obs_mc_B, n_obs_mc_C)
+
+    if n_obs_mc_B != 0 and n_obs_mc_C !=0:
+      ratio = n_obs_mc_A*n_obs_mc_D/(n_obs_mc_B*n_obs_mc_C)
+    else:
+      ratio = 0.
+
+    if n_obs_mc_B != 0 and n_obs_mc_C !=0 and n_obs_mc_A != 0 and n_obs_mc_D != 0:
+      err = ratio * (n_err_mc_A/n_obs_mc_A + n_err_mc_B/n_obs_mc_B + n_err_mc_C/n_obs_mc_C + n_err_mc_D/n_obs_mc_D)
+    else: err = 0.
 
     return ratio, err
 
@@ -253,7 +261,7 @@ class ComputeYields(Tools):
     hist_mc_tot_A.SetLineColor(ROOT.kBlue)
 
     int_estimate = hist_estimate.Integral()
-    hist_estimate.Scale(1/int_estimate)
+    if int_estimate != 0: hist_estimate.Scale(1/int_estimate)
     int_A = hist_mc_tot_A.Integral()
     hist_mc_tot_A.Scale(1/int_A)
 
@@ -308,13 +316,13 @@ class ComputeYields(Tools):
 
     hist_ratio.Draw('PE')
 
-    line = ROOT.TLine(0, 1, 5.6, 1)
+    line = ROOT.TLine(bin_min, 1, bin_max, 1)
     line.SetLineColor(4)
     line.SetLineWidth(2)
     line.Draw('same')
     
     canv.cd()
-    outdir = '../outputs/{}/plots/ABCDClosure/{}'.format(outlabel, ABCD_regions.label)
+    outdir = './myPlots/ABCDClosure/{}/{}'.format(outlabel, ABCD_regions.label)
     if not path.exists(outdir):
       os.system('mkdir -p {}'.format(outdir))
     canv.SaveAs('{}/closure_{}.png'.format(outdir, label))
@@ -382,6 +390,7 @@ class ComputeYields(Tools):
       BR_prod = dec.BR_tot_mu 
     else:
       BR_prod = dec.BR_Bc_mu 
+    #print 'BR_prod ',BR_prod
 
     ## total decay branching ratio
     BR_NToMuPi = self.tools.gamma_partial(mass=self.signal_file.mass, vv=v_square) / self.tools.gamma_total(mass=self.signal_file.mass, vv=v_square)
@@ -422,21 +431,25 @@ class ComputeYields(Tools):
 
 if __name__ == '__main__':
 
-  data_samples = data_samples['V07_18Aug21']
-  qcd_samples = qcd_samples['V07_18Aug21']
+  data_samples = data_samples['V08_29Sep21']
+  qcd_samples = qcd_samples['V08_29Sep21']
 
-  baseline_selection = selection['standard'].flat
-  categories = categories['inclusive']
+  #baseline_selection = selection['standard'].flat
+  baseline_selection = 'hnl_pt>0' # && mu_isdsa==1' #selection[''].flat
+  #categories = categories['combined_dsa']
+  categories = categories['category_study_combined_dsa']
 
   ABCD_regions = ABCD_regions['cos2d_svprob']
+  #ABCD_regions = ABCD_regions['bmass_hnlcharge']
 
   #TODO fix white list handling 
-  white_list_20to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
+  #white_list_20to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
+  white_list_20to300 = ['QCD_pt20to30 (V08_29Sep21)', 'QCD_pt30to50 (V08_29Sep21)', 'QCD_pt50to80 (V08_29Sep21)', 'QCD_pt80to120 (V08_29Sep21)', 'QCD_pt120to170 (V08_29Sep21)', 'QCD_pt170to300 (V08_29Sep21)']
 
   do_computeCrossRatio = False
-  do_computeBkgYieldsTF = False
+  do_computeBkgYieldsTF = True
   do_computeBkgYieldsABCD = False
-  do_testClosureABCD = True
+  do_testClosureABCD = False
   do_computeSigYields = False
 
   #baseline_selection = 'b_mass<5.3 && fabs(mu_dzsig)>1 && fabs(mu_dxysig)>1.5 && sv_lxysig>20 && deltaeta_pi_fit_pi<0.015 && deltaphi_pi_fit_pi<0.03' # if we want to categorise on cos2D, we dont want this cut to be too high
@@ -446,18 +459,18 @@ if __name__ == '__main__':
   #baseline_selection = 'mu_isdsa!=1 && hnl_charge==0 && b_mass<6.4'
   #baseline_selection = 'mu_isdsa!=1 && b_mass<6.4 && hnl_cos2d>0.993 && sv_prob>0.05'
 
-  signal_V20emu = signal_samples['private'][1]
+  signal_V20emu = signal_samples['private'][2]
   if do_computeCrossRatio:
     for category in categories:
       yields = ComputeYields(data_file=data_samples[0], qcd_files=qcd_samples, signal_file=signal_V20emu, selection=baseline_selection+' &&'+category.definition_flat, white_list=white_list_20to300)
       cross_ratio = yields.computeCrossRatioFromQCDMC(ABCD_regions=ABCD_regions)
-      print 'cross ratio, {}, {} +- {}'.format(category.title, round(cross_ratio[0], 3), round(cross_ratio[1], 3))
+      print 'cross ratio, {}, {} +- {}'.format(category.label, round(cross_ratio[0], 3), round(cross_ratio[1], 3))
 
 
   if do_testClosureABCD:
     ROOT.gROOT.SetBatch(True)
     for category in categories:
-      outlabel = 'test' #TODO parse it
+      outlabel = 'category_study_combined_dsa' #TODO
       yields = ComputeYields(data_file=data_samples[0], qcd_files=qcd_samples, signal_file=signal_V20emu, selection=baseline_selection+' &&'+category.definition_flat, white_list=white_list_20to300)
       yields.validateABCDOnQCDMC(outlabel=outlabel, label=category.label, ABCD_regions=ABCD_regions)
 
@@ -465,7 +478,7 @@ if __name__ == '__main__':
   if do_computeBkgYieldsTF:
     for category in categories:
       yields = ComputeYields(data_file=data_samples[0], qcd_files=qcd_samples, signal_file=signal_V20emu, selection=baseline_selection+' &&'+category.definition_flat, white_list=white_list_20to300)
-      bkg_yields_mc = yields.computeBkgYieldsFromMC()
+      bkg_yields_mc = yields.computeBkgYieldsFromMC(mass=signal_V20emu.mass, resolution=signal_V20emu.resolution)
       print '{}, {} +- {}'.format(category.title, bkg_yields_mc[0], bkg_yields_mc[1])
 
 
@@ -473,7 +486,7 @@ if __name__ == '__main__':
     signal_file = signal_samples['private'][0]
     for category in categories:
       yields_bkg_incl = ComputeYields(data_file=data_samples[0], qcd_files=qcd_samples, signal_file=signal_file, selection=baseline_selection+' &&'+category.definition_flat, white_list=white_list_20to300)
-      bkg_yields_incl_data = yields_bkg_incl.computeBkgYieldsFromABCDData(ABCD_regions=ABCD_regions)
+      bkg_yields_incl_data = yields_bkg_incl.computeBkgYieldsFromABCDData(mass=signal_file.mass, resolution=signal_file.resolution, ABCD_regions=ABCD_regions)
       print '{} data, {} +- {}'.format(category.title, bkg_yields_incl_data[0]*41.6/0.774, bkg_yields_incl_data[1])
 
 
