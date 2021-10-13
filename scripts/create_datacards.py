@@ -24,7 +24,8 @@ def getOptions():
   parser.add_argument('--qcd_label'       , type=str, dest='qcd_label'       , help='which qcd samples to consider?'                                , default='V07_18Aug21')
   parser.add_argument('--signal_label'    , type=str, dest='signal_label'    , help='which signal samples to consider?'                             , default='private')
   parser.add_argument('--selection_label' , type=str, dest='selection_label' , help='apply a baseline selection_label?'                             , default='standard')
-  parser.add_argument('--categories_label', type=str, dest='categories_label', help='which phase space categorisation?'                             , default='standard')
+  parser.add_argument('--categories_label', type=str, dest='categories_label', help='label of the list of categories'                               , default='standard')
+  parser.add_argument('--category_label'  , type=str, dest='category_label'  , help='label of a given category within this list'                    , default=None)
   parser.add_argument('--ABCD_label'      , type=str, dest='ABCD_label'      , help='which ABCD regions?'                                           , default='cos2d_svprob')
   #parser.add_argument('--white_list '     , type=str, dest='white_list'      , help='pthat range to consider for qcd samples'                       , default='')
   parser.add_argument('--do_categories'   ,           dest='do_categories'   , help='compute yields in categories'             , action='store_true', default=False)
@@ -59,7 +60,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_file='', signal_files='', baseline_selection='', ABCD_regions='', do_categories=True, categories=None, add_Bc=False, outdirlabel=''):
+  def __init__(self, data_file='', signal_files='', baseline_selection='', ABCD_regions='', do_categories=True, categories=None, category_label=None, add_Bc=False, outdirlabel=''):
     self.tools = Tools()
     self.data_file = data_file
     self.signal_files = signal_files 
@@ -69,6 +70,7 @@ class DatacardsMaker(Tools):
     self.categories = categories
     if do_categories and categories == None:
       raise RuntimeError('Please indicate which categories dictionnary to use')
+    self.category_label = category_label
     self.add_Bc = add_Bc
     self.outputdir = '../outputs/{}/datacards'.format(outdirlabel)
     if not path.exists(self.outputdir):
@@ -83,19 +85,35 @@ class DatacardsMaker(Tools):
     return (part1+part2)
 
 
-  def getBackgroundYields(self, data_file, signal_file, category=''):
+  def getWindowList(self):
+    masses = []
+    resolutions = []
+    windows = []
+    for signal_file in signal_files:
+      window = {}
+      if signal_file.mass not in masses and signal_file.resolution not in resolutions: 
+        window['mass'] = signal_file.mass
+        window['resolution'] = signal_file.resolution
+        masses.append(signal_file.mass)
+        resolutions.append(signal_file.resolution)
+        windows.append(window)
+    return windows
+
+
+  def getBackgroundYields(self, data_file, mass, resolution, category=''):
     background_selection = self.baseline_selection
     if self.do_categories:
       category_selection = category.definition_flat + '&& ' + category.cutbased_selection
       background_selection += ' && {}'.format(category_selection)
 
     # ABCD method
-    background_yields = ComputeYields(data_file=data_file, signal_file=signal_file, selection=background_selection).computeBkgYieldsFromABCDData(ABCD_regions=self.ABCD_regions)[0] 
+    background_yields = ComputeYields(data_file=data_file, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0] 
 
     # TF method
     #from samples import qcd_samples
-    #white_list_15to300 = ['QCD_pt15to20 (V06_29Jun21)', 'QCD_pt20to30 (V06_29Jun21)', 'QCD_pt30to50 (V06_29Jun21)', 'QCD_pt50to80 (V06_29Jun21)', 'QCD_pt80to120 (V06_29Jun21)', 'QCD_pt120to170 (V06_29Jun21)', 'QCD_pt170to300 (V06_29Jun21)']
-    #background_yields = ComputeYields(data_file=data_file, qcd_files=qcd_samples, signal_file=signal_file, selection=background_selection, white_list=white_list_15to300).computeBkgYieldsFromMC()[0]
+    #qcd_files = qcd_samples['V08_29Sep21']
+    #white_list_20to300 = ['QCD_pt20to30 (V08_29Sep21)', 'QCD_pt30to50 (V08_29Sep21)', 'QCD_pt50to80 (V08_29Sep21)', 'QCD_pt80to120 (V08_29Sep21)', 'QCD_pt120to170 (V08_29Sep21)', 'QCD_pt170to300 (V08_29Sep21)']
+    #background_yields = ComputeYields(data_file=data_file, qcd_files=qcd_files, selection=background_selection, white_list=white_list_20to300).computeBkgYieldsFromMC(mass=mass, resolution=resolution)[0]
 
     if background_yields == 0.: background_yields = 1e-9
 
@@ -132,7 +150,7 @@ class DatacardsMaker(Tools):
 
   def getLabel(self, signal_mass='', signal_coupling='', category=''):
     if not self.do_categories:
-      label = 'bhnl_m_{}_v2_{}'.format(signal_mass, signal_coupling)
+      label = 'bhnl_incl_m_{}_v2_{}'.format(signal_mass, signal_coupling)
     else:
       label = 'bhnl_cat_{}_m_{}_v2_{}'.format(category.label, signal_mass, signal_coupling)
     return label
@@ -172,25 +190,6 @@ syst_bkg_{lbl}                             lnN           -                      
     print '--> {}/{} created'.format(self.outputdir, datacard_name)
 
 
-  def produceDatacard(self, signal_file='', category=''):
-    # get the signal mass/coupling
-    signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
-
-    # get the process label
-    label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
-
-    # get the background yields
-    background_yields = self.getBackgroundYields(data_file=self.data_file, signal_file=signal_file, category=category)
-
-    # get the signal yields
-    signal_yields = self.getSignalYields(signal_file=signal_file, category=category)
-
-    #print '{} {}'.format(signal_mass, background_yields)
-
-    # create the datacard
-    self.writeCard(label=label, signal_yields=signal_yields, background_yields=background_yields)
-
-
   def process(self):
     #baseline_selection = '(trgmu_mu_mass<3.03 || trgmu_mu_mass>3.15) && hnl_charge==0 && b_mass<5.5'
     #baseline_selection = 'mu_isdsa!=1 && hnl_charge==0 && b_mass<6.4 && deltar_mu_pi>0.1 && deltar_mu_pi<1.7 && deltar_trgmu_mu<1 && deltar_trgmu_pi<1.5 && pi_pt>0.8'
@@ -202,18 +201,34 @@ syst_bkg_{lbl}                             lnN           -                      
     #baseline_selection = 'mu_isdsa!=1 && hnl_charge==0 && b_mass<6.4 && deltar_mu_pi>0.1 && deltar_mu_pi<1.7 && deltar_trgmu_mu<1 && deltar_trgmu_pi<1.5 && pi_pt>0.8'
     #baseline_selection = 'hnl_charge==0 && b_mass<6.4'
 
-    if not self.do_categories:
-      # loop on the signal points
-      for signal_file in signal_files:
-        self.produceDatacard(signal_file=signal_file)
+    for category in categories:
+      if self.do_categories and 'incl' in category.label: continue
+      if not self.do_categories and 'incl' not in category.label: continue
 
-    else:
-      for category in categories:
-        # make sure not to include inclusive category
-        if 'incl' in category.label: continue
+      if self.category_label != None and category.label != self.category_label: continue # needed for category parallelisation on the batch
+
+      # loop on the different mass windows
+      for window in self.getWindowList():
+
+        # get the background yields
+        background_yields = self.getBackgroundYields(data_file=self.data_file, mass=window['mass'], resolution=window['resolution'], category=category)
+
         # loop on the signal points
         for signal_file in signal_files:
-          self.produceDatacard(signal_file=signal_file, category=category)
+          if signal_file.mass != window['mass']: continue
+
+          # get the signal mass/coupling
+          signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
+
+          # get the process label
+          label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
+
+          # get the signal yields
+          signal_yields = self.getSignalYields(signal_file=signal_file, category=category)
+
+          # create the datacard
+          self.writeCard(label=label, signal_yields=signal_yields, background_yields=background_yields)
+          
 
 
 if __name__ == '__main__':
@@ -244,6 +259,7 @@ if __name__ == '__main__':
         baseline_selection = baseline_selection, 
         do_categories = do_categories, 
         categories = categories, 
+        category_label = opt.category_label, 
         ABCD_regions = ABCD_regions,
         add_Bc = add_Bc, 
         outdirlabel = outdirlabel,
@@ -304,7 +320,8 @@ if __name__ == '__main__':
 
 
     #dirlabel = 'test_categories_selection_29Jun21_fulllumi_muonid'
-    dirlabel = 'categories_selection_19Aug21_fulllumi_combineddsa'
+    #dirlabel = 'categories_selection_19Aug21_fulllumi_combineddsa'
+    dirlabel = 'test'
 
     ABCD_regions = ABCD_regions['cos2d_svprob'] 
     signal_files = signal_samples['limits_m1']
