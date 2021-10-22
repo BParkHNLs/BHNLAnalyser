@@ -48,7 +48,8 @@ class Tools(object):
     hist_mc_tot.Sumw2()
 
     for ifile, qcd_file in enumerate(qcd_files):
-      if qcd_file.label not in white_list: continue
+      qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
+      if qcd_file_pthatrange not in self.white_list: continue
 
       f_mc = self.getRootFile(qcd_file.filename)
       
@@ -62,6 +63,13 @@ class Tools(object):
       hist_mc_tot.Add(hist_mc)
 
     return hist_mc_tot
+
+
+  def getPthatRange(self, label):
+    '''
+      Note that the qcd file label must contain XXtoYY
+    '''
+    return label[label.find('pt'):label.find(' ')]
 
 
   def getNminiAODEvts(self, rootfile):
