@@ -73,6 +73,39 @@ signal_samples['private'] = [
   ]
 
 
+signal_samples['private_29Sep21'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      label = '4.5GeV, 1.2mm (V21_29Sep21)',
+      mass = 4.5,
+      ctau = 1.2,
+      resolution = 0.0373,
+      filter_efficiency = 3.91e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+      label = '3GeV, 184mm (V20_emu_29Sep21)',
+      mass = 3,
+      ctau = 184.0,
+      resolution = 0.0243,
+      filter_efficiency = 3.93e-03,
+      filter_efficiency_Bc = 1.45e-01,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      label = '1GeV, 10^{4}mm (V26_29Sep21)',
+      mass = 1,
+      ctau = 10000.0,
+      resolution = 0.0104,
+      filter_efficiency = 2.24e-04,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+
 signal_samples['loose_dsaonly'] = [
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
@@ -126,11 +159,50 @@ signal_samples['tag_and_probe_BToJPsiKstar'] = [
   #    colour = ROOT.kRed+1,
   #    ),
   SignalSample(
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/BToJPsiKstar_V0/BdToJpsiKstar_BMuonFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_sf_study15Sep21_A1_v1.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/BToJPsiKstar_V0/BdToJpsiKstar_BMuonFilter_SoftQCDnonD_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_sf_study15Sep21_A1_B1_v1.root',
       label = 'BToJPsiKstar (V0), JPsi->#mu#mu',
       colour = ROOT.kOrange+0,
       ),
 ]
+
+signal_samples['limits_m4p5_29Sep21'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21_Bc/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Jun21.root',
+      mass = 4.5,
+      ctau = 0.1*1e3,
+      resolution = 0.0373,
+      filter_efficiency = 3.53e-04,
+      filter_efficiency_Bc = 3.0e-02,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21_Bc/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Jun21.root',
+      mass = 4.5,
+      ctau = 0.01*1e3,
+      resolution = 0.0373,
+      filter_efficiency = 4.0e-04,
+      filter_efficiency_Bc = 3.43e-02,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21_Bc/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Jun21.root',
+      mass = 4.5,
+      ctau = 0.001*1e3,
+      resolution = 0.0373,
+      filter_efficiency = 4.0e-04,
+      filter_efficiency_Bc = 3.43e-02,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21_Bc/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Jun21.root',
+      mass = 4.5,
+      ctau = 0.0001*1e3,
+      resolution = 0.0373,
+      filter_efficiency = 4.0e-04,
+      filter_efficiency_Bc = 3.43e-02,
+      ),
+  ]
 
 signal_samples['limits_m4p5'] = [
   SignalSample(
@@ -397,6 +469,56 @@ signal_samples['limits_m4p5_large'] = [
   #    ),
   ]
 
+signal_samples['limits_m3_29Sep21'] = [
+SignalSample(
+    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+    #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+    mass = 3.0,
+    ctau = 1e03,
+    resolution = 0.0243,
+    filter_efficiency = 1.93e-03,
+    filter_efficiency_Bc = 4.8e-02,
+    ),
+SignalSample(
+    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+    #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+    label = '3GeV, 184mm',
+    mass = 3.0,
+    ctau = 184.0,
+    resolution = 0.0243,
+    filter_efficiency = 3.93e-03,
+    filter_efficiency_Bc = 1.45e-01,
+    colour = ROOT.kRed+1,
+    ),
+SignalSample(
+    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+    #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+    mass = 3.0,
+    ctau = 1e02,
+    resolution = 0.0243,
+    filter_efficiency = 5e-03,
+    filter_efficiency_Bc = 2.5e-01,
+    ),
+SignalSample(
+    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+    #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+    mass = 3.0,
+    ctau = 1e01,
+    resolution = 0.0243,
+    filter_efficiency = 5e-03,
+    filter_efficiency_Bc = 2.5e-01,
+    ),
+SignalSample(
+    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+    #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+    mass = 3.0,
+    ctau = 1e00,
+    resolution = 0.0243,
+    filter_efficiency = 5e-03,
+    filter_efficiency_Bc = 2.5e-01,
+    ),
+]
+
 signal_samples['limits_m3'] = [
 SignalSample(
     #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
@@ -652,6 +774,44 @@ SignalSample(
 #    filter_efficiency = 5e-03,
 #    ),
 ]
+
+signal_samples['limits_m1_29Sep21'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      mass = 1.0,
+      ctau = 1e05,
+      resolution = 0.0104,
+      filter_efficiency = 2.34e-05,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      mass = 1.0,
+      ctau = 1e04,
+      resolution = 0.0104,
+      filter_efficiency = 2.24e-4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      mass = 1.0,
+      ctau = 1e03,
+      resolution = 0.0104,
+      filter_efficiency = 1.80e-03,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      mass = 1.0,
+      ctau = 1e02,
+      resolution = 0.0104,
+      filter_efficiency = 6.0e-03,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
+      mass = 1.0,
+      ctau = 1e01,
+      resolution = 0.0104,
+      filter_efficiency = 7.0e-03,
+      ),
+  ]
 
 
 signal_samples['limits_m1'] = [
@@ -1016,9 +1176,46 @@ data_samples['V05_29Jun21'] = [
   ]
 
 data_samples['V07_18Aug21'] = [
+  #DataSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/flat_bparknano_18Aug21_nodsa.root',
+  #    label = 'ParkingBPH1_Run2018A (V07_18Aug21)',
+  #    ),
   DataSample(
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/flat_bparknano_18Aug21_nodsa.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/flat_bparknano_18Aug21_v2.root',
       label = 'ParkingBPH1_Run2018A (V07_18Aug21)',
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH2_Run2018A/merged/flat_bparknano_18Aug21_v2.root',
+      label = 'ParkingBPH2_Run2018A (V07_18Aug21)',
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH3_Run2018A/merged/flat_bparknano_18Aug21_v2.root',
+      label = 'ParkingBPH3_Run2018A (V07_18Aug21)',
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH4_Run2018A/merged/flat_bparknano_18Aug21_v2.root',
+      label = 'ParkingBPH4_Run2018A (V07_18Aug21)',
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH5_Run2018A/merged/flat_bparknano_18Aug21_v2.root',
+      label = 'ParkingBPH5_Run2018A (V07_18Aug21)',
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH6_Run2018A/merged/flat_bparknano_18Aug21_v2.root',
+      label = 'ParkingBPH6_Run2018A (V07_18Aug21)',
+      ),
+  #DataSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018B/merged/flat_bparknano_18Aug21_v2.root',
+  #    label = 'ParkingBPH1_Run2018B (V07_18Aug21)',
+  #    ),
+  ]
+
+data_samples['V08_29Sep21'] = [
+  DataSample(
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V08/ParkingBPH1_Run2018A/merged/flat_bparknano_29Sep21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V08/ParkingBPH1_Run2018A/Chunk0_n500/flat/flat_bparknano_29Sep21_v3.root', # 10.8% of A1
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V08/ParkingBPH1_Run2018A/merged/flat_bparknano_29Sep21_v3.root',
+      label = 'ParkingBPH1_Run2018A (V08_29Sep21)',
       ),
   ]
 
@@ -1048,6 +1245,10 @@ data_samples['tag_and_probe'] = [
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V06_tag_and_probe/ParkingBPH1_Run2018A/merged/flat_bparknano_tag_and_probe_v2_tag_fired_DST_DoubleMu1.root',
       label = 'ParkingBPH1_Run2018A (V06)',
       ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V06_tag_and_probe/ParkingBPH1_Run2018B/merged/flat_bparknano_tag_and_probe_v2.root',
+      label = 'ParkingBPH1_Run2018B (V06)',
+      ),
   ]
 
 data_samples['loose_dsaonly'] = [
@@ -1059,11 +1260,63 @@ data_samples['loose_dsaonly'] = [
 
 
 qcd_samples = {}
+qcd_samples['V08_29Sep21'] = [
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V08/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_29Sep21_v5.root',
+      label = 'QCD_pt15to20 (V08_29Sep21)',
+      cross_section = 1.27319e+09,
+      filter_efficiency = 0.00300,
+      colour = ROOT.kBlue+2, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V08/QCD_Pt-20to30_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_29Sep21_v5.root',
+      label = 'QCD_pt20to30 (V08_29Sep21)',
+      cross_section = 5.58528e+08,
+      filter_efficiency = 0.00530,
+      colour = ROOT.kBlue-4, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V08/QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_29Sep21_v5.root',
+      label = 'QCD_pt30to50 (V08_29Sep21)',
+      cross_section = 1.39803e+08, 
+      filter_efficiency = 0.01182,
+      colour = ROOT.kBlue-9, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V08/QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_29Sep21_v5.root',
+      label = 'QCD_pt50to80 (V08_29Sep21)',
+      cross_section = 1.92225e+07,
+      filter_efficiency = 0.02276,
+      colour = ROOT.kBlue-10, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V08/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_29Sep21_v5_extmerged.root',
+      label = 'QCD_pt80to120 (V08_29Sep21)',
+      cross_section = 2.75842e+06,
+      filter_efficiency = 0.03844,
+      colour = ROOT.kRed-10, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V08/QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_29Sep21_v5_extmerged.root',
+      label = 'QCD_pt120to170 (V08_29Sep21)',
+      cross_section = 469797,
+      filter_efficiency = 0.05362,
+      colour = ROOT.kOrange+6, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V08/QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_29Sep21_v5.root',
+      label = 'QCD_pt170to300 (V08_29Sep21)',
+      cross_section = 117989,
+      filter_efficiency = 0.07335,
+      colour = ROOT.kOrange+8, 
+      ),
+  ]
+
 qcd_samples['V07_18Aug21'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21.root',
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_6_B1_v1.root',
       label = 'QCD_pt15to20 (V07_18Aug21)',
       cross_section = 1.27319e+09,
       filter_efficiency = 0.00300,
@@ -1071,7 +1324,7 @@ qcd_samples['V07_18Aug21'] = [
       ),
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-20to30_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21.root',
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-20to30_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-20to30_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_6_B1_v1.root',
       label = 'QCD_pt20to30 (V07_18Aug21)',
       cross_section = 5.58528e+08,
       filter_efficiency = 0.00530,
@@ -1080,7 +1333,7 @@ qcd_samples['V07_18Aug21'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21.root',
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_6_B1_v1.root',
       label = 'QCD_pt30to50 (V07_18Aug21)',
       cross_section = 1.39803e+08, 
       filter_efficiency = 0.01182,
@@ -1089,7 +1342,7 @@ qcd_samples['V07_18Aug21'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21.root',
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_6_B1_v1.root',
       label = 'QCD_pt50to80 (V07_18Aug21)',
       cross_section = 1.92225e+07,
       filter_efficiency = 0.02276,
@@ -1098,7 +1351,7 @@ qcd_samples['V07_18Aug21'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_18Aug21_extmerged.root',
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4_extmerged.root',
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4_extmerged.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_6_B1_v1_extmerged.root',
       label = 'QCD_pt80to120 (V07_18Aug21)',
       cross_section = 2.75842e+06,
       filter_efficiency = 0.03844,
@@ -1107,7 +1360,7 @@ qcd_samples['V07_18Aug21'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_18Aug21_extmerged.root',
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4_extmerged.root',
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4_extmerged.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_6_B1_v1_extmerged.root',
       label = 'QCD_pt120to170 (V07_18Aug21)',
       cross_section = 469797,
       filter_efficiency = 0.05362,
@@ -1116,7 +1369,7 @@ qcd_samples['V07_18Aug21'] = [
   QCDMCSample(
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21.root',
       #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_v4.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V07_18Aug21/QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_18Aug21_sf_study15Sep21_A1_6_B1_v1.root',
       label = 'QCD_pt170to300 (V07_18Aug21)',
       cross_section = 117989,
       filter_efficiency = 0.07335,
