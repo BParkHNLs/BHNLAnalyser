@@ -70,10 +70,10 @@ class EfficiencyAnalyser(Tools):
         matching_cond['muon'] = mu_ismatched==1 
         matching_cond['pion'] = pi_ismatched==1 
       else:
-        matching_cond['candidate'] = cand_ismatched==1 and entry.mu_isdsa==0 
-        matching_cond['trigger_muon'] = trgmu_ismatched==1 and entry.mu_isdsa==0
-        matching_cond['muon'] = mu_ismatched==1 and entry.mu_isdsa==0
-        matching_cond['pion'] = pi_ismatched==1 and entry.mu_isdsa==0 
+        matching_cond['candidate'] = cand_ismatched==1 and entry.mu_isdsa==0 and entry.hnl_charge==0 
+        matching_cond['trigger_muon'] = trgmu_ismatched==1 and entry.mu_isdsa==0 and entry.hnl_charge==0
+        matching_cond['muon'] = mu_ismatched==1 and entry.mu_isdsa==0 and entry.hnl_charge==0
+        matching_cond['pion'] = pi_ismatched==1 and entry.mu_isdsa==0 and entry.hnl_charge==0
       
       hnl_idx = -1
       mother_idx = -1
@@ -332,7 +332,7 @@ if __name__ == '__main__':
   cuts_mu_pt = [0., 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
   cuts_trigger_mu_pt = [6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0]
 
-  outdirlabel = 'signalV20_test_unresolved_fittedmass_looseselection_originalmatching_withdsa'
+  outdirlabel = 'signalV20_test_unresolved_fittedmass_looseselection_originalmatching_withoutdsa'
 
   title = ''
 
@@ -340,7 +340,7 @@ if __name__ == '__main__':
 
   sample_type = 'flat'
   process_type = 'mupi'
-  add_dsa = 'yes'
+  add_dsa = 'no'
 
   analyser = EfficiencyAnalyser(filename=filename, sample_type=sample_type, process_type=process_type, add_dsa=add_dsa, matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel)
 
