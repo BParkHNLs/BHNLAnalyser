@@ -10,7 +10,7 @@ sys.path.append('./cfgs')
 #"----------------User's decision board-----------------"
 
 output_label = 'V09_06Nov21'
-tag = 'with_weight_pu_qcd_ntrueint'
+tag = 'test'
 #cfg_filename = 'example_cfg.py'
 cfg_filename = '06Nov21_cfg.py'
 submit_batch = False
@@ -110,6 +110,8 @@ class BHNLLauncher(object):
         '--tree_name {}'.format(self.cfg.tree_name),
         '--qcd_white_list {}'.format(self.cfg.qcd_white_list),
         '--CMStag {}'.format(self.cfg.CMStag),
+        '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
+        '--weight_pu {}'.format(self.cfg.branch_weight_pu),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
         '{}'.format('--add_weight_pu' if self.cfg.add_weight_pu else ''),
         '{}'.format('--plot_CR' if self.cfg.plot_CR else ''),
@@ -165,8 +167,10 @@ class BHNLLauncher(object):
         '--categories_label {}'.format(self.cfg.categories_label),
         '--category_label {}'.format(category.label),
         '--ABCD_label {}'.format(self.cfg.ABCD_label),
-        '{}'.format('--do_categories' if self.cfg.do_categories else ''),
+        '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
+        '--weight_pu {}'.format(self.cfg.branch_weight_pu),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
+        '{}'.format('--do_categories' if self.cfg.do_categories else ''),
         '{}'.format('--add_Bc' if self.cfg.add_Bc else ''),
         ])
 

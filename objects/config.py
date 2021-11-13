@@ -14,6 +14,8 @@ class Config(object):
                qcd_white_list=None,
                add_weight_hlt=None,
                add_weight_pu=None,
+               branch_weight_hlt=None,
+               branch_weight_pu=None,
 
                # for plotter
                plot_CR=None, 
@@ -46,6 +48,8 @@ class Config(object):
     self.qcd_white_list = qcd_white_list
     self.add_weight_hlt = add_weight_hlt
     self.add_weight_pu = add_weight_pu
+    self.branch_weight_hlt = branch_weight_hlt
+    self.branch_weight_pu = branch_weight_pu
     self.plot_CR = plot_CR
     self.plot_SR = plot_SR
     self.plot_dataSig = plot_dataSig
@@ -128,6 +132,20 @@ class Config(object):
       raise RuntimeError('The quantities label (quantities_label) is not valid. Please choose amongst {}.'.format(quantities.keys()))
     else: 
       print '       ---> Quantities label OK'
+
+    if self.add_weight_hlt and self.branch_weight_hlt == None:
+      raise RuntimeError('Please indicate the name of the branch for the hlt weight (branch_weight_hlt)')
+    elif self.add_weight_hlt and self.branch_weight_hlt not in ['weight_hlt_A1', 'weight_hlt_A1_6', 'weight_hlt_A1_6_B1']:
+      raise RuntimeError('Unrecognised branch "{}" for the hlt weight. Please check.'.format(self.branch_weight_hlt))
+    else:
+      print '       ---> HLT weight OK'
+
+    if self.add_weight_pu and self.branch_weight_pu == None:
+      raise RuntimeError('Please indicate the name of the branch for the pile-up weight (branch_weight_pu)')
+    elif self.add_weight_pu and self.branch_weight_pu not in ['weight_pu_qcd_ntrueint', 'weight_pu_qcd_ntrueint_weighted']:
+      raise RuntimeError('Unrecognised branch "{}" for the pile-up weight. Please check.'.format(self.branch_weight_pu))
+    else:
+      print '       ---> Pile-up weight OK'
 
     if self.do_shape == self.do_luminorm:
       raise RuntimeError('Invalid arguments for --do_shape ({}) and --do_luminorm ({}) \nPlease only set exactly one option to True at a time'.format(self.do_shape, self.do_luminorm))

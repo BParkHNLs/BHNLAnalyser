@@ -35,6 +35,8 @@ def getOptions():
   parser.add_argument('--tree_name'       , type=str, dest='tree_name'       , help='name of the tree to analyse'                                   , default='signal_tree')
   parser.add_argument('--qcd_white_list ' , type=str, dest='qcd_white_list'  , help='pthat range to consider for qcd samples'                       , default='20to300')
   parser.add_argument('--CMStag '         , type=str, dest='CMStag'          , help='CMS tag to be added if --add_CMSlabel'                         , default='Preliminary')
+  parser.add_argument('--weight_hlt'      , type=str, dest='weight_hlt'      , help='name of the hlt weight branch'                                 , default='weight_hlt_A1')
+  parser.add_argument('--weight_puqcd'    , type=str, dest='weight_puqcd'    , help='name of the pu qcd weight branch'                                  , default='weight_pu_A')
   parser.add_argument('--add_weight_hlt'  ,           dest='add_weight_hlt'  , help='add hlt weight'                           , action='store_true', default=False)
   parser.add_argument('--add_weight_pu'   ,           dest='add_weight_pu'   , help='add pile-up weight'                       , action='store_true', default=False)
   parser.add_argument('--plot_CR'         ,           dest='plot_CR'         , help='plot QCDMC/data in the CR'                , action='store_true', default=False)
@@ -131,7 +133,7 @@ class Plotter(Tools):
     return max_range
 
 
-  def plot(self, selection='', title='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary'):
+  def plot(self, selection='', title='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd='', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary'):
 
     # check the options
     if plot_data and self.data_files == '':
@@ -220,7 +222,7 @@ class Plotter(Tools):
         matching_selection = 'ismatched==1' if branchname == 'flat' else 'BToMuMuPi_isMatched==1'
         selection_signal = matching_selection if selection == '' else matching_selection + ' && ' + selection
         weight_sig = '(1)'
-        if add_weight_hlt : weight_sig += ' * (weight_hlt_A1)'
+        if add_weight_hlt : weight_sig += ' * ({})'.format(weight_hlt)
         #if add_weight_pu : weight_sig += ' * (weight_pu_qcd)' #TODO modify pileup weight
         hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection_signal, weight=weight_sig)
         hist_signal.Sumw2()
@@ -255,8 +257,8 @@ class Plotter(Tools):
         f_mc = self.tools.getRootFile(qcd_file.filename, with_ext=False)
         weight_mc = self.tools.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
         weight_qcd = '({})'.format(weight_mc)
-        if add_weight_hlt : weight_qcd += ' * (weight_hlt_A1)'
-        if add_weight_pu : weight_qcd += ' * (weight_pu_qcd_ntrueint)'
+        if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
+        if add_weight_pu : weight_qcd += ' * ({})'.format(weight_puqcd)
         hist_mc_name = 'hist_mc_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
         hist_mc = self.tools.createHisto(f_mc, treename, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight_qcd) 
         hist_mc.Sumw2()
@@ -291,7 +293,7 @@ class Plotter(Tools):
       hist_mc_stack = ROOT.THStack('hist_mc_stack', '')
 
       ## compute the mc normalisation weight
-      if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu)
+      if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_pu)
 
       for hist_mc in mc_hists:
         if do_shape and int_mc_tot != 0: hist_mc.Scale(1/int_mc_tot)
@@ -529,6 +531,8 @@ if __name__ == '__main__':
                        treename = opt.tree_name,
                        add_weight_hlt = 1 if opt.add_weight_hlt else 0,
                        add_weight_pu = 1 if opt.add_weight_pu else 0,
+                       weight_hlt = opt.weight_hlt,
+                       weight_puqcd = opt.weight_puqcd,
                        plot_data = plot_data, 
                        plot_qcd = plot_qcd,
                        plot_sig = plot_sig, 
@@ -563,6 +567,8 @@ if __name__ == '__main__':
                        treename = opt.tree_name,
                        add_weight_hlt = 1 if opt.add_weight_hlt else 0,
                        add_weight_pu = 1 if opt.add_weight_pu else 0,
+                       weight_hlt = opt.weight_hlt,
+                       weight_puqcd = opt.weight_puqcd,
                        plot_data = plot_data, 
                        plot_qcd = plot_qcd,
                        plot_sig = plot_sig, 

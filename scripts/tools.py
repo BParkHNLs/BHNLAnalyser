@@ -43,7 +43,7 @@ class Tools(object):
     return hist
 
 
-  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', selection='', add_weight_hlt=False, add_weight_pu=False):
+  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', selection='', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd=''):
     hist_mc_tot = ROOT.TH1D('hist_mc_tot', 'hist_mc_tot', quantity.nbins, quantity.bin_min, quantity.bin_max)
     hist_mc_tot.Sumw2()
 
@@ -55,9 +55,8 @@ class Tools(object):
       
       weight_mc = self.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_qcd = '({})'.format(weight_mc)
-      #TODO do not hardcode the weight branchnames
-      if add_weight_hlt : weight_qcd += ' * (weight_hlt_A1)'
-      if add_weight_pu : weight_qcd += ' * (weight_pu_qcd_ntrueint)'
+      if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
+      if add_weight_pu : weight_qcd += ' * ({})'.format(weight_puqcd)
       hist_mc = self.createHisto(f_mc, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight_qcd) 
       hist_mc.Sumw2()
     
@@ -91,7 +90,7 @@ class Tools(object):
     return weight
 
 
-  def getLumiWeight(self, data_files, qcd_files, white_list, selection, add_weight_hlt, add_weight_pu):
+  def getLumiWeight(self, data_files, qcd_files, white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd):
     '''
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
@@ -106,7 +105,7 @@ class Tools(object):
       n_obs_data += hist_data.GetBinContent(1)
       n_err_data += hist_data.GetBinError(1)
 
-    hist_mc_tot = self.createWeightedHistoQCDMC(qcd_files=qcd_files, white_list=white_list, quantity=quantity_forweight, selection=selection, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu)
+    hist_mc_tot = self.createWeightedHistoQCDMC(qcd_files=qcd_files, white_list=white_list, quantity=quantity_forweight, selection=selection, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, weight_hlt=weight_hlt, weight_puqcd=weight_puqcd)
     n_obs_mc = hist_mc_tot.GetBinContent(1)
     n_err_mc = hist_mc_tot.GetBinError(1)
 
