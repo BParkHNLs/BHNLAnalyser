@@ -34,8 +34,8 @@ class Fitter(Tools):
     c1 = self.tools.createTCanvas(name='c1', dimx=700, dimy=600)
     #tree->Draw("TMath::Sqrt(E1*E1 - px1*px1 - py1*py1 - pz1*pz1 + E2*E2 - px2*px2 - py2*py2 - pz2*pz2 + 2*E1*E2 - 2*px1*px2 -2*py1*py2 -2*pz1*pz2)>>hist", "pt1>13 && pt2>11")
     branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
-    cond = 'ismatched==1 && mu_isdsa==0' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1 && Muon_isDSAMuon[BToMuMuPi_sel_mu_idx]==1'
-    tree.Draw("{}>>hist".format(branch_name), cond)
+    cond = 'ismatched==1 && mu_isdsa==0' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1 && Muon_isDSAMuon[BToMuMuPi_sel_mu_idx]==0'
+    tree.Draw("{}>>hist".format(branch_name), cond, 'goff')
 
     mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", binMin, binMax)
     mupi_invmass.setBins(nbins)
@@ -52,12 +52,10 @@ class Fitter(Tools):
 
     sigma = ROOT.RooRealVar("sigma","sigma", 0.01, 0.005, 0.15)
 
-    alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -1, -3, 3)
-    #RooRealVar *n_1      = new RooRealVar("n_1", "n_1", 0, 15)
-    n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 3)
-    alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 1, -3, 3)
-    #RooRealVar *n_2      = new RooRealVar("n_2", "n_2", 0, 15)
-    n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 3)
+    alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
+    n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
+    alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
+    n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
 
     CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", mupi_invmass, mean, sigma, alpha_1, n_1)
     CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", mupi_invmass, mean, sigma, alpha_2, n_2)
@@ -329,10 +327,109 @@ if __name__ == '__main__':
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root'
   label = 'resolved_nodsa'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  fitter.performFit()
+  #fitter.performFit()
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_18Aug21.root'
   label = 'unresolved_nodsa'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  outdirlabel = 'check_central_samples'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V01_selected/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root'
+  label = 'm3_ctau100'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V01_selected/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root'
+  label = 'm4p5_ctau1'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+
+  outdirlabel = 'central_samples'
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm1_ctau1000'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm1_ctau100'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm1_ctau10'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm1p5_ctau1000'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm1p5_ctau100'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm1p5_ctau10'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm2_ctau1000'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm2_ctau100'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm2_ctau10'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm3_ctau1000'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm3_ctau100'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm3_ctau10'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm3_ctau1'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm4p5_ctau100'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm4p5_ctau10'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm4p5_ctau1'
+  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  #fitter.performFit()
+
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  label = 'm4p5_ctau0p1'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   fitter.performFit()
 
