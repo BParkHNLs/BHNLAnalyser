@@ -62,10 +62,10 @@ class BHNLLauncher(object):
 
 
   def copyConfig(self):
-    outputdir = './outputs/{}'.format(self.outlabel)
+    outputdir = './outputs/{}/cfgs'.format(self.outlabel)
     if not path.exists(outputdir):
       os.system('mkdir -p {}'.format(outputdir))
-    command_cp = 'cp ./cfgs/{}.py {}'.format(self.cfg_name, outputdir)
+    command_cp = 'cp ./cfgs/{name}.py {out}/{name}_{tag}.py'.format(name=self.cfg_name, out=outputdir, tag=self.tag)
     os.system(command_cp)
 
 
