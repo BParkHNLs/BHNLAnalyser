@@ -16,22 +16,27 @@ from quantity import Quantity, quantities
 from samples import data_samples, qcd_samples, signal_samples
 from categories import categories
 from selection import selection
+from qcd_white_list import white_list
 
 
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Script to produce the main analysis plots', add_help=True)
   parser.add_argument('--outdirlabel'     , type=str, dest='outdirlabel'     , help='name of the outdir'                                            , default=None)
+  parser.add_argument('--subdirlabel'     , type=str, dest='subdirlabel'     , help='name of the subdir'                                            , default=None)
   parser.add_argument('--data_label'      , type=str, dest='data_label'      , help='which data samples to consider?'                               , default='V07_18Aug21')
   parser.add_argument('--qcd_label'       , type=str, dest='qcd_label'       , help='which qcd samples to consider?'                                , default='V07_18Aug21')
   parser.add_argument('--signal_label'    , type=str, dest='signal_label'    , help='which signal samples to consider?'                             , default='private')
   parser.add_argument('--quantities_label', type=str, dest='quantities_label', help='which quantity collection to consider?'                        , default='small')
   parser.add_argument('--selection_label' , type=str, dest='selection_label' , help='apply a baseline selection_label?'                             , default='standard')
   parser.add_argument('--categories_label', type=str, dest='categories_label', help='which phase space categorisation?'                             , default='standard')
+  parser.add_argument('--category_label'  , type=str, dest='category_label'  , help='label of a given category within this list'                    , default=None)
   parser.add_argument('--sample_type'     , type=str, dest='sample_type'     , help='run the plotter on a nano or flat sample?'                     , default='flat', choices=['nano', 'flat'])
   parser.add_argument('--tree_name'       , type=str, dest='tree_name'       , help='name of the tree to analyse'                                   , default='signal_tree')
-  parser.add_argument('--white_list '     , type=str, dest='white_list'      , help='pthat range to consider for qcd samples'                       , default='')
+  parser.add_argument('--qcd_white_list ' , type=str, dest='qcd_white_list'  , help='pthat range to consider for qcd samples'                       , default='20to300')
   parser.add_argument('--CMStag '         , type=str, dest='CMStag'          , help='CMS tag to be added if --add_CMSlabel'                         , default='Preliminary')
+  parser.add_argument('--add_weight_hlt'  ,           dest='add_weight_hlt'  , help='add hlt weight'                           , action='store_true', default=False)
+  parser.add_argument('--add_weight_pu'   ,           dest='add_weight_pu'   , help='add pile-up weight'                       , action='store_true', default=False)
   parser.add_argument('--plot_CR'         ,           dest='plot_CR'         , help='plot QCDMC/data in the CR'                , action='store_true', default=False)
   parser.add_argument('--plot_SR'         ,           dest='plot_SR'         , help='plot QCDMC/signal in the SR'              , action='store_true', default=False)
   parser.add_argument('--plot_dataSig'    ,           dest='plot_dataSig'    , help='plot data (as bkg) and signal'            , action='store_true', default=False)
@@ -61,6 +66,25 @@ def checkParser(opt):
   return used_parser
 
 
+def printInfo(opt):
+  print '-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.'
+  print '                   Running the plotter                          '
+  print '\n'
+  print ' data samples:    {}'.format(opt.data_label)
+  print ' qcd samples:     {}'.format(opt.qcd_label)
+  print ' signal samples:  {}'.format(opt.signal_label)
+  print '\n'
+  print ' categorisation:  {}'.format(opt.categories_label)
+  print ' category:        {}'.format(opt.category_label)
+  print ' quantities:      {}'.format(opt.quantities_label)
+  print ' selection:       {}'.format(opt.selection_label)
+  print '\n'
+  print ' outdir label:    {}'.format(opt.outdirlabel)
+  print ' subdir label:    {}'.format(opt.subdirlabel)
+  print '-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.'
+  print '\n'
+
+
 
 class Plotter(Tools):
   def __init__(self, quantity='', data_files='', qcd_files='', signal_files='', white_list=''):
@@ -72,11 +96,11 @@ class Plotter(Tools):
     self.white_list = white_list
 
 
-  def getQCDMCLabel(self, label1, label2):
+  def getQCDMCLabel(self, label1, label2, label3):
     '''
       based on MC label of the format ptXXtoYY 
     '''
-    return label1[0:label1.find('to')] + label2[label2.find('to'):len(label2)]
+    return label1[0:label1.find('to')] + label2[label2.find('to'):len(label2)] + label3[label3.find(' '):]
 
 
   def getDataLabel(self, label):
@@ -107,7 +131,7 @@ class Plotter(Tools):
     return max_range
 
 
-  def plot(self, selection='', title='', outdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary'):
+  def plot(self, selection='', title='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary'):
 
     # check the options
     if plot_data and self.data_files == '':
@@ -193,16 +217,18 @@ class Plotter(Tools):
       for signal_file in self.signal_files:
         f_signal = self.tools.getRootFile(signal_file.filename, with_ext=False)
         hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-        matching_selection = 'ismatched==1 && hnl_charge==0' if branchname == 'flat' else 'BToMuMuPi_isMatched==1 && BToMuMuPi_hnl_charge==0' # condition on charge added in the context of dsa study
+        matching_selection = 'ismatched==1' if branchname == 'flat' else 'BToMuMuPi_isMatched==1'
         selection_signal = matching_selection if selection == '' else matching_selection + ' && ' + selection
-        #TODO think of applying weight here
-        hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection_signal)
+        weight_sig = '(1)'
+        if add_weight_hlt : weight_sig += ' * (weight_hlt_A1)'
+        #if add_weight_pu : weight_sig += ' * (weight_pu_qcd)' #TODO modify pileup weight
+        hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection_signal, weight=weight_sig)
         hist_signal.Sumw2()
         if do_shape: 
           int_signal = hist_signal.Integral()
           if int_signal != 0: hist_signal.Scale(1/int_signal)
         if add_overflow:
-          overflow_signal = hist_signal.GetBinContent(hist_signal.GetNbinsX()) + hist_signal.GetBinContent(hist_signal.GetNbinsX()+1)
+          overflow_signal_tot = hist_signal.GetBinContent(hist_signal.GetNbinsX()) + hist_signal.GetBinContent(hist_signal.GetNbinsX()+1)
           error_overflow_signal_tot = math.sqrt(math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()), 2) + math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()+1), 2)) 
           hist_signal.SetBinContent(hist_signal.GetNbinsX(), overflow_signal_tot)
           hist_signal.SetBinError(hist_signal.GetNbinsX(), error_overflow_signal_tot)
@@ -223,14 +249,16 @@ class Plotter(Tools):
       int_mc_tot = 0.
 
       for ifile, qcd_file in enumerate(self.qcd_files):
-        if qcd_file.label not in self.white_list: continue
+        qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
+        if qcd_file_pthatrange not in self.white_list: continue
+
         f_mc = self.tools.getRootFile(qcd_file.filename, with_ext=False)
         weight_mc = self.tools.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
-        #TODO weight to be adapted here
-        #weight = '({}) * (weight_hlt)'.format(weight_mc)
-        weight = '({})'.format(weight_mc)
+        weight_qcd = '({})'.format(weight_mc)
+        if add_weight_hlt : weight_qcd += ' * (weight_hlt_A1)'
+        if add_weight_pu : weight_qcd += ' * (weight_pu_qcd_ntrueint)'
         hist_mc_name = 'hist_mc_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-        hist_mc = self.tools.createHisto(f_mc, treename, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight) 
+        hist_mc = self.tools.createHisto(f_mc, treename, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight_qcd) 
         hist_mc.Sumw2()
         hist_mc.SetFillColor(qcd_file.colour)
         hist_mc.SetLineColor(1)
@@ -257,13 +285,13 @@ class Plotter(Tools):
       hist_mc_tot.SetLineColor(1)
     
       if not do_stack:
-        legend.AddEntry(hist_mc_tot, 'MC - {}'.format(self.getQCDMCLabel(self.white_list[0], self.white_list[len(self.white_list)-1])))
+        legend.AddEntry(hist_mc_tot, 'MC - {}'.format(self.getQCDMCLabel(self.white_list[0], self.white_list[len(self.white_list)-1], qcd_file.label)))
         
       ## create stack histogram  
       hist_mc_stack = ROOT.THStack('hist_mc_stack', '')
 
       ## compute the mc normalisation weight
-      if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection)
+      if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu)
 
       for hist_mc in mc_hists:
         if do_shape and int_mc_tot != 0: hist_mc.Scale(1/int_mc_tot)
@@ -271,7 +299,6 @@ class Plotter(Tools):
         hist_mc_stack.Add(hist_mc)
       if do_shape and int_mc_tot!= 0: hist_mc_tot.Scale(1/int_mc_tot)
       elif do_luminorm: hist_mc_tot.Scale(lumi_weight)
-
 
     if plot_qcd:
       frame = hist_mc_tot.Clone('frame')
@@ -291,7 +318,7 @@ class Plotter(Tools):
     frame.GetYaxis().SetLabelSize(0.033 if not plot_ratio else 0.037)
     frame.GetYaxis().SetTitleSize(0.042)
     frame.GetYaxis().SetTitleOffset(1.3 if not plot_ratio else 1.1)
-    if plot_data and plot_qcd: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_stack, hist_mc_stack, do_log))
+    if plot_data and plot_qcd: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_tot, hist_mc_tot, do_log))
     elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_mc_stack, do_log, use_sig=True))
     elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
 
@@ -300,6 +327,16 @@ class Plotter(Tools):
 
     # draw the distributions
     frame.Draw()
+    # tmp
+    f1 = ROOT.TFile.Open('/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/data/pileup/profiles/pileup_data_2018.root', 'READ')
+    hist_data_pu = f1.Get('pileup_2018A')
+    hist_data_pu.Scale(1./hist_data_pu.Integral());
+    hist_data_pu.SetMarkerStyle(41)
+    hist_data_pu.SetMarkerSize(2)
+    hist_data_pu.SetMarkerColor(ROOT.kBlue+2)
+    #hist_data_pu.Draw('same')
+    
+    
     if plot_data and plot_qcd: hist_data_tot.Draw('same')
     if plot_data and not plot_qcd: hist_data_tot.Draw('histo same')
     if plot_qcd: 
@@ -312,6 +349,7 @@ class Plotter(Tools):
     if plot_sig: 
       for hist_sig in signal_hists:
         hist_sig.Draw('histo same')
+    #hist_data_pu.Draw('same')
 
     # draw error bars
     if plot_qcd:
@@ -342,6 +380,7 @@ class Plotter(Tools):
       pad_down.cd()
 
       hist_ratio = self.tools.getRatioHistogram(hist_data_tot, hist_mc_tot)
+      #hist_ratio = self.tools.getRatioHistogram(hist_data_tot, signal_hists[0])
       hist_ratio.Sumw2()
 
       for ibin in range(0, hist_ratio.GetNbinsX()+1):
@@ -377,11 +416,10 @@ class Plotter(Tools):
       line.SetLineWidth(2)
       line.Draw('same')
 
-    outputdir = self.tools.getOutDir('../outputs/{}/plots'.format(outdirlabel), plotdirlabel, do_shape, do_luminorm, do_stack, do_log)
+    outputdir = self.tools.getOutDir('../outputs/{}/plots/{}'.format(outdirlabel, subdirlabel), plotdirlabel, do_shape, do_luminorm, do_stack, do_log)
     
     canv.SaveAs('{}/{}.png'.format(outputdir, self.quantity.label))
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
-
 
 
   def plotTwoSamples(file1, file2, branchname, tree1, tree2, selection1='', selection2='', legend1='legend1', legend2='legend2', do_printstat=False):
@@ -444,31 +482,19 @@ class Plotter(Tools):
 
 
 
-def printInfo(opt):
-  print '-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.'
-  print '                   Running the plotter                          '
-  print '\n'
-  print ' data samples:    {}'.format(opt.data_label)
-  print ' qcd samples:     {}'.format(opt.qcd_label)
-  print ' signal samples:  {}'.format(opt.signal_label)
-  print '\n'
-  print ' categorisation:  {}'.format(opt.categories_label)
-  print ' quantities:      {}'.format(opt.quantities_label)
-  print ' selection:       {}'.format(opt.selection_label)
-  print '\n'
-  print ' outdir label:    {}'.format(opt.outdirlabel)
-  print '-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.'
-  print '\n'
-
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
   opt = getOptions()
   used_parser = checkParser(opt)
   if used_parser:
+    '''
+      Automatic handling 
+    '''
     printInfo(opt)
 
     outdirlabel = opt.outdirlabel
+    subdirlabel = opt.subdirlabel
     quantities = quantities[opt.quantities_label]
     categories = categories[opt.categories_label]
     data_files = data_samples[opt.data_label]
@@ -477,14 +503,14 @@ if __name__ == '__main__':
 
     baseline_selection = selection[opt.selection_label].flat if opt.sample_type == 'flat' else selection[opt.selection_label].nano
     
-    # to be modified
-    white_list_15to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
+    white_list = white_list[opt.qcd_white_list]
     
     for category in categories:
+      if opt.category_label != None and category.label != opt.category_label: continue # needed for category parallelisation on the batch
       category_definition = category.definition_flat if opt.sample_type == 'flat' else category.definition_nano
 
       for quantity in quantities:
-        plotter = Plotter(quantity=quantity, data_files=data_files, qcd_files=qcd_files, signal_files=signal_files, white_list=white_list_15to300)
+        plotter = Plotter(quantity=quantity, data_files=data_files, qcd_files=qcd_files, signal_files=signal_files, white_list=white_list)
         if opt.plot_CR:
           title = 'Control Region, {}'.format(category.title)
           plotdirlabel = 'CR/{}'.format(category.label)
@@ -497,9 +523,12 @@ if __name__ == '__main__':
           plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
                        title = title, 
                        outdirlabel = outdirlabel, 
+                       subdirlabel = subdirlabel, 
                        plotdirlabel = plotdirlabel, 
                        branchname = opt.sample_type, 
                        treename = opt.tree_name,
+                       add_weight_hlt = 1 if opt.add_weight_hlt else 0,
+                       add_weight_pu = 1 if opt.add_weight_pu else 0,
                        plot_data = plot_data, 
                        plot_qcd = plot_qcd,
                        plot_sig = plot_sig, 
@@ -522,19 +551,24 @@ if __name__ == '__main__':
           plot_qcd = True
           plot_sig = True
           plot_ratio = False
+          do_shape = True
+          do_luminorm = False
 
           plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
                        title = title, 
                        outdirlabel = outdirlabel, 
+                       subdirlabel = subdirlabel, 
                        plotdirlabel = plotdirlabel, 
                        branchname = opt.sample_type, 
                        treename = opt.tree_name,
+                       add_weight_hlt = 1 if opt.add_weight_hlt else 0,
+                       add_weight_pu = 1 if opt.add_weight_pu else 0,
                        plot_data = plot_data, 
                        plot_qcd = plot_qcd,
                        plot_sig = plot_sig, 
                        plot_ratio = plot_ratio, 
-                       do_shape = opt.do_shape, 
-                       do_luminorm = opt.do_luminorm, 
+                       do_shape = do_shape, 
+                       do_luminorm = do_luminorm, 
                        do_stack = opt.do_stack, 
                        do_log = opt.do_log,
                        add_overflow = opt.add_overflow,
@@ -553,6 +587,7 @@ if __name__ == '__main__':
           plotter.plot(selection = baseline_selection + ' && ' + category_definition, 
                        title = title, 
                        outdirlabel = outdirlabel, 
+                       subdirlabel = subdirlabel, 
                        plotdirlabel = plotdirlabel, 
                        branchname = opt.sample_type, 
                        treename = opt.tree_name,
@@ -569,6 +604,11 @@ if __name__ == '__main__':
                        CMS_tag = opt.CMStag
                        )
   else:
+    '''
+       ## Interactive board ##
+
+    For an interactive usage of the script, use the code below
+    '''
 
     doDataMCComparison = True
     doSignalBackgroundComparison = False
@@ -581,7 +621,8 @@ if __name__ == '__main__':
     # add add_overflow
 
     if doDataMCComparison:
-      white_list_15to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
+      white_list_15to300 = white_list['15to300']
+      #white_list_15to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
       #baseline_selection = 'mu_isdsa !=1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && '
       baseline_selection = ''
       if plot_CR:

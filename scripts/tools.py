@@ -43,21 +43,22 @@ class Tools(object):
     return hist
 
 
-  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', selection=''):
+  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', selection='', add_weight_hlt=False, add_weight_pu=False):
     hist_mc_tot = ROOT.TH1D('hist_mc_tot', 'hist_mc_tot', quantity.nbins, quantity.bin_min, quantity.bin_max)
     hist_mc_tot.Sumw2()
 
     for ifile, qcd_file in enumerate(qcd_files):
-      qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
-      if qcd_file_pthatrange not in self.white_list: continue
+      qcd_file_pthatrange = self.getPthatRange(qcd_file.label)
+      if qcd_file_pthatrange not in white_list: continue
 
       f_mc = self.getRootFile(qcd_file.filename)
       
-      #weight_mc = self.computeQCDMCWeight(self.getTree(f_mc, 'signal_tree'), qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_mc = self.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
-      #weight = '({}) * (weight_hlt)'.format(weight_mc)
-      weight = '({})'.format(weight_mc)
-      hist_mc = self.createHisto(f_mc, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight) 
+      weight_qcd = '({})'.format(weight_mc)
+      #TODO do not hardcode the weight branchnames
+      if add_weight_hlt : weight_qcd += ' * (weight_hlt_A1)'
+      if add_weight_pu : weight_qcd += ' * (weight_pu_qcd_ntrueint)'
+      hist_mc = self.createHisto(f_mc, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight_qcd) 
       hist_mc.Sumw2()
     
       hist_mc_tot.Add(hist_mc)
@@ -74,6 +75,7 @@ class Tools(object):
 
   def getNminiAODEvts(self, rootfile):
     quantity = Quantity(name_nano='genEventCount', name_flat='geneventcount', nbins=100, bin_min=1, bin_max=1e9)
+    #TODO apply weight here?
     hist = self.createHisto(rootfile=rootfile, tree_name='run_tree', quantity=quantity)
     n_reco_evts = hist.GetMean() * hist.GetEntries()
     return n_reco_evts
@@ -83,18 +85,13 @@ class Tools(object):
     '''
       QCD MC weight defined as cross-section / nb of generated events
     '''
-    #hist_name = 'hist_{}_{}'.format(cross_section, filter_efficiency)
-    #quantity = Quantity(name_nano='genEventCount', name_flat='geneventcount', nbins=100, bin_min=1, bin_max=1e9)
-    #hist = self.createHisto(rootfile=rootfile, tree_name='run_tree', quantity=quantity)
-    #n_reco_evts = hist.GetMean() * hist.GetEntries()
     n_reco_evts = self.getNminiAODEvts(rootfile)
-    ##n_reco_evts = self.getTree(rootfile, 'signal_tree').GetEntries()
     n_genevts = n_reco_evts / filter_efficiency
     weight = cross_section / n_genevts
     return weight
 
 
-  def getLumiWeight(self, data_files, qcd_files, white_list, selection):
+  def getLumiWeight(self, data_files, qcd_files, white_list, selection, add_weight_hlt, add_weight_pu):
     '''
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
@@ -109,8 +106,7 @@ class Tools(object):
       n_obs_data += hist_data.GetBinContent(1)
       n_err_data += hist_data.GetBinError(1)
 
-    # TODO add weight on mc
-    hist_mc_tot = self.createWeightedHistoQCDMC(qcd_files=qcd_files, white_list=white_list, quantity=quantity_forweight, selection=selection)
+    hist_mc_tot = self.createWeightedHistoQCDMC(qcd_files=qcd_files, white_list=white_list, quantity=quantity_forweight, selection=selection, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu)
     n_obs_mc = hist_mc_tot.GetBinContent(1)
     n_err_mc = hist_mc_tot.GetBinError(1)
 
@@ -126,10 +122,12 @@ class Tools(object):
 
   def getCtauWeight(self, signal_file):
     filename = signal_file.filename # might need to be modified later on for Bc
-    original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
+    #original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
+    original_ctau = filename[filename.find('ctau')+4:filename.find('mm', filename.find('ctau')+1)]
+    original_ctau = original_ctau.replace('p', '.')
     target_ctau = signal_file.ctau
 
-    ctau_weight = -99
+    ctau_weight = 1. #-99
     if float(original_ctau) != float(target_ctau):
       ctau_weight = '({ctau0} / {ctau1} * exp((1./{ctau0} - 1./{ctau1}) * gen_hnl_ct))'.format(ctau0=original_ctau, ctau1=target_ctau)
 
