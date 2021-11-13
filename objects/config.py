@@ -1,6 +1,7 @@
 
 class Config(object):
   def __init__(self, 
+               # general
                data_label=None, 
                qcd_label=None, 
                signal_label=None, 
@@ -11,6 +12,9 @@ class Config(object):
                quantities_label=None, 
                weight_label=None,
                qcd_white_list=None,
+               add_weight_hlt=None,
+               add_weight_pu=None,
+
                # for plotter
                plot_CR=None, 
                plot_SR=None, 
@@ -23,6 +27,7 @@ class Config(object):
                add_overflow=None,
                add_CMSlabel=None,
                CMStag=None,
+
                # for datacards
                ABCD_label=None,
                do_categories=None,
@@ -39,6 +44,8 @@ class Config(object):
     self.quantities_label = quantities_label
     self.weight_label = weight_label
     self.qcd_white_list = qcd_white_list
+    self.add_weight_hlt = add_weight_hlt
+    self.add_weight_pu = add_weight_pu
     self.plot_CR = plot_CR
     self.plot_SR = plot_SR
     self.plot_dataSig = plot_dataSig
@@ -121,6 +128,12 @@ class Config(object):
       raise RuntimeError('The quantities label (quantities_label) is not valid. Please choose amongst {}.'.format(quantities.keys()))
     else: 
       print '       ---> Quantities label OK'
+
+    if self.do_shape == self.do_luminorm:
+      raise RuntimeError('Invalid arguments for --do_shape ({}) and --do_luminorm ({}) \nPlease only set exactly one option to True at a time'.format(self.do_shape, self.do_luminorm))
+    else: 
+      print '       ---> Plotter request OK'
+      
 
   # check that either lumi or shape, or can process both in parallel?
 
