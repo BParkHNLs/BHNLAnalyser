@@ -184,15 +184,15 @@ class Plotter(Tools):
         hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
         hist_data = self.tools.createHisto(f_data, treename, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
         hist_data.Sumw2()
-        if do_shape: 
-          int_data_tot += hist_data.Integral()
         if add_overflow:
-          overflow_data_tot += (hist_data.GetBinContent(hist_data.GetNbinsX()) + hist_data.GetBinContent(hist_data.GetNbinsX()+1))
+          overflow_data_tot = (hist_data.GetBinContent(hist_data.GetNbinsX()) + hist_data.GetBinContent(hist_data.GetNbinsX()+1))
           error_overflow_data_tot += math.sqrt(math.pow(hist_data.GetBinError(hist_data.GetNbinsX()), 2) + math.pow(hist_data.GetBinError(hist_data.GetNbinsX()+1), 2)) 
           hist_data.SetBinContent(hist_data.GetNbinsX(), overflow_data_tot)
           hist_data.SetBinError(hist_data.GetNbinsX(), error_overflow_data_tot)
           hist_data.SetBinContent(hist_data.GetNbinsX()+1, 0)
           hist_data.SetBinError(hist_data.GetNbinsX()+1, 0)
+        if do_shape: 
+          int_data_tot += hist_data.Integral()
 
         hist_data_tot.Add(hist_data)
         if idata == 0: data_label = data_file.label[:20]
@@ -226,9 +226,6 @@ class Plotter(Tools):
         #if add_weight_pu : weight_sig += ' * (weight_pu_qcd)' #TODO modify pileup weight
         hist_signal = self.tools.createHisto(f_signal, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection_signal, weight=weight_sig)
         hist_signal.Sumw2()
-        if do_shape: 
-          int_signal = hist_signal.Integral()
-          if int_signal != 0: hist_signal.Scale(1/int_signal)
         if add_overflow:
           overflow_signal_tot = hist_signal.GetBinContent(hist_signal.GetNbinsX()) + hist_signal.GetBinContent(hist_signal.GetNbinsX()+1)
           error_overflow_signal_tot = math.sqrt(math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()), 2) + math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()+1), 2)) 
@@ -236,6 +233,9 @@ class Plotter(Tools):
           hist_signal.SetBinError(hist_signal.GetNbinsX(), error_overflow_signal_tot)
           hist_signal.SetBinContent(hist_signal.GetNbinsX()+1, 0)
           hist_signal.SetBinError(hist_signal.GetNbinsX()+1, 0)
+        if do_shape: 
+          int_signal = hist_signal.Integral()
+          if int_signal != 0: hist_signal.Scale(1/int_signal)
 
         legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
 
@@ -267,10 +267,6 @@ class Plotter(Tools):
         
         if do_stack:
           legend.AddEntry(hist_mc, 'MC - {}'.format(qcd_file.label))
-
-        if do_shape: 
-          int_mc_tot += hist_mc.Integral()
-
         if add_overflow:
           overflow_mc = hist_mc.GetBinContent(hist_mc.GetNbinsX()) + hist_mc.GetBinContent(hist_mc.GetNbinsX()+1)
           error_overflow_mc = math.sqrt(math.pow(hist_mc.GetBinError(hist_mc.GetNbinsX()), 2) + math.pow(hist_mc.GetBinError(hist_mc.GetNbinsX()+1), 2)) 
@@ -278,6 +274,8 @@ class Plotter(Tools):
           hist_mc.SetBinError(hist_mc.GetNbinsX(), error_overflow_mc)
           hist_mc.SetBinContent(hist_mc.GetNbinsX()+1, 0)
           hist_mc.SetBinError(hist_mc.GetNbinsX()+1, 0)
+        if do_shape: 
+          int_mc_tot += hist_mc.Integral()
     
         hist_mc_tot.Add(hist_mc)
         mc_hists.append(hist_mc)
@@ -293,7 +291,7 @@ class Plotter(Tools):
       hist_mc_stack = ROOT.THStack('hist_mc_stack', '')
 
       ## compute the mc normalisation weight
-      if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_pu)
+      if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd)
 
       for hist_mc in mc_hists:
         if do_shape and int_mc_tot != 0: hist_mc.Scale(1/int_mc_tot)
