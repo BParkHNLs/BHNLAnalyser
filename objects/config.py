@@ -128,10 +128,10 @@ class Config(object):
       print '       ---> Selection label OK'
 
     from quantity import quantities
-    if self.quantities_label != None and self.quantities_label not in quantities.keys():
-      raise RuntimeError('The quantities label (quantities_label) is not valid. Please choose amongst {}.'.format(quantities.keys()))
-    else: 
-      print '       ---> Quantities label OK'
+    for quantity_label in self.quantities_label:
+      if quantity_label != None and quantity_label not in quantities.keys():
+        raise RuntimeError('The quantities label (quantities_label) is not valid. Please choose amongst {}.'.format(quantities.keys()))
+    print '       ---> Quantities label OK'
 
     if self.add_weight_hlt and self.branch_weight_hlt == None:
       raise RuntimeError('Please indicate the name of the branch for the hlt weight (branch_weight_hlt)')

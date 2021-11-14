@@ -13,7 +13,7 @@ output_label = 'V09_06Nov21'
 tag = 'test'
 #cfg_filename = 'example_cfg.py'
 cfg_filename = '06Nov21_cfg.py'
-submit_batch = False
+submit_batch = True
 do_plotter = True
 do_datacards = False
 
@@ -102,7 +102,7 @@ class BHNLLauncher(object):
     submitter.close()
 
 
-  def launchPlotter(self, category=''):
+  def launchPlotter(self, category='', quantity_label=''):
     # get the command to run the plotting script
     command_plotter = ' '.join([
         'python plotter.py',
@@ -111,7 +111,7 @@ class BHNLLauncher(object):
         '--data_label {}'.format(self.cfg.data_label),
         '--qcd_label {}'.format(self.cfg.qcd_label),
         '--signal_label {}'.format(self.cfg.signal_label),
-        '--quantities_label {}'.format(self.cfg.quantities_label),
+        '--quantities_label {}'.format(quantity_label),
         '--selection_label {}'.format(self.cfg.selection_label),
         '--categories_label {}'.format(self.cfg.categories_label),
         '--category_label {}'.format(category.label),
@@ -136,7 +136,7 @@ class BHNLLauncher(object):
         ])
 
     # write the submitter
-    label = 'plotter_' + self.outlabel + '_' + self.tag + '_' + category.label
+    label = 'plotter_' + self.outlabel + '_' + self.tag + '_' + category.label + '_' + quantity_label
     self.writeSubmitter(command_plotter, label)
 
     # launch submitter
@@ -230,8 +230,9 @@ class BHNLLauncher(object):
 
     if self.do_plotter: 
       for category in categories:
-        print '\n -> Launching the plotter for the category "{}"'.format(category.title)
-        self.launchPlotter(category=category)
+        for quantity_label in self.cfg.quantities_label:
+          print '\n -> Launching the plotter for the category "{}" and quantities "{}"'.format(category.title, quantity_label)
+          self.launchPlotter(category=category, quantity_label=quantity_label)
 
     if self.do_datacards: 
       for category in categories:
