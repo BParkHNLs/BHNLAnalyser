@@ -416,7 +416,7 @@ class Plotter(Tools):
       line.SetLineWidth(2)
       line.Draw('same')
 
-    outputdir = self.tools.getOutDir('{}/{}/plots/{}'.format(outdirloc, outdirlabel, subdirlabel), plotdirlabel, do_shape, do_luminorm, do_stack, do_log)
+    outputdir = self.tools.getOutDir('{}/{}/plots/{}'.format(outdirloc, outdirlabel, subdirlabel), plotdirlabel, do_shape, do_luminorm, do_stack, do_log, add_overflow)
     
     canv.SaveAs('{}/{}.png'.format(outputdir, self.quantity.label))
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))

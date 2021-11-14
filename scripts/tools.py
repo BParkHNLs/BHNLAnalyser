@@ -229,7 +229,7 @@ class Tools(object):
 
 
 
-  def getOutDir(self, maindir, outdirlabel, do_shape=False, do_luminorm=False, do_stack=False, do_log=False):
+  def getOutDir(self, maindir, outdirlabel, do_shape=False, do_luminorm=False, do_stack=False, do_log=False, add_overflow=False):
     if not path.exists(maindir):
       os.system('mkdir -p {}'.format(maindir))
     os.system('cp ./data/index.php {}'.format(maindir))
@@ -248,12 +248,15 @@ class Tools(object):
     #if not do_shape and not do_stack and not do_log: dirlabel += '/plain'
     if do_stack: 
       if norm==None and not do_log and not do_luminorm: dirlabel += '/stack'
-      elif norm!=None and not do_log: dirlabel += '/stack_{}'.format(norm)
-      else: dirlabel += '/stack_{}_log'.format(norm)
+      elif norm!=None and not do_log and not add_overflow: dirlabel += '/stack_{}'.format(norm)
+      elif norm!=None and not do_log and add_overflow: dirlabel += '/stack_{}_overflow'.format(norm)
+      elif norm!=None and do_log and not add_overflow: dirlabel += '/stack_{}_log'.format(norm)
+      else: dirlabel += '/stack_{}_log_overflow'.format(norm)
     else:
-      if norm!=None and not do_log: dirlabel += '/{}'.format(norm)
-      elif norm!=None and do_log: dirlabel += '/{}_log'.format(norm)
-      elif norm==None and do_log: dirlabel += '/log'
+      if norm!=None and not do_log and not add_overflow: dirlabel += '/{}'.format(norm)
+      elif norm!=None and do_log and not add_overflow: dirlabel += '/{}_log'.format(norm)
+      elif norm!=None and not do_log and add_overflow: dirlabel += '/{}_overflow'.format(norm)
+      else: dirlabel += '/{}_log_overflow'.format(norm)
 
     outputdir = '{}/{}'.format(maindir, dirlabel)
     
