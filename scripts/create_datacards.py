@@ -28,6 +28,8 @@ def getOptions():
   parser.add_argument('--categories_label', type=str, dest='categories_label', help='label of the list of categories'                               , default='standard')
   parser.add_argument('--category_label'  , type=str, dest='category_label'  , help='label of a given category within this list'                    , default=None)
   parser.add_argument('--ABCD_label'      , type=str, dest='ABCD_label'      , help='which ABCD regions?'                                           , default='cos2d_svprob')
+  parser.add_argument('--lumi_target'     , type=str, dest='lumi_target'     , help='which luminosity should the yields be normalised to?'          , default='41.599')
+  parser.add_argument('--sigma_B'         , type=str, dest='sigma_B'         , help='which value of the B cross section?'                           , default='472.8e9')
   parser.add_argument('--weight_hlt'      , type=str, dest='weight_hlt'      , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
   #parser.add_argument('--white_list '     , type=str, dest='white_list'      , help='pthat range to consider for qcd samples'                       , default='')
   parser.add_argument('--add_weight_hlt'  ,           dest='add_weight_hlt'  , help='add hlt weight'                           , action='store_true', default=False)
@@ -64,7 +66,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_file='', signal_files='', baseline_selection='', ABCD_regions='', do_categories=True, categories=None, category_label=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_file='', signal_files='', baseline_selection='', ABCD_regions='', do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, outdirlabel='', subdirlabel=''):
     self.tools = Tools()
     self.data_file = data_file
     self.signal_files = signal_files 
@@ -75,10 +77,12 @@ class DatacardsMaker(Tools):
     if do_categories and categories == None:
       raise RuntimeError('Please indicate which categories dictionnary to use')
     self.category_label = category_label
+    self.lumi_target = float(lumi_target)
+    self.sigma_B = float(sigma_B)
     self.weight_hlt = weight_hlt
     self.add_weight_hlt = add_weight_hlt
     self.add_Bc = add_Bc
-    self.outputdir = '../outputs/{}/datacards/{}'.format(outdirlabel, subdirlabel)
+    self.outputdir = './outputs/{}/datacards/{}'.format(outdirlabel, subdirlabel)
     if not path.exists(self.outputdir):
       os.system('mkdir -p {}'.format(self.outputdir))
 
@@ -124,9 +128,8 @@ class DatacardsMaker(Tools):
 
     if background_yields == 0.: background_yields = 1e-9
 
-    #TODO add flag that indicates to scale to given lumi
-    #if background_yields != 1e-9: background_yields = background_yields * 41.6/(0.774 * 0.1) # added 10percent since we only use Chunk2
-    if background_yields != 1e-9: background_yields = background_yields * 41.6/0.774 #TODO add in the config the target lumi and the lumi of the dataset
+    lumi_true = data_file.lumi
+    if background_yields != 1e-9: background_yields = background_yields * self.lumi_target/lumi_true
 
     return background_yields
 
@@ -137,9 +140,9 @@ class DatacardsMaker(Tools):
       category_selection = category.definition_flat + '&& ' + category.cutbased_selection
       signal_selection += ' && {}'.format(category_selection)
 
-    signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, sigma_B=472.8e9, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, isBc=False)[0] #TODO add sigma_B and lumi in the config
+    signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, isBc=False)[0]
     if self.add_Bc and signal_file.filename_Bc != '':
-      signal_yields += ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, sigma_B=472.8e9, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, isBc=True)[0]
+      signal_yields += ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, isBc=True)[0]
 
       #print 'yields {} + {} = {}'.format(ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, isBc=False)[0], ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, isBc=True), signal_yields)[0]
 
@@ -258,6 +261,9 @@ if __name__ == '__main__':
     baseline_selection = selection[opt.selection_label].flat
     ABCD_regions = ABCD_regions[opt.ABCD_label]
 
+    lumi_target = opt.lumi_target
+    sigma_B = opt.sigma_B
+
     add_weight_hlt = opt.add_weight_hlt
     weight_hlt = opt.weight_hlt
 
@@ -272,6 +278,8 @@ if __name__ == '__main__':
         categories = categories, 
         category_label = opt.category_label, 
         ABCD_regions = ABCD_regions,
+        lumi_target = lumi_target,
+        sigma_B = sigma_B,
         weight_hlt = weight_hlt,
         add_weight_hlt = add_weight_hlt,
         add_Bc = add_Bc, 

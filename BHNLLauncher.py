@@ -10,12 +10,12 @@ sys.path.append('./cfgs')
 #"----------------User's decision board-----------------"
 
 output_label = 'V09_06Nov21'
-tag = 'test'
+tag = 'alaJuly'
 #cfg_filename = 'example_cfg.py'
 cfg_filename = '06Nov21_cfg.py'
 submit_batch = True
-do_plotter = True
-do_datacards = False
+do_plotter = False
+do_datacards = True
 
 #'------------------------------------------------------'
 
@@ -176,8 +176,10 @@ class BHNLLauncher(object):
         '--categories_label {}'.format(self.cfg.categories_label),
         '--category_label {}'.format(category.label),
         '--ABCD_label {}'.format(self.cfg.ABCD_label),
+        '--lumi_target {}'.format(self.cfg.lumi_target),
+        '--sigma_B {}'.format(self.cfg.sigma_B),
         '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
-        '--weight_pu {}'.format(self.cfg.branch_weight_pu),
+        #'--weight_pu {}'.format(self.cfg.branch_weight_pu),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
         '{}'.format('--do_categories' if self.cfg.do_categories else ''),
         '{}'.format('--add_Bc' if self.cfg.add_Bc else ''),

@@ -32,6 +32,8 @@ class Config(object):
 
                # for datacards
                ABCD_label=None,
+               lumi_target=None,
+               sigma_B=None,
                do_categories=None,
                add_Bc=None,
   ):
@@ -62,9 +64,10 @@ class Config(object):
     self.add_CMSlabel = add_CMSlabel
     self.CMStag = CMStag
     self.ABCD_label = ABCD_label
+    self.lumi_target = lumi_target
+    self.sigma_B = sigma_B
     self.do_categories = do_categories
     self.add_Bc = add_Bc
-    # add lumi, sigma_B? 
 
 
   def checkConfig(self):
@@ -151,6 +154,9 @@ class Config(object):
       raise RuntimeError('Invalid arguments for --do_shape ({}) and --do_luminorm ({}) \nPlease only set exactly one option to True at a time'.format(self.do_shape, self.do_luminorm))
     else: 
       print '       ---> Plotter request OK'
+
+    if self.sigma_B not in [472.8e9, 327e9]:
+      raise RuntimeError('The value of sigma_B not in [472.8e9, 327e9]. Please check')
       
 
   # check that either lumi or shape, or can process both in parallel?
