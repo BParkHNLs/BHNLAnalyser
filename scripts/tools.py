@@ -232,14 +232,14 @@ class Tools(object):
   def getOutDir(self, maindir, outdirlabel, do_shape=False, do_luminorm=False, do_stack=False, do_log=False):
     if not path.exists(maindir):
       os.system('mkdir -p {}'.format(maindir))
-    os.system('cp ../data/index.php {}'.format(maindir))
+    os.system('cp ./data/index.php {}'.format(maindir))
     dirlabel = outdirlabel
 
     outputdir = '{}/{}'.format(maindir, dirlabel)
     if not path.exists(outputdir):
       os.system('mkdir -p {}'.format(outputdir))
-    os.system('cp ../data/index.php {}'.format(outputdir))
-    os.system('cp ../data/index.php {}/..'.format(outputdir))
+    os.system('cp ./data/index.php {}'.format(outputdir))
+    os.system('cp ./data/index.php {}/..'.format(outputdir))
 
     norm = None
     if do_shape: norm = 'shape'
@@ -259,7 +259,7 @@ class Tools(object):
     
     if not path.exists(outputdir):
       os.system('mkdir -p {}'.format(outputdir))
-    os.system('cp ../data/index.php {}'.format(outputdir))
+    os.system('cp ./data/index.php {}'.format(outputdir))
 
     return outputdir
 

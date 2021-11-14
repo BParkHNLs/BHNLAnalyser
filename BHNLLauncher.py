@@ -70,21 +70,30 @@ class BHNLLauncher(object):
 
 
   def writeSubmitter(self, command, label):
-    #TODO create workdir on scratch?
-    # and add time stamp
     content = '\n'.join([
         '#!/bin/bash',
-        #'homedir="$PWD/outputs/{}'
-        #'workdir="/scratch/{}/{}/job_nj{}_{}"'.format(os.environ["USER"], label, '${SLURM_JOB_ID}' if self.submit_batch else '0', '${SLURM_ARRAY_TASK_ID}' if self.submit_batch else '0'),
-        #'echo "creating workdir "$workdir',
-        #'mkdir -p $workdir',
-        #'echo "copying scripts"',
-        #'cp -r ./scripts/*py $workdir',
-        #'cp -r ./objects/*py $workdir',
-        #'cd $workdir',
-        'cd ./scripts',
+        'homedir="$PWD"',
+        'workdir="/scratch/{}/{}/job_nj{}"'.format(os.environ["USER"], label, '${SLURM_JOB_ID}' if self.submit_batch else '0'),
+        'echo ""',
+        'echo " --> creating workdir "$workdir',
+        'mkdir -p $workdir',
+        'echo " --> copying scripts"',
+        'cp -r ./scripts/*py $workdir',
+        'cp -r ./objects/*py $workdir',
+        'cp -r ./data $workdir',
+        'cd $workdir',
+        'DATE_START=`date +%s`',
         command,
-        'cd ..',
+        'echo " --> content of the wordir"',
+        'ls -l',
+        'echo " --> coyping the files to the home directory $homedir"',
+        'cp -r ./outputs $homedir',
+        'DATE_END=`date +%s`',
+        'runtime=$((DATE_END-DATE_START))',
+        'echo " --> Wallclock running time: $runtime s"',
+        'cd $homedir',
+        'echo " --> removing workdir"',
+        'rm -r $workdir',
         'echo "Done"'
         ])
     
@@ -127,7 +136,7 @@ class BHNLLauncher(object):
         ])
 
     # write the submitter
-    label = 'plotter_' + self.outlabel + '_' + category.label
+    label = 'plotter_' + self.outlabel + '_' + self.tag + '_' + category.label
     self.writeSubmitter(command_plotter, label)
 
     # launch submitter
@@ -136,7 +145,7 @@ class BHNLLauncher(object):
       os.system(command_submit)
     else:
       # create logdir
-      logdir_name = './outputs/{}/logs'.format(self.outlabel)
+      logdir_name = './outputs/{}/logs/{}'.format(self.outlabel, self.tag)
       if not path.exists(logdir_name):
         os.system('mkdir -p {}'.format(logdir_name))
 
@@ -148,7 +157,7 @@ class BHNLLauncher(object):
       os.system(command_submit)
 
       print '--> Plotter job has been submitted'
-      print '---> The plots will be stored in ./outputs/{}/plots'.format(self.outlabel)
+      print '---> The plots will be stored in ./outputs/{}/plots/{}'.format(self.outlabel, self.tag)
 
     command_clean = 'rm submitter_{}.sh'.format(label)
     os.system(command_clean)
@@ -175,7 +184,7 @@ class BHNLLauncher(object):
         ])
 
     # write the submitter
-    label = 'datacards_' + self.outlabel + '_' + category.label
+    label = 'datacards_' + self.outlabel + '_' + self.tag + '_' + category.label
     self.writeSubmitter(command_datacards, label)
 
     # launch submitter
@@ -184,7 +193,7 @@ class BHNLLauncher(object):
       os.system(command_submit)
     else:
       # create logdir
-      logdir_name = './outputs/{}/logs'.format(self.outlabel)
+      logdir_name = './outputs/{}/logs/{}'.format(self.outlabel, self.tag)
       if not path.exists(logdir_name):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
@@ -197,7 +206,7 @@ class BHNLLauncher(object):
       os.system(command_submit)
 
       print '--> Datacards job has been submitted'
-      print '---> The datacards will be stored in ./outputs/{}/datacards'.format(self.outlabel)
+      print '---> The datacards will be stored in ./outputs/{}/datacards/{}'.format(self.outlabel, self.tag)
 
     command_clean = 'rm submitter_{}.sh'.format(label)
     os.system(command_clean)

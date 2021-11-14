@@ -133,7 +133,7 @@ class Plotter(Tools):
     return max_range
 
 
-  def plot(self, selection='', title='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd='', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary'):
+  def plot(self, selection='', title='', outdirloc='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd='', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary'):
 
     # check the options
     if plot_data and self.data_files == '':
@@ -418,7 +418,7 @@ class Plotter(Tools):
       line.SetLineWidth(2)
       line.Draw('same')
 
-    outputdir = self.tools.getOutDir('../outputs/{}/plots/{}'.format(outdirlabel, subdirlabel), plotdirlabel, do_shape, do_luminorm, do_stack, do_log)
+    outputdir = self.tools.getOutDir('{}/{}/plots/{}'.format(outdirloc, outdirlabel, subdirlabel), plotdirlabel, do_shape, do_luminorm, do_stack, do_log)
     
     canv.SaveAs('{}/{}.png'.format(outputdir, self.quantity.label))
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
@@ -524,6 +524,7 @@ if __name__ == '__main__':
 
           plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
                        title = title, 
+                       outdirloc = './outputs',
                        outdirlabel = outdirlabel, 
                        subdirlabel = subdirlabel, 
                        plotdirlabel = plotdirlabel, 
@@ -560,6 +561,7 @@ if __name__ == '__main__':
 
           plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
                        title = title, 
+                       outdirloc = './outputs',
                        outdirlabel = outdirlabel, 
                        subdirlabel = subdirlabel, 
                        plotdirlabel = plotdirlabel, 
@@ -592,6 +594,7 @@ if __name__ == '__main__':
 
           plotter.plot(selection = baseline_selection + ' && ' + category_definition, 
                        title = title, 
+                       outdirloc = './outputs',
                        outdirlabel = outdirlabel, 
                        subdirlabel = subdirlabel, 
                        plotdirlabel = plotdirlabel, 
