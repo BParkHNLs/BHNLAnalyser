@@ -181,6 +181,9 @@ class BHNLLauncher(object):
         '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
         #'--weight_pu {}'.format(self.cfg.branch_weight_pu),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
+        '{}'.format('--do_ABCD' if self.cfg.do_ABCD else ''),
+        '{}'.format('--do_ABCDHybrid' if self.cfg.do_ABCDHybrid else ''),
+        '{}'.format('--do_TF' if self.cfg.do_TF else ''),
         '{}'.format('--do_categories' if self.cfg.do_categories else ''),
         '{}'.format('--add_Bc' if self.cfg.add_Bc else ''),
         ])

@@ -32,10 +32,13 @@ class Config(object):
 
                # for datacards
                ABCD_label=None,
-               lumi_target=None,
-               sigma_B=None,
+               do_ABCD=None,
+               do_ABCDHybrid=None,
+               do_TF=None,
                do_categories=None,
                add_Bc=None,
+               lumi_target=None,
+               sigma_B=None,
   ):
 
     self.data_label = data_label
@@ -64,10 +67,13 @@ class Config(object):
     self.add_CMSlabel = add_CMSlabel
     self.CMStag = CMStag
     self.ABCD_label = ABCD_label
-    self.lumi_target = lumi_target
-    self.sigma_B = sigma_B
+    self.do_ABCD = do_ABCD
+    self.do_ABCDHybrid = do_ABCDHybrid
+    self.do_TF = do_TF
     self.do_categories = do_categories
     self.add_Bc = add_Bc
+    self.lumi_target = lumi_target
+    self.sigma_B = sigma_B
 
 
   def checkConfig(self):
@@ -155,8 +161,13 @@ class Config(object):
     else: 
       print '       ---> Plotter request OK'
 
+    if self.do_ABCD + self.do_ABCDHybrid + self.do_TF != 1:
+      raise RuntimeError('Please choose only one of the following background estimation method "[do_ABCD, do_ABCDHybrid, do_TF]"')
+
     if self.sigma_B not in [472.8e9, 327e9]:
       raise RuntimeError('The value of sigma_B not in [472.8e9, 327e9]. Please check')
+
+    print '       ---> Datacard request OK'
       
 
   # check that either lumi or shape, or can process both in parallel?

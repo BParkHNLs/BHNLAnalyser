@@ -9,10 +9,11 @@ from tools import Tools
 
 import sys
 sys.path.append('../objects')
-from samples import signal_samples, data_samples
+from samples import signal_samples, data_samples, qcd_samples
 from categories import categories
 from selection import selection
 from ABCD_regions import ABCD_regions
+from qcd_white_list import white_list
 
 
 def getOptions():
@@ -31,8 +32,11 @@ def getOptions():
   parser.add_argument('--lumi_target'     , type=str, dest='lumi_target'     , help='which luminosity should the yields be normalised to?'          , default='41.599')
   parser.add_argument('--sigma_B'         , type=str, dest='sigma_B'         , help='which value of the B cross section?'                           , default='472.8e9')
   parser.add_argument('--weight_hlt'      , type=str, dest='weight_hlt'      , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
-  #parser.add_argument('--white_list '     , type=str, dest='white_list'      , help='pthat range to consider for qcd samples'                       , default='')
+  parser.add_argument('--qcd_white_list ' , type=str, dest='qcd_white_list'  , help='pthat range to consider for qcd samples'                       , default='20to300')
   parser.add_argument('--add_weight_hlt'  ,           dest='add_weight_hlt'  , help='add hlt weight'                           , action='store_true', default=False)
+  parser.add_argument('--do_ABCD'         ,           dest='do_ABCD'         , help='compute yields with the ABCD method'      , action='store_true', default=False)
+  parser.add_argument('--do_ABCDHybrid'   ,           dest='do_ABCDHybrid'   , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
+  parser.add_argument('--do_TF'           ,           dest='do_TF'           , help='compute yields with the TF method'        , action='store_true', default=False)
   parser.add_argument('--do_categories'   ,           dest='do_categories'   , help='compute yields in categories'             , action='store_true', default=False)
   parser.add_argument('--add_Bc'          ,           dest='add_Bc'          , help='add the Bc samples'                       , action='store_true', default=False)
   #parser.add_argument('--submit_batch', dest='submit_batch', help='submit on the batch?', action='store_true', default=False)
@@ -66,12 +70,17 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_file='', signal_files='', baseline_selection='', ABCD_regions='', do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_file='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, outdirlabel='', subdirlabel=''):
     self.tools = Tools()
     self.data_file = data_file
     self.signal_files = signal_files 
+    self.qcd_files = qcd_files
+    self.white_list = white_list
     self.baseline_selection = baseline_selection
     self.ABCD_regions = ABCD_regions
+    self.do_ABCD = do_ABCD 
+    self.do_ABCDHybrid = do_ABCDHybrid 
+    self.do_TF = do_TF 
     self.do_categories = do_categories
     self.categories = categories
     if do_categories and categories == None:
@@ -110,21 +119,18 @@ class DatacardsMaker(Tools):
     return windows
 
 
-  def getBackgroundYields(self, data_file, mass, resolution, category=''):
+  def getBackgroundYields(self, mass, resolution, category=''):
     background_selection = self.baseline_selection
     if self.do_categories:
-      category_selection = category.definition_flat + '&& ' + category.cutbased_selection
+      category_selection = category.definition_flat + ' && ' + category.cutbased_selection
       background_selection += ' && {}'.format(category_selection)
 
-    # ABCD method
-    background_yields = ComputeYields(data_file=data_file, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0] 
-    #background_yields = ComputeYields(data_file=data_file, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0] 
-
-    # TF method
-    #from samples import qcd_samples
-    #qcd_files = qcd_samples['V08_29Sep21']
-    #white_list_20to300 = ['QCD_pt20to30 (V08_29Sep21)', 'QCD_pt30to50 (V08_29Sep21)', 'QCD_pt50to80 (V08_29Sep21)', 'QCD_pt80to120 (V08_29Sep21)', 'QCD_pt120to170 (V08_29Sep21)', 'QCD_pt170to300 (V08_29Sep21)']
-    #background_yields = ComputeYields(data_file=data_file, qcd_files=qcd_files, selection=background_selection, white_list=white_list_20to300).computeBkgYieldsFromMC(mass=mass, resolution=resolution)[0]
+    if self.do_ABCD:
+      background_yields = ComputeYields(data_file=data_file, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0] 
+    elif self.do_ABCDHybrid:
+      background_yields = ComputeYields(data_file=self.data_file, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0]
+    elif self.do_TF:
+      background_yields = ComputeYields(data_file=self.data_file, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromMC(mass=mass, resolution=resolution)[0]
 
     if background_yields == 0.: background_yields = 1e-9
 
@@ -137,7 +143,7 @@ class DatacardsMaker(Tools):
   def getSignalYields(self, signal_file, category=''):
     signal_selection = 'ismatched==1 && hnl_charge==0 && {}'.format(self.baseline_selection) # condition on the charge added in the context of the dsa study
     if self.do_categories:
-      category_selection = category.definition_flat + '&& ' + category.cutbased_selection
+      category_selection = category.definition_flat + ' && ' + category.cutbased_selection
       signal_selection += ' && {}'.format(category_selection)
 
     signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, isBc=False)[0]
@@ -221,7 +227,7 @@ syst_bkg_{lbl}                             lnN           -                      
       for window in self.getWindowList():
 
         # get the background yields
-        background_yields = self.getBackgroundYields(data_file=self.data_file, mass=window['mass'], resolution=window['resolution'], category=category)
+        background_yields = self.getBackgroundYields(mass=window['mass'], resolution=window['resolution'], category=category)
 
         # loop on the signal points
         for signal_file in signal_files:
@@ -253,12 +259,19 @@ if __name__ == '__main__':
 
     data_file = data_samples[opt.data_label][0] #FIXME for the moment, can only run on one file
     signal_files = signal_samples[opt.signal_label]
+    qcd_files = qcd_samples[opt.qcd_label]
+    
+    white_list = white_list[opt.qcd_white_list]
 
     outdirlabel = opt.outdirlabel
     subdirlabel = opt.subdirlabel
 
     categories = categories[opt.categories_label]
     baseline_selection = selection[opt.selection_label].flat
+
+    do_ABCD = opt.do_ABCD
+    do_ABCDHybrid = opt.do_ABCDHybrid
+    do_TF = opt.do_TF
     ABCD_regions = ABCD_regions[opt.ABCD_label]
 
     lumi_target = opt.lumi_target
@@ -273,11 +286,16 @@ if __name__ == '__main__':
     DatacardsMaker(
         data_file = data_file, 
         signal_files = signal_files, 
+        qcd_files = qcd_files,
+        white_list = white_list,
         baseline_selection = baseline_selection, 
         do_categories = do_categories, 
         categories = categories, 
         category_label = opt.category_label, 
         ABCD_regions = ABCD_regions,
+        do_ABCD = do_ABCD,
+        do_ABCDHybrid = do_ABCDHybrid,
+        do_TF = do_TF,
         lumi_target = lumi_target,
         sigma_B = sigma_B,
         weight_hlt = weight_hlt,
