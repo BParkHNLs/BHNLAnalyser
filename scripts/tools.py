@@ -24,9 +24,20 @@ class Tools(object):
     return tree
 
 
-  def createHisto(self, rootfile, tree_name, quantity, hist_name='hist', branchname='flat', weight=-99, selection='', cut=0):
+  def createHisto(self, rootfiles, tree_name, quantity, hist_name='hist', branchname='flat', weight=-99, selection=''):
+    '''
+      This function creates the histogram for a given quantity
+      If 'rootfiles' is a single file, if will get the tree
+      If 'rootfiles' is a list of files, it will use a TChain
+    '''
     ROOT.TH1.SetDefaultSumw2()
-    tree = self.getTree(rootfile, tree_name)
+    if type(rootfiles) is list:
+      tree = ROOT.TChain(tree_name)
+      for rootfile in rootfiles:
+        tree.Add(rootfile.filename)  
+    else:
+      rootfile = self.getRootFile(rootfiles.filename, with_ext=False)
+      tree = self.getTree(rootfile, tree_name)
     hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
 
     if selection == '' and weight == -99: selection_string = selection

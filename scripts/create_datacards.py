@@ -11,7 +11,7 @@ import sys
 sys.path.append('../objects')
 from samples import signal_samples, data_samples, qcd_samples
 from categories import categories
-from selection import selection
+from baseline_selection import selection
 from ABCD_regions import ABCD_regions
 from qcd_white_list import white_list
 
@@ -70,9 +70,9 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_file='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, outdirlabel='', subdirlabel=''):
     self.tools = Tools()
-    self.data_file = data_file
+    self.data_files = data_files
     self.signal_files = signal_files 
     self.qcd_files = qcd_files
     self.white_list = white_list
@@ -126,15 +126,17 @@ class DatacardsMaker(Tools):
       background_selection += ' && {}'.format(category_selection)
 
     if self.do_ABCD:
-      background_yields = ComputeYields(data_file=data_file, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0] 
+      background_yields = ComputeYields(data_files=self.data_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0] 
     elif self.do_ABCDHybrid:
-      background_yields = ComputeYields(data_file=self.data_file, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0]
+      background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0]
     elif self.do_TF:
-      background_yields = ComputeYields(data_file=self.data_file, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromMC(mass=mass, resolution=resolution)[0]
+      background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromMC(mass=mass, resolution=resolution)[0]
 
     if background_yields == 0.: background_yields = 1e-9
 
-    lumi_true = data_file.lumi
+    lumi_true = 0. #0.774 #data_file.lumi
+    for data_file in self.data_files:
+      lumi_true += data_file.lumi
     if background_yields != 1e-9: background_yields = background_yields * self.lumi_target/lumi_true
 
     return background_yields
@@ -257,7 +259,7 @@ if __name__ == '__main__':
     '''
     printInfo(opt)
 
-    data_file = data_samples[opt.data_label][0] #FIXME for the moment, can only run on one file
+    data_files = data_samples[opt.data_label]
     signal_files = signal_samples[opt.signal_label]
     qcd_files = qcd_samples[opt.qcd_label]
     
@@ -284,7 +286,7 @@ if __name__ == '__main__':
     add_Bc = opt.add_Bc
 
     DatacardsMaker(
-        data_file = data_file, 
+        data_files = data_files, 
         signal_files = signal_files, 
         qcd_files = qcd_files,
         white_list = white_list,
