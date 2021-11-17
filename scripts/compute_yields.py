@@ -11,18 +11,20 @@ from samples import data_samples, qcd_samples, signal_samples
 from quantity import Quantity
 from categories import categories
 from ABCD_regions import ABCD_regions
-from selection import selection
+from baseline_selection import selection
+from qcd_white_list import white_list 
 
 #TODO apply weights 
 
 class ComputeYields(Tools):
-  def __init__(self, data_file='', qcd_files='', signal_file='', selection='', white_list=''):
+  def __init__(self, data_files='', qcd_files='', signal_file='', selection='', white_list=''):
     self.tools = Tools()
-    self.data_file = data_file
+    self.data_files = data_files
     self.qcd_files = qcd_files
     self.signal_file = signal_file
     self.selection = selection
     self.white_list = white_list
+
 
   ###
   # BACKGROUND TF METHOD 
@@ -33,8 +35,7 @@ class ComputeYields(Tools):
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
 
-    f_data = self.tools.getRootFile(self.data_file.filename)
-    hist_data = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=selection)
+    hist_data = self.tools.createHisto(self.data_files, 'signal_tree', quantity, branchname='flat', selection=selection)
     hist_data.Sumw2()
     n_obs_data = hist_data.Integral()
     n_err_data = math.sqrt(n_obs_data) #hist_data.GetBinError(1)
@@ -87,11 +88,15 @@ class ComputeYields(Tools):
     # defining mass window
     quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
 
-    selection_extra = self.selection
+    # make sure there is no selection on the hnl charge 
+    if 'hnl_charge' in self.selection:
+      substr = self.selection[self.selection.find('hnl_charge'):self.selection.find('&&',self.selection.find('hnl_charge')+1)+2]
+      selection_extra = self.selection.replace(substr, '')
+    else:
+      selection_extra = self.selection
 
     # we compute the weight in the control region
     weight, err_weight = self.computeApproxWeightQCDMCtoData(quantity, selection=('hnl_charge!=0' if selection_extra=='' else 'hnl_charge!=0 &&' + selection_extra))
-    #weight, err_weight = self.computeWeightQCDMCtoData(lumi_data=774)
 
     hist_mc_tot = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection='hnl_charge==0' if selection_extra=='' else 'hnl_charge==0 &&' + selection_extra)
     n_obs_mc = hist_mc_tot.Integral()
@@ -103,7 +108,8 @@ class ComputeYields(Tools):
     else:
       err = 0.
 
-    return int(n_exp_mc), int(err), weight
+    return n_exp_mc, err, weight
+
 
   ###
   # BACKGROUND ABCD METHOD 
@@ -119,16 +125,14 @@ class ComputeYields(Tools):
 
       N_A = N_B * N_C/N_D
     '''
-    f_data = self.tools.getRootFile(self.data_file.filename)
-
     # defining mass window
     quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
 
     bin_selection = self.selection
 
-    hist_data_B = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_B_selection)
-    hist_data_C = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_C_selection)
-    hist_data_D = self.tools.createHisto(f_data, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_D_selection)
+    hist_data_B = self.tools.createHisto(self.data_files, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_B_selection)
+    hist_data_C = self.tools.createHisto(self.data_files, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_C_selection)
+    hist_data_D = self.tools.createHisto(self.data_files, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_D_selection)
 
     n_obs_data_B = hist_data_B.Integral()
     n_obs_data_C = hist_data_C.Integral()
@@ -150,7 +154,22 @@ class ComputeYields(Tools):
     else:
       n_err_data_A = 0
 
-    return int(n_obs_data_A), int(n_err_data_A)
+    return n_obs_data_A, n_err_data_A, n_obs_data_B, n_obs_data_C, n_obs_data_D
+
+
+  def computeBkgYieldsFromABCDHybrid(self, mass, resolution, ABCD_regions):
+    '''
+      Estimate background yields using the ABCD method on data
+      unless one CR has 0 entries, then compute the background
+      yields using the TF method
+    '''
+
+    background_yields, err, n_CR_B, n_CR_C, n_CR_D = self.computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=ABCD_regions)
+    if n_CR_B == 0 or n_CR_C == 0 or n_CR_D == 0: #TODO correct to use TF if NB or NC = 0?
+      background_yields, err, wght = self.computeBkgYieldsFromMC(mass=mass, resolution=resolution)
+
+    return background_yields, err
+
 
   ###
   # BACKGROUND ABCD VALIDATION 
@@ -183,7 +202,7 @@ class ComputeYields(Tools):
     n_err_mc_C = hist_mc_tot_C.GetBinError(1) #math.sqrt(n_obs_mc_C) 
     n_err_mc_D = hist_mc_tot_D.GetBinError(1) #math.sqrt(n_obs_mc_D) 
 
-    print '{} * {} / ({} * {})'.format(n_obs_mc_A, n_obs_mc_D, n_obs_mc_B, n_obs_mc_C)
+    #print '{} * {} / ({} * {})'.format(n_obs_mc_A, n_obs_mc_D, n_obs_mc_B, n_obs_mc_C)
 
     if n_obs_mc_B != 0 and n_obs_mc_C !=0:
       ratio = n_obs_mc_A*n_obs_mc_D/(n_obs_mc_B*n_obs_mc_C)
@@ -332,7 +351,7 @@ class ComputeYields(Tools):
   # SIGNAL 
   ###
 
-  def getSignalEfficiency(self, isBc=False):
+  def getSignalEfficiency(self, add_weight_hlt=True, weight_hlt='', isBc=False):
     '''
       eff(bin) = N_flat(bin) / N_gen
       N_gen = N_reco / filter_efficiency
@@ -344,14 +363,18 @@ class ComputeYields(Tools):
     n_reco = self.tools.getNminiAODEvts(f)
     filter_efficiency = self.signal_file.filter_efficiency if not isBc else self.signal_file.filter_efficiency_Bc
     n_gen = n_reco / filter_efficiency
-    if self.signal_file.mass == 3.0 and not isBc: 
-      n_gen = 0.5*n_gen
+    #if self.signal_file.mass == 3.0 and not isBc: 
+    #  n_gen = 0.5*n_gen
+
+    # central samples are produced 50% muon and 50% electron
+    n_gen = 0.5*n_gen #TODO do not hardcode it?
 
     # get number of selected reco events
     quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=13000) # go to 13TeV
-    weight = self.tools.getCtauWeight(self.signal_file)
-    hist_flat_bin = self.tools.createHisto(f, 'signal_tree', quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight=weight)
-    #n_selected_bin = hist_flat_bin.Integral() 
+    weight = '({})'.format(self.tools.getCtauWeight(self.signal_file))
+    if add_weight_hlt : weight += ' * ({})'.format(weight_hlt)
+    #TODO add pu weight
+    hist_flat_bin = self.tools.createHisto(self.signal_file, 'signal_tree', quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight=weight)
     bin_err = ROOT.double(0.)
     n_selected_bin = hist_flat_bin.IntegralAndError(0, 13000, bin_err)
     
@@ -368,7 +391,7 @@ class ComputeYields(Tools):
     return efficiency, err_efficiency
 
 
-  def computeSignalYields(self, lumi=0.774, sigma_B=327.0e9, isBc=False):
+  def computeSignalYields(self, lumi=0.774, sigma_B=472.8e9, add_weight_hlt=True, weight_hlt='', isBc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
     '''
@@ -409,13 +432,13 @@ class ComputeYields(Tools):
     lumi_A1 = lumi
 
     # efficiency in the mu-channel
-    efficiency, err_efficiency = self.getSignalEfficiency(isBc=isBc)
+    efficiency, err_efficiency = self.getSignalEfficiency(add_weight_hlt=add_weight_hlt, weight_hlt=weight_hlt, isBc=isBc)
     #print 'efficiency ',efficiency #efficiency/self.signal_file.filter_efficiency
 
     signal_yields = sigma_HNL * lumi_A1 * efficiency
 
     # uncertainty
-    err_sigma = 0.15
+    err_sigma = 0.10
     err_BR_prod = 0.05
     err_BR_decay = 0.05
     err_v_square = 0.05 
@@ -431,24 +454,26 @@ class ComputeYields(Tools):
 
 if __name__ == '__main__':
 
-  data_samples = data_samples['V08_29Sep21']
-  qcd_samples = qcd_samples['V08_29Sep21']
+  data_samples = data_samples['V09_06Nov21']
+  qcd_samples = qcd_samples['V09_06Nov21']
+  signal_file = signal_samples['central_V09_06Nov21_benchmark'][1]
 
-  #baseline_selection = selection['standard'].flat
-  baseline_selection = 'hnl_pt>0' # && mu_isdsa==1' #selection[''].flat
-  #categories = categories['combined_dsa']
-  categories = categories['category_study_combined_dsa']
+  baseline_selection = selection['standard'].flat
+  #baseline_selection = 'hnl_pt>0' # && mu_isdsa==1' #selection[''].flat
+  categories = categories['inclusive']
+  #categories = categories['category_study_combined_dsa']
 
   ABCD_regions = ABCD_regions['cos2d_svprob']
   #ABCD_regions = ABCD_regions['bmass_hnlcharge']
 
   #TODO fix white list handling 
   #white_list_20to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
-  white_list_20to300 = ['QCD_pt20to30 (V08_29Sep21)', 'QCD_pt30to50 (V08_29Sep21)', 'QCD_pt50to80 (V08_29Sep21)', 'QCD_pt80to120 (V08_29Sep21)', 'QCD_pt120to170 (V08_29Sep21)', 'QCD_pt170to300 (V08_29Sep21)']
+  white_list_20to300 = white_list['20to300']
 
   do_computeCrossRatio = False
-  do_computeBkgYieldsTF = True
-  do_computeBkgYieldsABCD = False
+  do_computeBkgYieldsTF = False
+  do_computeBkgYieldsABCD = True
+  do_computeBkgYieldsABCDHybrid = False
   do_testClosureABCD = False
   do_computeSigYields = False
 
@@ -459,10 +484,9 @@ if __name__ == '__main__':
   #baseline_selection = 'mu_isdsa!=1 && hnl_charge==0 && b_mass<6.4'
   #baseline_selection = 'mu_isdsa!=1 && b_mass<6.4 && hnl_cos2d>0.993 && sv_prob>0.05'
 
-  signal_V20emu = signal_samples['private'][2]
   if do_computeCrossRatio:
     for category in categories:
-      yields = ComputeYields(data_file=data_samples[0], qcd_files=qcd_samples, signal_file=signal_V20emu, selection=baseline_selection+' &&'+category.definition_flat, white_list=white_list_20to300)
+      yields = ComputeYields(data_files=data_samples[0], qcd_files=qcd_samples, signal_file=signal_file, selection=baseline_selection+' && '+category.definition_flat, white_list=white_list_20to300)
       cross_ratio = yields.computeCrossRatioFromQCDMC(ABCD_regions=ABCD_regions)
       print 'cross ratio, {}, {} +- {}'.format(category.label, round(cross_ratio[0], 3), round(cross_ratio[1], 3))
 
@@ -471,36 +495,42 @@ if __name__ == '__main__':
     ROOT.gROOT.SetBatch(True)
     for category in categories:
       outlabel = 'category_study_combined_dsa' #TODO
-      yields = ComputeYields(data_file=data_samples[0], qcd_files=qcd_samples, signal_file=signal_V20emu, selection=baseline_selection+' &&'+category.definition_flat, white_list=white_list_20to300)
+      yields = ComputeYields(data_files=data_samples[0], qcd_files=qcd_samples, selection=baseline_selection+' && '+category.definition_flat+' && '+category.cutbased_selection, white_list=white_list_20to300)
       yields.validateABCDOnQCDMC(outlabel=outlabel, label=category.label, ABCD_regions=ABCD_regions)
 
 
   if do_computeBkgYieldsTF:
+    #baseline_selection = selection['sensitivity_study_July'].flat
     for category in categories:
-      yields = ComputeYields(data_file=data_samples[0], qcd_files=qcd_samples, signal_file=signal_V20emu, selection=baseline_selection+' &&'+category.definition_flat, white_list=white_list_20to300)
-      bkg_yields_mc = yields.computeBkgYieldsFromMC(mass=signal_V20emu.mass, resolution=signal_V20emu.resolution)
-      print '{}, {} +- {}'.format(category.title, bkg_yields_mc[0], bkg_yields_mc[1])
+      yields = ComputeYields(data_files=data_samples, qcd_files=qcd_samples, selection=baseline_selection+' && '+category.definition_flat+' && '+category.cutbased_selection, white_list=white_list_20to300)
+      bkg_yields_mc = yields.computeBkgYieldsFromMC(mass=signal_file.mass, resolution=signal_file.resolution)
+      print '{} TF, {} +- {}'.format(category.title, bkg_yields_mc[0], bkg_yields_mc[1])
 
 
   if do_computeBkgYieldsABCD:
-    signal_file = signal_samples['private'][0]
+    #baseline_selection = selection['sensitivity_study_July'].flat
     for category in categories:
-      yields_bkg_incl = ComputeYields(data_file=data_samples[0], qcd_files=qcd_samples, signal_file=signal_file, selection=baseline_selection+' &&'+category.definition_flat, white_list=white_list_20to300)
+      yields_bkg_incl = ComputeYields(data_files=data_samples, qcd_files=qcd_samples, signal_file=signal_file, selection=baseline_selection+' && '+category.definition_flat+' && '+category.cutbased_selection, white_list=white_list_20to300)
       bkg_yields_incl_data = yields_bkg_incl.computeBkgYieldsFromABCDData(mass=signal_file.mass, resolution=signal_file.resolution, ABCD_regions=ABCD_regions)
-      print '{} data, {} +- {}'.format(category.title, bkg_yields_incl_data[0]*41.6/0.774, bkg_yields_incl_data[1])
+      print '{} ABCD, {} +- {}'.format(category.title, bkg_yields_incl_data[0], bkg_yields_incl_data[1])
+
+
+  if do_computeBkgYieldsABCDHybrid:
+    #baseline_selection = selection['sensitivity_study_July'].flat
+    for category in categories:
+      yields_bkg_incl = ComputeYields(data_files=data_samples[0], qcd_files=qcd_samples, signal_file=signal_file, selection=baseline_selection+' && '+category.definition_flat+' && '+category.cutbased_selection, white_list=white_list_20to300)
+      bkg_yields_incl_data = yields_bkg_incl.computeBkgYieldsFromABCDHybrid(mass=signal_file.mass, resolution=signal_file.resolution, ABCD_regions=ABCD_regions)
+      print '{} hybrid ABCD, {} +- {}'.format(category.title, bkg_yields_incl_data[0], bkg_yields_incl_data[1])
 
 
   if do_computeSigYields:
-    #signal_V20emu = signal_samples['private'][1]
-    signal_V20emu = signal_samples['limits_m3'][2]
-
     for category in categories:
-      sig_eff = ComputeYields(signal_file=signal_V20emu, selection='ismatched==1 && '+category.definition_flat).getSignalEfficiency()[0]
-      #BRs = ComputeYields(signal_file=signal_V20emu, selection='ismatched==1').computeCouplingSquare()
+      sig_eff = ComputeYields(signal_file=signal_file, selection='ismatched==1 && '+category.definition_flat).getSignalEfficiency()[0]
+      #BRs = ComputeYields(signal_file=signal_file, selection='ismatched==1').computeCouplingSquare()
 
-      sig = ComputeYields(signal_file=signal_V20emu, selection='ismatched==1 && '+category.definition_flat)
+      sig = ComputeYields(signal_file=signal_file, selection='ismatched==1 && '+category.definition_flat)
       #sig.getCtauWeight()
 
-      sig_yields = sig.computeSignalYields(lumi=41.6)[0]
+      sig_yields = sig.computeSignalYields(lumi=41.6, weight_hlt='weight_hlt_A1')[0]
       print 'signal yields, {}: {}'.format(category.title, sig_yields)
  
