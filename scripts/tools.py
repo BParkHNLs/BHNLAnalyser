@@ -62,13 +62,11 @@ class Tools(object):
       qcd_file_pthatrange = self.getPthatRange(qcd_file.label)
       if qcd_file_pthatrange not in white_list: continue
 
-      f_mc = self.getRootFile(qcd_file.filename)
-      
-      weight_mc = self.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
+      weight_mc = self.computeQCDMCWeight(qcd_file, qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_qcd = '({})'.format(weight_mc)
       if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
       if add_weight_pu : weight_qcd += ' * ({})'.format(weight_puqcd)
-      hist_mc = self.createHisto(f_mc, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight_qcd) 
+      hist_mc = self.createHisto(qcd_file, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight_qcd) 
       hist_mc.Sumw2()
     
       hist_mc_tot.Add(hist_mc)
@@ -86,7 +84,7 @@ class Tools(object):
   def getNminiAODEvts(self, rootfile):
     quantity = Quantity(name_nano='genEventCount', name_flat='geneventcount', nbins=100, bin_min=1, bin_max=1e9)
     #TODO apply weight here?
-    hist = self.createHisto(rootfile=rootfile, tree_name='run_tree', quantity=quantity)
+    hist = self.createHisto(rootfiles=rootfile, tree_name='run_tree', quantity=quantity)
     n_reco_evts = hist.GetMean() * hist.GetEntries()
     return n_reco_evts
 
@@ -110,8 +108,7 @@ class Tools(object):
     n_obs_data = 0.
     n_err_data = 0.
     for data_file in data_files:
-      f_data = self.getRootFile(data_file.filename, with_ext=False)
-      hist_data = self.createHisto(f_data, 'signal_tree', quantity_forweight, branchname='flat', selection=selection)
+      hist_data = self.createHisto(data_file, 'signal_tree', quantity_forweight, branchname='flat', selection=selection)
       hist_data.Sumw2()
       n_obs_data += hist_data.GetBinContent(1)
       n_err_data += hist_data.GetBinError(1)
