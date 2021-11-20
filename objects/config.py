@@ -4,7 +4,7 @@ class Config(object):
                # general
                data_label=None, 
                qcd_label=None, 
-               signal_label=None, 
+               signal_labels=None, 
                sample_type=None,
                tree_name=None, 
                categories_label=None, 
@@ -39,11 +39,14 @@ class Config(object):
                add_Bc=None,
                lumi_target=None,
                sigma_B=None,
+
+               # for limits
+               run_blind=None,
   ):
 
     self.data_label = data_label
     self.qcd_label = qcd_label
-    self.signal_label = signal_label
+    self.signal_labels = signal_labels
     self.sample_type = sample_type
     self.tree_name = tree_name
     self.categories_label = categories_label
@@ -74,6 +77,7 @@ class Config(object):
     self.add_Bc = add_Bc
     self.lumi_target = lumi_target
     self.sigma_B = sigma_B
+    self.run_blind = run_blind
 
 
   def checkConfig(self):
@@ -106,16 +110,17 @@ class Config(object):
             raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
     print '       ---> QCD samples OK'
 
-    if self.signal_label != None and self.signal_label not in signal_samples.keys():
-      raise RuntimeError('The signal sample label (signal_label) is not valid. Please choose amongst {}.'.format(signal_samples.keys()))
-    else: 
-      print '       ---> Signal sample label OK'
-      for sample in signal_samples[self.signal_label]:
-        if not ROOT.TFile.Open(sample.filename, 'READ'):
-          raise RuntimeError('The sample "{}" does not exist. Please check the filename.'.format(sample.filename))
-        else:
-          if not ROOT.TFile.Open(sample.filename, 'READ').Get(self.tree_name):
-            raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
+    for signal_label in self.signal_labels:
+      if signal_label != None and signal_label not in signal_samples.keys():
+        raise RuntimeError('The signal sample label "{}" is not valid. Please choose amongst {}.'.format(signal_label, signal_samples.keys()))
+    print '       ---> Signal sample label OK'
+    for signal_label in self.signal_labels:
+        for sample in signal_samples[signal_label]:
+          if not ROOT.TFile.Open(sample.filename, 'READ'):
+            raise RuntimeError('The sample "{}" does not exist. Please check the filename.'.format(sample.filename))
+          else:
+            if not ROOT.TFile.Open(sample.filename, 'READ').Get(self.tree_name):
+              raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
     print '       ---> Signal samples OK'
 
     from qcd_white_list import white_list
@@ -130,7 +135,7 @@ class Config(object):
     else: 
       print '       ---> Categories label OK'
 
-    from selection import selection
+    from baseline_selection import selection
     if self.selection_label != None and self.selection_label not in selection.keys():
       raise RuntimeError('The selection label (selection_label) is not valid. Please choose amongst {}.'.format(selection.keys()))
     else: 
@@ -149,12 +154,12 @@ class Config(object):
     else:
       print '       ---> HLT weight OK'
 
-    if self.add_weight_pu and self.branch_weight_pu == None:
-      raise RuntimeError('Please indicate the name of the branch for the pile-up weight (branch_weight_pu)')
-    elif self.add_weight_pu and self.branch_weight_pu not in ['weight_pu_qcd_ntrueint', 'weight_pu_qcd_ntrueint_weighted']:
-      raise RuntimeError('Unrecognised branch "{}" for the pile-up weight. Please check.'.format(self.branch_weight_pu))
-    else:
-      print '       ---> Pile-up weight OK'
+    #if self.add_weight_pu and self.branch_weight_pu == None:
+    #  raise RuntimeError('Please indicate the name of the branch for the pile-up weight (branch_weight_pu)')
+    #elif self.add_weight_pu and self.branch_weight_pu not in ['weight_pu_qcd_ntrueint', 'weight_pu_qcd_ntrueint_weighted']:
+    #  raise RuntimeError('Unrecognised branch "{}" for the pile-up weight. Please check.'.format(self.branch_weight_pu))
+    #else:
+    #  print '       ---> Pile-up weight OK'
 
     if self.do_shape == self.do_luminorm:
       raise RuntimeError('Invalid arguments for --do_shape ({}) and --do_luminorm ({}) \nPlease only set exactly one option to True at a time'.format(self.do_shape, self.do_luminorm))
