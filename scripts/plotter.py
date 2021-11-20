@@ -249,67 +249,67 @@ class Plotter(Tools):
 
     # qcd mc
     if plot_qcd:
-      mc_hists = []
-      hist_mc_tot = ROOT.TH1D('hist_mc_tot', 'hist_mc_tot', self.quantity.nbins, self.quantity.bin_min, self.quantity.bin_max)
-      hist_mc_tot.Sumw2()
-      int_mc_tot = 0.
+      qcd_hists = []
+      hist_qcd_tot = ROOT.TH1D('hist_qcd_tot', 'hist_qcd_tot', self.quantity.nbins, self.quantity.bin_min, self.quantity.bin_max)
+      hist_qcd_tot.Sumw2()
+      int_qcd_tot = 0.
 
       for ifile, qcd_file in enumerate(self.qcd_files):
         qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
         if qcd_file_pthatrange not in self.white_list: continue
 
-        f_mc = self.tools.getRootFile(qcd_file.filename)
-        tree_mc = self.getTree(f_mc, treename)
-        tree_run = self.getTree(f_mc, 'run_tree')
+        f_qcd = self.tools.getRootFile(qcd_file.filename)
+        tree_qcd = self.getTree(f_qcd, treename)
+        tree_run = self.getTree(f_qcd, 'run_tree')
 
-        weight_mc = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
-        weight_qcd = '({})'.format(weight_mc)
+        weight_qcd = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
+        weight_qcd = '({})'.format(weight_qcd)
         if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
         if add_weight_pu : weight_qcd += ' * ({}) '.format(weight_puqcd)
 
-        hist_mc_name = 'hist_mc_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-        hist_mc = self.tools.createHisto(tree_mc, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight_qcd) 
-        hist_mc.Sumw2()
-        hist_mc.SetFillColor(qcd_file.colour)
-        hist_mc.SetLineColor(1)
+        hist_qcd_name = 'hist_qcd_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
+        hist_qcd = self.tools.createHisto(tree_qcd, self.quantity, hist_name=hist_qcd_name, branchname=branchname, selection=selection, weight=weight_qcd) 
+        hist_qcd.Sumw2()
+        hist_qcd.SetFillColor(qcd_file.colour)
+        hist_qcd.SetLineColor(1)
         
         if do_stack:
-          legend.AddEntry(hist_mc, 'MC - {}'.format(qcd_file.label))
+          legend.AddEntry(hist_qcd, 'MC - {}'.format(qcd_file.label))
         if add_overflow:
-          overflow_mc = hist_mc.GetBinContent(hist_mc.GetNbinsX()) + hist_mc.GetBinContent(hist_mc.GetNbinsX()+1)
-          error_overflow_mc = math.sqrt(math.pow(hist_mc.GetBinError(hist_mc.GetNbinsX()), 2) + math.pow(hist_mc.GetBinError(hist_mc.GetNbinsX()+1), 2)) 
-          hist_mc.SetBinContent(hist_mc.GetNbinsX(), overflow_mc)
-          hist_mc.SetBinError(hist_mc.GetNbinsX(), error_overflow_mc)
-          hist_mc.SetBinContent(hist_mc.GetNbinsX()+1, 0)
-          hist_mc.SetBinError(hist_mc.GetNbinsX()+1, 0)
+          overflow_qcd = hist_qcd.GetBinContent(hist_qcd.GetNbinsX()) + hist_qcd.GetBinContent(hist_qcd.GetNbinsX()+1)
+          error_overflow_qcd = math.sqrt(math.pow(hist_qcd.GetBinError(hist_qcd.GetNbinsX()), 2) + math.pow(hist_qcd.GetBinError(hist_qcd.GetNbinsX()+1), 2)) 
+          hist_qcd.SetBinContent(hist_qcd.GetNbinsX(), overflow_qcd)
+          hist_qcd.SetBinError(hist_qcd.GetNbinsX(), error_overflow_qcd)
+          hist_qcd.SetBinContent(hist_qcd.GetNbinsX()+1, 0)
+          hist_qcd.SetBinError(hist_qcd.GetNbinsX()+1, 0)
         if do_shape: 
-          int_mc_tot += hist_mc.Integral()
+          int_qcd_tot += hist_qcd.Integral()
     
-        hist_mc_tot.Add(hist_mc)
-        mc_hists.append(hist_mc)
+        hist_qcd_tot.Add(hist_qcd)
+        qcd_hists.append(hist_qcd)
     
-      hist_mc_tot.SetTitle('')
-      hist_mc_tot.SetFillColor(ROOT.kAzure-4)
-      hist_mc_tot.SetLineColor(1)
+      hist_qcd_tot.SetTitle('')
+      hist_qcd_tot.SetFillColor(ROOT.kAzure-4)
+      hist_qcd_tot.SetLineColor(1)
     
       if not do_stack:
-        legend.AddEntry(hist_mc_tot, 'MC - {}'.format(self.getQCDMCLabel(self.white_list[0], self.white_list[len(self.white_list)-1], qcd_file.label)))
+        legend.AddEntry(hist_qcd_tot, 'MC - {}'.format(self.getQCDMCLabel(self.white_list[0], self.white_list[len(self.white_list)-1], qcd_file.label)))
         
       ## create stack histogram  
-      hist_mc_stack = ROOT.THStack('hist_mc_stack', '')
+      hist_qcd_stack = ROOT.THStack('hist_qcd_stack', '')
 
       ## compute the mc normalisation weight
       if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd)
 
-      for hist_mc in mc_hists:
-        if do_shape and int_mc_tot != 0: hist_mc.Scale(1/int_mc_tot)
-        elif do_luminorm: hist_mc.Scale(lumi_weight)
-        hist_mc_stack.Add(hist_mc)
-      if do_shape and int_mc_tot!= 0: hist_mc_tot.Scale(1/int_mc_tot)
-      elif do_luminorm: hist_mc_tot.Scale(lumi_weight)
+      for hist_qcd in qcd_hists:
+        if do_shape and int_qcd_tot != 0: hist_qcd.Scale(1/int_qcd_tot)
+        elif do_luminorm: hist_qcd.Scale(lumi_weight)
+        hist_qcd_stack.Add(hist_qcd)
+      if do_shape and int_qcd_tot!= 0: hist_qcd_tot.Scale(1/int_qcd_tot)
+      elif do_luminorm: hist_qcd_tot.Scale(lumi_weight)
 
     if plot_qcd:
-      frame = hist_mc_tot.Clone('frame')
+      frame = hist_qcd_tot.Clone('frame')
     else:
       frame = hist_data_tot.Clone('frame')
 
@@ -326,8 +326,8 @@ class Plotter(Tools):
     frame.GetYaxis().SetLabelSize(0.033 if not plot_ratio else 0.037)
     frame.GetYaxis().SetTitleSize(0.042)
     frame.GetYaxis().SetTitleOffset(1.3 if not plot_ratio else 1.1)
-    if plot_data and plot_qcd: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_tot, hist_mc_tot, do_log))
-    elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_mc_stack, do_log, use_sig=True))
+    if plot_data and plot_qcd: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_tot, hist_qcd_tot, do_log))
+    elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
     elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
 
     #ROOT.gStyle.SetPadLeftMargin(0.16) 
@@ -348,11 +348,11 @@ class Plotter(Tools):
     if plot_data and plot_qcd: hist_data_tot.Draw('same')
     if plot_data and not plot_qcd: hist_data_tot.Draw('histo same')
     if plot_qcd: 
-      hist_mc_tot.Draw('histo same')
+      hist_qcd_tot.Draw('histo same')
       if do_stack:
-        hist_mc_stack.Draw('histo same')
+        hist_qcd_stack.Draw('histo same')
       else:
-        hist_mc_tot.Draw('histo same')
+        hist_qcd_tot.Draw('histo same')
     if plot_data and plot_qcd: hist_data_tot.Draw('same') # making sure data points are always visible
     if plot_sig: 
       for hist_sig in signal_hists:
@@ -361,11 +361,11 @@ class Plotter(Tools):
 
     # draw error bars
     if plot_qcd:
-      hist_mc_tot_err = hist_mc_tot.Clone('hist_mc_tot_err')
-      hist_mc_tot_err.SetLineWidth(0)
-      hist_mc_tot_err.SetFillStyle(3244)
-      hist_mc_tot_err.SetFillColor(ROOT.kGray+2)
-      hist_mc_tot_err.Draw('E2 same')
+      hist_qcd_tot_err = hist_qcd_tot.Clone('hist_qcd_tot_err')
+      hist_qcd_tot_err.SetLineWidth(0)
+      hist_qcd_tot_err.SetFillStyle(3244)
+      hist_qcd_tot_err.SetFillColor(ROOT.kGray+2)
+      hist_qcd_tot_err.Draw('E2 same')
 
     # draw the legend
     legend.Draw('same')
@@ -387,15 +387,15 @@ class Plotter(Tools):
     if plot_ratio:
       pad_down.cd()
 
-      hist_ratio = self.tools.getRatioHistogram(hist_data_tot, hist_mc_tot)
+      hist_ratio = self.tools.getRatioHistogram(hist_data_tot, hist_qcd_tot)
       #hist_ratio = self.tools.getRatioHistogram(hist_data_tot, signal_hists[0])
       hist_ratio.Sumw2()
 
       for ibin in range(0, hist_ratio.GetNbinsX()+1):
-        if hist_data_tot.GetBinContent(ibin) != 0 and hist_mc_tot.GetBinContent(ibin) != 0:
-          #err = hist_ratio.GetBinContent(ibin) * (math.sqrt(hist_data.GetBinContent(ibin))/hist_data.GetBinContent(ibin) + math.sqrt(hist_mc_tot.GetBinContent(ibin))/hist_mc_tot.GetBinContent(ibin))
-          #err = math.sqrt((math.sqrt(hist_data.GetBinContent(ibin))/hist_mc_tot.GetBinContent(ibin))**2 + (math.sqrt(hist_mc_tot.GetBinContent(ibin))*hist_data.GetBinContent(ibin)/(hist_mc_tot.GetBinContent(ibin))**2)**2)
-          err = math.sqrt((hist_data_tot.GetBinError(ibin)/hist_mc_tot.GetBinContent(ibin))**2 + (hist_mc_tot.GetBinError(ibin)*hist_data_tot.GetBinContent(ibin)/(hist_mc_tot.GetBinContent(ibin))**2)**2)
+        if hist_data_tot.GetBinContent(ibin) != 0 and hist_qcd_tot.GetBinContent(ibin) != 0:
+          #err = hist_ratio.GetBinContent(ibin) * (math.sqrt(hist_data.GetBinContent(ibin))/hist_data.GetBinContent(ibin) + math.sqrt(hist_qcd_tot.GetBinContent(ibin))/hist_qcd_tot.GetBinContent(ibin))
+          #err = math.sqrt((math.sqrt(hist_data.GetBinContent(ibin))/hist_qcd_tot.GetBinContent(ibin))**2 + (math.sqrt(hist_qcd_tot.GetBinContent(ibin))*hist_data.GetBinContent(ibin)/(hist_qcd_tot.GetBinContent(ibin))**2)**2)
+          err = math.sqrt((hist_data_tot.GetBinError(ibin)/hist_qcd_tot.GetBinContent(ibin))**2 + (hist_qcd_tot.GetBinError(ibin)*hist_data_tot.GetBinContent(ibin)/(hist_qcd_tot.GetBinContent(ibin))**2)**2)
         else: 
           err = 0
         if hist_ratio.GetBinContent(ibin) != 0: hist_ratio.SetBinError(ibin, err)
