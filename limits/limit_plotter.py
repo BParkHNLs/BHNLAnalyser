@@ -6,6 +6,8 @@ import pickle
 import numpy as np
 import otherExp_limits as db 
 from collections import OrderedDict
+import matplotlib
+matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 from intersection import intersection
 from utils import getMassList
@@ -14,67 +16,52 @@ from utils import getMassList
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Run limit on a single mass/coupling point', add_help=True)
-  parser.add_argument('--version', type=str, dest='version', help='version label', default='L1')
-  parser.add_argument('--signal', type=str, dest='signal', help='signal under consideration', default='majorana', choices=['majorana', 'dirac'])
-  parser.add_argument('--years', type=str, dest='years', help='years to combine', default='2016,2017,2018')
-  parser.add_argument('--channels', type=str, dest='channels', help='channels to combine', default='mmm,mem_os,mem_ss')
-  parser.add_argument('--mass_whitelist', type=str, dest='mass_whitelist', help='allowed values for masses', default='None')
-  parser.add_argument('--mass_blacklist', type=str, dest='mass_blacklist', help='values for masses to skip', default='None')
-  parser.add_argument('--coupling_whitelist', type=str, dest='coupling_whitelist', help='allowed values for couplings', default='None')
-  parser.add_argument('--coupling_blacklist', type=str, dest='coupling_blacklist', help='values for couplings to skip', default='None')
-  parser.add_argument('--run_blind', dest='run_blind', help='run blinded or unblinded', action='store_true', default=False)
+  parser.add_argument('--outdirlabel'       , type=str, dest='outdirlabel'       , help='name of the outdir'                           , default=None)
+  parser.add_argument('--subdirlabel'       , type=str, dest='subdirlabel'       , help='name of the subdir'                           , default=None)
+  parser.add_argument('--signal_type'       , type=str, dest='signal_type'       , help='signal under consideration'                   , default='majorana', choices=['majorana', 'dirac'])
+  parser.add_argument('--mass_whitelist'    , type=str, dest='mass_whitelist'    , help='allowed values for masses'                    , default='None')
+  parser.add_argument('--mass_blacklist'    , type=str, dest='mass_blacklist'    , help='values for masses to skip'                    , default='None')
+  parser.add_argument('--coupling_whitelist', type=str, dest='coupling_whitelist', help='allowed values for couplings'                 , default='None')
+  parser.add_argument('--coupling_blacklist', type=str, dest='coupling_blacklist', help='values for couplings to skip'                 , default='None')
+  parser.add_argument('--run_blind'                   , dest='run_blind'         , help='run blinded or unblinded', action='store_true', default=False)
   return parser.parse_args()
+
 
 def sortList(input):
   return float(input)
 
 if __name__ == "__main__":
 
+  # get the parsed info
   opt=getOptions()
 
-  # get the parsed info
-  if 'mmm' in opt.channels or 'mem' in opt.channels: flavour = r'$|V|^2_{\mu}$'
-  elif 'eee' in opt.channels or 'eem' in opt.channels: flavour = r'$|V|^2_{e}$'
+  signal_type = opt.signal_type 
   flavour = r'$|V|^2_{\mu}$'
-
-  years = opt.years.split(',') 
-  lumitot = 0
-  if '2016' in years:
-    lumitot += 35.9
-  if '2017' in years:
-    lumitot += 41.5
-  if '2018' in years:
-    lumitot += 59.7
-  #lumi = str(lumitot) + ' fb'+r'$^{-1}$'
-  #lumi =  '0.774 fb'+r'$^{-1}$'
   lumi =  '41.6 fb'+r'$^{-1}$'
 
-  signal_type = opt.signal 
-
   # get the files 
-  pathToResults = './results/limits/{}/'.format(opt.version)
+  pathToResults = './results/'
   fileName = 'result*.txt'
 
   files = [f for f in glob.glob(pathToResults+fileName)]
  
   # get the list of the masses from the fileNames
   masses = getMassList(files)
-  #masses = ['1', '4.5']
   masses.sort(key=sortList)
  
   # needed for the 2D limit plot
   limits2D = OrderedDict()
 
   # create directory
-  plotDir = './results/plots/{}'.format(opt.version) 
+  plotDir = './outputs/{}/limits/{}/plots'.format(opt.outdirlabel, opt.subdirlabel) 
   os.system('mkdir -p {d}'.format(d=plotDir)) 
    
   for mass in masses:
     # get white/black listed mass
-    if opt.mass_whitelist!='None':
+    if opt.mass_whitelist != 'None':
       if mass not in opt.mass_whitelist.split(','): continue
     
-    if opt.mass_blacklist!='None':
+    if opt.mass_blacklist != 'None':
       if mass in opt.mass_blacklist.split(','): continue
 
     print '\nmass {}'.format(mass)
@@ -91,23 +78,8 @@ if __name__ == "__main__":
       if 'm_{}_'.format(mass) not in limitFile: continue
    
       # for each mass, get the list of the couplings from the file name
-      #signal_coupling = re.findall(r'\d+', limitFile.split('/')[len(limitFile.split('/'))-1])
-      #coupling = '{}.{}Em{}'.format(signal_coupling[3], signal_coupling[4], signal_coupling[5])
-      #val_coupling = float('{}.{}e-{}'.format(signal_coupling[3], signal_coupling[4], signal_coupling[5]))
-
       coupling = limitFile[limitFile.find('v2_')+3:limitFile.find('.txt')]
       val_coupling = float(coupling)
-
-
-      #if mass == '1': 
-      #  coupling = '5p3em05'
-      #  val_coupling = 5.3e-05
-      #elif mass == '3': 
-      #  coupling = '1p2em05'
-      #  val_coupling = 1.2e-05
-      #elif mass == '4.5': 
-      #  coupling = '2p4em04' 
-      #  val_coupling = 2.4e-04 
     
       # get white/black listed coupling
       if opt.coupling_whitelist!='None':
@@ -201,12 +173,12 @@ if __name__ == "__main__":
     plt.legend()
     plt.ticklabel_format(axis='x', style='sci', scilimits=(0,0))
     plt.yscale('linear')
-    plt.savefig('%s/limit_m_%s_lin.pdf' %(plotDir, mass))
-    plt.savefig('%s/limit_m_%s_lin.png' %(plotDir, mass))
+    plt.savefig('{}/limit_m_{}_lin.pdf'.format(plotDir, mass.replace('.', 'p')))
+    plt.savefig('{}/limit_m_{}_lin.png'.format(plotDir, mass.replace('.', 'p')))
     plt.yscale('log')
     plt.xscale('log')
-    plt.savefig('%s/limit_m_%s_log.pdf' %(plotDir, mass))
-    plt.savefig('%s/limit_m_%s_log.png' %(plotDir, mass))
+    plt.savefig('{}/limit_m_{}_log.pdf'.format(plotDir, mass.replace('.', 'p')))
+    plt.savefig('{}/limit_m_{}_log.png'.format(plotDir, mass.replace('.', 'p')))
   
     
     # save the crossing for 2D limits
