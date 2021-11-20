@@ -105,7 +105,7 @@ class Plotter(Tools):
     return label1[0:label1.find('to')] + label2[label2.find('to'):len(label2)] + label3[label3.find(' '):]
 
 
-  def getDataLabel(self, label):
+  def getDataLabel(self, label, version_label):
     idx = 0
     data_label = ''
     while idx < len(label):
@@ -119,6 +119,8 @@ class Plotter(Tools):
     data_label = data_label.replace('B1+B2+B3+B4+B5+B6', 'B*')
     data_label = data_label.replace('C1+C2+C3+C4+C5', 'C*')
     data_label = data_label.replace('D1+D2+D3+D4+D5', 'D*')
+    if len(version_label) != 0:
+      data_label += ' {}'.format(version_label)
     return data_label
 
 
@@ -199,13 +201,15 @@ class Plotter(Tools):
         if idata == 0: data_label = data_file.label[:20]
         else: data_label += '_{}'.format(data_file.label[:20])
 
+        version_label = data_file.label[data_file.label.find('('):data_file.label.find(')')+1]
+
         if do_shape and hist_data.Integral() != 0: 
           hist_data.Scale(1./hist_data.Integral())
           hist_data_stack.Add(hist_data)
 
       if do_shape and int_data_tot != 0.: hist_data_tot.Scale(1./int_data_tot)
 
-      legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label) if len(self.data_files)>1 else data_file.label))
+      legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label, version_label) if len(self.data_files)>1 else data_file.label))
 
       ## set the style
       if plot_data and plot_qcd:
