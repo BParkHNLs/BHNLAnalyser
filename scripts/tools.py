@@ -24,20 +24,8 @@ class Tools(object):
     return tree
 
 
-  def createHisto(self, rootfiles, tree_name, quantity, hist_name='hist', branchname='flat', weight=-99, selection=''):
-    '''
-      This function creates the histogram for a given quantity
-      If 'rootfiles' is a single file, if will get the tree
-      If 'rootfiles' is a list of files, it will use a TChain
-    '''
+  def createHisto(self, tree, quantity, hist_name='hist', branchname='flat', weight=-99, selection=''):
     ROOT.TH1.SetDefaultSumw2()
-    if type(rootfiles) is list:
-      tree = ROOT.TChain(tree_name)
-      for rootfile in rootfiles:
-        tree.Add(rootfile.filename)  
-    else:
-      rootfile = self.getRootFile(rootfiles.filename, with_ext=False)
-      tree = self.getTree(rootfile, tree_name)
     hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
 
     if selection == '' and weight == -99: selection_string = selection
@@ -54,19 +42,24 @@ class Tools(object):
     return hist
 
 
-  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', selection='', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd=''):
-    hist_mc_tot = ROOT.TH1D('hist_mc_tot', 'hist_mc_tot', quantity.nbins, quantity.bin_min, quantity.bin_max)
+  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', hist_name='hist_qcd_tot', selection='', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd=''):
+    hist_mc_tot = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
     hist_mc_tot.Sumw2()
 
     for ifile, qcd_file in enumerate(qcd_files):
       qcd_file_pthatrange = self.getPthatRange(qcd_file.label)
       if qcd_file_pthatrange not in white_list: continue
 
-      weight_mc = self.computeQCDMCWeight(qcd_file, qcd_file.cross_section, qcd_file.filter_efficiency)
+      f_mc = self.getRootFile(qcd_file.filename)
+      tree_run = self.getTree(f_mc, 'run_tree')
+      tree_mc = self.getTree(f_mc, 'signal_tree')
+
+      weight_mc = self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_qcd = '({})'.format(weight_mc)
       if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
       if add_weight_pu : weight_qcd += ' * ({})'.format(weight_puqcd)
-      hist_mc = self.createHisto(qcd_file, 'signal_tree', quantity, branchname='flat', selection=selection, weight=weight_qcd) 
+      hist_name = 'hist_qcd_{}'.format(qcd_file_pthatrange)
+      hist_mc = self.createHisto(tree_mc, quantity, hist_name=hist_name, branchname='flat', selection=selection, weight=weight_qcd) 
       hist_mc.Sumw2()
     
       hist_mc_tot.Add(hist_mc)
@@ -81,19 +74,19 @@ class Tools(object):
     return label[label.find('pt'):label.find(' ')]
 
 
-  def getNminiAODEvts(self, rootfile):
+  def getNminiAODEvts(self, tree_run):
     quantity = Quantity(name_nano='genEventCount', name_flat='geneventcount', nbins=100, bin_min=1, bin_max=1e9)
     #TODO apply weight here?
-    hist = self.createHisto(rootfiles=rootfile, tree_name='run_tree', quantity=quantity)
+    hist = self.createHisto(tree=tree_run, quantity=quantity)
     n_reco_evts = hist.GetMean() * hist.GetEntries()
     return n_reco_evts
 
 
-  def computeQCDMCWeight(self, rootfile, cross_section, filter_efficiency):
+  def computeQCDMCWeight(self, tree, cross_section, filter_efficiency):
     '''
       QCD MC weight defined as cross-section / nb of generated events
     '''
-    n_reco_evts = self.getNminiAODEvts(rootfile)
+    n_reco_evts = self.getNminiAODEvts(tree)
     n_genevts = n_reco_evts / filter_efficiency
     weight = cross_section / n_genevts
     return weight
@@ -108,13 +101,15 @@ class Tools(object):
     n_obs_data = 0.
     n_err_data = 0.
     for data_file in data_files:
-      hist_data = self.createHisto(data_file, 'signal_tree', quantity_forweight, branchname='flat', selection=selection)
+      f_data = self.getRootFile(data_file.filename)
+      tree_data = self.getTree(f_data, 'signal_tree')
+      hist_data = self.createHisto(tree_data, quantity_forweight, branchname='flat', selection=selection)
       hist_data.Sumw2()
-      n_obs_data += hist_data.GetBinContent(1)
+      n_obs_data += hist_data.Integral()
       n_err_data += hist_data.GetBinError(1)
 
     hist_mc_tot = self.createWeightedHistoQCDMC(qcd_files=qcd_files, white_list=white_list, quantity=quantity_forweight, selection=selection, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, weight_hlt=weight_hlt, weight_puqcd=weight_puqcd)
-    n_obs_mc = hist_mc_tot.GetBinContent(1)
+    n_obs_mc = hist_mc_tot.Integral()
     n_err_mc = hist_mc_tot.GetBinError(1)
 
     weight = float(n_obs_data) / float(n_obs_mc) if float(n_obs_mc)!= 0. else 0.

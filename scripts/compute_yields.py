@@ -35,7 +35,11 @@ class ComputeYields(Tools):
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
 
-    hist_data = self.tools.createHisto(self.data_files, 'signal_tree', quantity, branchname='flat', selection=selection)
+    tree = ROOT.TChain('signal_tree')
+    for data_file in self.data_files:
+      tree.Add(data_file.filename)  
+
+    hist_data = self.tools.createHisto(tree, quantity, branchname='flat', selection=selection)
     hist_data.Sumw2()
     n_obs_data = hist_data.Integral()
     n_err_data = math.sqrt(n_obs_data) #hist_data.GetBinError(1)
@@ -66,11 +70,13 @@ class ComputeYields(Tools):
     lumi_mc = 0
 
     for ifile, qcd_file in enumerate(self.qcd_files):
-      if qcd_file.label not in self.white_list: continue
+      qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
+      if qcd_file_pthatrange not in self.white_list: continue
 
       f_mc = self.tools.getRootFile(qcd_file.filename)
+      tree_run = self.tools.getTree(f_mc, 'run_tree')
       
-      weight = self.tools.computeQCDMCWeight(f_mc, qcd_file.cross_section, qcd_file.filter_efficiency)
+      weight = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
       weight_mc = 1./weight
       lumi_mc += weight_mc
 
@@ -130,9 +136,14 @@ class ComputeYields(Tools):
 
     bin_selection = self.selection
 
-    hist_data_B = self.tools.createHisto(self.data_files, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_B_selection)
-    hist_data_C = self.tools.createHisto(self.data_files, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_C_selection)
-    hist_data_D = self.tools.createHisto(self.data_files, 'signal_tree', quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_D_selection)
+    # create tree
+    tree = ROOT.TChain('signal_tree')
+    for data_file in self.data_files:
+      tree.Add(data_file.filename)  
+
+    hist_data_B = self.tools.createHisto(tree, quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_B_selection)
+    hist_data_C = self.tools.createHisto(tree, quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_C_selection)
+    hist_data_D = self.tools.createHisto(tree, quantity, branchname='flat', selection=bin_selection+' && '+ABCD_regions.CR_D_selection)
 
     n_obs_data_B = hist_data_B.Integral()
     n_obs_data_C = hist_data_C.Integral()
@@ -185,12 +196,11 @@ class ComputeYields(Tools):
     mass = self.signal_file.mass
     sigma = self.signal_file.resolution
     quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*sigma, bin_max=mass+2*sigma)
-    #quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=6.4)
 
-    hist_mc_tot_A = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && '+ABCD_regions.SR_selection)
-    hist_mc_tot_B = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && '+ABCD_regions.CR_B_selection)
-    hist_mc_tot_C = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && '+ABCD_regions.CR_C_selection)
-    hist_mc_tot_D = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=self.selection+' && '+ABCD_regions.CR_D_selection)
+    hist_mc_tot_A = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, hist_name='hist_mc_tot_A', selection=self.selection+' && '+ABCD_regions.SR_selection)
+    hist_mc_tot_B = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, hist_name='hist_mc_tot_B', selection=self.selection+' && '+ABCD_regions.CR_B_selection)
+    hist_mc_tot_C = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, hist_name='hist_mc_tot_C', selection=self.selection+' && '+ABCD_regions.CR_C_selection)
+    hist_mc_tot_D = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, hist_name='hist_mc_tot_D', selection=self.selection+' && '+ABCD_regions.CR_D_selection)
 
     n_obs_mc_A = hist_mc_tot_A.Integral()
     n_obs_mc_B = hist_mc_tot_B.Integral()
@@ -351,30 +361,35 @@ class ComputeYields(Tools):
   # SIGNAL 
   ###
 
-  def getSignalEfficiency(self, add_weight_hlt=True, weight_hlt='', isBc=False):
+  def getSignalEfficiency(self, add_weight_hlt=False, weight_hlt='weight_hlt_A1', isBc=False):
     '''
       eff(bin) = N_flat(bin) / N_gen
       N_gen = N_reco / filter_efficiency
     '''
-
-    # get number of generated events
     filename = self.signal_file.filename if not isBc else self.signal_file.filename_Bc
     f = self.tools.getRootFile(filename)
-    n_reco = self.tools.getNminiAODEvts(f)
+    tree_sig = self.getTree(f, 'signal_tree')
+    tree_run = self.getTree(f, 'run_tree')
+
+    # get number of generated events
+    n_reco = self.tools.getNminiAODEvts(tree_run)
     filter_efficiency = self.signal_file.filter_efficiency if not isBc else self.signal_file.filter_efficiency_Bc
     n_gen = n_reco / filter_efficiency
-    #if self.signal_file.mass == 3.0 and not isBc: 
-    #  n_gen = 0.5*n_gen
 
     # central samples are produced 50% muon and 50% electron
     n_gen = 0.5*n_gen #TODO do not hardcode it?
 
     # get number of selected reco events
-    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=13000) # go to 13TeV
+    mass = self.signal_file.mass
+    sigma = self.signal_file.resolution
+    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*sigma, bin_max=mass+2*sigma)
+
     weight = '({})'.format(self.tools.getCtauWeight(self.signal_file))
     if add_weight_hlt : weight += ' * ({})'.format(weight_hlt)
     #TODO add pu weight
-    hist_flat_bin = self.tools.createHisto(self.signal_file, 'signal_tree', quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight=weight)
+
+    hist_flat_bin = self.tools.createHisto(tree_sig, quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight=weight)
+
     bin_err = ROOT.double(0.)
     n_selected_bin = hist_flat_bin.IntegralAndError(0, 13000, bin_err)
     
@@ -391,7 +406,7 @@ class ComputeYields(Tools):
     return efficiency, err_efficiency
 
 
-  def computeSignalYields(self, lumi=0.774, sigma_B=472.8e9, add_weight_hlt=True, weight_hlt='', isBc=False):
+  def computeSignalYields(self, lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, weight_hlt='weight_hlt_A1_6', isBc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
     '''
@@ -419,9 +434,8 @@ class ComputeYields(Tools):
     BR_NToMuPi = self.tools.gamma_partial(mass=self.signal_file.mass, vv=v_square) / self.tools.gamma_total(mass=self.signal_file.mass, vv=v_square)
     #print 'BR_NToMuPi ',BR_NToMuPi
 
-    #NToMuPi_fraction = 0.5 if self.signal_file.mass == 3. else 1. #FIXME understand why this line was commented
     NToMuPi_fraction = 1.
-    BR_decay = NToMuPi_fraction * BR_NToMuPi # in our samples, the hnl decays only half of the time into muons
+    BR_decay = NToMuPi_fraction * BR_NToMuPi
     #print 'BR decay, ',BR_decay
 
     ## and finally sigma_HNL
@@ -456,23 +470,23 @@ if __name__ == '__main__':
 
   data_samples = data_samples['V09_06Nov21']
   qcd_samples = qcd_samples['V09_06Nov21']
-  signal_file = signal_samples['central_V09_06Nov21_benchmark'][1]
+  signal_file = signal_samples['central_V09_06Nov21_benchmark'][0]
 
-  baseline_selection = selection['standard'].flat
+  baseline_selection = selection['study_Nov21'].flat
   #baseline_selection = 'hnl_pt>0' # && mu_isdsa==1' #selection[''].flat
   categories = categories['inclusive']
   #categories = categories['category_study_combined_dsa']
 
-  ABCD_regions = ABCD_regions['cos2d_svprob']
-  #ABCD_regions = ABCD_regions['bmass_hnlcharge']
+  #ABCD_regions = ABCD_regions['cos2d_svprob']
+  ABCD_regions = ABCD_regions['bmass_hnlcharge']
 
   #TODO fix white list handling 
   #white_list_20to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
   white_list_20to300 = white_list['20to300']
 
   do_computeCrossRatio = False
-  do_computeBkgYieldsTF = False
-  do_computeBkgYieldsABCD = True
+  do_computeBkgYieldsTF = True
+  do_computeBkgYieldsABCD = False
   do_computeBkgYieldsABCDHybrid = False
   do_testClosureABCD = False
   do_computeSigYields = False

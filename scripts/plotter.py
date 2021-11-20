@@ -180,8 +180,10 @@ class Plotter(Tools):
       data_label = ''
 
       for idata, data_file in enumerate(self.data_files):
+        f_data = self.tools.getRootFile(data_file.filename)
+        tree_data = self.getTree(f_data, treename)
         hist_data_name = 'hist_data_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-        hist_data = self.tools.createHisto(data_file, treename, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
+        hist_data = self.tools.createHisto(tree_data, self.quantity, hist_name=hist_data_name, branchname=branchname, selection=selection)
         hist_data.Sumw2()
         if add_overflow:
           overflow_data_tot = (hist_data.GetBinContent(hist_data.GetNbinsX()) + hist_data.GetBinContent(hist_data.GetNbinsX()+1))
@@ -216,13 +218,17 @@ class Plotter(Tools):
     if plot_sig:
       signal_hists = []
       for signal_file in self.signal_files:
+        f_sig = self.tools.getRootFile(signal_file.filename)
+        tree_sig = self.getTree(f_sig, treename)
+
         hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
         matching_selection = 'ismatched==1' if branchname == 'flat' else 'BToMuMuPi_isMatched==1'
         selection_signal = matching_selection if selection == '' else matching_selection + ' && ' + selection
         weight_sig = '(1)'
         if add_weight_hlt : weight_sig += ' * ({})'.format(weight_hlt)
         #if add_weight_pu : weight_sig += ' * (weight_pu_qcd)' #TODO modify pileup weight
-        hist_signal = self.tools.createHisto(signal_file, treename, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection_signal, weight=weight_sig)
+
+        hist_signal = self.tools.createHisto(tree_sig, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection_signal, weight=weight_sig)
         hist_signal.Sumw2()
         if add_overflow:
           overflow_signal_tot = hist_signal.GetBinContent(hist_signal.GetNbinsX()) + hist_signal.GetBinContent(hist_signal.GetNbinsX()+1)
@@ -252,13 +258,17 @@ class Plotter(Tools):
         qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
         if qcd_file_pthatrange not in self.white_list: continue
 
-        #f_mc = self.tools.getRootFile(qcd_file.filename, with_ext=False)
-        weight_mc = self.tools.computeQCDMCWeight(qcd_file, qcd_file.cross_section, qcd_file.filter_efficiency)
+        f_mc = self.tools.getRootFile(qcd_file.filename)
+        tree_mc = self.getTree(f_mc, treename)
+        tree_run = self.getTree(f_mc, 'run_tree')
+
+        weight_mc = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
         weight_qcd = '({})'.format(weight_mc)
         if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
         if add_weight_pu : weight_qcd += ' * ({}) '.format(weight_puqcd)
+
         hist_mc_name = 'hist_mc_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
-        hist_mc = self.tools.createHisto(qcd_file, treename, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight_qcd) 
+        hist_mc = self.tools.createHisto(tree_mc, self.quantity, hist_name=hist_mc_name, branchname=branchname, selection=selection, weight=weight_qcd) 
         hist_mc.Sumw2()
         hist_mc.SetFillColor(qcd_file.colour)
         hist_mc.SetLineColor(1)
@@ -424,7 +434,7 @@ class Plotter(Tools):
     canv = self.tools.createTCanvas(name='canv', dimx=900, dimy=800)
     if self.do_log: canv.SetLogy()
     if not do_printstat: ROOT.gStyle.SetOptStat(0)
-    
+
     hist1 = self.tools.createHisto(file1, tree1, self.quantity, hist_name=legend1, branchname=branchname, selection=selection1)
     hist2 = self.tools.createHisto(file2, tree2, self.quantity, hist_name=legend2, branchname=branchname, selection=selection2)
     
