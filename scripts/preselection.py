@@ -7,7 +7,7 @@ from tools import Tools
 
 
 
-class Quantity(object): # make it inherit from utils Quantity and add logic
+class Quantity(object):
   def __init__(self, name_nano='', name_flat='', label='', title='', logic='', units='', binMin=0., binMax=0.):
     self.name_nano = name_nano
     self.name_flat = name_flat
@@ -217,8 +217,8 @@ class Selection(Tools):
       box8.Draw('same')
 
     canv.cd()
-    self.createOutDir('myPlots/selection')
-    canv.SaveAs('myPlots/selection/scan_{}.png'.format(self.getLabel(self.quantity.label)))
+    self.createOutDir('myPlots/preselection')
+    canv.SaveAs('myPlots/preselection/scan_{}.png'.format(self.getLabel(self.quantity.label)))
 
 
   def getROCGraph(self):
@@ -277,8 +277,8 @@ class Selection(Tools):
     line.DrawLineNDC(0.1, 0.9, 0.9, 0.1)
     
 
-    self.createOutDir('myPlots/selection')
-    canv.SaveAs('myPlots/selection/roc_{}.png'.format(self.getLabel(self.quantity.label)))
+    self.createOutDir('myPlots/preselection')
+    canv.SaveAs('myPlots/preselection/roc_{}.png'.format(self.getLabel(self.quantity.label)))
 
 
   def printCutflowLine(self):
