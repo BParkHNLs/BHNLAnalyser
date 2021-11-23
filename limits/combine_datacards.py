@@ -43,7 +43,7 @@ outdirlabel = opt.outdirlabel
 subdirlabel = opt.subdirlabel
 signal_type = opt.signal_type #TODO for the moment, does not do anything 
 categories = categories[opt.categories_label]
-path_to_datacards = './outputs/{}/datacards/{}'.format(outdirlabel, subdirlabel)
+path_to_datacards = subdirlabel
 datacard_wildcard = opt.wildcard
 
 # create directories
@@ -102,6 +102,7 @@ for idc_ref in the_set_datacards:
         digested_datacards[signal_mass][signal_coupling] = []
 
     for cat in categories_to_combine:
+      #print 'cat ',cat
       if cat in idc_ref:
         #print '{} {} {}'.format(signal_mass, signal_coupling, idc_ref)
         digested_datacards[signal_mass][signal_coupling].append(idc_ref) 
