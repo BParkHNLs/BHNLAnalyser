@@ -1,9 +1,10 @@
 import ROOT
 
 class DataSample(object):
-  def __init__(self, filename, label):
+  def __init__(self, filename, label, lumi=0.074):
     self.filename = filename
     self.label = label
+    self.lumi = lumi
 
 
 class SignalSample(object): 
@@ -12,7 +13,7 @@ class SignalSample(object):
     self.filename_Bc = filename_Bc
     self.label = label
     self.mass = mass
-    self.ctau = ctau
+    self.ctau = ctau # this is the target ctau, not necessarily the ctau with which the sample was produced
     self.resolution = resolution
     self.filter_efficiency = filter_efficiency
     self.filter_efficiency_Bc = filter_efficiency_Bc
@@ -105,6 +106,1412 @@ signal_samples['private_29Sep21'] = [
       ),
   ]
 
+signal_samples['central_benchmark_looseselection'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '4.5GeV, 1mm (central, loose)',
+      mass = 4.5,
+      ctau = 1.0,
+      resolution = 0.0373, # to be checked
+      filter_efficiency = 5.53-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+      label = '3GeV, 100mm (central, loose)',
+      mass = 3,
+      ctau = 100.0,
+      resolution = 0.0243, # to be checked
+      filter_efficiency = 5.87e-03,
+      filter_efficiency_Bc = 1.54e-01, 
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n38/merged/bparknano.root',
+      label = '1GeV, 10^{3}mm (central, loose)',
+      mass = 1,
+      ctau = 1000.0,
+      resolution = 0.0104, # to be checked
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V00_looseselection'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n38/merged/bparknano.root',
+      label = '1GeV, 1000mm (central, loose)',
+      mass = 1,
+      ctau = 1000.0,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '1GeV, 100mm (central, loose)',
+      mass = 1,
+      ctau = 100.0,
+      colour = ROOT.kOrange+7
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '1GeV, 10mm (central, loose)',
+      mass = 1,
+      ctau = 10.0,
+      colour = ROOT.kOrange+9
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '1.5GeV, 1000mm (central, loose)',
+      mass = 1.5,
+      ctau = 1000.0,
+      colour = ROOT.kYellow-3
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '1.5GeV, 100mm (central, loose)',
+      mass = 1.5,
+      ctau = 100.0,
+      colour = ROOT.kYellow-2
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '1.5GeV, 10mm (central, loose)',
+      mass = 1.5,
+      ctau = 10.0,
+      colour = ROOT.kYellow+4
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '2GeV, 1000mm (central, loose)',
+      mass = 2,
+      ctau = 1000.0,
+      colour = ROOT.kAzure+7
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '2GeV, 100mm (central, loose)',
+      mass = 2,
+      ctau = 100.0,
+      colour = ROOT.kBlue-3
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '2GeV, 10mm (central, loose)',
+      mass = 2,
+      ctau = 10.0,
+      colour = ROOT.kBlue+3
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '3GeV, 1000mm (central, loose)',
+      mass = 3,
+      ctau = 1000.0,
+      colour = ROOT.kRed-9,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '3GeV, 100mm (central, loose)',
+      mass = 3,
+      ctau = 100.0,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '3GeV, 10mm (central, loose)',
+      mass = 3,
+      ctau = 10.0,
+      colour = ROOT.kRed-4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '3GeV, 1mm (central, loose)',
+      mass = 3,
+      ctau = 1.0,
+      colour = ROOT.kRed+2,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '4.5GeV, 100mm (central, loose)',
+      mass = 4.5,
+      ctau = 100.0,
+      colour = ROOT.kRed-8,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '4.5GeV, 10mm (central, loose)',
+      mass = 4.5,
+      ctau = 10.0,
+      colour = ROOT.kRed-5,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '4.5GeV, 1mm (central, loose)',
+      mass = 4.5,
+      ctau = 1.0,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      label = '4.5GeV, 0.1mm (central, loose)',
+      mass = 4.5,
+      ctau = 0.1,
+      colour = ROOT.kRed-2,
+      ),
+  ]
+
+signal_samples['central_V09_06Nov21_benchmark'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 1.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+      label = '3GeV, 100mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 100.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.58e-03,
+      filter_efficiency_Bc = 1.54e-01, # to modify
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 10^{3}mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 1000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['central_V09_06Nov21_significance'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 10mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 10.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.85e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 1.5,
+      ctau = 10.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.85e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 100mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 100.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.17e-03,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['central_V09_06Nov21_m1'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 1000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 100mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 100.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.17e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 10mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 10.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.85e-03,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['central_V09_06Nov21_m1p5'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1.5GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1.5,
+      ctau = 1000.0,
+      resolution = 0.0126,
+      filter_efficiency = 1.03e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1.5GeV, 100mm (central, V09_06Nov21)',
+      mass = 1.5,
+      ctau = 100.0,
+      resolution = 0.0126,
+      filter_efficiency = 3.35e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 1.5,
+      ctau = 10.0,
+      resolution = 0.0122,
+      filter_efficiency = 3.72e-03,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['central_V09_06Nov21_m2'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '2GeV, 1000mm (central, V09_06Nov21)',
+      mass = 2,
+      ctau = 1000.0,
+      resolution = 0.0170,
+      filter_efficiency = 8.95e-04, # is this one correct?
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '2GeV, 100mm (central, V09_06Nov21)',
+      mass = 2,
+      ctau = 100.0,
+      resolution = 0.0164,
+      filter_efficiency = 1.57e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '2GeV, 10mm (central, V09_06Nov21)',
+      mass = 2,
+      ctau = 10.0,
+      resolution = 0.0158,
+      filter_efficiency = 1.78e-03,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['central_V09_06Nov21_m3'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 1000mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 1000.0,
+      resolution = 0.0251,
+      filter_efficiency = 2.40e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+      label = '3GeV, 100mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 100.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.58e-03,
+      filter_efficiency_Bc = 1.54e-01, # to modify
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 10mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 10.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 1mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 1.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample( # reweighted
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 1mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 0.1,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  ]
+
+signal_samples['central_V09_06Nov21_m4p5'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 100mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 100.0,
+      resolution = 0.0368,
+      filter_efficiency = 6.10e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 10.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.00e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 1.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 0.1,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    label = '4.5GeV, 0.1mm (central, V09_06Nov21)',
+  #    mass = 4.5,
+  #    ctau = 0.1,
+  #    resolution = 0.0368,
+  #    filter_efficiency = 8.62e-04,
+  #    colour = ROOT.kRed+4,
+  #    ),
+  ]
+
+signal_samples['central_V09_06Nov21_m1_large'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 100000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 70000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 50000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 40000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 30000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 20000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 15000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 10000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 7000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 7000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 5000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 5000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 4000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 4000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 3000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 2000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 1500.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 1000.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 700.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 500.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 400.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 300.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 200.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 1000mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 150.0,
+      resolution = 0.00853,
+      filter_efficiency = 1.59e-03,
+      colour = ROOT.kOrange+0
+      ),
+  #
+  #
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    label = '1GeV, 100mm (central, V09_06Nov21)',
+  #    mass = 1,
+  #    ctau = 400.0,
+  #    resolution = 0.00853,
+  #    filter_efficiency = 5.17e-03,
+  #    colour = ROOT.kOrange+0
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '1GeV, 100mm (central, V09_06Nov21)',
+  #    mass = 1,
+  #    ctau = 300.0,
+  #    resolution = 0.00853,
+  #    filter_efficiency = 5.17e-03,
+  #    colour = ROOT.kOrange+0
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '1GeV, 200mm (central, V09_06Nov21)',
+  #    mass = 1,
+  #    ctau = 200.0,
+  #    resolution = 0.00853,
+  #    filter_efficiency = 5.17e-03,
+  #    colour = ROOT.kOrange+0
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '1GeV, 200mm (central, V09_06Nov21)',
+  #    mass = 1,
+  #    ctau = 150.0,
+  #    resolution = 0.00853,
+  #    filter_efficiency = 5.17e-03,
+  #    colour = ROOT.kOrange+0
+  #    ),
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 100mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 100.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.17e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 100mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 70.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.17e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 100mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 50.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.17e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '1GeV, 100mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 40.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.17e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 100mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 30.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.17e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 100mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 20.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.17e-03,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 100mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 15.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.17e-03,
+      colour = ROOT.kOrange+0
+      ),
+  #
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    label = '1GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 1,
+  #    ctau = 40.0,
+  #    resolution = 0.00853,
+  #    filter_efficiency = 5.85e-03,
+  #    colour = ROOT.kOrange+0
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '1GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 1,
+  #    ctau = 30.0,
+  #    resolution = 0.00853,
+  #    filter_efficiency = 5.85e-03,
+  #    colour = ROOT.kOrange+0
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '1GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 1,
+  #    ctau = 20.0,
+  #    resolution = 0.00853,
+  #    filter_efficiency = 5.85e-03,
+  #    colour = ROOT.kOrange+0
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '1GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 1,
+  #    ctau = 15.0,
+  #    resolution = 0.00853,
+  #    filter_efficiency = 5.85e-03,
+  #    colour = ROOT.kOrange+0
+  #    ),
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '1GeV, 10mm (central, V09_06Nov21)',
+      mass = 1,
+      ctau = 10.0,
+      resolution = 0.00853,
+      filter_efficiency = 5.85e-03,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['central_V09_06Nov21_m3_large'] = [
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 1000mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 1000.0,
+      resolution = 0.0251,
+      filter_efficiency = 2.40e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '3GeV, 1000mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 700.0,
+      resolution = 0.0251,
+      filter_efficiency = 2.40e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '3GeV, 1000mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 500.0,
+      resolution = 0.0251,
+      filter_efficiency = 2.40e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '3GeV, 1000mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 400.0,
+      resolution = 0.0251,
+      filter_efficiency = 2.40e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 1000mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 300.0,
+      resolution = 0.0251,
+      filter_efficiency = 2.40e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 1000mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 200.0,
+      resolution = 0.0251,
+      filter_efficiency = 2.40e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 1000mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 150.0,
+      resolution = 0.0251,
+      filter_efficiency = 2.40e-03,
+      colour = ROOT.kRed+1,
+      ),
+  #
+  #SignalSample( 
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    label = '3GeV, 100mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 400.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.58e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  #SignalSample( 
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 100mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 300.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.58e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  #SignalSample( 
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 100mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 200.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.58e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  #SignalSample( 
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 100mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 150.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.58e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename_Bc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root',
+      label = '3GeV, 100mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 100.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.58e-03,
+      filter_efficiency_Bc = 1.54e-01, # to modify
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '3GeV, 100mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 70.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.58e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '3GeV, 100mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 50.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.58e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '3GeV, 100mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 40.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.58e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 100mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 30.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.58e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 100mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 20.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.58e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 100mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 15.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.58e-03,
+      colour = ROOT.kRed+1,
+      ),
+  #
+  #SignalSample( 
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    label = '3GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 40.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.87e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  #SignalSample( 
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 30.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.87e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  #SignalSample( 
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 20.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.87e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  #SignalSample( 
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 15.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.87e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 10mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 10.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '3GeV, 10mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 7.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '3GeV, 10mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 5.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '3GeV, 10mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 4.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 10mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 3.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 10mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 2.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 10mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 1.5,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  #
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    label = '3GeV, 1mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 4.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.87e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 1mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 3.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.87e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 1mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 2.0,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.87e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 1mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 1.5,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.87e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '3GeV, 1mm (central, V09_06Nov21)',
+      mass = 3,
+      ctau = 1.0,
+      resolution = 0.0251,
+      filter_efficiency = 5.87e-03,
+      colour = ROOT.kRed+1,
+      ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '3GeV, 1mm (central, V09_06Nov21)',
+  #    mass = 3,
+  #    ctau = 0.1,
+  #    resolution = 0.0251,
+  #    filter_efficiency = 5.87e-03,
+  #    colour = ROOT.kRed+1,
+  #    ),
+  ]
+
+signal_samples['central_V09_06Nov21_m4p5_large'] = [
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 100mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 100.0,
+      resolution = 0.0368,
+      filter_efficiency = 6.10e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 100mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 70.0,
+      resolution = 0.0368,
+      filter_efficiency = 6.10e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 100mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 50.0,
+      resolution = 0.0368,
+      filter_efficiency = 6.10e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 100mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 40.0,
+      resolution = 0.0368,
+      filter_efficiency = 6.10e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 100mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 30.0,
+      resolution = 0.0368,
+      filter_efficiency = 6.10e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 100mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 20.0,
+      resolution = 0.0368,
+      filter_efficiency = 6.10e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 100mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 15.0,
+      resolution = 0.0368,
+      filter_efficiency = 6.10e-04,
+      colour = ROOT.kRed+4,
+      ),
+  #
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    label = '4.5GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 4.5,
+  #    ctau = 40.0,
+  #    resolution = 0.0368,
+  #    filter_efficiency = 8.00e-04,
+  #    colour = ROOT.kRed+4,
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '4.5GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 4.5,
+  #    ctau = 30.0,
+  #    resolution = 0.0368,
+  #    filter_efficiency = 8.00e-04,
+  #    colour = ROOT.kRed+4,
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '4.5GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 4.5,
+  #    ctau = 20.0,
+  #    resolution = 0.0368,
+  #    filter_efficiency = 8.00e-04,
+  #    colour = ROOT.kRed+4,
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '4.5GeV, 10mm (central, V09_06Nov21)',
+  #    mass = 4.5,
+  #    ctau = 15.0,
+  #    resolution = 0.0368,
+  #    filter_efficiency = 8.00e-04,
+  #    colour = ROOT.kRed+4,
+  #    ),
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 10.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.00e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 7.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.00e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 5.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.00e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 4.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.00e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 3.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.00e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 2.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.00e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 10mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 1.5,
+      resolution = 0.0368,
+      filter_efficiency = 8.00e-04,
+      colour = ROOT.kRed+4,
+      ),
+  #
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    label = '4.5GeV, 1mm (central, V09_06Nov21)',
+  #    mass = 4.5,
+  #    ctau = 4.0,
+  #    resolution = 0.0368,
+  #    filter_efficiency = 8.35e-04,
+  #    colour = ROOT.kRed+4,
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '4.5GeV, 1mm (central, V09_06Nov21)',
+  #    mass = 4.5,
+  #    ctau = 3.0,
+  #    resolution = 0.0368,
+  #    filter_efficiency = 8.35e-04,
+  #    colour = ROOT.kRed+4,
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '4.5GeV, 1mm (central, V09_06Nov21)',
+  #    mass = 4.5,
+  #    ctau = 2.0,
+  #    resolution = 0.0368,
+  #    filter_efficiency = 8.35e-04,
+  #    colour = ROOT.kRed+4,
+  #    ),
+  #SignalSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+  #    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+  #    label = '4.5GeV, 1mm (central, V09_06Nov21)',
+  #    mass = 4.5,
+  #    ctau = 1.5,
+  #    resolution = 0.0368,
+  #    filter_efficiency = 8.35e-04,
+  #    colour = ROOT.kRed+4,
+  #    ),
+  SignalSample( # generated
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 1.0,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 0.7,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 0.5,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 0.4,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 0.3,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 0.2,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 0.15,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21_ctaumerged.root',
+      label = '4.5GeV, 1mm (central, V09_06Nov21)',
+      mass = 4.5,
+      ctau = 0.1,
+      resolution = 0.0368,
+      filter_efficiency = 8.35e-04,
+      colour = ROOT.kRed+4,
+      ),
+  ]
 
 signal_samples['loose_dsaonly'] = [
   SignalSample(
@@ -172,7 +1579,7 @@ signal_samples['limits_m4p5_29Sep21'] = [
       mass = 4.5,
       ctau = 0.1*1e3,
       resolution = 0.0373,
-      filter_efficiency = 3.53e-04,
+      filter_efficiency = 4.0e-04, #3.53e-04,
       filter_efficiency_Bc = 3.0e-02,
       ),
   SignalSample(
@@ -476,7 +1883,7 @@ SignalSample(
     mass = 3.0,
     ctau = 1e03,
     resolution = 0.0243,
-    filter_efficiency = 1.93e-03,
+    filter_efficiency = 3.93e-03, #1.93e-03,
     filter_efficiency_Bc = 4.8e-02,
     ),
 SignalSample(
@@ -496,7 +1903,7 @@ SignalSample(
     mass = 3.0,
     ctau = 1e02,
     resolution = 0.0243,
-    filter_efficiency = 5e-03,
+    filter_efficiency = 3.93e-03, #5e-03,
     filter_efficiency_Bc = 2.5e-01,
     ),
 SignalSample(
@@ -505,7 +1912,7 @@ SignalSample(
     mass = 3.0,
     ctau = 1e01,
     resolution = 0.0243,
-    filter_efficiency = 5e-03,
+    filter_efficiency = 3.93e-03, #5e-03,
     filter_efficiency_Bc = 2.5e-01,
     ),
 SignalSample(
@@ -514,7 +1921,7 @@ SignalSample(
     mass = 3.0,
     ctau = 1e00,
     resolution = 0.0243,
-    filter_efficiency = 5e-03,
+    filter_efficiency = 3.93e-03, #5e-03,
     filter_efficiency_Bc = 2.5e-01,
     ),
 ]
@@ -781,7 +2188,7 @@ signal_samples['limits_m1_29Sep21'] = [
       mass = 1.0,
       ctau = 1e05,
       resolution = 0.0104,
-      filter_efficiency = 2.34e-05,
+      filter_efficiency = 2.24e-4, #2.34e-05,
       ),
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
@@ -795,21 +2202,21 @@ signal_samples['limits_m1_29Sep21'] = [
       mass = 1.0,
       ctau = 1e03,
       resolution = 0.0104,
-      filter_efficiency = 1.80e-03,
+      filter_efficiency = 2.24e-4, #1.80e-03,
       ),
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
       mass = 1.0,
       ctau = 1e02,
       resolution = 0.0104,
-      filter_efficiency = 6.0e-03,
+      filter_efficiency = 2.24e-4, #6.0e-03,
       ),
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_29Sep21_v2.root',
       mass = 1.0,
       ctau = 1e01,
       resolution = 0.0104,
-      filter_efficiency = 7.0e-03,
+      filter_efficiency = 2.24e-4, #7.0e-03,
       ),
   ]
 
@@ -1219,6 +2626,39 @@ data_samples['V08_29Sep21'] = [
       ),
   ]
 
+data_samples['V09_06Nov21'] = [
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/flat_bparknano_06Nov21.root',
+      label = 'ParkingBPH1_Run2018A (V09_06Nov21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH2_Run2018A/merged/flat_bparknano_06Nov21.root',
+      label = 'ParkingBPH2_Run2018A (V09_06Nov21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH3_Run2018A/merged/flat_bparknano_06Nov21.root',
+      label = 'ParkingBPH3_Run2018A (V09_06Nov21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH4_Run2018A/merged/flat_bparknano_06Nov21.root',
+      label = 'ParkingBPH4_Run2018A (V09_06Nov21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH5_Run2018A/merged/flat_bparknano_06Nov21.root',
+      label = 'ParkingBPH5_Run2018A (V09_06Nov21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH6_Run2018A/merged/flat_bparknano_06Nov21.root',
+      label = 'ParkingBPH6_Run2018A (V09_06Nov21)',
+      lumi = 0.774,
+      ),
+  ]
+
 data_samples['triggermuon_matching_check'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V02/ParkingBPH4_Run2018B/merged/flat_bparknano_for_triggermuon_matching_study.root',
@@ -1235,7 +2675,8 @@ data_samples['small'] = [
 
 data_samples['loose'] = [
   DataSample(
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V03/ParkingBPH4_Run2018B/Chunk0_n10/bparknano_loosepreselection_v2_nj1.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V03/ParkingBPH4_Run2018B/Chunk0_n10/bparknano_loosepreselection_v2_nj1.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/bparknano_data_1file_looseselection.root',
       label = 'background',
       ),
   ]
@@ -1260,6 +2701,58 @@ data_samples['loose_dsaonly'] = [
 
 
 qcd_samples = {}
+qcd_samples['V09_06Nov21'] = [
+  #QCDMCSample(
+  #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V09_06Nov21/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_06Nov21_v3.root',
+  #    label = 'QCD_pt15to20 (V09_06Nov21)',
+  #    cross_section = 1.27319e+09,
+  #    filter_efficiency = 0.00300,
+  #    colour = ROOT.kBlue+2, 
+  #    ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V09_06Nov21/QCD_Pt-20to30_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_06Nov21_v3.root',
+      label = 'QCD_pt20to30 (V09_06Nov21)',
+      cross_section = 5.58528e+08,
+      filter_efficiency = 0.00530,
+      colour = ROOT.kBlue-4, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V09_06Nov21/QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_06Nov21_v3.root',
+      label = 'QCD_pt30to50 (V09_06Nov21)',
+      cross_section = 1.39803e+08, 
+      filter_efficiency = 0.01182,
+      colour = ROOT.kBlue-9, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V09_06Nov21/QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_06Nov21_v3.root',
+      label = 'QCD_pt50to80 (V09_06Nov21)',
+      cross_section = 1.92225e+07,
+      filter_efficiency = 0.02276,
+      colour = ROOT.kBlue-10, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V09_06Nov21/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_06Nov21_v3_extmerged.root',
+      label = 'QCD_pt80to120 (V09_06Nov21)',
+      cross_section = 2.75842e+06,
+      filter_efficiency = 0.03844,
+      colour = ROOT.kRed-10, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V09_06Nov21/QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8_ext/merged/flat_bparknano_06Nov21_v3_extmerged.root',
+      label = 'QCD_pt120to170 (V09_06Nov21)',
+      cross_section = 469797,
+      filter_efficiency = 0.05362,
+      colour = ROOT.kOrange+6, 
+      ),
+  QCDMCSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V09_06Nov21/QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_06Nov21_v3.root',
+      label = 'QCD_pt170to300 (V09_06Nov21)',
+      cross_section = 117989,
+      filter_efficiency = 0.07335,
+      colour = ROOT.kOrange+8, 
+      ),
+  ]
+
 qcd_samples['V08_29Sep21'] = [
   QCDMCSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/mc_central/V08/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/merged/flat_bparknano_29Sep21_v5.root',
