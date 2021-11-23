@@ -62,6 +62,7 @@ def printInfo(opt):
   print ' signal samples:  {}'.format(opt.signal_label)
   print '\n'
   print ' categorisation:  {}'.format(opt.categories_label)
+  print ' category:        {}'.format(opt.category_label)
   print ' selection:       {}'.format(opt.selection_label)
   print '\n'
   print ' outdir label:    {}'.format(opt.outdirlabel)
