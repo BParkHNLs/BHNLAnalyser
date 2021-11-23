@@ -16,10 +16,10 @@ output_label = 'V09_06Nov21'
 tag = 'test'
 #cfg_filename = 'example_cfg.py'
 cfg_filename = '06Nov21_cfg.py'
-submit_batch = True
+submit_batch = False
 do_plotter = False
 do_datacards = True
-do_limits = True
+do_limits = False
 
 ###
 do_combine_datacards = True
@@ -121,7 +121,7 @@ class BHNLLauncher(object):
         'cp -r ./scripts/*py $workdir',
         'cp -r ./limits/*py $workdir',
         'cp -r ./objects/*py $workdir',
-        'cp -r ./data $workdir',
+        'cp -r ./data $workdir/..',
         '{}'.format('cp -r ./outputs/{}/datacards/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_combine_datacards else ''),
         '{}'.format('cp -r ./outputs/{}/datacards_combined/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
         '{}'.format('cp -r ./outputs/{}/limits/{}/results $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_plot_limits else ''),
@@ -137,7 +137,8 @@ class BHNLLauncher(object):
         'echo " --> Wallclock running time: $runtime s"',
         'cd $homedir',
         'echo " --> removing workdir"',
-        #'rm -r $workdir',
+        'rm -r $workdir/../data',
+        'rm -r $workdir',
         'echo "Done"'
         ])
     
