@@ -16,10 +16,10 @@ output_label = 'V09_06Nov21'
 tag = 'test'
 #cfg_filename = 'example_cfg.py'
 cfg_filename = '06Nov21_cfg.py'
-submit_batch = False
+submit_batch = True
 do_plotter = False
 do_datacards = True
-do_limits = False
+do_limits = True
 
 ###
 do_combine_datacards = True
@@ -449,8 +449,8 @@ class BHNLLauncher(object):
           dependency_combined_datacards[signal_label].append(job_id)
 
       if self.do_produce_limits:
+        dependency_limits = []
         for signal_label in self.cfg.signal_labels:
-          dependency_limits = []
           for mass in self.getMassList(signal_label):
             for ctau in self.getCtauList(signal_label):
               print '\n -> Launching the limits production for mass {} and ctau {}'.format(mass, ctau)
