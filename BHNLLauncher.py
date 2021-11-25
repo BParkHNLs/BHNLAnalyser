@@ -12,14 +12,14 @@ sys.path.append('./cfgs')
 #"----------------User's decision board-----------------"
 
 output_label = 'V09_06Nov21'
-#tag = 'ABCDHybrid_bmasshnlcharge_3cat0120significance_fullA'
+#tag = 'cos2d_svprob_0p996_3cat_0_1_5_significance_study_Nov21_20sigmawindow_ABCD_fullA_large'
 tag = 'test'
 #cfg_filename = 'example_cfg.py'
 cfg_filename = '06Nov21_cfg.py'
-submit_batch = True
+submit_batch = False
 do_plotter = False
 do_datacards = True
-do_limits = True
+do_limits = False
 
 ###
 do_combine_datacards = True
@@ -194,7 +194,8 @@ class BHNLLauncher(object):
       if not path.exists(logdir_name):
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
+      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
           ld = logdir_name,
           lbl=label,
           ) 
@@ -223,6 +224,7 @@ class BHNLLauncher(object):
         '--ABCD_label {}'.format(self.cfg.ABCD_label),
         '--lumi_target {}'.format(self.cfg.lumi_target),
         '--sigma_B {}'.format(self.cfg.sigma_B),
+        '--sigma_mult {}'.format(self.cfg.sigma_mult_window),
         '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
         #'--weight_pu {}'.format(self.cfg.branch_weight_pu),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
@@ -249,7 +251,8 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
+      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
           ld = logdir_name,
           lbl=label,
           ) 
@@ -297,7 +300,8 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcscmb_{lbl} {dpd} submitter_{lbl}.sh'.format(
+      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcscmb_{lbl} {dpd} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcscmb_{lbl} {dpd} submitter_{lbl}.sh'.format(
           ld = logdir_name,
           lbl = label,
           dpd = '--dependency=afterany:{}'.format(job_id) if do_dependency else ''
@@ -343,7 +347,8 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} {dpd} submitter_{lbl}.sh'.format(
+      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} {dpd} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} {dpd} submitter_{lbl}.sh'.format(
           ld = logdir_name,
           lbl = label,
           dpd = '--dependency=afterany:{}'.format(job_id) if do_dependency else ''
@@ -389,7 +394,8 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=limitplotter_{lbl} {dpd} submitter_{lbl}.sh'.format(
+      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=limitplotter_{lbl} {dpd} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=limitplotter_{lbl} {dpd} submitter_{lbl}.sh'.format(
           ld = logdir_name,
           lbl = label,
           dpd = '--dependency=afterany:{}'.format(job_id) if do_dependency else ''

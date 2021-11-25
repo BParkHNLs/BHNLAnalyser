@@ -39,6 +39,7 @@ class Config(object):
                add_Bc=None,
                lumi_target=None,
                sigma_B=None,
+               sigma_mult_window=None,
 
                # for limits
                run_blind=None,
@@ -77,6 +78,7 @@ class Config(object):
     self.add_Bc = add_Bc
     self.lumi_target = lumi_target
     self.sigma_B = sigma_B
+    self.sigma_mult_window = sigma_mult_window
     self.run_blind = run_blind
 
 

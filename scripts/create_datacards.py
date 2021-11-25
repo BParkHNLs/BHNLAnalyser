@@ -31,6 +31,7 @@ def getOptions():
   parser.add_argument('--ABCD_label'      , type=str, dest='ABCD_label'      , help='which ABCD regions?'                                           , default='cos2d_svprob')
   parser.add_argument('--lumi_target'     , type=str, dest='lumi_target'     , help='which luminosity should the yields be normalised to?'          , default='41.599')
   parser.add_argument('--sigma_B'         , type=str, dest='sigma_B'         , help='which value of the B cross section?'                           , default='472.8e9')
+  parser.add_argument('--sigma_mult'      , type=str, dest='sigma_mult'      , help='size n*sigma of the window around a given mass'                , default='20')
   parser.add_argument('--weight_hlt'      , type=str, dest='weight_hlt'      , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
   parser.add_argument('--qcd_white_list ' , type=str, dest='qcd_white_list'  , help='pthat range to consider for qcd samples'                       , default='20to300')
   parser.add_argument('--add_weight_hlt'  ,           dest='add_weight_hlt'  , help='add hlt weight'                           , action='store_true', default=False)
@@ -71,7 +72,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, outdirlabel='', subdirlabel=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -89,6 +90,7 @@ class DatacardsMaker(Tools):
     self.category_label = category_label
     self.lumi_target = float(lumi_target)
     self.sigma_B = float(sigma_B)
+    self.sigma_mult = float(sigma_mult)
     self.weight_hlt = weight_hlt
     self.add_weight_hlt = add_weight_hlt
     self.add_Bc = add_Bc
@@ -127,11 +129,11 @@ class DatacardsMaker(Tools):
       background_selection += ' && {}'.format(category_selection)
 
     if self.do_ABCD:
-      background_yields = ComputeYields(data_files=self.data_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0] 
+      background_yields = ComputeYields(data_files=self.data_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0] 
     elif self.do_ABCDHybrid:
-      background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)[0]
+      background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0]
     elif self.do_TF:
-      background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromMC(mass=mass, resolution=resolution)[0]
+      background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromMC(mass=mass, resolution=resolution, sigma_mult_window=self.sigma_mult)[0]
 
     if background_yields == 0.: background_yields = 1e-9
 
@@ -280,6 +282,8 @@ if __name__ == '__main__':
     lumi_target = opt.lumi_target
     sigma_B = opt.sigma_B
 
+    sigma_mult = opt.sigma_mult
+
     add_weight_hlt = opt.add_weight_hlt
     weight_hlt = opt.weight_hlt
 
@@ -301,6 +305,7 @@ if __name__ == '__main__':
         do_TF = do_TF,
         lumi_target = lumi_target,
         sigma_B = sigma_B,
+        sigma_mult = sigma_mult,
         weight_hlt = weight_hlt,
         add_weight_hlt = add_weight_hlt,
         add_Bc = add_Bc, 

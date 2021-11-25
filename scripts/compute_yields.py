@@ -44,6 +44,7 @@ class ComputeYields(Tools):
     n_obs_data = hist_data.Integral()
     n_err_data = math.sqrt(n_obs_data) #hist_data.GetBinError(1)
 
+    #TODO add weights
     hist_mc_tot = self.tools.createWeightedHistoQCDMC(self.qcd_files, self.white_list, quantity=quantity, selection=selection)
     n_obs_mc = hist_mc_tot.Integral()
     n_err_mc = math.sqrt(n_obs_mc) #hist_mc_tot.GetBinError(1)
@@ -86,13 +87,13 @@ class ComputeYields(Tools):
     return weight, err
 
 
-  def computeBkgYieldsFromMC(self, mass, resolution):
+  def computeBkgYieldsFromMC(self, mass, resolution, sigma_mult_window=20):
     '''
       QCD MC (background) yields are computed as N_exp(SR) = N_obs(SR) * weight(CR)
     '''
 
     # defining mass window
-    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
+    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-sigma_mult_window*resolution, bin_max=mass+sigma_mult_window*resolution)
 
     # make sure there is no selection on the hnl charge 
     if 'hnl_charge' in self.selection:
@@ -114,6 +115,9 @@ class ComputeYields(Tools):
     else:
       err = 0.
 
+    # rescale yields to the 2 sigma window
+    n_exp_mc = n_exp_mc * 2. / sigma_mult_window
+
     return n_exp_mc, err, weight
 
 
@@ -121,7 +125,7 @@ class ComputeYields(Tools):
   # BACKGROUND ABCD METHOD 
   ###
 
-  def computeBkgYieldsFromABCDData(self, mass, resolution, ABCD_regions):
+  def computeBkgYieldsFromABCDData(self, mass, resolution, ABCD_regions, sigma_mult_window=20):
     '''
       Estimate background yields from data using the ABCD method
       A = b_mass < 6.27 && hnl_charge == 0 (SR)
@@ -131,8 +135,9 @@ class ComputeYields(Tools):
 
       N_A = N_B * N_C/N_D
     '''
-    # defining mass window
-    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
+    # defining mass window of width sigma_mult_window*sigma
+    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-sigma_mult_window*resolution, bin_max=mass+sigma_mult_window*resolution)
+    print '{} {}'.format(mass-sigma_mult_window*resolution, mass+sigma_mult_window*resolution)
 
     bin_selection = self.selection
 
@@ -165,19 +170,25 @@ class ComputeYields(Tools):
     else:
       n_err_data_A = 0
 
+    # rescale yields to the 2 sigma window
+    n_obs_data_A = n_obs_data_A * 2. / sigma_mult_window
+    n_obs_data_B = n_obs_data_B * 2. / sigma_mult_window
+    n_obs_data_C = n_obs_data_C * 2. / sigma_mult_window
+    n_obs_data_D = n_obs_data_D * 2. / sigma_mult_window
+
     return n_obs_data_A, n_err_data_A, n_obs_data_B, n_obs_data_C, n_obs_data_D
 
 
-  def computeBkgYieldsFromABCDHybrid(self, mass, resolution, ABCD_regions):
+  def computeBkgYieldsFromABCDHybrid(self, mass, resolution, ABCD_regions, sigma_mult_window=20):
     '''
       Estimate background yields using the ABCD method on data
       unless one CR has 0 entries, then compute the background
       yields using the TF method
     '''
 
-    background_yields, err, n_CR_B, n_CR_C, n_CR_D = self.computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=ABCD_regions)
+    background_yields, err, n_CR_B, n_CR_C, n_CR_D = self.computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=ABCD_regions, sigma_mult_window=sigma_mult_window)
     if n_CR_B == 0 or n_CR_C == 0 or n_CR_D == 0: #TODO correct to use TF if NB or NC = 0?
-      background_yields, err, wght = self.computeBkgYieldsFromMC(mass=mass, resolution=resolution)
+      background_yields, err, wght = self.computeBkgYieldsFromMC(mass=mass, resolution=resolution, sigma_mult_window=sigma_mult_window)
 
     return background_yields, err
 
@@ -239,8 +250,8 @@ class ComputeYields(Tools):
     # defining mass window
     mass = self.signal_file.mass
     sigma = self.signal_file.resolution
-    bin_min = mass-2*sigma
-    bin_max = mass+2*sigma
+    bin_min = 0. #mass-2*sigma
+    bin_max = 5.4 #mass+2*sigma
     quantity = Quantity(name_flat='hnl_mass', nbins=50, bin_min=bin_min, bin_max=bin_max)
 
     bin_selection = self.selection
@@ -290,9 +301,9 @@ class ComputeYields(Tools):
     hist_mc_tot_A.SetLineColor(ROOT.kBlue)
 
     int_estimate = hist_estimate.Integral()
-    if int_estimate != 0: hist_estimate.Scale(1/int_estimate)
+    #if int_estimate != 0: hist_estimate.Scale(1/int_estimate)
     int_A = hist_mc_tot_A.Integral()
-    hist_mc_tot_A.Scale(1/int_A)
+    #hist_mc_tot_A.Scale(1/int_A)
 
     pad_up.cd()
     hist_estimate.Draw('histo')
@@ -470,23 +481,22 @@ if __name__ == '__main__':
 
   data_samples = data_samples['V09_06Nov21']
   qcd_samples = qcd_samples['V09_06Nov21']
-  signal_file = signal_samples['central_V09_06Nov21_benchmark'][0]
+  signal_file = signal_samples['central_V09_06Nov21_m3'][0]
 
   baseline_selection = selection['study_Nov21'].flat
   #baseline_selection = 'hnl_pt>0' # && mu_isdsa==1' #selection[''].flat
   categories = categories['inclusive']
   #categories = categories['category_study_combined_dsa']
 
-  #ABCD_regions = ABCD_regions['cos2d_svprob']
-  ABCD_regions = ABCD_regions['bmass_hnlcharge']
+  ABCD_regions = ABCD_regions['cos2d_svprob_0p996']
 
   #TODO fix white list handling 
   #white_list_20to300 = ['QCD_pt20to30 (V07_18Aug21)', 'QCD_pt30to50 (V07_18Aug21)', 'QCD_pt50to80 (V07_18Aug21)', 'QCD_pt80to120 (V07_18Aug21)', 'QCD_pt120to170 (V07_18Aug21)', 'QCD_pt170to300 (V07_18Aug21)']
   white_list_20to300 = white_list['20to300']
 
   do_computeCrossRatio = False
-  do_computeBkgYieldsTF = True
-  do_computeBkgYieldsABCD = False
+  do_computeBkgYieldsTF = False
+  do_computeBkgYieldsABCD = True
   do_computeBkgYieldsABCDHybrid = False
   do_testClosureABCD = False
   do_computeSigYields = False
@@ -502,14 +512,15 @@ if __name__ == '__main__':
     for category in categories:
       yields = ComputeYields(data_files=data_samples[0], qcd_files=qcd_samples, signal_file=signal_file, selection=baseline_selection+' && '+category.definition_flat, white_list=white_list_20to300)
       cross_ratio = yields.computeCrossRatioFromQCDMC(ABCD_regions=ABCD_regions)
-      print 'cross ratio, {}, {} +- {}'.format(category.label, round(cross_ratio[0], 3), round(cross_ratio[1], 3))
+      print 'cross ratio, {}, {} $\pm$ {} &'.format(category.label, round(cross_ratio[0], 2), round(cross_ratio[1], 2))
 
 
   if do_testClosureABCD:
     ROOT.gROOT.SetBatch(True)
     for category in categories:
-      outlabel = 'category_study_combined_dsa' #TODO
-      yields = ComputeYields(data_files=data_samples[0], qcd_files=qcd_samples, selection=baseline_selection+' && '+category.definition_flat+' && '+category.cutbased_selection, white_list=white_list_20to300)
+      outlabel = 'bmass_hnlcharge_0_1_5' #TODO
+      #yields = ComputeYields(data_files=data_samples[0], qcd_files=qcd_samples, selection=baseline_selection+' && '+category.definition_flat+' && '+category.cutbased_selection, white_list=white_list_20to300)
+      yields = ComputeYields(data_files=data_samples[0], qcd_files=qcd_samples, signal_file=signal_file, selection=baseline_selection+' && '+category.definition_flat, white_list=white_list_20to300)
       yields.validateABCDOnQCDMC(outlabel=outlabel, label=category.label, ABCD_regions=ABCD_regions)
 
 
