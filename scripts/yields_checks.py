@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 from os import path
+import math
 from tools import Tools
 from compute_yields import ComputeYields
 sys.path.append('../objects')
@@ -9,14 +10,18 @@ from samples import signal_samples, data_samples, qcd_samples
 from categories import categories
 from ABCD_regions import ABCD_regions
 from baseline_selection import selection
+from qcd_white_list import white_list
 
 import ROOT
 
+
 class YieldsChecks(Tools):
-  def __init__(self, data_file='', qcd_files='', categories='', selection='', ABCD_regions=''):
+  def __init__(self, data_files='', qcd_files='', signal_files='', white_list='', categories='', selection='', ABCD_regions=''):
     self.tools = Tools()
-    self.data_file = data_file
+    self.data_files = data_files
     self.qcd_files = qcd_files
+    self.signal_files = signal_files
+    self.white_list = white_list
     self.categories = categories
     self.selection = selection
     self.ABCD_regions = ABCD_regions
@@ -86,9 +91,9 @@ class YieldsChecks(Tools):
     #samples_m3 = signal_samples['limits_m3_29Sep21']
     #samples_m4p5 = signal_samples['limits_m4p5_29Sep21']
 
-    samples_m1 = signal_samples['central_V09_06Nov21_m1_large']
-    samples_m3 = signal_samples['central_V09_06Nov21_m3_large']
-    samples_m4p5 = signal_samples['central_V09_06Nov21_m4p5_large']
+    samples_m1 = signal_samples['central_V09_06Nov21_m1']
+    samples_m3 = signal_samples['central_V09_06Nov21_m3']
+    samples_m4p5 = signal_samples['central_V09_06Nov21_m4p5']
 
     graph_dummy = ROOT.TGraph()
     graph_m1 = ROOT.TGraphAsymmErrors()
@@ -210,7 +215,7 @@ class YieldsChecks(Tools):
     canv.SaveAs('./myPlots/yields/signal_yields_{}.pdf'.format(label))
 
 
-  def plotBkgYields(self, label):
+  def plotBkgYields(self, label='', lumi=41.6, doABCD=False, doABCDHybrid=False, doTF=False):
     hist_m1 = ROOT.TH1D('hist_m1', 'hist_m1', len(self.categories)-1, 0, len(self.categories)-1)
     hist_m3 = ROOT.TH1D('hist_m3', 'hist_m3', len(self.categories)-1, 0, len(self.categories)-1)
     hist_m4p5 = ROOT.TH1D('hist_m4p5', 'hist_m4p5', len(self.categories)-1, 0, len(self.categories)-1)
@@ -223,18 +228,24 @@ class YieldsChecks(Tools):
     ROOT.gStyle.SetPadRightMargin(0.16)
     ROOT.gStyle.SetPadLeftMargin(0.16)
 
+    lumi_true = 0.
+    for data_file in self.data_files:
+      lumi_true += data_file.lumi
+    print lumi_true
+
     for icat, category in enumerate(self.categories):
       if 'incl' in category.label: continue
 
-      background_selection = self.selection + ' && ' + category.definition_flat# + '&& ' + category.cutbased_selection
+      background_selection = self.selection + ' && ' + category.definition_flat + '&& ' + category.cutbased_selection
 
       signal_file_m1 = signal_samples['central_V09_06Nov21_benchmark'][2]
       mass = signal_file_m1.mass
       resolution = signal_file_m1.resolution
-      #background_yields, err, _, _, _ = ComputeYields(data_file=self.data_file, qcd_files=self.qcd_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
-      background_yields, err = ComputeYields(data_files=self.data_file, qcd_files=self.qcd_files, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
-      background_yields = background_yields * 41.6/(0.774) #* 0.108)
-      err = err * 41.6/(0.774) #* 0.108)
+      if doABCD: background_yields, err, _, _, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
+      elif doABCDHybrid: background_yields, err = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
+      elif doTF: background_yields, err, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromMC(mass=mass, resolution=resolution)
+      background_yields = background_yields * lumi/lumi_true
+      err = err * lumi/lumi_true
       if background_yields == 0.: 
         background_yields = 1e-1
       print 'mass 1 {} {} +- {}'.format(category.label, int(background_yields), int(err))
@@ -245,10 +256,11 @@ class YieldsChecks(Tools):
       signal_file_m3 = signal_samples['central_V09_06Nov21_benchmark'][1]
       mass = signal_file_m3.mass
       resolution = signal_file_m3.resolution
-      #background_yields, err, _, _, _ = ComputeYields(data_file=self.data_file, qcd_files=self.qcd_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
-      background_yields, err = ComputeYields(data_files=self.data_file, qcd_files=self.qcd_files, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
-      background_yields = background_yields * 41.6/(0.774) # * 0.108)
-      err = err * 41.6/(0.774) # * 0.108)
+      if doABCD: background_yields, err, _, _, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
+      elif doABCDHybrid: background_yields, err = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
+      elif doTF: background_yields, err, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromMC(mass=mass, resolution=resolution)
+      background_yields = background_yields * lumi/lumi_true
+      err = err * lumi/lumi_true
       if background_yields == 0.: 
         background_yields = 1e-1
       print 'mass 3 {} {} +- {}'.format(category.label, int(background_yields), int(err))
@@ -259,10 +271,13 @@ class YieldsChecks(Tools):
       signal_file_m4p5 = signal_samples['central_V09_06Nov21_benchmark'][0]
       mass = signal_file_m4p5.mass
       resolution = signal_file_m4p5.resolution
-      #background_yields, err, _, _, _ = ComputeYields(data_file=self.data_file, qcd_files=self.qcd_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
-      background_yields, err = ComputeYields(data_files=self.data_file, qcd_files=self.qcd_files, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
-      background_yields = background_yields * 41.6/(0.774) # * 0.108)
-      err = err * 41.6/(0.774) #* 0.108)
+      background_yields = 1.
+      err = 1.
+      if doABCD: background_yields, err, _, _, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
+      elif doABCDHybrid: background_yields, err = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions)
+      elif doTF: background_yields, err, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromMC(mass=mass, resolution=resolution)
+      background_yields = background_yields * lumi/lumi_true
+      err = err * lumi/lumi_true
       if background_yields == 0.: 
         background_yields = 1e-1
       print 'mass 4p5 {} {} +- {}'.format(category.label, int(background_yields), int(err))
@@ -281,7 +296,8 @@ class YieldsChecks(Tools):
     if range_min == 0.: range_min = 1e-1
     range_max = max(hist_m1.GetMaximum(), hist_m3.GetMaximum(), hist_m4p5.GetMaximum())
     range_max += 0.6*range_max
-    hist_frame.GetYaxis().SetRangeUser(range_min, range_max)
+    #hist_frame.GetYaxis().SetRangeUser(range_min, range_max)
+    hist_frame.GetYaxis().SetRangeUser(9e-02, 1e06)
 
     hist_m1.SetMarkerStyle(20)
     hist_m1.SetMarkerSize(2)
@@ -294,7 +310,7 @@ class YieldsChecks(Tools):
     hist_m3.SetMarkerColor(ROOT.kRed+1)
     hist_m3.SetLineWidth(2)
     hist_m3.SetLineColor(ROOT.kRed+1)
-    #hist_m3.GetYaxis().SetRangeUser(0, 50000)
+    #hist_m3.GetYaxis().SetRangeUser(1e-01, 1e06)
 
     hist_m4p5.SetMarkerStyle(20)
     hist_m4p5.SetMarkerSize(2)
@@ -334,32 +350,116 @@ class YieldsChecks(Tools):
     canv_log.SaveAs('myPlots/yields/bkg_yields_{}_log.png'.format(label))
 
 
+  def getSignificance(self, lumi=41.6):
+
+    significances = []  
+
+    # compute the significances
+    for category in self.categories:
+      print category.label
+
+      masses = [1.0, 1.5, 2.0, 3.0, 4.5]
+      resolutions = [0.00853, 0.0126, 0.0164, 0.0237, 0.0377]
+
+      for imass, mass in enumerate(masses):
+        print 'mass {} {}'.format(mass, resolutions[imass])
+        background_selection = self.selection + ' && ' + category.definition_flat# + '&& ' + category.cutbased_selection
+        #background_yields, err, _, _, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolutions[imass], ABCD_regions=self.ABCD_regions)
+
+        from qcd_white_list import white_list
+        self.white_list = white_list['20to300']
+        background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolutions[imass], ABCD_regions=self.ABCD_regions)[0]
+
+        lumi_true = 0.
+        for data_file in self.data_files:
+          lumi_true += data_file.lumi
+
+        # scale yields to lumi
+        background_yields = background_yields * lumi/lumi_true
+
+        for signal_file in self.signal_files:
+          if signal_file.mass != mass: continue
+          # compute the signal yields
+          signal_selection = 'ismatched==1 && ' + self.selection + ' && ' + category.definition_flat
+
+          signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9) 
+          #print '{} {} {}'.format(signal_file.mass, signal_file.ctau, int(signal_yields))
+
+          significance = signal_yields / math.sqrt(background_yields)
+          significances.append(Significance(category=category.label, mass=signal_file.mass, ctau=signal_file.ctau, significance=significance))
+
+    # make the ranking
+    significances.sort(key = lambda x: float(x.significance), reverse=True)
+    
+    ## per category
+    print '\nRanking per category'
+    for category in self.categories:
+      print '\nCategory {}'.format(category.label)
+      for item in significances:
+        if item.category==category.label: print '{} {} {}'.format(item.mass, item.ctau, round(item.significance, 2))
+
+    ## per signal point
+    print '\nRanking per signal point'
+    for signal_file in self.signal_files:
+      print '\nSignal point m{} ctau{}'.format(signal_file.mass, signal_file.ctau)
+      for item in significances:
+        if item.mass==signal_file.mass and item.ctau==signal_file.ctau: print '{} {}'.format(item.category, round(item.significance, 2))
+        if item.mass==signal_file.mass and item.ctau==signal_file.ctau: print '{} & {} \\\ '.format(item.category, round(item.significance, 2))
+      
+      
+          
+
+class Significance(object):
+  def __init__(self, category, mass, ctau, significance):
+    self.category = category
+    self.mass = mass
+    self.ctau = ctau 
+    self.significance = significance
+
+
+
+
 
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
   plotSigYields = False
   plotBkgYields = True
+  getSignificance = False
 
   if plotSigYields:
     plotter = YieldsChecks()
     selection = selection['study_Nov21'].flat #'mu_isdsa!=1 && sv_lxy>30 && trgmu_charge==mu_charge'
-    label = 'central_reweighting_allmasses_strategy3_updatedsigma'
+    #label = 'central_reweighting_allmasses_strategyctaumerged_updatedsigma'
+    label = 'test'
     plotter.plotSigYields(lumi=41.6, selection=selection, label=label, outdirlabel='')
 
   if plotBkgYields:
-    data_file = data_samples['V09_06Nov21']
+    data_files = data_samples['V09_06Nov21']
     qcd_files = qcd_samples['V09_06Nov21']
-    categories = categories['study_Nov21']
+    white_list = white_list['50to300']
+    categories = categories['3cat_0_1_5_significance']
     selection = selection['study_Nov21'].flat
-    ABCD = ABCD_regions['bmass_hnlcharge']
+    ABCD = ABCD_regions['cos2d_svprob_0p996']
+    doABCD = False
+    doABCDHybrid = False
+    doTF = True
 
-    #label = 'V09_06Nov21_scaledtolumi_sel13Oct21_ABCDcos2dsvprob_withcatsel_allmasses'
-    label = 'test'
-    plotter = YieldsChecks(data_file=data_file, categories=categories, selection=selection, ABCD_regions=ABCD)
-    plotter.plotBkgYields(label=label)
+    label = 'V09_06Nov21_fulllumi_selstudyNov21_cos2dsvprob0p996_catselsignificance_20sigmawindow_qcd50to300_fullA_TF'
+    #label = 'V09_06Nov21_fulllumi_selstudyNov21_cos2dsvprob0p996_fullA_nocatsel'
+    plotter = YieldsChecks(data_files=data_files, qcd_files=qcd_files, white_list=white_list, categories=categories, selection=selection, ABCD_regions=ABCD)
+    plotter.plotBkgYields(label=label, doABCD=doABCD, doABCDHybrid=doABCDHybrid, doTF=doTF)
 
+  if getSignificance:
+    signal_files = signal_samples['central_V09_06Nov21_m1'] + signal_samples['central_V09_06Nov21_m1p5'] + signal_samples['central_V09_06Nov21_m2'] + signal_samples['central_V09_06Nov21_m3'] + signal_samples['central_V09_06Nov21_m4p5']
+    data_files = data_samples['V09_06Nov21']
+    qcd_files = qcd_samples['V09_06Nov21']
+    categories = categories['standard']
+    selection = selection['study_Nov21'].flat + ' && hnl_charge==0'
+    ABCD = ABCD_regions['cos2d_svprob_0p996']
 
+    plotter = YieldsChecks(data_files=data_files, qcd_files=qcd_files, signal_files=signal_files, categories=categories, selection=selection, ABCD_regions=ABCD)
+    plotter.getSignificance(lumi=41.6)
 
 
 
