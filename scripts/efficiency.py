@@ -47,6 +47,142 @@ class EfficiencyAnalyser(Tools):
       os.system('rm {}/numbers.txt'.format(self.outputdir))
 
 
+  def getEfficiencyFromNano(self, displacement_bins=None, pt_bins=None):
+    f = PlottingTools.getRootFile(self, self.filename, with_ext=False) 
+    tree = PlottingTools.getTree(self, f, self.treename)
+
+    if displacement_bins != None and pt_bins != None:
+      n_num = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings)))  #[[0] * len(displacement_bins)] * len(pt_bins)
+      n_deno = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings))) #[[0] * len(displacement_bins)] * len(pt_bins)
+      efficiency = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings))) #[[0] * len(displacement_bins)] * len(pt_bins)
+      error = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings))) #[[0] * len(displacement_bins)] * len(pt_bins)
+    else:
+      n_num = np.zeros(len(self.cuts))
+      n_deno = np.zeros(len(self.cuts))
+      efficiency = np.zeros(len(self.cuts))
+      error = np.zeros(len(self.cuts))
+
+    for entry in tree:
+      # only consider events with at least one candidate
+      #if entry.nBToMuMuPi == 0: continue
+
+      #print '\n'
+      # retrieve candidate matching information
+      trgmu_ismatched = 0
+      mu_ismatched = 0
+      pi_ismatched = 0
+      cand_ismatched = 0
+      for icand in range(0, entry.nBToMuMuPi):
+        #if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: trgmu_ismatched = 1
+        if entry.BToMuMuPi_trg_mu_isMatched[icand] == 1: trgmu_ismatched = 1
+        #if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: mu_ismatched = 1
+        if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1: mu_ismatched = 1
+        #if entry.BToMuMuPi_pi_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: pi_ismatched = 1
+        if entry.BToMuMuPi_pi_isMatched[icand] == 1: pi_ismatched = 1
+        #if entry.BToMuMuPi_isMatched[icand] == 1 and entry.Muon_isDSAMuon[entry.BToMuMuPi_sel_mu_idx[icand]] != 1: 
+        if entry.BToMuMuPi_isMatched[icand] == 1: 
+          cand_ismatched = 1
+        #if entry.BToMuMuPi_sel_mu_isMatched[icand] == 1 and entry.BToMuMuPi_pi_isMatched[icand] == 1 and entry.BToMuMuPi_mupi_mass_reco_gen_reldiff[icand] < 0.5: 
+        #  mupi_ismatched = 1
+
+      matching_cond = {}
+      matching_cond['candidate'] = cand_ismatched==1 
+      matching_cond['trigger_muon'] = trgmu_ismatched==1 
+      matching_cond['muon'] = mu_ismatched==1 
+      matching_cond['pion'] = pi_ismatched==1 
+
+      hnl_idx = -1
+      mother_idx = -1
+      trgmu_idx = -1
+      mu_idx = -1
+      pi_idx = -1
+
+      # search for hnl and its mother
+      for igen in range(0, entry.nGenPart):
+        if abs(entry.GenPart_pdgId[igen]) == 9900015: 
+          hnl_idx = igen 
+          mother_idx = entry.GenPart_genPartIdxMother[hnl_idx]
+          break
+
+      # search for trigger muon and hnl daughters
+      for igen in range(0, entry.nGenPart):
+        if abs(entry.GenPart_pdgId[igen]) == 13 and entry.GenPart_genPartIdxMother[igen] == mother_idx: trgmu_idx = igen
+        if abs(entry.GenPart_pdgId[igen]) == 13 and entry.GenPart_genPartIdxMother[igen] == hnl_idx: mu_idx = igen
+        if abs(entry.GenPart_pdgId[igen]) == 211 and entry.GenPart_genPartIdxMother[igen] == hnl_idx: pi_idx = igen
+
+      # remove e-channel
+      if mu_idx == -1: continue
+
+      for imatch, matching in enumerate(self.matchings):
+        if displacement_bins != None and pt_bins != None:
+          # fetch n_deno and n_num with acceptance cuts
+          #FIXME make sure to use latest deno cuts
+          if entry.GenPart_pt[mu_idx] > 1.5 and abs(entry.GenPart_eta[mu_idx]) < 2.5 \
+             and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
+             and entry.GenPart_pt[trgmu_idx] > 7.:
+          #if entry.GenPart_pt[mu_idx] > 3.5 and abs(entry.GenPart_eta[mu_idx]) < 2.5 \
+          #   and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
+          #   and entry.GenPart_pt[trgmu_idx] > 9.5:
+          #if entry.GenPart_pt[mu_idx] > 0:
+               displacement = math.sqrt(pow(entry.GenPart_vx[mu_idx] - entry.GenPart_vx[trgmu_idx], 2) + pow(entry.GenPart_vy[mu_idx] - entry.GenPart_vy[trgmu_idx], 2))
+               if matching == 'candidate': obj_pt = entry.GenPart_pt[mother_idx]
+               elif matching == 'mupi_candidate': obj_pt = entry.GenPart_pt[hnl_idx]
+               elif matching == 'trigger_muon': obj_pt = entry.GenPart_pt[trgmu_idx]
+               elif matching == 'muon': obj_pt = entry.GenPart_pt[mu_idx]
+               elif matching == 'pion': obj_pt = entry.GenPart_pt[pi_idx]
+
+               for ibin_disp, displacement_bin in enumerate(displacement_bins):
+                 for ibin_pt, pt_bin in enumerate(pt_bins):
+                   bin_min_disp, bin_max_disp = displacement_bin
+                   bin_min_pt, bin_max_pt = pt_bin
+
+                   if displacement > bin_min_disp and displacement < bin_max_disp and obj_pt > bin_min_pt and obj_pt < bin_max_pt: 
+                     n_deno[ibin_disp][ibin_pt][imatch] = n_deno[ibin_disp][ibin_pt][imatch] + 1
+                     #print '{} {}'.format(matching, matching_cond[matching])
+                     if matching_cond[matching]: n_num[ibin_disp][ibin_pt][imatch] = n_num[ibin_disp][ibin_pt][imatch] + 1
+        else:
+          for icut, cut in enumerate(self.cuts):
+            # fetch n_deno and n_num with acceptance cuts
+            #if entry.GenPart_pt[mu_idx] > float(cut) and abs(entry.GenPart_eta[mu_idx]) < 2.5: # \
+            if entry.GenPart_pt[mu_idx] > 1.5 and abs(entry.GenPart_eta[mu_idx]) < 2.5 \
+               and entry.GenPart_pt[pi_idx] > 0.7 and abs(entry.GenPart_eta[pi_idx]) < 2.5 \
+               and entry.GenPart_pt[trgmu_idx] > float(cut):
+                 n_deno[icut] = n_deno[icut] + 1
+                 if matching == 'candidate' and cand_ismatched == 1: n_num[icut] = n_num[icut] + 1
+                 elif matching == 'trigger_muon' and trgmu_ismatched == 1: n_num[icut] = n_num[icut] + 1
+                 elif matching == 'muon' and mu_ismatched == 1: n_num[icut] = n_num[icut] + 1
+                 elif matching == 'pion' and pi_ismatched == 1: n_num[icut] = n_num[icut] + 1
+
+    # compute efficiency
+    if displacement_bins != None and pt_bins != None:
+      for imatch, matching in enumerate(self.matchings):
+        for ibin_disp, displacement_bin in enumerate(displacement_bins):
+          for ibin_pt, pt_bin in enumerate(pt_bins):
+            efficiency[ibin_disp][ibin_pt][imatch] = float(n_num[ibin_disp][ibin_pt][imatch]) / float(n_deno[ibin_disp][ibin_pt][imatch]) if float(n_deno[ibin_disp][ibin_pt][imatch]) != 0. else 0.
+            if n_num[ibin_disp][ibin_pt][imatch] == 0: n_num[ibin_disp][ibin_pt][imatch] = 1e-11
+            if float(n_num[ibin_disp][ibin_pt][imatch]) != 0 and float(n_deno[ibin_disp][ibin_pt][imatch]) != 0:
+              error[ibin_disp][ibin_pt][imatch] = efficiency[ibin_disp][ibin_pt][imatch] * ( math.sqrt(float(n_num[ibin_disp][ibin_pt][imatch]))/float(n_num[ibin_disp][ibin_pt][imatch])  + math.sqrt(float(n_deno[ibin_disp][ibin_pt][imatch]))/float(n_deno[ibin_disp][ibin_pt][imatch]) )     
+            else:
+              error[ibin_disp][ibin_pt][imatch] = 0
+            # for aesthetics
+            if efficiency[ibin_disp][ibin_pt][imatch] == 0.: efficiency[ibin_disp][ibin_pt][imatch] = 1e-9
+
+      for imatch, matching in enumerate(self.matchings):
+        print '\n'
+        for ibin_disp, displacement_bin in enumerate(displacement_bins):
+          for ibin_pt, pt_bin in enumerate(pt_bins):
+            print '{} {} {} {} {} {}+-{}'.format(matching, displacement_bin, pt_bin, n_deno[ibin_disp][ibin_pt][imatch], n_num[ibin_disp][ibin_pt][imatch], efficiency[ibin_disp][ibin_pt][imatch], error[ibin_disp][ibin_pt][imatch])
+    else:
+      for icut, cut in enumerate(self.cuts):
+        efficiency[icut] = float(n_num[icut]) / float(n_deno[icut]) if float(n_deno[icut]) != 0. else 0. 
+        error[icut] = efficiency[icut] * ( math.sqrt(n_num[icut])/n_num[icut]  + math.sqrt(n_deno[icut])/n_deno[icut] )     
+
+      #for icut, cut in enumerate(self.cuts):
+      #  print '{} {} {} {}'.format(cut, n_deno[icut], n_num[icut], efficiency[icut])
+
+    return efficiency, error
+
+
   def getEfficiency(self, displacement_bins=None, pt_bins=None):
     f = self.tools.getRootFile(self.filename, with_ext=False) 
     tree = self.tools.getTree(f, self.treename)
