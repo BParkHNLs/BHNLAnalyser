@@ -87,7 +87,7 @@ class ComputeYields(Tools):
     return weight, err
 
 
-  def computeBkgYieldsFromMC(self, mass, resolution, sigma_mult_window=20):
+  def computeBkgYieldsFromMC(self, mass, resolution, sigma_mult_window=2):
     '''
       QCD MC (background) yields are computed as N_exp(SR) = N_obs(SR) * weight(CR)
     '''
@@ -125,7 +125,7 @@ class ComputeYields(Tools):
   # BACKGROUND ABCD METHOD 
   ###
 
-  def computeBkgYieldsFromABCDData(self, mass, resolution, ABCD_regions, sigma_mult_window=20):
+  def computeBkgYieldsFromABCDData(self, mass, resolution, ABCD_regions, sigma_mult_window=2):
     '''
       Estimate background yields from data using the ABCD method
       A = b_mass < 6.27 && hnl_charge == 0 (SR)
@@ -179,7 +179,7 @@ class ComputeYields(Tools):
     return n_obs_data_A, n_err_data_A, n_obs_data_B, n_obs_data_C, n_obs_data_D
 
 
-  def computeBkgYieldsFromABCDHybrid(self, mass, resolution, ABCD_regions, sigma_mult_window=20):
+  def computeBkgYieldsFromABCDHybrid(self, mass, resolution, ABCD_regions, sigma_mult_window=2):
     '''
       Estimate background yields using the ABCD method on data
       unless one CR has 0 entries, then compute the background
