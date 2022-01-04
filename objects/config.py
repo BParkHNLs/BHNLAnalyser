@@ -151,7 +151,7 @@ class Config(object):
 
     if self.add_weight_hlt and self.branch_weight_hlt == None:
       raise RuntimeError('Please indicate the name of the branch for the hlt weight (branch_weight_hlt)')
-    elif self.add_weight_hlt and self.branch_weight_hlt not in ['weight_hlt_A1', 'weight_hlt_A1_6', 'weight_hlt_A1_6_B1']:
+    elif self.add_weight_hlt and self.branch_weight_hlt not in ['weight_hlt_A1', 'weight_hlt_A1_6', 'weight_hlt_A1_6_B1', 'weight_hlt_HLT_Mu9_IP6_A1_6']:
       raise RuntimeError('Unrecognised branch "{}" for the hlt weight. Please check.'.format(self.branch_weight_hlt))
     else:
       print '       ---> HLT weight OK'
