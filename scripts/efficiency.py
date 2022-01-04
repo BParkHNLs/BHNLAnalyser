@@ -162,7 +162,7 @@ class EfficiencyAnalyser(Tools):
       hist.Draw('text' +'same')
 
       hist.SetTitle(self.title)
-      hist.GetXaxis().SetTitle('l_{xy}(trgmu, mu) [cm]')
+      hist.GetXaxis().SetTitle('l_{xy} [cm]')
       hist.GetXaxis().SetLabelSize(0.037)
       hist.GetXaxis().SetTitleSize(0.042)
       hist.GetXaxis().SetTitleOffset(1.1)
@@ -228,7 +228,7 @@ class EfficiencyAnalyser(Tools):
       graph.SetLineColor(ROOT.kBlue+2 if self.add_dsa == 'no' else ROOT.kRed)
       graph.SetMarkerStyle(20)
       graph.SetMarkerColor(ROOT.kBlue+2 if self.add_dsa == 'no' else ROOT.kRed)
-      if binning == 'displacement': xlabel = 'l_{xy}(trgmu, mu) [cm]'
+      if binning == 'displacement': xlabel = 'l_{xy} [cm]'
       elif binning == 'pt' and matching == 'candidate': xlabel = '#mu#pi pT [GeV]' if self.process_type == 'mupi' else '#mu#mu#pi pT [GeV]'
       elif binning == 'pt' and matching == 'trigger_muon': xlabel = 'trigger #mu pT [GeV]'
       elif binning == 'pt' and matching == 'muon': xlabel = '#mu pT [GeV]'
@@ -322,33 +322,34 @@ if __name__ == '__main__':
   #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/plugins/dumper/flat_bparknano.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_motherpdgid_unfittedmass.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_fittedmass_looseselection_originalmatching.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looselection_updatedmatching_fullgen.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looselection_updatedmatching_fullgen.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_v1.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_minigenmatching_v2.root'
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_efficiency_study.root' # used for study on efficiency gain with dsa (Nov 21)
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_efficiency_study.root' # used for study on efficiency gain with dsa (Nov 21)
 
-  #displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
-  displacement_bins = [(0, 3), (3, 5), (5, 10), (10, 20), (20, 100)]
+  displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
+  #displacement_bins = [(0, 3), (3, 5), (5, 10), (10, 20), (20, 100)]
   pt_bins = [(1, 7), (7, 10), (10, 15), (15, 30), (30, 100)] 
 
   cuts_mu_pt = [0., 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
   cuts_trigger_mu_pt = [6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0]
 
   #outdirlabel = 'signalV20_test_unresolved_fittedmass_looseselection_originalmatching_withoutdsa'
-  outdirlabel = 'dsa_study_Nov21_dsa'
+  #outdirlabel = 'dsa_study_Nov21_dsa'
+  outdirlabel = 'test'
 
   title = ''
 
   #matchings = ['candidate', 'trigger_muon', 'muon', 'pion']
-  matchings = ['candidate']
+  matchings = ['candidate', 'trigger_muon']
 
   sample_type = 'flat'
-  process_type = 'mupi'
-  add_dsa = 'yes'
+  process_type = 'mumupi'
+  add_dsa = 'no'
 
   analyser = EfficiencyAnalyser(filename=filename, sample_type=sample_type, process_type=process_type, add_dsa=add_dsa, matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel)
 
-  #analyser.plot2DEfficiency()
+  analyser.plot2DEfficiency()
   analyser.plot1DEfficiency(binning='displacement')
-  #analyser.plot1DEfficiency(binning='pt')
+  analyser.plot1DEfficiency(binning='pt')
 
