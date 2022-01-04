@@ -4,6 +4,7 @@
 Note: 
 * it is preferable to install and use the tool in a bash environment
 * the tool is installed within the combine framework
+* the batch system is a slurm engine
 
 Set up the environment
 ```
@@ -33,7 +34,7 @@ cd CMSSW_10_2_15/src/HiggsAnalysis/CombinedLimit/BHNAnalyser
 cmsenv
 ```
 
-If need to use combine:
+If need to use combine (in a bash environment):
 ```
 cd ..
 source env_standalone.sh
