@@ -266,14 +266,14 @@ if __name__ == "__main__":
   f1 = plt.fill_between(masses_two_sigma, minus_two, plus_two, color='gold'       , label=r'$\pm 2 \sigma$')
   f2 = plt.fill_between(masses_one_sigma, minus_one, plus_one, color='forestgreen', label=r'$\pm 1 \sigma$')
   p1, = plt.plot(masses_central, central, color='red', label='central expected', linewidth=2)
-  p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='black', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
-  p3, = plt.plot(db.masses_delphiprompt, db.exp_delphiprompt, color='blueviolet', label='Delphi prompt', linewidth=1.3, linestyle='dashed')
-  if 'mmm' in opt.channels or 'mem' in opt.channels:
-    p4, = plt.plot(db.masses_atlasdisplacedmuonLNV, db.exp_atlasdisplacedmuonLNV, color='firebrick', label='Atlas displaced muon LNV', linewidth=1.3, linestyle='dashed')
-    p5, = plt.plot(db.masses_atlasdisplacedmuonLNC, db.exp_atlasdisplacedmuonLNC, color='darkorange', label='Atlas displaced muon LNC', linewidth=1.3, linestyle='dashed')
-    p7, = plt.plot(db.masses_cmspromptmuon, db.exp_cmspromptmuon, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
-  else: 
-    p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
+  #p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='black', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
+  #p3, = plt.plot(db.masses_delphiprompt, db.exp_delphiprompt, color='blueviolet', label='Delphi prompt', linewidth=1.3, linestyle='dashed')
+  #if 'mmm' in opt.channels or 'mem' in opt.channels:
+  #  p4, = plt.plot(db.masses_atlasdisplacedmuonLNV, db.exp_atlasdisplacedmuonLNV, color='firebrick', label='Atlas displaced muon LNV', linewidth=1.3, linestyle='dashed')
+  #  p5, = plt.plot(db.masses_atlasdisplacedmuonLNC, db.exp_atlasdisplacedmuonLNC, color='darkorange', label='Atlas displaced muon LNC', linewidth=1.3, linestyle='dashed')
+  #  p7, = plt.plot(db.masses_cmspromptmuon, db.exp_cmspromptmuon, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
+  #else: 
+  #  p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
 
   if not opt.run_blind:
     p8, = plt.plot(masses_obs, obs, color='black', label='observed', linewidth=2)
@@ -283,10 +283,10 @@ if __name__ == "__main__":
   else:
     first_legend = plt.legend(handles=[p1, f1, f2], loc='upper right')
   ax = plt.gca().add_artist(first_legend)
-  if 'mmm' in opt.channels or 'mem' in opt.channels:
-    second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
-  else: 
-    second_legend = plt.legend(handles=[p2, p3, p7], loc='upper left')
+  #if 'mmm' in opt.channels or 'mem' in opt.channels:
+  #  second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
+  #else: 
+  #  second_legend = plt.legend(handles=[p2, p3, p7], loc='upper left')
 
   plt.title('CMS Preliminary', loc='left')
   plt.title(lumi + ' (13 TeV)', loc='right')
