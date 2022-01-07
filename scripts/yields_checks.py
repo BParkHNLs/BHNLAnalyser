@@ -91,9 +91,9 @@ class YieldsChecks(Tools):
     #samples_m3 = signal_samples['limits_m3_29Sep21']
     #samples_m4p5 = signal_samples['limits_m4p5_29Sep21']
 
-    samples_m1 = signal_samples['central_V09_06Nov21_m1']
-    samples_m3 = signal_samples['central_V09_06Nov21_m3']
-    samples_m4p5 = signal_samples['central_V09_06Nov21_m4p5']
+    samples_m1 = signal_samples['central_V09_06Nov21_m1_large']
+    samples_m3 = signal_samples['central_V09_06Nov21_m3_large']
+    samples_m4p5 = signal_samples['central_V09_06Nov21_m4p5_large']
 
     graph_dummy = ROOT.TGraph()
     graph_m1 = ROOT.TGraphAsymmErrors()
@@ -192,20 +192,20 @@ class YieldsChecks(Tools):
     graph_m1.Draw('PL same')  
     graph_m3.Draw('PL same')  
     graph_m4p5.Draw('PL same')  
-    graph_gen_m1.Draw('PL same')
-    graph_gen_m3.Draw('PL same')
-    graph_gen_m4p5.Draw('PL same')
+    #graph_gen_m1.Draw('PL same')
+    #graph_gen_m3.Draw('PL same')
+    #graph_gen_m4p5.Draw('PL same')
       
     legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
-    legend.AddEntry(graph_m1, 'm=1GeV, reco')
+    #legend.AddEntry(graph_m1, 'm=1GeV, reco')
     legend.AddEntry(graph_m1, 'm=1GeV')
-    legend.AddEntry(graph_gen_m1, 'm=1GeV, gen')
-    legend.AddEntry(graph_m3, 'm=3GeV, reco')
-    #legend.AddEntry(graph_m3, 'm=3GeV')
-    legend.AddEntry(graph_gen_m3, 'm=3GeV, gen')
-    legend.AddEntry(graph_m4p5, 'm=4p5GeV, reco')
-    #legend.AddEntry(graph_m4p5, 'm=4p5GeV')
-    legend.AddEntry(graph_gen_m4p5, 'm=4p5GeV, gen')
+    #legend.AddEntry(graph_gen_m1, 'm=1GeV, gen')
+    #legend.AddEntry(graph_m3, 'm=3GeV, reco')
+    legend.AddEntry(graph_m3, 'm=3GeV')
+    #legend.AddEntry(graph_gen_m3, 'm=3GeV, gen')
+    #legend.AddEntry(graph_m4p5, 'm=4p5GeV, reco')
+    legend.AddEntry(graph_m4p5, 'm=4p5GeV')
+    #legend.AddEntry(graph_gen_m4p5, 'm=4p5GeV, gen')
     legend.Draw()
 
     if not path.exists('./myPlots/yields'):
@@ -423,8 +423,8 @@ class Significance(object):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  plotSigYields = False
-  plotBkgYields = True
+  plotSigYields = True
+  plotBkgYields = False
   getSignificance = False
 
   if plotSigYields:
