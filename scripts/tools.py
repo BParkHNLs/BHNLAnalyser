@@ -46,6 +46,8 @@ class Tools(object):
     hist_mc_tot = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
     hist_mc_tot.Sumw2()
 
+    #lumi_tot = self.getQCDMCLumi(qcd_files, white_list)
+
     for ifile, qcd_file in enumerate(qcd_files):
       qcd_file_pthatrange = self.getPthatRange(qcd_file.label)
       if qcd_file_pthatrange not in white_list: continue
@@ -55,6 +57,7 @@ class Tools(object):
       tree_mc = self.getTree(f_mc, 'signal_tree')
 
       weight_mc = self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
+      #weight_mc = 1. / (self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency) * lumi_tot)
       weight_qcd = '({})'.format(weight_mc)
       if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
       if add_weight_pu : weight_qcd += ' * ({})'.format(weight_puqcd)
@@ -88,7 +91,7 @@ class Tools(object):
     '''
     n_reco_evts = self.getNminiAODEvts(tree)
     n_genevts = n_reco_evts / filter_efficiency
-    weight = cross_section / n_genevts
+    weight = cross_section * 1e03 / n_genevts # 1e03 factor for pb -> fb
     return weight
 
 
@@ -134,6 +137,31 @@ class Tools(object):
       ctau_weight = '({ctau0} / {ctau1} * exp((1./{ctau0} - 1./{ctau1}) * gen_hnl_ct))'.format(ctau0=original_ctau, ctau1=target_ctau)
 
     return ctau_weight
+
+
+  def getQCDMCLumi(self, qcd_files, white_list):
+    lumi_tot = 0
+
+    for qcd_file in qcd_files:
+      qcd_file_pthatrange = self.getPthatRange(qcd_file.label)
+      if qcd_file_pthatrange not in white_list: continue
+
+      f_mc = self.getRootFile(qcd_file.filename)
+      tree_run = self.getTree(f_mc, 'run_tree')
+      
+      lumi_inv = self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
+      lumi = 1./lumi_inv
+      lumi_tot += lumi
+
+    return lumi_tot
+
+
+  def getDataLumi(self, data_files):
+    lumi_tot = 0.
+    for data_file in data_files:
+      lumi_tot += data_file.lumi
+
+    return lumi_tot
 
 
   def getRatioHistogram(self, hist1, hist2): 
@@ -235,14 +263,14 @@ class Tools(object):
   def getOutDir(self, maindir, outdirlabel, do_shape=False, do_luminorm=False, do_stack=False, do_log=False, add_overflow=False):
     if not path.exists(maindir):
       os.system('mkdir -p {}'.format(maindir))
-    os.system('cp ./data/index.php {}'.format(maindir))
+    os.system('cp ../data/index.php {}'.format(maindir))
     dirlabel = outdirlabel
 
     outputdir = '{}/{}'.format(maindir, dirlabel)
     if not path.exists(outputdir):
       os.system('mkdir -p {}'.format(outputdir))
-    os.system('cp ./data/index.php {}'.format(outputdir))
-    os.system('cp ./data/index.php {}/..'.format(outputdir))
+    os.system('cp ../data/index.php {}'.format(outputdir))
+    os.system('cp ../data/index.php {}/..'.format(outputdir))
 
     norm = None
     if do_shape: norm = 'shape'
@@ -265,7 +293,7 @@ class Tools(object):
     
     if not path.exists(outputdir):
       os.system('mkdir -p {}'.format(outputdir))
-    os.system('cp ./data/index.php {}'.format(outputdir))
+    os.system('cp ../data/index.php {}'.format(outputdir))
 
     return outputdir
 
