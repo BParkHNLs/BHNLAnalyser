@@ -27,9 +27,9 @@ class YieldsChecks(Tools):
     self.ABCD_regions = ABCD_regions
 
 
-  def plotSigYields(self, lumi=0.774, selection='', label='', outdirlabel=''):
-    #canv = self.tools.createTCanvas('canv', dimx=900, dimy=800)
-    canv = self.tools.createTCanvas('canv', dimx=1200, dimy=800)
+  def plotSigYields(self, lumi=0.774, selection='', label='', outdirlabel='', add_bkg_level=False):
+    canv = self.tools.createTCanvas('canv', dimx=900, dimy=800)
+    #canv = self.tools.createTCanvas('canv', dimx=1200, dimy=800)
     canv.SetLogx()
     canv.SetLogy()
     canv.SetGrid()
@@ -72,6 +72,7 @@ class YieldsChecks(Tools):
     graph_gen_m3.SetMarkerStyle(22)
     graph_gen_m3.SetMarkerSize(2)
     graph_gen_m3.SetMarkerColor(ROOT.kRed+1)
+    graph_gen_m3.SetMarkerColor(ROOT.kRed+1)
     graph_gen_m3.SetLineStyle(9)
     graph_gen_m3.SetLineWidth(2)
     graph_gen_m3.SetLineColor(ROOT.kRed+1)
@@ -87,13 +88,13 @@ class YieldsChecks(Tools):
     graph_gen_m4p5.SetLineWidth(2)
     graph_gen_m4p5.SetLineColor(ROOT.kRed+4)
 
-    #samples_m1 = signal_samples['limits_m1_29Sep21']
-    #samples_m3 = signal_samples['limits_m3_29Sep21']
-    #samples_m4p5 = signal_samples['limits_m4p5_29Sep21']
+    samples_m1 = signal_samples['limits_m1_29Sep21']
+    samples_m3 = signal_samples['limits_m3_29Sep21']
+    samples_m4p5 = signal_samples['limits_m4p5_29Sep21']
 
-    samples_m1 = signal_samples['central_V09_06Nov21_m1_large']
-    samples_m3 = signal_samples['central_V09_06Nov21_m3_large']
-    samples_m4p5 = signal_samples['central_V09_06Nov21_m4p5_large']
+    #samples_m1 = signal_samples['central_V09_06Nov21_m1']
+    #samples_m3 = signal_samples['central_V09_06Nov21_m3']
+    #samples_m4p5 = signal_samples['central_V09_06Nov21_m4p5']
 
     graph_dummy = ROOT.TGraph()
     graph_m1 = ROOT.TGraphAsymmErrors()
@@ -101,7 +102,8 @@ class YieldsChecks(Tools):
     graph_m4p5 = ROOT.TGraphAsymmErrors()
 
     graph_dummy.SetPoint(0, 1e-6, 1e-7)
-    graph_dummy.SetPoint(1, 1e-1, 1e10)
+    #graph_dummy.SetPoint(1, 1e-1, 1e10)
+    graph_dummy.SetPoint(1, 1, 1e10)
     graph_dummy.SetMarkerStyle(0)
     graph_dummy.SetMarkerSize(0)
     graph_dummy.SetMarkerColor(0)
@@ -110,7 +112,8 @@ class YieldsChecks(Tools):
     graph_dummy.GetXaxis().SetLabelSize(0.037)
     graph_dummy.GetXaxis().SetTitleSize(0.042)
     graph_dummy.GetXaxis().SetTitleOffset(1.1)
-    graph_dummy.GetYaxis().SetTitle('Signal yields')
+    #graph_dummy.GetYaxis().SetTitle('Signal yields')
+    graph_dummy.GetYaxis().SetTitle('Yields')
     graph_dummy.GetYaxis().SetLabelSize(0.037)
     graph_dummy.GetYaxis().SetTitleSize(0.042)
     graph_dummy.GetYaxis().SetTitleOffset(1.1)
@@ -120,6 +123,7 @@ class YieldsChecks(Tools):
       # get signal coupling
       signal_mass = signal_file.mass
       signal_ctau = signal_file.ctau
+      signal_resolution = signal_file.resolution
       signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
@@ -132,12 +136,25 @@ class YieldsChecks(Tools):
       #graph_m1.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
       graph_m1.SetPointError(point, 0, 0, 0, 0)
 
+    if add_bkg_level:
+      background_yields = ComputeYields(data_files=self.data_files, selection=selection).computeBkgYieldsFromABCDData(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)[0]
+      #background_yields = background_yields * lumi/lumi_true
+      background_yields = background_yields * 41.6/(0.774*0.108)
+
+      bkg_line_m1 = ROOT.TLine(1e-6, background_yields, 1, background_yields)
+      #bkg_line_m1.SetLineColor(ROOT.kOrange+0)
+      bkg_line_m1.SetLineColor(ROOT.kBlue)
+      bkg_line_m1.SetLineWidth(3)
+      bkg_line_m1.SetLineStyle(9)
+
     graph_m1.SetMarkerStyle(20)
     graph_m1.SetMarkerSize(2)
-    graph_m1.SetMarkerColor(ROOT.kOrange+0)
+    #graph_m1.SetMarkerColor(ROOT.kOrange+0)
+    graph_m1.SetMarkerColor(ROOT.kBlue)
     graph_m1.SetLineStyle(1)
     graph_m1.SetLineWidth(2)
-    graph_m1.SetLineColor(ROOT.kOrange+0)
+    #graph_m1.SetLineColor(ROOT.kOrange+0)
+    graph_m1.SetLineColor(ROOT.kBlue)
 
 
     print '\n mass 3'
@@ -145,6 +162,7 @@ class YieldsChecks(Tools):
       # get signal coupling
       signal_mass = signal_file.mass
       signal_ctau = signal_file.ctau
+      signal_resolution = signal_file.resolution
       signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
@@ -156,6 +174,17 @@ class YieldsChecks(Tools):
       graph_m3.SetPoint(point, signal_v2, signal_yields)
       #graph_m3.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
       graph_m3.SetPointError(point, 0, 0, 0, 0)
+
+    #if add_bkg_level:
+    #  background_yields, err, _, _, _ = ComputeYields(data_files=self.data_files, selection=selection).computeBkgYieldsFromABCDData(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)
+    #  #background_yields = background_yields * lumi/lumi_true
+    #  background_yields = background_yields * 41.6/(0.774*0.108)
+
+    #  bkg_line_m3 = ROOT.TLine(1e-6, background_yields, 1e-1, background_yields)
+    #  #bkg_line_m3.SetLineColor(ROOT.kRed+1)
+    #  bkg_line_m3.SetLineColor(ROOT.kBlue)
+    #  bkg_line_m3.SetLineWidth(3)
+    #  bkg_line_m3.SetLineStyle(9)
 
     graph_m3.SetMarkerStyle(20)
     graph_m3.SetMarkerSize(2)
@@ -190,21 +219,27 @@ class YieldsChecks(Tools):
 
     graph_dummy.Draw('AP')  
     graph_m1.Draw('PL same')  
-    graph_m3.Draw('PL same')  
-    graph_m4p5.Draw('PL same')  
+    #graph_m3.Draw('PL same')  
+    #graph_m4p5.Draw('PL same')  
     #graph_gen_m1.Draw('PL same')
     #graph_gen_m3.Draw('PL same')
     #graph_gen_m4p5.Draw('PL same')
       
-    legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
+    if add_bkg_level:
+      bkg_line_m1.Draw('same')
+      #bkg_line_m3.Draw('same')
+
+    #legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
+    legend = self.tools.getRootTLegend(xmin=0.25, ymin=0.2, xmax=0.75, ymax=0.35, size=0.033)
     #legend.AddEntry(graph_m1, 'm=1GeV, reco')
-    legend.AddEntry(graph_m1, 'm=1GeV')
+    legend.AddEntry(graph_m1, 'signal, m=1GeV')
     #legend.AddEntry(graph_gen_m1, 'm=1GeV, gen')
+    legend.AddEntry(bkg_line_m1, 'background in 2#sigma window around m=1GeV')
     #legend.AddEntry(graph_m3, 'm=3GeV, reco')
-    legend.AddEntry(graph_m3, 'm=3GeV')
+    #legend.AddEntry(graph_m3, 'm=3GeV')
     #legend.AddEntry(graph_gen_m3, 'm=3GeV, gen')
     #legend.AddEntry(graph_m4p5, 'm=4p5GeV, reco')
-    legend.AddEntry(graph_m4p5, 'm=4p5GeV')
+    #legend.AddEntry(graph_m4p5, 'm=4p5GeV')
     #legend.AddEntry(graph_gen_m4p5, 'm=4p5GeV, gen')
     legend.Draw()
 
@@ -213,6 +248,254 @@ class YieldsChecks(Tools):
 
     canv.SaveAs('./myPlots/yields/signal_yields_{}.png'.format(label))
     canv.SaveAs('./myPlots/yields/signal_yields_{}.pdf'.format(label))
+
+
+  def plotSigBkgYields(self, lumi=0.774, selection='', label='', doABCD=False, doABCDHybrid=False, doTF=False):
+    for category in self.categories:
+      print category.label
+      canv = self.tools.createTCanvas('canv'+category.label, dimx=1200, dimy=1000)
+      canv.SetLogx()
+      canv.SetLogy()
+      canv.SetGrid()
+
+      graph_dummy = ROOT.TGraph()
+
+      graph_dummy.SetPoint(0, 1e-6, 1e-7)
+      #graph_dummy.SetPoint(1, 1e-1, 1e10)
+      graph_dummy.SetPoint(1, 1, 1e10)
+      graph_dummy.SetMarkerStyle(0)
+      graph_dummy.SetMarkerSize(0)
+      graph_dummy.SetMarkerColor(0)
+      graph_dummy.GetXaxis().SetTitle('|V^{2}|')
+      graph_dummy.GetXaxis().SetLabelSize(0.037)
+      graph_dummy.GetXaxis().SetTitleSize(0.042)
+      graph_dummy.GetXaxis().SetTitleOffset(1.1)
+      graph_dummy.GetYaxis().SetTitle('Yields')
+      graph_dummy.GetYaxis().SetLabelSize(0.037)
+      graph_dummy.GetYaxis().SetTitleSize(0.042)
+      graph_dummy.GetYaxis().SetTitleOffset(1.1)
+
+      graph_dummy.Draw('AP')  
+
+      legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
+      #legend = self.tools.getRootTLegend(xmin=0.25, ymin=0.2, xmax=0.75, ymax=0.35, size=0.033)
+
+      samples_m1 = signal_samples['central_V09_06Nov21_m1']
+      samples_m3 = signal_samples['central_V09_06Nov21_m3']
+      samples_m4p5 = signal_samples['central_V09_06Nov21_m4p5']
+
+      #  print signal_files
+      #colour = [ROOT.kOrange+0, ROOT.kRed+1, ROOT.kRed+4]
+      #resolution = [1.59e-03, 5.58e-03, 0.0368] 
+      #for imass, mass in enumerate(['1', '3', '4.5']):
+      #for ifile, signal_files_ in enumerate(self.signal_files):
+
+      graph_m1 = ROOT.TGraphAsymmErrors()
+      #for signal_file in signal_files_:
+      for signal_file in samples_m1:
+      #for signal_file in self.signal_files:
+        #print signal_file.filename
+        # get signal coupling
+        signal_mass = signal_file.mass
+        #if float(signal_mass) != float(mass): continue
+        signal_ctau = signal_file.ctau
+        signal_resolution = signal_file.resolution
+        signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+        signal_colour = signal_file.colour
+        print '{}Gev {}mm'.format(signal_mass, signal_ctau)
+
+        # compute the signal yields
+        signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+        signal_selection += ' && ' + category.definition_flat + '&& ' + category.cutbased_selection 
+        #print signal_selection
+        signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9)[0] 
+
+        # fill graph
+        point = graph_m1.GetN()
+        graph_m1.SetPoint(point, signal_v2, signal_yields)
+        #graph_m1.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
+        graph_m1.SetPointError(point, 0, 0, 0, 0)
+
+      graph_m1.SetMarkerStyle(20)
+      graph_m1.SetMarkerSize(2)
+      graph_m1.SetMarkerColor(signal_colour)
+      graph_m1.SetLineStyle(1)
+      graph_m1.SetLineWidth(2)
+      graph_m1.SetLineColor(signal_colour)
+
+      graph_m1.Draw('PL same')  
+      legend.AddEntry(graph_m1, 'signal, m={}GeV'.format(signal_mass))
+
+      # background yields
+      background_selection = selection + ' && ' + category.definition_flat + '&& ' + category.cutbased_selection
+      if doABCD: background_yields, background_err, _, _, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDData(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)
+      elif doABCDHybrid: background_yields, background_err =  ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)
+      elif doTF: background_yields, background_err, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromMC(mass=signal_mass, resolution=signal_resolution)
+
+      # for the moment, taking 30% uncertainty
+      background_err = 0.3 * background_yields
+
+      lumi_true = 0.
+      for data_file in self.data_files:
+        lumi_true += data_file.lumi
+
+      background_yields = background_yields * lumi/lumi_true
+      background_err = background_err * lumi/lumi_true
+
+      bkg_box_m1 = ROOT.TBox(1e-6, background_yields-background_err, 1, background_yields+background_err)
+      bkg_box_m1.SetFillColor(signal_colour)
+      bkg_box_m1.SetFillStyle(3005)
+      bkg_box_m1.Draw('same')
+
+      bkg_line_m1 = ROOT.TLine(1e-6, background_yields, 1, background_yields)
+      bkg_line_m1.SetLineColor(signal_colour)
+      bkg_line_m1.SetLineWidth(3)
+      bkg_line_m1.SetLineStyle(9)
+
+      bkg_line_m1.Draw('same')
+      legend.AddEntry(bkg_line_m1, 'background in 2#sigma window around m={}GeV'.format(signal_mass))
+
+
+      graph_m3 = ROOT.TGraphAsymmErrors()
+      #for signal_file in signal_files_:
+      for signal_file in samples_m3:
+      #for signal_file in self.signal_files:
+        #print signal_file.filename
+        # get signal coupling
+        signal_mass = signal_file.mass
+        #if float(signal_mass) != float(mass): continue
+        signal_ctau = signal_file.ctau
+        signal_resolution = signal_file.resolution
+        signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+        signal_colour = signal_file.colour
+        print '{}Gev {}mm'.format(signal_mass, signal_ctau)
+
+        # compute the signal yields
+        signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+        signal_selection += ' && ' + category.definition_flat + '&& ' + category.cutbased_selection 
+        #print signal_selection
+        signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9)[0] 
+
+        # fill graph
+        point = graph_m3.GetN()
+        graph_m3.SetPoint(point, signal_v2, signal_yields)
+        #graph_m3.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
+        graph_m3.SetPointError(point, 0, 0, 0, 0)
+
+      graph_m3.SetMarkerStyle(20)
+      graph_m3.SetMarkerSize(2)
+      graph_m3.SetMarkerColor(signal_colour)
+      graph_m3.SetLineStyle(1)
+      graph_m3.SetLineWidth(2)
+      graph_m3.SetLineColor(signal_colour)
+
+      graph_m3.Draw('PL same')  
+      legend.AddEntry(graph_m3, 'signal, m={}GeV'.format(signal_mass))
+
+      # background yields
+      background_selection = selection + ' && ' + category.definition_flat + '&& ' + category.cutbased_selection
+      if doABCD: background_yields, background_err, _, _, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDData(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)
+      elif doABCDHybrid: background_yields, background_err =  ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)
+      elif doTF: background_yields, background_err, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromMC(mass=signal_mass, resolution=signal_resolution)
+
+      lumi_true = 0.
+      for data_file in self.data_files:
+        lumi_true += data_file.lumi
+
+      # for the moment, taking 30% uncertainty
+      background_err = 0.3 * background_yields
+
+      background_yields = background_yields * lumi/lumi_true
+      background_err = background_err * lumi/lumi_true
+
+      bkg_box_m3 = ROOT.TBox(1e-6, background_yields-background_err, 1, background_yields+background_err)
+      bkg_box_m3.SetFillColor(signal_colour)
+      bkg_box_m3.SetFillStyle(3005)
+      bkg_box_m3.Draw('same')
+
+      bkg_line_m3 = ROOT.TLine(1e-6, background_yields, 1, background_yields)
+      bkg_line_m3.SetLineColor(signal_colour)
+      bkg_line_m3.SetLineWidth(3)
+      bkg_line_m3.SetLineStyle(9)
+
+      bkg_line_m3.Draw('same')
+      legend.AddEntry(bkg_line_m3, 'background in 2#sigma window around m={}GeV'.format(signal_mass))
+
+
+      graph_m4p5 = ROOT.TGraphAsymmErrors()
+      #for signal_file in signal_files_:
+      for signal_file in samples_m4p5:
+      #for signal_file in self.signal_files:
+        #print signal_file.filename
+        # get signal coupling
+        signal_mass = signal_file.mass
+        #if float(signal_mass) != float(mass): continue
+        signal_ctau = signal_file.ctau
+        signal_resolution = signal_file.resolution
+        signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+        signal_colour = signal_file.colour
+        print '{}Gev {}mm'.format(signal_mass, signal_ctau)
+
+        # compute the signal yields
+        signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+        signal_selection += ' && ' + category.definition_flat + '&& ' + category.cutbased_selection 
+        #print signal_selection
+        signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9)[0] 
+
+        # fill graph
+        point = graph_m4p5.GetN()
+        graph_m4p5.SetPoint(point, signal_v2, signal_yields)
+        #graph_m4p5.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
+        graph_m4p5.SetPointError(point, 0, 0, 0, 0)
+
+      graph_m4p5.SetMarkerStyle(20)
+      graph_m4p5.SetMarkerSize(2)
+      graph_m4p5.SetMarkerColor(signal_colour)
+      graph_m4p5.SetLineStyle(1)
+      graph_m4p5.SetLineWidth(2)
+      graph_m4p5.SetLineColor(signal_colour)
+
+      graph_m4p5.Draw('PL same')  
+      legend.AddEntry(graph_m4p5, 'signal, m={}GeV'.format(signal_mass))
+
+      # background yields
+      background_selection = selection + ' && ' + category.definition_flat + '&& ' + category.cutbased_selection
+      if doABCD: background_yields, background_err, _, _, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDData(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)
+      elif doABCDHybrid: background_yields, background_err =  ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromABCDHybrid(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)
+      elif doTF: background_yields, background_err, _ = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, white_list=self.white_list, selection=background_selection).computeBkgYieldsFromMC(mass=signal_mass, resolution=signal_resolution)
+
+      lumi_true = 0.
+      for data_file in self.data_files:
+        lumi_true += data_file.lumi
+
+      # for the moment, taking 30% uncertainty
+      background_err = 0.3 * background_yields
+
+      background_yields = background_yields * lumi/lumi_true
+      background_err = background_err * lumi/lumi_true
+
+      bkg_box_m4p5 = ROOT.TBox(1e-6, background_yields-background_err, 1, background_yields+background_err)
+      bkg_box_m4p5.SetFillColor(signal_colour)
+      bkg_box_m4p5.SetFillStyle(3005)
+      bkg_box_m4p5.Draw('same')
+
+      bkg_line_m4p5 = ROOT.TLine(1e-6, background_yields, 1, background_yields)
+      bkg_line_m4p5.SetLineColor(signal_colour)
+      bkg_line_m4p5.SetLineWidth(3)
+      bkg_line_m4p5.SetLineStyle(9)
+
+      bkg_line_m4p5.Draw('same')
+      legend.AddEntry(bkg_line_m4p5, 'background in 2#sigma window around m={}GeV'.format(signal_mass))
+
+      legend.Draw()
+      self.tools.printLatexBox(0.69, 0.86, category.title, size=0.04)
+
+      if not path.exists('./myPlots/yields'):
+        os.system('mkdir -p ./myPlots/yields')
+
+      canv.cd()
+      canv.SaveAs('./myPlots/yields/signalbkg_yields_{}_{}.png'.format(label, category.label))
+      canv.SaveAs('./myPlots/yields/signalbkg_yields_{}_{}.pdf'.format(label, category.label))
 
 
   def plotBkgYields(self, label='', lumi=41.6, doABCD=False, doABCDHybrid=False, doTF=False):
@@ -423,16 +706,57 @@ class Significance(object):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  plotSigYields = True
+  plotSigYields = False
+  plotSigBkgYields = True
   plotBkgYields = False
   getSignificance = False
 
   if plotSigYields:
-    plotter = YieldsChecks()
+    data_files = data_samples['V08_29Sep21']
+    qcd_files = qcd_samples['V08_29Sep21']
+    white_list = white_list['20to300']
+    #categories = categories['3cat_0_1_5_significance']
+    ABCD = ABCD_regions['cos2d_svprob_0p996']
+    #doABCD = False
+    #doABCDHybrid = False
+    #doTF = True
+
     selection = selection['study_Nov21'].flat #'mu_isdsa!=1 && sv_lxy>30 && trgmu_charge==mu_charge'
+    #selection = 'mu_isdsa==1 && sv_lxy>20 && pi_pt>1.1 && mu_ismatchedtoslimmedmuon==0'
+
+    #plotter = YieldsChecks()
+    plotter = YieldsChecks(data_files=data_files, qcd_files=qcd_files, white_list=white_list, categories=categories, selection=selection, ABCD_regions=ABCD)
+
     #label = 'central_reweighting_allmasses_strategyctaumerged_updatedsigma'
+    #label = 'V08_29Sep21_dsa_study_ABCD_m1_nonmatched'
     label = 'test'
-    plotter.plotSigYields(lumi=41.6, selection=selection, label=label, outdirlabel='')
+    add_bkg_level = True
+    plotter.plotSigYields(lumi=41.6, selection=selection, label=label, outdirlabel='', add_bkg_level=add_bkg_level)
+
+
+  if plotSigBkgYields:
+    data_files = data_samples['V09_06Nov21']
+    qcd_files = qcd_samples['V09_06Nov21']
+    samples_m1 = signal_samples['central_V09_06Nov21_m1']
+    samples_m3 = signal_samples['central_V09_06Nov21_m3']
+    samples_m4p5 = signal_samples['central_V09_06Nov21_m4p5']
+    signal_files = [samples_m1, samples_m3]
+    white_list = white_list['20to300']
+    categories = categories['3cat_0_1_5_significance']
+    #categories = categories['inclusive']
+    ABCD = ABCD_regions['cos2d_svprob_0p996']
+    doABCD = False
+    doABCDHybrid = True
+    doTF = False
+    selection = selection['study_Nov21'].flat
+    label = 'V09_06Nov21_ABCDHybrid_uncert0p3'
+
+    plotter = YieldsChecks(data_files=data_files, qcd_files=qcd_files, signal_files=signal_files, white_list=white_list, categories=categories, selection=selection, ABCD_regions=ABCD)
+    #for category in categories:
+    #  label += '_{}'.format(category.label)
+    #plotter.plotSigBkgYields(lumi=41.6, selection=selection, label=label, category=category, doABCD=doABCD, doABCDHybrid=doABCDHybrid, doTF=doTF)
+    plotter.plotSigBkgYields(lumi=41.6, selection=selection, label=label, doABCD=doABCD, doABCDHybrid=doABCDHybrid, doTF=doTF)
+
 
   if plotBkgYields:
     data_files = data_samples['V09_06Nov21']
@@ -441,11 +765,11 @@ if __name__ == '__main__':
     categories = categories['3cat_0_1_5_significance']
     selection = selection['study_Nov21'].flat
     ABCD = ABCD_regions['cos2d_svprob_0p996']
-    doABCD = False
+    doABCD = True
     doABCDHybrid = False
-    doTF = True
+    doTF = False
 
-    label = 'V09_06Nov21_fulllumi_selstudyNov21_cos2dsvprob0p996_catselsignificance_20sigmawindow_qcd50to300_fullA_TF'
+    label = 'test' #V09_06Nov21_fulllumi_selstudyNov21_cos2dsvprob0p996_catselsignificance_20sigmawindow_qcd50to300_fullA_TF'
     #label = 'V09_06Nov21_fulllumi_selstudyNov21_cos2dsvprob0p996_fullA_nocatsel'
     plotter = YieldsChecks(data_files=data_files, qcd_files=qcd_files, white_list=white_list, categories=categories, selection=selection, ABCD_regions=ABCD)
     plotter.plotBkgYields(label=label, doABCD=doABCD, doABCDHybrid=doABCDHybrid, doTF=doTF)
