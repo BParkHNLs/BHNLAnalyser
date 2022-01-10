@@ -9,6 +9,7 @@ import numpy as np
 from itertools import product
 
 from tools import Tools
+from compute_yields import ComputeYields
 
 import sys
 sys.path.append('../objects')
@@ -258,6 +259,7 @@ class Plotter(Tools):
       hist_qcd_tot.Sumw2()
       int_qcd_tot = 0.
 
+      #lumi_tot = self.tools.getQCDMCLumi(self.qcd_files, self.white_list)
       for ifile, qcd_file in enumerate(self.qcd_files):
         qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
         if qcd_file_pthatrange not in self.white_list: continue
@@ -267,7 +269,11 @@ class Plotter(Tools):
         tree_run = self.getTree(f_qcd, 'run_tree')
 
         weight_qcd = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
-        weight_qcd = '({})'.format(weight_qcd)
+        #weight_qcd = 1. / (self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency) * lumi_tot)
+        #weight_qcd = '(1)'
+        weight_qcd = '({}*4.644)'.format(weight_qcd)
+        #weight_qcd = '({})'.format(weight_qcd)
+        print 'weight_qcd ',weight_qcd
         if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
         if add_weight_pu : weight_qcd += ' * ({}) '.format(weight_puqcd)
 
@@ -303,7 +309,15 @@ class Plotter(Tools):
       hist_qcd_stack = ROOT.THStack('hist_qcd_stack', '')
 
       ## compute the mc normalisation weight
-      if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd)
+      #if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd)
+      if do_luminorm:
+        lumi_qcd = self.tools.getQCDMCLumi(self.qcd_files, self.white_list) #*112915./3884564. #9e-04 #0.018 #self.tools.getQCDMCLumi(self.qcd_files, self.white_list) 
+        print 'lumi_qcd ',lumi_qcd
+        lumi_data = self.tools.getDataLumi(self.data_files)
+        print 'lumi_data ',lumi_data
+        lumi_weight = 1#lumi_data #1#lumi_data / lumi_qcd
+        print 'lumi_weight ',lumi_weight
+
 
       for hist_qcd in qcd_hists:
         if do_shape and int_qcd_tot != 0: hist_qcd.Scale(1/int_qcd_tot)
@@ -490,6 +504,230 @@ class Plotter(Tools):
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
 
 
+  def plotBinnedPrefitMass(self, selection='', title='', outdirloc='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd='', do_stack=True, do_log=False, add_CMSlabel=True, CMS_tag='Preliminary'):
+
+    # create the canvas
+    canv_name = 'canv_{}_{}_{}'.format(self.quantity.label, outdirlabel.replace('/', '_'), do_log)
+    canv = self.tools.createTCanvas(name=canv_name, dimx=1200, dimy=1000)
+    canv.cd()
+
+    # define the pads
+    pad_up = ROOT.TPad("pad_up","pad_up",0,0.25,1,1) if plot_ratio else ROOT.TPad("pad_up","pad_up",0.02,0,1,1)
+    if plot_ratio: pad_up.SetBottomMargin(0.03)
+    if do_log: pad_up.SetLogy()
+    pad_up.Draw()
+    canv.cd()
+
+    # prepare the legend
+    if do_stack:
+      legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.45, xmax=0.84, ymax=0.83, size=0.027)
+    else:
+      legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.65, xmax=0.84, ymax=0.83, size=0.027)
+
+    pad_up.cd()
+
+    # signal
+    signal_hists = []
+    for signal_file in self.signal_files:
+      f_sig = self.tools.getRootFile(signal_file.filename)
+      tree_sig = self.getTree(f_sig, treename)
+      
+      mass = signal_file.mass
+      sigma = signal_file.resolution
+  
+      quantity_yields = Quantity(name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=30, bin_min=mass-2*sigma, bin_max=mass+2*sigma) #TODO modify 
+
+      hist_signal_name = 'hist_signal_{}_{}_{}'.format(quantity_yields, outdirlabel.replace('/', '_'), do_log)
+      matching_selection = 'ismatched==1' if branchname == 'flat' else 'BToMuMuPi_isMatched==1'
+      selection_signal = matching_selection if selection == '' else matching_selection + ' && ' + selection
+      weight_sig = '(1)'
+      if add_weight_hlt : weight_sig += ' * ({})'.format(weight_hlt)
+      #if add_weight_pu : weight_sig += ' * (weight_pu_qcd)' #TODO modify pileup weight
+
+      hist_signal = self.tools.createHisto(tree_sig, quantity_yields, hist_name=hist_signal_name, branchname=branchname, selection=selection_signal, weight=weight_sig)
+      hist_signal.Sumw2()
+    
+      # normalise signal to actual yields
+      lumi_target = 41.6 #TODO
+      sigma_B = 472.8e9 #TODO 
+      print 'signal selection ',selection_signal
+      signal_yields = ComputeYields(signal_file=signal_file, selection=selection_signal).computeSignalYields(lumi=lumi_target, sigma_B=sigma_B, add_weight_hlt=False, weight_hlt='', isBc=False)[0]
+      int_signal = hist_signal.Integral()
+      hist_signal.Scale(signal_yields/int_signal)
+
+      legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
+
+      hist_signal.SetLineWidth(3)
+      hist_signal.SetLineColor(signal_file.colour)
+      signal_hists.append(hist_signal)
+
+    # qcd mc
+    qcd_hists = []
+    hist_qcd_tot = ROOT.TH1D('hist_qcd_tot', 'hist_qcd_tot', quantity_yields.nbins, quantity_yields.bin_min, quantity_yields.bin_max)
+    hist_qcd_tot.Sumw2()
+    int_qcd_tot = 0.
+
+    for ifile, qcd_file in enumerate(self.qcd_files):
+      qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
+      if qcd_file_pthatrange not in self.white_list: continue
+
+      f_qcd = self.tools.getRootFile(qcd_file.filename)
+      tree_qcd = self.getTree(f_qcd, treename)
+      tree_run = self.getTree(f_qcd, 'run_tree')
+
+      weight_qcd = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
+      weight_qcd = '({})'.format(weight_qcd)
+      if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
+      if add_weight_pu : weight_qcd += ' * ({}) '.format(weight_puqcd)
+
+      hist_qcd_name = 'hist_qcd_{}_{}_{}'.format(quantity_yields, outdirlabel.replace('/', '_'), do_log)
+      print 'qcd selection ',selection
+      hist_qcd = self.tools.createHisto(tree_qcd, quantity_yields, hist_name=hist_qcd_name, branchname=branchname, selection=selection, weight=weight_qcd) 
+      hist_qcd.Sumw2()
+      hist_qcd.SetFillColor(qcd_file.colour)
+      hist_qcd.SetLineColor(1)
+      
+      if do_stack:
+        legend.AddEntry(hist_qcd, 'MC - {}'.format(qcd_file.label))
+
+      int_qcd_tot += hist_qcd.Integral()
+  
+      hist_qcd_tot.Add(hist_qcd)
+      qcd_hists.append(hist_qcd)
+  
+    hist_qcd_tot.SetTitle('')
+    hist_qcd_tot.SetFillColor(ROOT.kAzure-4)
+    hist_qcd_tot.SetLineColor(1)
+  
+    if not do_stack:
+      legend.AddEntry(hist_qcd_tot, 'MC - {}'.format(self.getQCDMCLabel(self.white_list[0], self.white_list[len(self.white_list)-1], qcd_file.label)))
+      
+    ## create stack histogram  
+    hist_qcd_stack = ROOT.THStack('hist_qcd_stack', '')
+
+    ## compute the mc normalisation weight
+    #TODO use function
+    lumi_true = 0
+    for data_file in self.data_files:
+      lumi_true += data_file.lumi
+    print 'lumi true ',lumi_true
+
+    from qcd_white_list import white_list
+    from ABCD_regions import ABCD_regions
+    background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=selection, white_list=white_list['20to300']).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=sigma, ABCD_regions=ABCD_regions['cos2d_svprob_0p996'], sigma_mult_window=2)[0] #TODO modify
+    background_yields *= 41.6/lumi_true
+
+    # normalise to estimated yields
+    for hist_qcd in qcd_hists:
+      hist_qcd.Scale(background_yields/int_qcd_tot)
+      hist_qcd_stack.Add(hist_qcd)
+    hist_qcd_tot.Scale(background_yields/int_qcd_tot)
+
+    frame = ROOT.TH1D('frame', 'frame', 50, mass-2.5*sigma, mass+2.5*sigma) #TODO modify?
+
+    frame.SetTitle('')
+    #frame.GetYaxis().SetRangeUser(0, 10000)
+    frame.GetXaxis().SetTitle(quantity.title)
+    frame.GetXaxis().SetLabelSize(0.033)
+    frame.GetXaxis().SetTitleSize(0.042)
+    frame.GetXaxis().SetTitleOffset(1.1)
+    frame.GetYaxis().SetTitle('Yields')
+    frame.GetYaxis().SetLabelSize(0.033)
+    frame.GetYaxis().SetTitleSize(0.042)
+    frame.GetYaxis().SetTitleOffset(1.3)
+    frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
+
+    #ROOT.gStyle.SetPadLeftMargin(0.16) 
+    ROOT.gStyle.SetOptStat(0)
+
+    # draw the distributions
+    frame.Draw()
+    hist_qcd_tot.Draw('histo same')
+    if do_stack:
+      hist_qcd_stack.Draw('histo same')
+    for hist_sig in signal_hists:
+      hist_sig.Draw('histo same')
+
+    # draw error bars
+    hist_qcd_tot_err = hist_qcd_tot.Clone('hist_qcd_tot_err')
+    hist_qcd_tot_err.SetLineWidth(0)
+    hist_qcd_tot_err.SetFillStyle(3244)
+    hist_qcd_tot_err.SetFillColor(ROOT.kGray+2)
+    hist_qcd_tot_err.Draw('E2 same')
+
+    # draw the legend
+    legend.Draw('same')
+
+    # add labels
+    self.tools.printLatexBox(0.65, 0.86, title, size=0.036)
+    if add_CMSlabel: self.tools.printCMSTag(pad_up, CMS_tag, size=0.43)
+
+    #outputdir = self.tools.getOutDir('{}/{}/plots/{}'.format(outdirloc, outdirlabel, subdirlabel), plotdirlabel, do_shape=False, do_luminorm=False, do_stack=do_stack, do_log=do_log, add_overflow=False)
+    outputdir = self.tools.getOutDir('{}/{}/datacards/{}'.format(outdirloc, outdirlabel, subdirlabel), 'binned_prefit', do_shape=False, do_luminorm=False, do_stack=do_stack, do_log=do_log, add_overflow=False)
+    
+    canv.SaveAs('{}/{}.png'.format(outputdir, quantity_yields.label))
+    canv.SaveAs('{}/{}.pdf'.format(outputdir, quantity_yields.label))
+
+
+
+
+
+  def plotTwoSamples(file1, file2, branchname, tree1, tree2, selection1='', selection2='', legend1='legend1', legend2='legend2', do_printstat=False):
+    canv = self.tools.createTCanvas(name='canv', dimx=900, dimy=800)
+    if self.do_log: canv.SetLogy()
+    if not do_printstat: ROOT.gStyle.SetOptStat(0)
+
+    hist1 = self.tools.createHisto(file1, tree1, self.quantity, hist_name=legend1, branchname=branchname, selection=selection1)
+    hist2 = self.tools.createHisto(file2, tree2, self.quantity, hist_name=legend2, branchname=branchname, selection=selection2)
+    
+    if self.do_shape: 
+      int1 = hist1.Integral()
+      hist1.Scale(1/int1)
+      int2 = hist2.Integral()
+      hist2.Scale(1/int2)
+
+    hist1.SetTitle(self.title)
+    hist1.SetLineWidth(2)
+    hist1.SetLineColor(ROOT.kOrange+1)
+    hist1.GetXaxis().SetTitle(self.quantity.title)
+    hist1.GetXaxis().SetLabelSize(0.037)
+    hist1.GetXaxis().SetTitleSize(0.042)
+    hist1.GetXaxis().SetTitleOffset(1.1)
+    hist1.GetYaxis().SetTitle('Entries' if not self.do_shape else 'Normalised to unity')
+    hist1.GetYaxis().SetLabelSize(0.037)
+    hist1.GetYaxis().SetTitleSize(0.042)
+    hist1.GetYaxis().SetTitleOffset(1.1)
+
+    hist1.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist1, hist2, self.do_log))
+
+    hist2.SetLineWidth(2)
+    hist2.SetLineColor(ROOT.kBlue+2)
+
+    hist1.Draw('histo')
+
+    if do_printstat:
+      ROOT.gPad.Update() 
+      statsbox = ROOT.gPad.GetPrimitive("stats")
+      y1 = statsbox.GetY1NDC()
+      y2 = statsbox.GetY2NDC()
+      newy1 = 2 * y1 - y2
+      newy2 = y1
+      statsbox.SetY1NDC(newy1)
+      statsbox.SetY2NDC(newy2)
+
+    hist2.Draw('histo sames')
+
+    legend = self.tools.getRootTLegend(xmin=0.6, ymin=0.7, xmax=0.85, ymax=0.9, size=0.03)
+    legend.AddEntry(hist2, legend2)
+    legend.AddEntry(hist1, legend1)
+    legend.Draw()
+
+    outputdir = self.tools.getOutDir('./myPlots/comparison', self.outdirlabel, do_shape=self.do_shape, do_log=self.do_log)
+
+    canv.SaveAs('{}/{}.png'.format(outputdir, self.quantity.label))
+    canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
+
+
 
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
@@ -517,6 +755,7 @@ if __name__ == '__main__':
     for category in categories:
       if opt.category_label != None and category.label != opt.category_label: continue # needed for category parallelisation on the batch
       category_definition = category.definition_flat if opt.sample_type == 'flat' else category.definition_nano
+      category_cutbased_selection = category.cutbased_selection
 
       for quantity in quantities:
         plotter = Plotter(quantity=quantity, data_files=data_files, qcd_files=qcd_files, signal_files=signal_files, white_list=white_list)
@@ -563,10 +802,35 @@ if __name__ == '__main__':
           plot_qcd = True
           plot_sig = True
           plot_ratio = False
-          do_shape = True
-          do_luminorm = False
+          do_shape = False #True
+          do_luminorm = True #False
 
-          plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
+          ##plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
+          #             title = title, 
+          #             outdirloc = './outputs',
+          #             outdirlabel = outdirlabel, 
+          #             subdirlabel = subdirlabel, 
+          #             plotdirlabel = plotdirlabel, 
+          #             branchname = opt.sample_type, 
+          #             treename = opt.tree_name,
+          #             add_weight_hlt = 1 if opt.add_weight_hlt else 0,
+          #             add_weight_pu = 1 if opt.add_weight_pu else 0,
+          #             weight_hlt = opt.weight_hlt,
+          #             weight_puqcd = opt.weight_puqcd,
+          #             plot_data = plot_data, 
+          #             plot_qcd = plot_qcd,
+          #             plot_sig = plot_sig, 
+          #             plot_ratio = plot_ratio, 
+          #             do_shape = do_shape, 
+          #             do_luminorm = do_luminorm, 
+          #             do_stack = opt.do_stack, 
+          #             do_log = opt.do_log,
+          #             add_overflow = opt.add_overflow,
+          #             add_CMSlabel = opt.add_CMSlabel,
+          #             CMS_tag = opt.CMStag
+          #             )
+
+          plotter.plotBinnedPrefitMass(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition + ' && ' + category_cutbased_selection, 
                        title = title, 
                        outdirloc = './outputs',
                        outdirlabel = outdirlabel, 
@@ -578,15 +842,9 @@ if __name__ == '__main__':
                        add_weight_pu = 1 if opt.add_weight_pu else 0,
                        weight_hlt = opt.weight_hlt,
                        weight_puqcd = opt.weight_puqcd,
-                       plot_data = plot_data, 
-                       plot_qcd = plot_qcd,
-                       plot_sig = plot_sig, 
-                       plot_ratio = plot_ratio, 
-                       do_shape = do_shape, 
-                       do_luminorm = do_luminorm, 
                        do_stack = opt.do_stack, 
-                       do_log = opt.do_log,
-                       add_overflow = opt.add_overflow,
+                       #do_log = opt.do_log,
+                       do_log = True, #opt.do_log,
                        add_CMSlabel = opt.add_CMSlabel,
                        CMS_tag = opt.CMStag
                        )
