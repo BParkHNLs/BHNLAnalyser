@@ -734,15 +734,15 @@ class Plotter(Tools):
       if icat <= len(categories)/2:
         canv_mult.cd(1)
         pad_up = ROOT.TPad("pad_up","pad_up",pad_min+(icat-1)*pad_size,0,pad_min+icat*pad_size,1)
-        pad_up.SetLeftMargin(0.15)
-        pad_up.SetRightMargin(0.09)
+        pad_up.SetLeftMargin(0.17)
+        pad_up.SetRightMargin(0.07)
         pad_up.SetTopMargin(0.15)
         pad_up.SetBottomMargin(0.03)
       else: 
         canv_mult.cd(2)
         pad_up = ROOT.TPad("pad_up","pad_up",pad_min+(icat-1-(len(categories)-1)/2)*pad_size,0,pad_min+(icat-(len(categories)-1)/2)*pad_size,1)
-        pad_up.SetLeftMargin(0.15)
-        pad_up.SetRightMargin(0.09)
+        pad_up.SetLeftMargin(0.17)
+        pad_up.SetRightMargin(0.07)
         pad_up.SetTopMargin(0.03)
         pad_up.SetBottomMargin(0.15)
   
@@ -786,19 +786,19 @@ class Plotter(Tools):
       hist_qcd_tot.SetTitle('')
       hist_qcd_tot.GetXaxis().SetTitle(quantity.title if icat==len(categories)-1 else '')
       hist_qcd_tot.GetXaxis().SetLabelSize(0.06 if icat>(len(categories)-1)/2 else 0)
-      hist_qcd_tot.GetXaxis().SetTitleSize(0.06 if icat>(len(categories)-1)/2 else 0)
+      hist_qcd_tot.GetXaxis().SetTitleSize(0.07 if icat>(len(categories)-1)/2 else 0)
       hist_qcd_tot.GetXaxis().SetTickLength(0.03)
       hist_qcd_tot.GetXaxis().SetNdivisions(405)
       hist_qcd_tot.GetXaxis().SetTitleOffset(1.1)
       hist_qcd_tot.GetYaxis().SetTitle('Yields' if icat==1 else '')
       hist_qcd_tot.GetYaxis().SetLabelSize(0.06 if (icat==1 or icat-1==(len(categories)-1)/2) else 0)
-      hist_qcd_tot.GetYaxis().SetTitleSize(0.06 if (icat==1 or icat-1==(len(categories)-1)/2) else 0)
+      hist_qcd_tot.GetYaxis().SetTitleSize(0.07 if (icat==1 or icat-1==(len(categories)-1)/2) else 0)
       ##hist_qcd_tot.GetYaxis().SetLabelSize(0.05)
       ##hist_qcd_tot.GetYaxis().SetTitleSize(0.05)
       hist_qcd_tot.GetYaxis().SetTickLength(0.03)
       hist_qcd_tot.GetYaxis().SetNdivisions(405)
       hist_qcd_tot.GetYaxis().SetTitleOffset(1.3)
-      hist_qcd_tot.GetYaxis().SetRangeUser(1e-9, 1e6)
+      hist_qcd_tot.GetYaxis().SetRangeUser(1e-9, 5e6)
 
       # draw the distributions
       #frame.Draw()
@@ -820,8 +820,9 @@ class Plotter(Tools):
       legend.Draw('same')
 
       # add labels
-      self.tools.printLatexBox(0.65, 0.86, category.title, size=0.036)
-      if add_CMSlabel and icat==1: self.tools.printCMSTag(pad_up, CMS_tag, size=0.6)
+      offset = 1.4 if icat<=(len(categories)-1)/2 else 2.8
+      self.tools.printLatexBox(0.73, 1-offset*pad_up.GetTopMargin(), category.title, size=0.056)
+      if add_CMSlabel and icat==1: self.tools.printCMSTag(pad_up, CMS_tag, size=0.45, offset=0.15)
 
     plotname = 'hnl_mass_mult'
     outputdir = self.tools.getOutDir('{}/{}/datacards/{}'.format(outdirloc, outdirlabel, subdirlabel), 'binned_prefit', do_shape=False, do_luminorm=False, do_stack=do_stack, do_log=do_log, add_overflow=False)
