@@ -95,7 +95,7 @@ class Tools(object):
     return weight
 
 
-  def getLumiWeight(self, data_files, qcd_files, white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd):
+  def getLumiWeight(self, data_files, qcd_files, white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd): # rename, e.g scaleToLumi?
     '''
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
@@ -228,7 +228,7 @@ class Tools(object):
     return hist
 
 
-  def printCMSTag(self, pad, cms_tag, size=0.55):
+  def printCMSTag(self, pad, cms_tag, size=0.55, offset=0.08):
     pad.cd()
     tag = ROOT.TLatex()
     tag.SetNDC()
@@ -241,7 +241,7 @@ class Tools(object):
     tag.SetTextFont(52)
     tag.SetTextSize(0.9*size*pad.GetTopMargin())
     tag.SetTextAlign(11)
-    tag.DrawLatex(pad.GetLeftMargin()+0.08, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), cms_tag)      
+    tag.DrawLatex(pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), cms_tag)      
     pad.Update()
 
 
@@ -279,12 +279,15 @@ class Tools(object):
     #if not do_shape and not do_stack and not do_log: dirlabel += '/plain'
     if do_stack: 
       if norm==None and not do_log and not do_luminorm: dirlabel += '/stack'
+      elif norm==None and do_log:  dirlabel += '/stack/log'
       elif norm!=None and not do_log and not add_overflow: dirlabel += '/stack_{}'.format(norm)
       elif norm!=None and not do_log and add_overflow: dirlabel += '/stack_{}_overflow'.format(norm)
       elif norm!=None and do_log and not add_overflow: dirlabel += '/stack_{}_log'.format(norm)
       else: dirlabel += '/stack_{}_log_overflow'.format(norm)
     else:
-      if norm!=None and not do_log and not add_overflow: dirlabel += '/{}'.format(norm)
+      if norm==None and do_log: dirlabel += '/log'
+      elif norm==None and not do_log: dirlabel += '/lin'
+      elif norm!=None and not do_log and not add_overflow: dirlabel += '/{}'.format(norm)
       elif norm!=None and do_log and not add_overflow: dirlabel += '/{}_log'.format(norm)
       elif norm!=None and not do_log and add_overflow: dirlabel += '/{}_overflow'.format(norm)
       else: dirlabel += '/{}_log_overflow'.format(norm)
