@@ -176,11 +176,12 @@ class Tools(object):
     return canv
 
 
-  def getRootTLegend(self, xmin=0.65, ymin=0.7, xmax=0.85, ymax=0.9, size=0.03):
+  def getRootTLegend(self, xmin=0.65, ymin=0.7, xmax=0.85, ymax=0.9, size=0.03, do_alpha=True):
     legend = ROOT.TLegend(xmin, ymin, xmax, ymax)
     legend.SetTextSize(size)
     legend.SetLineColor(0)
-    legend.SetFillColorAlpha(0, 0)
+    if do_alpha: legend.SetFillColorAlpha(0, 0)
+    else: legend.SetFillColor(0)
     legend.SetBorderSize(0)
     return legend
     
@@ -340,4 +341,11 @@ class Tools(object):
     k = ref_ctau * np.power(ref_m,5) * ref_vv
     return k/(np.power(mass, 5) * ctau)
 
+
+  def getCouplingLabel(self, v2):
+    coupling = "{:e}".format(v2)
+    part1 = coupling[:coupling.find('e')]
+    part1 = str(round(float(part1), 1))
+    part2 = coupling[coupling.find('e'):]
+    return (part1+part2)
 
