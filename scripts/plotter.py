@@ -700,7 +700,7 @@ class Plotter(Tools):
       canv.SaveAs('{}/{}.pdf'.format(outputdir, plotname))
 
 
-    # plot categories on same canvas 
+    ## plot categories on same canvas 
     # create the canvas
     canv_name = 'canv_mult_{}_{}_{}'.format(self.quantity.label, outdirlabel.replace('/', '_'), do_log)
     canv_mult = self.tools.createTCanvas(name=canv_name, dimx=1500, dimy=1000)
@@ -735,6 +735,7 @@ class Plotter(Tools):
       signal_hists = signal_hists_all[icat]
       hist_qcd_tot = qcd_hists_all[icat]
       hist_qcd_stack = qcd_hists_all[icat]
+      hist_qcd_tot_err = qcd_err_hists_all[icat]
 
       ROOT.gStyle.SetOptStat(0)
 
