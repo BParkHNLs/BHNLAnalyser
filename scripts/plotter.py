@@ -653,12 +653,6 @@ class Plotter(Tools):
       pad.Draw()
       canv.cd()
 
-      # prepare the legend
-      if do_stack:
-        legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.45, xmax=0.84, ymax=0.83, size=0.027)
-      else:
-        legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.65, xmax=0.84, ymax=0.83, size=0.027)
-
       # get histograms
       signal_hists = signal_hists_all[icat]
       hist_qcd_tot = qcd_hists_all[icat]
@@ -689,6 +683,10 @@ class Plotter(Tools):
       hist_qcd_tot_err.Draw('E2 same')
 
       # draw the legend
+      legend = self.tools.getRootTLegend(xmin=0.2, ymin=0.15, xmax=0.78, ymax=0.37, size=0.033, do_alpha=False)
+      for isig, signal_hist in enumerate(signal_hists):
+        legend.AddEntry(signal_hist, 'signal - ({}GeV, {}mm)'.format(self.signal_files[isig].mass, self.signal_files[isig].ctau))
+      legend.AddEntry(hist_qcd_tot, 'QCD')
       legend.Draw('same')
 
       # add labels
@@ -733,12 +731,6 @@ class Plotter(Tools):
       pad.Draw()
       pad.cd()
 
-      # prepare the legend
-      if do_stack:
-        legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.45, xmax=0.84, ymax=0.83, size=0.027)
-      else:
-        legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.65, xmax=0.84, ymax=0.83, size=0.027)
-
       # get histograms
       signal_hists = signal_hists_all[icat]
       hist_qcd_tot = qcd_hists_all[icat]
@@ -770,7 +762,12 @@ class Plotter(Tools):
       hist_qcd_tot_err.Draw('E2 same')
 
       # draw the legend
-      legend.Draw('same')
+      if icat==1:
+        legend = self.tools.getRootTLegend(xmin=0.26, ymin=0.06, xmax=0.84, ymax=0.37, size=0.04, do_alpha=False)
+        for isig, signal_hist in enumerate(signal_hists):
+          legend.AddEntry(signal_hist, 'signal - ({}GeV, {}mm)'.format(self.signal_files[isig].mass, self.signal_files[isig].ctau))
+        legend.AddEntry(hist_qcd_tot, 'QCD')
+        legend.Draw('same')
 
       # add labels
       offset = 1.4 if icat<=(len(categories)-1)/2 else 2.8
