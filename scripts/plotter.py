@@ -260,7 +260,6 @@ class Plotter(Tools):
       hist_qcd_tot.Sumw2()
       int_qcd_tot = 0.
 
-      #lumi_tot = self.tools.getQCDMCLumi(self.qcd_files, self.white_list)
       for ifile, qcd_file in enumerate(self.qcd_files):
         qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
         if qcd_file_pthatrange not in self.white_list: continue
@@ -270,11 +269,7 @@ class Plotter(Tools):
         tree_run = self.getTree(f_qcd, 'run_tree')
 
         weight_qcd = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
-        #weight_qcd = 1. / (self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency) * lumi_tot)
-        #weight_qcd = '(1)'
-        weight_qcd = '({}*4.644)'.format(weight_qcd)
-        #weight_qcd = '({})'.format(weight_qcd)
-        print 'weight_qcd ',weight_qcd
+        weight_qcd = '({})'.format(weight_qcd)
         if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
         if add_weight_pu : weight_qcd += ' * ({}) '.format(weight_puqcd)
 
@@ -310,15 +305,7 @@ class Plotter(Tools):
       hist_qcd_stack = ROOT.THStack('hist_qcd_stack', '')
 
       ## compute the mc normalisation weight
-      #if do_luminorm: lumi_weight = self.tools.getLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd)
-      if do_luminorm:
-        lumi_qcd = self.tools.getQCDMCLumi(self.qcd_files, self.white_list) #*112915./3884564. #9e-04 #0.018 #self.tools.getQCDMCLumi(self.qcd_files, self.white_list) 
-        print 'lumi_qcd ',lumi_qcd
-        lumi_data = self.tools.getDataLumi(self.data_files)
-        print 'lumi_data ',lumi_data
-        lumi_weight = 1#lumi_data #1#lumi_data / lumi_qcd
-        print 'lumi_weight ',lumi_weight
-
+      if do_luminorm: lumi_weight = self.tools.scaleToLumiWeight(self.data_files, self.qcd_files, self.white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd)
 
       for hist_qcd in qcd_hists:
         if do_shape and int_qcd_tot != 0: hist_qcd.Scale(1/int_qcd_tot)
@@ -399,8 +386,8 @@ class Plotter(Tools):
       scale_text.SetTextSize(0.032)
       scale_text.SetTextAlign(31)
       scale_text.SetTextFont(42)
-      scale_text.AddText('MC scaled by {}'.format(round(lumi_weight, 2)))
-      #scale_text.Draw()
+      scale_text.AddText('MC scaled by {}'.format(round(lumi_weight/self.tools.getDataLumi(self.data_files), 2)))
+      scale_text.Draw()
 
     # plot the ratio
     if plot_ratio:
