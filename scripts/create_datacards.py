@@ -99,14 +99,6 @@ class DatacardsMaker(Tools):
       os.system('mkdir -p {}'.format(self.outputdir))
 
 
-  def getCouplingLabel(self, v2):
-    coupling = "{:e}".format(v2)
-    part1 = coupling[:coupling.find('e')]
-    part1 = str(round(float(part1), 1))
-    part2 = coupling[coupling.find('e'):]
-    return (part1+part2)
-
-
   def getWindowList(self):
     masses = []
     resolutions = []
@@ -164,7 +156,7 @@ class DatacardsMaker(Tools):
     signal_mass = signal_point.mass
     signal_ctau = signal_point.ctau
     signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
-    signal_coupling = self.getCouplingLabel(signal_v2)
+    signal_coupling = self.tools.getCouplingLabel(signal_v2)
 
     return signal_mass, signal_coupling
 
@@ -211,6 +203,23 @@ syst_bkg_{lbl}                             lnN           -                      
     print '--> {}/{} created'.format(self.outputdir, datacard_name)
 
 
+  def writeYieldsForPlots(self, label, signal_yields, background_yields):
+    summary_name = 'summary_yields_{}.txt'.format(label)
+    summary = open('{}/{}'.format(self.outputdir, summary_name), 'w+')
+    summary.write(
+'''\
+sig {sig_yields}
+bkg {bkg_yields}
+'''.format(
+            sig_yields = signal_yields,
+            bkg_yields = background_yields,
+        )
+      )
+
+    summary.close()
+    print '--> {}/{} created'.format(self.outputdir, summary_name)
+
+
   def process(self):
     #baseline_selection = '(trgmu_mu_mass<3.03 || trgmu_mu_mass>3.15) && hnl_charge==0 && b_mass<5.5'
     #baseline_selection = 'mu_isdsa!=1 && hnl_charge==0 && b_mass<6.4 && deltar_mu_pi>0.1 && deltar_mu_pi<1.7 && deltar_trgmu_mu<1 && deltar_trgmu_pi<1.5 && pi_pt>0.8'
@@ -249,6 +258,13 @@ syst_bkg_{lbl}                             lnN           -                      
 
           # create the datacard
           self.writeCard(label=label, signal_yields=signal_yields, background_yields=background_yields)
+
+          # save yields summary
+          self.writeYieldsForPlots(label=label, signal_yields=signal_yields, background_yields=background_yields)
+
+    # create plots
+    #if self.plot_prefit_binned:
+    #  self.plot(mass=window['mass'], category=category)
           
 
 
