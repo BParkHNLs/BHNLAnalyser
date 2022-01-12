@@ -95,7 +95,7 @@ class Tools(object):
     return weight
 
 
-  def getLumiWeight(self, data_files, qcd_files, white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd): # rename, e.g scaleToLumi?
+  def scaleToLumiWeight(self, data_files, qcd_files, white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd):
     '''
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
