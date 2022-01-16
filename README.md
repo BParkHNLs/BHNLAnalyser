@@ -40,3 +40,12 @@ cd ..
 source env_standalone.sh
 cd BHNAnalyser
 ```
+
+## Run the analysis
+1. Configure the analyser. An example of a config file is given in cfgs/example_cfg.py
+2. Choose what to run in the User's decision board in BHNLLauncher.py
+3. Run the analysis with the command
+```
+python BHNLLauncher.py
+```
+
