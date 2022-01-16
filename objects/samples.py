@@ -340,7 +340,7 @@ signal_samples['central_V09_06Nov21_m1'] = [
       ctau = 100.0,
       resolution = 0.00853,
       filter_efficiency = 5.17e-03,
-      colour = ROOT.kOrange+0
+      colour = ROOT.kOrange+7
       ),
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
@@ -349,7 +349,7 @@ signal_samples['central_V09_06Nov21_m1'] = [
       ctau = 10.0,
       resolution = 0.00853,
       filter_efficiency = 5.85e-03,
-      colour = ROOT.kOrange+0
+      colour = ROOT.kOrange+9
       ),
   ]
 
@@ -421,7 +421,7 @@ signal_samples['central_V09_06Nov21_m3'] = [
       ctau = 1000.0,
       resolution = 0.0251,
       filter_efficiency = 2.40e-03,
-      colour = ROOT.kRed+1,
+      colour = ROOT.kRed-9,
       ),
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
@@ -459,7 +459,7 @@ signal_samples['central_V09_06Nov21_m3'] = [
       ctau = 0.1,
       resolution = 0.0251,
       filter_efficiency = 5.87e-03,
-      colour = ROOT.kRed+1,
+      colour = ROOT.kRed+3,
       ),
   ]
 
@@ -471,7 +471,7 @@ signal_samples['central_V09_06Nov21_m4p5'] = [
       ctau = 100.0,
       resolution = 0.0368,
       filter_efficiency = 6.10e-04,
-      colour = ROOT.kRed+4,
+      colour = ROOT.kRed-8,
       ),
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
@@ -498,7 +498,7 @@ signal_samples['central_V09_06Nov21_m4p5'] = [
       ctau = 0.1,
       resolution = 0.0368,
       filter_efficiency = 8.35e-04,
-      colour = ROOT.kRed+4,
+      colour = ROOT.kRed-2,
       ),
   #SignalSample(
   #    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root',
