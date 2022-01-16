@@ -1,3 +1,7 @@
+'''
+  The config class gathers all the entries of the analysis cfgs/*_cfg.py
+  The checkConfig() function is also defined
+'''
 
 class Config(object):
   def __init__(self, 
