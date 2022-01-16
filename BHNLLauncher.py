@@ -12,14 +12,12 @@ sys.path.append('./cfgs')
 #"----------------User's decision board-----------------"
 
 output_label = 'V09_06Nov21'
-#tag = 'cos2d_svprob_0p996_3cat_0_1_5_significance_study_Nov21_20sigmawindow_ABCD_fullA_large'
-tag = 'test'
-#cfg_filename = 'example_cfg.py'
+tag = 'cos2d_svprob_0p996_3cat_0_1_5_significance_study_Nov21_2sigmawindow_ABCDHybrid_fullA'
 cfg_filename = '06Nov21_cfg.py'
 submit_batch = False
 do_plotter = False
 do_datacards = True
-do_limits = False
+do_limits = True
 
 ###
 do_combine_datacards = True
@@ -128,8 +126,8 @@ class BHNLLauncher(object):
         'cd $workdir',
         'DATE_START=`date +%s`',
         command,
-        'echo " --> content of the wordir"',
-        'ls -l',
+        #'echo " --> content of the wordir"',
+        #'ls -l',
         'echo " --> coyping the files to the home directory $homedir"',
         'cp -r ./outputs $homedir',
         'DATE_END=`date +%s`',
@@ -148,11 +146,15 @@ class BHNLLauncher(object):
 
 
   def launchPlotter(self, category='', quantity_label=''):
+    # get current directory
+    homedir = os.getcwd()
+
     # get the command to run the plotting script
     command_plotter = ' '.join([
         'python plotter.py',
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
+        '--homedir {}'.format(homedir),
         '--data_label {}'.format(self.cfg.data_label),
         '--qcd_label {}'.format(self.cfg.qcd_label),
         '--signal_label {}'.format(self.cfg.signal_labels[0]), #FIXME
@@ -376,6 +378,7 @@ class BHNLLauncher(object):
         #'--mass_blacklist {}'.format(self.getParserString(self.cfg.mass_black_list)), #FIXME  
         #'--coupling_whitelist {}'.format(self.getParserString(self.cfg.coupling_white_list)), #FIXME 
         #'--coupling_blacklist {}'.format(self.getParserString(self.cfg.coupling_black_list)), #FIXME  
+        #'--coupling_blacklist 0.00022,0.00032,0.00044,0.0022',
         '{}'.format('--run_blind' if self.cfg.run_blind else ''),
         ])
 
