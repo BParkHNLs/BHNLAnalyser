@@ -837,8 +837,8 @@ if __name__ == '__main__':
                        )
 
 
-        #if opt.plot_SR:
-        if not opt.plot_SR:
+        if opt.plot_SR:
+        #if not opt.plot_SR:
           title = 'Signal Region, {}'.format(category.title)
           plotdirlabel = 'SR/{}'.format(category.label)
           region_definition = 'hnl_charge == 0'
@@ -846,53 +846,33 @@ if __name__ == '__main__':
           plot_qcd = True
           plot_sig = True
           plot_ratio = False
-          do_shape = False #True
-          do_luminorm = True #False
+          do_shape = True
+          do_luminorm = False
 
-          ##plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
-          #             title = title, 
-          #             outdirloc = './outputs',
-          #             outdirlabel = outdirlabel, 
-          #             subdirlabel = subdirlabel, 
-          #             plotdirlabel = plotdirlabel, 
-          #             branchname = opt.sample_type, 
-          #             treename = opt.tree_name,
-          #             add_weight_hlt = 1 if opt.add_weight_hlt else 0,
-          #             add_weight_pu = 1 if opt.add_weight_pu else 0,
-          #             weight_hlt = opt.weight_hlt,
-          #             weight_puqcd = opt.weight_puqcd,
-          #             plot_data = plot_data, 
-          #             plot_qcd = plot_qcd,
-          #             plot_sig = plot_sig, 
-          #             plot_ratio = plot_ratio, 
-          #             do_shape = do_shape, 
-          #             do_luminorm = do_luminorm, 
-          #             do_stack = opt.do_stack, 
-          #             do_log = opt.do_log,
-          #             add_overflow = opt.add_overflow,
-          #             add_CMSlabel = opt.add_CMSlabel,
-          #             CMS_tag = opt.CMStag
-          #             )
-
-          #plotter.plotBinnedPrefitMass(selection = baseline_selection + ' && ' + region_definition, # + ' && ' + category_definition + ' && ' + category_cutbased_selection, 
-          #             outdirloc = './outputs',
-          #             outdirlabel = outdirlabel, 
-          #             subdirlabel = subdirlabel, 
-          #             homedir = opt.homedir,
-          #             branchname = opt.sample_type, 
-          #             treename = opt.tree_name,
-          #             categories = categories,
-          #             n_bins = 25,
-          #             add_weight_hlt = 1 if opt.add_weight_hlt else 0,
-          #             add_weight_pu = 1 if opt.add_weight_pu else 0,
-          #             weight_hlt = opt.weight_hlt,
-          #             weight_puqcd = opt.weight_puqcd,
-          #             do_stack = opt.do_stack, 
-          #             #do_log = opt.do_log,
-          #             do_log = True, #opt.do_log,
-          #             add_CMSlabel = opt.add_CMSlabel,
-          #             CMS_tag = opt.CMStag
-          #             )
+          plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
+                       title = title, 
+                       outdirloc = './outputs',
+                       outdirlabel = outdirlabel, 
+                       subdirlabel = subdirlabel, 
+                       plotdirlabel = plotdirlabel, 
+                       branchname = opt.sample_type, 
+                       treename = opt.tree_name,
+                       add_weight_hlt = 1 if opt.add_weight_hlt else 0,
+                       add_weight_pu = 1 if opt.add_weight_pu else 0,
+                       weight_hlt = opt.weight_hlt,
+                       weight_puqcd = opt.weight_puqcd,
+                       plot_data = plot_data, 
+                       plot_qcd = plot_qcd,
+                       plot_sig = plot_sig, 
+                       plot_ratio = plot_ratio, 
+                       do_shape = do_shape, 
+                       do_luminorm = do_luminorm, 
+                       do_stack = opt.do_stack, 
+                       do_log = opt.do_log,
+                       add_overflow = opt.add_overflow,
+                       add_CMSlabel = opt.add_CMSlabel,
+                       CMS_tag = opt.CMStag
+                       )
     
         if opt.plot_dataSig:
           title = 'Signal Region, {}'.format(category.title)
@@ -924,8 +904,10 @@ if __name__ == '__main__':
                        )
 
 
+    plot_prefit_binned=False
+    if plot_prefit_binned:
     #if opt.plot_prefit_binned:        
-    if opt.plot_SR:
+    #if opt.plot_SR:
       region_definition = 'hnl_charge == 0'
       plotter.plotBinnedPrefitMass(selection = baseline_selection + ' && ' + region_definition, # + ' && ' + category_definition + ' && ' + category_cutbased_selection, 
                    outdirloc = './outputs',
