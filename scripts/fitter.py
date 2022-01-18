@@ -4,16 +4,21 @@ from ROOT import RooFit
 from tools import Tools
 
 class Fitter(Tools):
-  def __init__(self, filename='', selection='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', label='', plot_pulls=True):
+  def __init__(self, filename='', selection='', signal_model='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', label='', plot_pulls=True):
     self.tools = Tools()
     self.filename = filename
     self.selection = selection
+    self.signal_model = signal_model
     self.file_type = file_type
     self.nbins = nbins
     self.title = title
     self.outdirlabel = outdirlabel
     self.label = label
     self.plot_pulls = plot_pulls
+
+    signal_model_list = ['doubleCB', 'doubleCBPlusGaussian']
+    if self.signal_model not in signal_model_list:
+      raise RuntimeError('Unrecognised signal model "{}". Please choose among {}'.format(self.signal_model, signal_model_list))
 
   def performFit(self):
     # open the file and get the tree
@@ -26,7 +31,7 @@ class Fitter(Tools):
       signal_mass = entry.gen_hnl_mass
       break 
 
-    # we declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
+    # declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
     binMin = signal_mass - 0.15*signal_mass
     binMax = signal_mass + 0.15*signal_mass
     nbins = self.nbins
@@ -45,13 +50,12 @@ class Fitter(Tools):
 
     # Define the PDF to fit: 
     # Double sided crystal ball
-    # we declare all the parameters needed for the fits	
     mean_init = signal_mass - 0.01*signal_mass
     mean_min = signal_mass - 0.05*signal_mass
     mean_max = signal_mass + 0.05*signal_mass
     mean  = ROOT.RooRealVar("mean","mean", mean_init, mean_min, mean_max)
 
-    sigma = ROOT.RooRealVar("sigma","sigma", 0.01, 0.005, 0.15)
+    sigma = ROOT.RooRealVar("sigma", "sigma", 0.01, 0.005, 0.15)
 
     alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
     n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
@@ -62,73 +66,54 @@ class Fitter(Tools):
     CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", mupi_invmass, mean, sigma, alpha_2, n_2)
 
     # defines the relative importance of the two CBs
-    sigfrac = ROOT.RooRealVar("sigfrac","sigfrac", 0.5, 0.0 ,1.0)
+    sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5, 0.0 ,1.0)
 
-    # we add the two CB pdfs together
-    #RooAddPdf *signalPdf= new RooAddPdf("signalPdf", "signalPdf", RooArgList(*CBpdf_1, *CBpdf_2), *sigfrac) 
-    doubleCBpdf = ROOT.RooAddPdf("doubleCBpdf", "doubleCBpdf", CBpdf_1, CBpdf_2, sigfrac)
+    if self.signal_model == 'doubleCBPlusGaussian':
+      sigma_gauss = ROOT.RooRealVar("sigma_gauss", "sigma_gauss", 0.01, 0.005, 0.15)
+      gaussian = ROOT.RooGaussian('gaussian', 'gaussian', mupi_invmass, mean, sigma_gauss)
 
-    # background
-    #RooRealVar *tau = new RooRealVar("tau", "tau", -0.039, -0.045, 0.)
-    #tau->setConstant()
-    #RooExponential *ExpPdf = new RooExponential("ExpPdf", "ExpPdf", *mupi_invmass, *tau)
+      # defines the relative importance of gaussian wrt doubleCB
+      sigfrac_gauss = ROOT.RooRealVar("sigfrac_gauss","sigfrac_gauss", 0.5, 0.0 ,1.0)
 
-    #RooRealVar *a0 = new RooRealVar("a1", "a1", 100, 90, 110)
-    #RooRealVar *a1 = new RooRealVar("a0", "a0", -0.05, -10, 0.)
-    #RooRealVar *a2 = new RooRealVar("a2", "a2", -0.09, -100, 0.)
-    #RooPolynomial *PolyPdf = new RooPolynomial("PolyPdf","PolyPdf", *mupi_invmass ,RooArgList(*a0,*a1))
-    #RooRealVar *bkgfrac  = new RooRealVar("bkgfrac","bkgfrac", 0.0 ,1.0)
-    #RooAddPdf *ExpPdf= new RooAddPdf("ExpPdf", "ExpPdf", RooArgList(*PolyPdf, *ExpPdf1), *bkgfrac) 
+    # build the signal model
+    if self.signal_model == 'doubleCB':
+      signal_model = ROOT.RooAddPdf("signal_model", "signal_model", CBpdf_1, CBpdf_2, sigfrac_CB)
 
-    # model (signal + background)
-    #RooRealVar* nsig = new RooRealVar("nsig", "nsig", 200, 0, 1000000)
-    #RooRealVar* nbkg = new RooRealVar("nbkg", "nbkg", 500, 0, 1000000)
+    elif self.signal_model == 'doubleCBPlusGaussian':
+      doubleCBpdf = ROOT.RooAddPdf("doubleCBpdf", "doubleCBpdf", CBpdf_1, CBpdf_2, sigfrac_CB)
+      signal_model = ROOT.RooAddPdf('signal_model', 'signal_model', doubleCBpdf, gaussian, sigfrac_gauss) 
 
-    #RooRealVar* fsig = new RooRealVar("fsig", "fsig", 0, 1)
-
-    #RooAddPdf* model = new RooAddPdf("model","model" ,RooArgList(*signalPdf,*ExpPdf), *fsig)
-
-    # we define the frame where to plot
+    # define the frame where to plot
     canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
 
     # and the two pads
     pad1 = ROOT.TPad("pad1", "pad1", 0.01, 0.2, 0.99, 0.99)
     pad1.SetLeftMargin(0.15)
-    #pad1->SetLogx()
-    #pad1->SetLogy()
     pad2 = ROOT.TPad("pad2", "pad2", 0.01, 0.01, 0.99, 0.2)
     pad2.SetLeftMargin(0.15)
-    #pad2->SetLogx()
     pad1.Draw()
     pad2.Draw()
 
-    #RooPlot *frame = mupi_invmass->frame(Title(""))
     frame = mupi_invmass.frame(ROOT.RooFit.Title(self.title))
 
     # plot the data
     rdh.plotOn(frame, ROOT.RooFit.Name("data"))
 
     # fit the PDF to the data
-    #RooFitResult *result
-    #result = doubleCBpdf.fitTo(rdh)
     fit_range_min = signal_mass - 0.1*signal_mass
     fit_range_max = signal_mass + 0.1*signal_mass
     mupi_invmass.setRange("peak", fit_range_min, fit_range_max)
-    result = doubleCBpdf.fitTo(rdh, ROOT.RooFit.Range("peak"))
+    result = signal_model.fitTo(rdh, ROOT.RooFit.Range("peak"))
 
     # plot the fit 		
-    #model->plotOn(frame,LineColor(2),RooFit::Name("CBpdf_1"),Components("CBpdf_1"))
-    #model->plotOn(frame,LineColor(3),RooFit::Name("CBpdf_2"),Components("CBpdf_2"))
-    #model->plotOn(frame,LineColor(6),RooFit::Name("signalPdf"),Components("signalPdf"))
-    #model->plotOn(frame,LineColor(2),RooFit::Name("ExpPdf"),Components("ExpPdf"), LineStyle(kDashed))
-    #model->plotOn(frame,LineColor(4),RooFit::Name("model"), Components("model"))
-    doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
-    doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2"),ROOT.RooFit.Components("CBpdf_2"), ROOT.RooFit.LineStyle(ROOT.kDashed))
-    doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name("doubleCBpdf"), ROOT.RooFit.Components("doubleCBpdf"))
+    signal_model.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+    signal_model.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2"),ROOT.RooFit.Components("CBpdf_2"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+    if self.signal_model == 'doubleCBPlusGaussian':
+      signal_model.plotOn(frame, ROOT.RooFit.LineColor(6),ROOT.RooFit.Name("gaussian"),ROOT.RooFit.Components("gaussian"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+    signal_model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name("signal_model"), ROOT.RooFit.Components("signal_model"))
 
     # and write the fit parameters
-    #model->paramOn(frame,   
-    doubleCBpdf.paramOn(frame,   
+    signal_model.paramOn(frame,   
          #ROOT.RooFit.Layout(0.67, 0.87, 0.85),
          ROOT.RooFit.Layout(0.2, 0.4, 0.8),
          ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
@@ -138,22 +123,18 @@ class Fitter(Tools):
     frame.getAttLine().SetLineColorAlpha(0, 0)
     frame.getAttFill().SetFillColorAlpha(0, 0)
 
-    # we compute the chisquare
-    chisquare = frame.chiSquare("doubleCBpdf","data")
+    # compute the chisquare
+    chisquare = frame.chiSquare("signal_model","data")
 
     # and print it
-    #label1 = ROOT.TPaveText(0.2,0.75,0.3,0.85,"brNDC")
     label1 = ROOT.TPaveText(0.62,0.65,0.72,0.8,"brNDC")
     label1.SetBorderSize(0)
     label1.SetFillColor(ROOT.kWhite)
     label1.SetTextSize(0.03)
     label1.SetTextFont(42)
     label1.SetTextAlign(11)
-    #label1->AddText("Double-Sided CrystalBall PDF")
-    #chi2 = to_string(chisquare)
-    #label1.AddText('#chi^{2}/ndof = {}'.format(chisquare))
+    label1.AddText('mass {}GeV, ctau {}mm'.format(signal_mass, 100)) #FIXME adapt ctau
     qte = '#chi^{2}/ndof'
-    label1.AddText('Double sided Crystal Ball')
     label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
     print "chisquare = {}".format(chisquare)
 
@@ -187,9 +168,15 @@ class Fitter(Tools):
 
     # add the legend
     leg = self.tools.getRootTLegend(xmin=0.6, ymin=0.4, xmax=0.8, ymax=0.6, size=0.03, do_alpha=True)
-    leg.AddEntry(frame.findObject('doubleCBpdf'), 'Double Crystal Ball')
+    if self.signal_model == 'doubleCB':
+      model_label = 'Double Crystal Ball'
+    elif self.signal_model == 'doubleCBPlusGaussian':
+      model_label = 'Double Crystal Ball + Gaussian'
+    leg.AddEntry(frame.findObject('signal_model'), model_label)
     leg.AddEntry(frame.findObject('CBpdf_1'), 'CB_1')
     leg.AddEntry(frame.findObject('CBpdf_2'), 'CB_2')
+    if self.signal_model == 'doubleCBPlusGaussian':
+      leg.AddEntry(frame.findObject('gaussian'), 'Gaussian')
     leg.Draw()
 
     # plot of the residuals
@@ -277,6 +264,7 @@ if __name__ == '__main__':
   #fitter = Fitter(filename=filename, file_type='nano', nbins=90, title=title, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
+  '''
   outdirlabel = 'Bc_29Jun21'
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root'
   label = 'm3'
@@ -320,96 +308,98 @@ if __name__ == '__main__':
   label = 'm4p5_ctau1'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
+  '''
 
 
   outdirlabel = 'V10_30Dec21_samples_sel'
   plot_pulls = False
-  selection = 'sv_lxy>5 && trgmu_charge!=mu_charge'
+  selection = 'sv_lxy>5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.3 && sv_lxysig>100 && abs(mu_dxysig)>15 && abs(pi_dxysig)>20 '
+  signal_model = 'doubleCBPlusGaussian'
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm1_ctau1000'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm1_ctau1000'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm1_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm1_ctau100'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm1_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm1_ctau10'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm1p5_ctau1000'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm1p5_ctau1000'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm1p5_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm1p5_ctau100'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm1p5_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm1p5_ctau10'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm2_ctau1000'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm2_ctau1000'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm2_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm2_ctau100'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm2_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm2_ctau10'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau1000'
-  fitter = Fitter(filename=filename, selection=selection, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
+  fitter = Fitter(filename=filename, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
   fitter.performFit()
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau100'
-  fitter = Fitter(filename=filename, selection=selection, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
+  fitter = Fitter(filename=filename, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
   fitter.performFit()
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau10'
-  fitter = Fitter(filename=filename, selection=selection, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
+  fitter = Fitter(filename=filename, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
   fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm3_ctau1'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm3_ctau1'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm4p5_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm4p5_ctau100'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm4p5_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm4p5_ctau10'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm4p5_ctau1'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm4p5_ctau1'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm4p5_ctau0p1'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm4p5_ctau0p1'
+  #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  ##fitter.performFit()
 
   #outdirlabel = 'genmatching_comparison'
 
