@@ -4,7 +4,7 @@ from ROOT import RooFit
 from tools import Tools
 
 class Fitter(Tools):
-  def __init__(self, filename='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', label=''):
+  def __init__(self, filename='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', label='', plot_pulls=True):
     self.tools = Tools()
     self.filename = filename
     self.file_type = file_type
@@ -12,6 +12,7 @@ class Fitter(Tools):
     self.title = title
     self.outdirlabel = outdirlabel
     self.label = label
+    self.plot_pulls = plot_pulls
 
   def performFit(self):
     # open the file and get the tree
@@ -22,7 +23,6 @@ class Fitter(Tools):
     # get signal mass
     for entry in tree:
       signal_mass = entry.gen_hnl_mass
-      #signal_mass = 3.0
       break 
 
     # we declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
@@ -32,7 +32,6 @@ class Fitter(Tools):
 
     hist = ROOT.TH1D("hist", "hist", nbins, binMin, binMax)
     c1 = self.tools.createTCanvas(name='c1', dimx=700, dimy=600)
-    #tree->Draw("TMath::Sqrt(E1*E1 - px1*px1 - py1*py1 - pz1*pz1 + E2*E2 - px2*px2 - py2*py2 - pz2*pz2 + 2*E1*E2 - 2*px1*px2 -2*py1*py2 -2*pz1*pz2)>>hist", "pt1>13 && pt2>11")
     branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
     cond = 'ismatched==1 && mu_isdsa==0' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1 && Muon_isDSAMuon[BToMuMuPi_sel_mu_idx]==0'
     tree.Draw("{}>>hist".format(branch_name), cond, 'goff')
@@ -170,121 +169,104 @@ class Fitter(Tools):
     leg->SetBorderSize(0)
     '''
 
-    # We define and plot the residuals 		
-    # construct a histogram with the pulls of the data w.r.t the curve
-    #RooHist* hpull = frame->residHist()
-    # pull is same as residuals, but is furthermore divided by the low y error in each bin
-    #RooHist* hpull = frame->pullHist()
-    hpull = frame.pullHist()
-    for i in range(0, frame.GetNbinsX()):
-       hpull.SetPointError(i,0,0,0,0)
-    #for(int i(0) i<frame->GetNbinsX() ++i)
-    #{
-    #    hpull->SetPointError(i,0,0,0,0)
-    #}
+    if self.plot_pulls:
+      # We define and plot the residuals 		
+      # construct a histogram with the pulls of the data w.r.t the curve
+      #RooHist* hpull = frame->residHist()
+      # pull is same as residuals, but is furthermore divided by the low y error in each bin
+      #RooHist* hpull = frame->pullHist()
+      hpull = frame.pullHist()
+      for i in range(0, frame.GetNbinsX()):
+         hpull.SetPointError(i,0,0,0,0)
+      #for(int i(0) i<frame->GetNbinsX() ++i)
+      #{
+      #    hpull->SetPointError(i,0,0,0,0)
+      #}
 
-    # create a new frame to draw the pull distribution and add the distribution to the frame
-    #RooPlot* frame2 = mupi_invmass->frame(Title(" "))
-    frame2 = mupi_invmass.frame(ROOT.RooFit.Title(" "))
-    #frame2->addPlotable(hpull,"P")#,"E3")
-    frame2.addPlotable(hpull,"P")#,"E3")
+      # create a new frame to draw the pull distribution and add the distribution to the frame
+      frame2 = mupi_invmass.frame(ROOT.RooFit.Title(" "))
+      frame2.addPlotable(hpull,"P")#,"E3")
 
+      # plot of the curve and the fit
+      canv.cd()
+      pad1.cd()
 
-    # plot of the curve and the fit
-    canv.cd()
-    pad1.cd()
+      frame.GetXaxis().SetTitleSize(0.04)
+      frame.GetXaxis().SetTitle("#mu#pi invariant mass [GeV]")
+      frame.GetYaxis().SetTitleSize(0.04)
+      frame.GetYaxis().SetTitleOffset(1.1)
+      frame.Draw()
+      label1.Draw()
+      #leg.Draw()
 
-    frame.GetXaxis().SetTitleSize(0.04)
-    frame.GetXaxis().SetTitle("#mu#pi invariant mass [GeV]")
-    frame.GetYaxis().SetTitleSize(0.04)
-    frame.GetYaxis().SetTitleOffset(1.1)
-    frame.Draw()
-    label1.Draw()
-    #leg.Draw()
+      # plot of the residuals
+      pad2.cd()
+      ROOT.gPad.SetLeftMargin(0.15) 
+      ROOT.gPad.SetPad(0.01,0.01,0.99,0.2)
 
+      frame2.GetYaxis().SetNdivisions(3)
+      frame2.GetYaxis().SetLabelSize(0.17)
+      frame2.GetYaxis().SetTitleSize(0.17)
+      frame2.GetYaxis().SetTitleOffset(0.24)
+      frame2.GetYaxis().SetRangeUser(-5,5)	
+      frame2.GetYaxis().SetTitle("Pulls")	
+      frame2.GetXaxis().SetTitle("")	
+      frame2.GetXaxis().SetLabelOffset(5)	
+      frame2.Draw()
 
-    # plot of the residuals
-    pad2.cd()
-    ROOT.gPad.SetLeftMargin(0.15) 
-    ROOT.gPad.SetPad(0.01,0.01,0.99,0.2)
+      line = ROOT.TLine()
+      line.DrawLine(binMin,0,binMax,0)
+      line.SetLineColor(2)
+      line.DrawLine(binMin,-3,binMax,-3)
+      line.DrawLine(binMin,3,binMax,3)
 
-    frame2.GetYaxis().SetNdivisions(3)
-    frame2.GetYaxis().SetLabelSize(0.17)
-    frame2.GetYaxis().SetTitleSize(0.17)
-    frame2.GetYaxis().SetTitleOffset(0.24)
-    frame2.GetYaxis().SetRangeUser(-5,5)	
-    frame2.GetYaxis().SetTitle("Pulls")	
-    frame2.GetXaxis().SetTitle("")	
-    frame2.GetXaxis().SetLabelOffset(5)	
-    frame2.Draw()
+      # save output
+      canv.cd()
+      outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
+      canv.SaveAs("{}/fit_{}.png".format(outputdir, label))
+      canv.SaveAs("{}/fit_{}.pdf".format(outputdir, label))
 
-    line = ROOT.TLine()
-    line.DrawLine(binMin,0,binMax,0)
-    line.SetLineColor(2)
-    line.DrawLine(binMin,-3,binMax,-3)
-    line.DrawLine(binMin,3,binMax,3)
+      #delete hist
+      #delete canv
 
-    # save output
-    canv.cd()
-    outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
-    canv.SaveAs("{}/fit_{}.png".format(outputdir, label))
-    canv.SaveAs("{}/fit_{}.pdf".format(outputdir, label))
+      # additionally, get the pull histogram
+      canv_pull = self.tools.createTCanvas(name="canv_pull", dimx=700, dimy=600)
+     
+      hist_pull = ROOT.TH1D("hist_pull", "hist_pull", 120, -5, 5)
+     
+      for i in range(0, hpull.GetN()):
+        x = ROOT.Double()
+        point = ROOT.Double()
+        hpull.GetPoint(i,x,point) 
+        if x<binMin or x>binMax: continue
+        hist_pull.Fill(point)
 
-    #delete hist
-    #delete canv
+      hist_pull.SetTitle("")
+      hist_pull.SetLineColor(4)
+      hist_pull.SetLineWidth(2)
+      hist_pull.Draw()
 
-    # additionally, get the pull histogram
-    canv_pull = self.tools.createTCanvas(name="canv_pull", dimx=700, dimy=600)
-   
-    hist_pull = ROOT.TH1D("hist_pull", "hist_pull", 120, -5, 5)
-   
-    for i in range(0, hpull.GetN()):
-    #for(Int_t i=0 i<hpull->GetN() i++) {
- 
-      #Double_t x,point
-      #hpull->GetPoint(i,x,point) 
-      #x = 0.
-      x = ROOT.Double()
-      #point = 0.
-      point = ROOT.Double()
-      hpull.GetPoint(i,x,point) 
-      if x<binMin or x>binMax: continue
+      Xaxis = hist_pull.GetXaxis()
+      Yaxis = hist_pull.GetYaxis()
+      Xaxis.SetTitle("pulls")
+      Xaxis.SetTitleSize(0.045)
+      Xaxis.SetLabelSize(0.045)
+      Xaxis.SetTitleOffset(1.1)
+      Yaxis.SetTitleSize(0.045)
+      Yaxis.SetLabelSize(0.045)
+      Yaxis.SetTitleOffset(1.26)
+      ROOT.gStyle.SetOptStat(0)
+      hist_pull.Draw()
 
-      #if (x<binMin || x>binMax) continue 
-
-      #cout << x << " " << point << endl
-      #hist_pull->Fill(point)
-      hist_pull.Fill(point)
-   #}
-
-    hist_pull.SetTitle("")
-    hist_pull.SetLineColor(4)
-    hist_pull.SetLineWidth(2)
-    hist_pull.Draw()
-
-    Xaxis = hist_pull.GetXaxis()
-    Yaxis = hist_pull.GetYaxis()
-    Xaxis.SetTitle("pulls")
-    Xaxis.SetTitleSize(0.045)
-    Xaxis.SetLabelSize(0.045)
-    Xaxis.SetTitleOffset(1.1)
-    Yaxis.SetTitleSize(0.045)
-    Yaxis.SetLabelSize(0.045)
-    Yaxis.SetTitleOffset(1.26)
-    ROOT.gStyle.SetOptStat(0)
-    hist_pull.Draw()
-
-    # and fit it
-    #TF1* fgauss= new TF1("fgauss", "gaus", -5, 5)
-    fgauss= ROOT.TF1("fgauss", "gaus", -5, 5)
-    fgauss.SetLineColor(2)
-    hist_pull.Fit("fgauss")
-    fgauss.Draw("same")
-    ROOT.gStyle.SetOptFit(0011)
-   
-    #canv_pull.SaveAs("test.png")  
-    canv_pull.SaveAs("{}/pulls_{}.png".format(outputdir, label))
-    canv_pull.SaveAs("{}/pulls_{}.pdf".format(outputdir, label))
+      # and fit it
+      fgauss= ROOT.TF1("fgauss", "gaus", -5, 5)
+      fgauss.SetLineColor(2)
+      hist_pull.Fit("fgauss")
+      fgauss.Draw("same")
+      ROOT.gStyle.SetOptFit(0011)
+     
+      canv_pull.SaveAs("{}/pulls_{}.png".format(outputdir, label))
+      canv_pull.SaveAs("{}/pulls_{}.pdf".format(outputdir, label))
 
 
 if __name__ == '__main__':
@@ -346,92 +328,92 @@ if __name__ == '__main__':
   #fitter.performFit()
 
 
-  outdirlabel = 'central_samples'
+  outdirlabel = 'V10_30Dec21_samples_nocat'
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm1_ctau1000'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm1_ctau100'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm1_ctau10'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm1p5_ctau1000'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm1p5_ctau100'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm1p5_ctau10'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm2_ctau1000'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm2_ctau100'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm2_ctau10'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau1000'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau100'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau10'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau1'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm4p5_ctau100'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm4p5_ctau10'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm4p5_ctau1'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm4p5_ctau0p1'
   fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  fitter.performFit()
+  #fitter.performFit()
 
   #outdirlabel = 'genmatching_comparison'
 
