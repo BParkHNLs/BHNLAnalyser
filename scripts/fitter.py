@@ -2,27 +2,31 @@ import ROOT
 from ROOT import RooFit
 
 from tools import Tools
+from samples import signal_samples
 
 class Fitter(Tools):
-  def __init__(self, filename='', selection='', signal_model='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', label='', plot_pulls=True):
+  def __init__(self, signal_file='', selection='', signal_model='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', plot_pulls=True):
     self.tools = Tools()
-    self.filename = filename
+    self.signal_file = signal_file
     self.selection = selection
     self.signal_model = signal_model
     self.file_type = file_type
     self.nbins = nbins
     self.title = title
     self.outdirlabel = outdirlabel
-    self.label = label
     self.plot_pulls = plot_pulls
+
+    self.label = 'm{}_ctau_{}'.format(self.signal_file.mass, self.signal_file.ctau).replace('.', 'p') 
 
     signal_model_list = ['doubleCB', 'doubleCBPlusGaussian']
     if self.signal_model not in signal_model_list:
       raise RuntimeError('Unrecognised signal model "{}". Please choose among {}'.format(self.signal_model, signal_model_list))
 
+    #TODO there are no weights applied so far (incl. ctau, hlt, pu weights)
+
   def performFit(self):
     # open the file and get the tree
-    inputfile = self.tools.getRootFile(self.filename, with_ext=False)
+    inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False)
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     tree = self.tools.getTree(inputfile, treename)
 
@@ -30,6 +34,8 @@ class Fitter(Tools):
     for entry in tree:
       signal_mass = entry.gen_hnl_mass
       break 
+    if signal_mass != self.signal_file.mass:
+      raise RuntimeError('The signal mass indicated in Samples does not match the actual signal mass. \n-->Aborting')
 
     # declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
     binMin = signal_mass - 0.15*signal_mass
@@ -133,7 +139,7 @@ class Fitter(Tools):
     label1.SetTextSize(0.03)
     label1.SetTextFont(42)
     label1.SetTextAlign(11)
-    label1.AddText('mass {}GeV, ctau {}mm'.format(signal_mass, 100)) #FIXME adapt ctau
+    label1.AddText('mass {}GeV, ctau {}mm'.format(signal_mass, self.signal_file.ctau))
     qte = '#chi^{2}/ndof'
     label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
     print "chisquare = {}".format(chisquare)
@@ -203,8 +209,8 @@ class Fitter(Tools):
     # save output
     canv.cd()
     outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
-    canv.SaveAs("{}/fit_{}.png".format(outputdir, label))
-    canv.SaveAs("{}/fit_{}.pdf".format(outputdir, label))
+    canv.SaveAs("{}/fit_{}.png".format(outputdir, self.label))
+    canv.SaveAs("{}/fit_{}.pdf".format(outputdir, self.label))
 
     #delete hist
     #delete canv
@@ -246,8 +252,8 @@ class Fitter(Tools):
       fgauss.Draw("same")
       ROOT.gStyle.SetOptFit(0011)
      
-      canv_pull.SaveAs("{}/pulls_{}.png".format(outputdir, label))
-      canv_pull.SaveAs("{}/pulls_{}.pdf".format(outputdir, label))
+      canv_pull.SaveAs("{}/pulls_{}.png".format(outputdir, self.label))
+      canv_pull.SaveAs("{}/pulls_{}.pdf".format(outputdir, self.label))
 
 
 if __name__ == '__main__':
@@ -315,6 +321,11 @@ if __name__ == '__main__':
   plot_pulls = False
   selection = 'sv_lxy>5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.3 && sv_lxysig>100 && abs(mu_dxysig)>15 && abs(pi_dxysig)>20 '
   signal_model = 'doubleCBPlusGaussian'
+  signal_files = signal_samples['V10_30Dec21_m3'] 
+
+  for signal_file in signal_files:
+    fitter = Fitter(signal_file=signal_file, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+    fitter.performFit()
 
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   #label = 'm1_ctau1000'
@@ -361,20 +372,20 @@ if __name__ == '__main__':
   #fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
   ##fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm3_ctau1000'
-  fitter = Fitter(filename=filename, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
-  fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm3_ctau1000'
+  #fitter = Fitter(filename=filename, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
+  #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm3_ctau100'
-  fitter = Fitter(filename=filename, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
-  fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm3_ctau100'
+  #fitter = Fitter(filename=filename, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
+  #fitter.performFit()
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
-  label = 'm3_ctau10'
-  fitter = Fitter(filename=filename, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
-  fitter.performFit()
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
+  #label = 'm3_ctau10'
+  #fitter = Fitter(filename=filename, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
+  #fitter.performFit()
 
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   #label = 'm3_ctau1'
