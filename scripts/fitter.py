@@ -4,9 +4,10 @@ from ROOT import RooFit
 from tools import Tools
 
 class Fitter(Tools):
-  def __init__(self, filename='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', label='', plot_pulls=True):
+  def __init__(self, filename='', selection='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', label='', plot_pulls=True):
     self.tools = Tools()
     self.filename = filename
+    self.selection = selection
     self.file_type = file_type
     self.nbins = nbins
     self.title = title
@@ -16,7 +17,7 @@ class Fitter(Tools):
 
   def performFit(self):
     # open the file and get the tree
-    inputfile = ROOT.TFile.Open(self.filename)
+    inputfile = self.tools.getRootFile(self.filename, with_ext=False)
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     tree = self.tools.getTree(inputfile, treename)
 
@@ -30,11 +31,12 @@ class Fitter(Tools):
     binMax = signal_mass + 0.15*signal_mass
     nbins = self.nbins
 
-    hist = ROOT.TH1D("hist", "hist", nbins, binMin, binMax)
-    c1 = self.tools.createTCanvas(name='c1', dimx=700, dimy=600)
+    hist_name = 'hist'
+    hist = ROOT.TH1D(hist_name, hist_name, nbins, binMin, binMax)
     branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
     cond = 'ismatched==1 && mu_isdsa==0' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1 && Muon_isDSAMuon[BToMuMuPi_sel_mu_idx]==0'
-    tree.Draw("{}>>hist".format(branch_name), cond, 'goff')
+    signal_selection = cond + ' && ' + self.selection
+    tree.Project(hist_name, branch_name , signal_selection)
 
     mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", binMin, binMax)
     mupi_invmass.setBins(nbins)
@@ -169,66 +171,66 @@ class Fitter(Tools):
     leg->SetBorderSize(0)
     '''
 
+    # We define and plot the residuals 		
+    # construct a histogram with the pulls of the data w.r.t the curve
+    #RooHist* hpull = frame->residHist()
+    # pull is same as residuals, but is furthermore divided by the low y error in each bin
+    #RooHist* hpull = frame->pullHist()
+    hpull = frame.pullHist()
+    for i in range(0, frame.GetNbinsX()):
+       hpull.SetPointError(i,0,0,0,0)
+    #for(int i(0) i<frame->GetNbinsX() ++i)
+    #{
+    #    hpull->SetPointError(i,0,0,0,0)
+    #}
+
+    # create a new frame to draw the pull distribution and add the distribution to the frame
+    frame2 = mupi_invmass.frame(ROOT.RooFit.Title(" "))
+    frame2.addPlotable(hpull,"P")#,"E3")
+
+    # plot of the curve and the fit
+    canv.cd()
+    pad1.cd()
+
+    frame.GetXaxis().SetTitleSize(0.04)
+    frame.GetXaxis().SetTitle("#mu#pi invariant mass [GeV]")
+    frame.GetYaxis().SetTitleSize(0.04)
+    frame.GetYaxis().SetTitleOffset(1.1)
+    frame.Draw()
+    label1.Draw()
+    #leg.Draw()
+
+    # plot of the residuals
+    pad2.cd()
+    ROOT.gPad.SetLeftMargin(0.15) 
+    ROOT.gPad.SetPad(0.01,0.01,0.99,0.2)
+
+    frame2.GetYaxis().SetNdivisions(3)
+    frame2.GetYaxis().SetLabelSize(0.17)
+    frame2.GetYaxis().SetTitleSize(0.17)
+    frame2.GetYaxis().SetTitleOffset(0.24)
+    frame2.GetYaxis().SetRangeUser(-5,5)	
+    frame2.GetYaxis().SetTitle("Pulls")	
+    frame2.GetXaxis().SetTitle("")	
+    frame2.GetXaxis().SetLabelOffset(5)	
+    frame2.Draw()
+
+    line = ROOT.TLine()
+    line.DrawLine(binMin,0,binMax,0)
+    line.SetLineColor(2)
+    line.DrawLine(binMin,-3,binMax,-3)
+    line.DrawLine(binMin,3,binMax,3)
+
+    # save output
+    canv.cd()
+    outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
+    canv.SaveAs("{}/fit_{}.png".format(outputdir, label))
+    canv.SaveAs("{}/fit_{}.pdf".format(outputdir, label))
+
+    #delete hist
+    #delete canv
+
     if self.plot_pulls:
-      # We define and plot the residuals 		
-      # construct a histogram with the pulls of the data w.r.t the curve
-      #RooHist* hpull = frame->residHist()
-      # pull is same as residuals, but is furthermore divided by the low y error in each bin
-      #RooHist* hpull = frame->pullHist()
-      hpull = frame.pullHist()
-      for i in range(0, frame.GetNbinsX()):
-         hpull.SetPointError(i,0,0,0,0)
-      #for(int i(0) i<frame->GetNbinsX() ++i)
-      #{
-      #    hpull->SetPointError(i,0,0,0,0)
-      #}
-
-      # create a new frame to draw the pull distribution and add the distribution to the frame
-      frame2 = mupi_invmass.frame(ROOT.RooFit.Title(" "))
-      frame2.addPlotable(hpull,"P")#,"E3")
-
-      # plot of the curve and the fit
-      canv.cd()
-      pad1.cd()
-
-      frame.GetXaxis().SetTitleSize(0.04)
-      frame.GetXaxis().SetTitle("#mu#pi invariant mass [GeV]")
-      frame.GetYaxis().SetTitleSize(0.04)
-      frame.GetYaxis().SetTitleOffset(1.1)
-      frame.Draw()
-      label1.Draw()
-      #leg.Draw()
-
-      # plot of the residuals
-      pad2.cd()
-      ROOT.gPad.SetLeftMargin(0.15) 
-      ROOT.gPad.SetPad(0.01,0.01,0.99,0.2)
-
-      frame2.GetYaxis().SetNdivisions(3)
-      frame2.GetYaxis().SetLabelSize(0.17)
-      frame2.GetYaxis().SetTitleSize(0.17)
-      frame2.GetYaxis().SetTitleOffset(0.24)
-      frame2.GetYaxis().SetRangeUser(-5,5)	
-      frame2.GetYaxis().SetTitle("Pulls")	
-      frame2.GetXaxis().SetTitle("")	
-      frame2.GetXaxis().SetLabelOffset(5)	
-      frame2.Draw()
-
-      line = ROOT.TLine()
-      line.DrawLine(binMin,0,binMax,0)
-      line.SetLineColor(2)
-      line.DrawLine(binMin,-3,binMax,-3)
-      line.DrawLine(binMin,3,binMax,3)
-
-      # save output
-      canv.cd()
-      outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
-      canv.SaveAs("{}/fit_{}.png".format(outputdir, label))
-      canv.SaveAs("{}/fit_{}.pdf".format(outputdir, label))
-
-      #delete hist
-      #delete canv
-
       # additionally, get the pull histogram
       canv_pull = self.tools.createTCanvas(name="canv_pull", dimx=700, dimy=600)
      
@@ -328,7 +330,9 @@ if __name__ == '__main__':
   #fitter.performFit()
 
 
-  outdirlabel = 'V10_30Dec21_samples_nocat'
+  outdirlabel = 'V10_30Dec21_samples_sel'
+  plot_pulls = False
+  selection = 'sv_lxy>5 && trgmu_charge!=mu_charge'
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm1_ctau1000'
@@ -377,17 +381,17 @@ if __name__ == '__main__':
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau1000'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  fitter = Fitter(filename=filename, selection=selection, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
   fitter.performFit()
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  fitter = Fitter(filename=filename, selection=selection, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
   fitter.performFit()
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
   label = 'm3_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
+  fitter = Fitter(filename=filename, selection=selection, nbins=150, outdirlabel=outdirlabel, label=label, plot_pulls=plot_pulls)
   fitter.performFit()
 
   filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V10_30Dec21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_30Dec21.root'
