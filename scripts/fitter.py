@@ -122,6 +122,8 @@ class Fitter(Tools):
     #model->plotOn(frame,LineColor(6),RooFit::Name("signalPdf"),Components("signalPdf"))
     #model->plotOn(frame,LineColor(2),RooFit::Name("ExpPdf"),Components("ExpPdf"), LineStyle(kDashed))
     #model->plotOn(frame,LineColor(4),RooFit::Name("model"), Components("model"))
+    doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+    doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2"),ROOT.RooFit.Components("CBpdf_2"), ROOT.RooFit.LineStyle(ROOT.kDashed))
     doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name("doubleCBpdf"), ROOT.RooFit.Components("doubleCBpdf"))
 
     # and write the fit parameters
@@ -155,22 +157,6 @@ class Fitter(Tools):
     label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
     print "chisquare = {}".format(chisquare)
 
-    # we add the legend
-    '''
-    TLegend* leg = new TLegend(0.2, 0.15, 0.3, 0.35)
-    #leg->AddEntry(frame->findObject("CBpdf_1"), "CB_1")
-    #leg->AddEntry(frame->findObject("CBpdf_2"), "CB_2")
-    #leg->AddEntry(frame->findObject("signalPdf"), "signal")
-    leg->AddEntry(frame->findObject("ExpPdf"), "bkg")
-    leg->AddEntry(frame->findObject("model"), "signal+bkg")
-    leg->SetTextSize(0.03)
-    leg->SetTextFont(42)
-    leg->SetTextAlign(11)
-    leg->SetLineColor(0)
-    leg->SetFillColorAlpha(0, 0)
-    leg->SetBorderSize(0)
-    '''
-
     # We define and plot the residuals 		
     # construct a histogram with the pulls of the data w.r.t the curve
     #RooHist* hpull = frame->residHist()
@@ -198,7 +184,13 @@ class Fitter(Tools):
     frame.GetYaxis().SetTitleOffset(1.1)
     frame.Draw()
     label1.Draw()
-    #leg.Draw()
+
+    # add the legend
+    leg = self.tools.getRootTLegend(xmin=0.6, ymin=0.4, xmax=0.8, ymax=0.6, size=0.03, do_alpha=True)
+    leg.AddEntry(frame.findObject('doubleCBpdf'), 'Double Crystal Ball')
+    leg.AddEntry(frame.findObject('CBpdf_1'), 'CB_1')
+    leg.AddEntry(frame.findObject('CBpdf_2'), 'CB_2')
+    leg.Draw()
 
     # plot of the residuals
     pad2.cd()
