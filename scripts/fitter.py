@@ -2,29 +2,38 @@ import ROOT
 from ROOT import RooFit
 
 from tools import Tools
-from samples import signal_samples
+from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file='', selection='', signal_model='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', plot_pulls=True):
+  def __init__(self, signal_file='', data_files='', selection='', signal_model=None, background_model=None, do_blind=False, file_type='flat', nbins=250, title=' ', outdirlabel='testing', plot_pulls=True):
     self.tools = Tools()
     self.signal_file = signal_file
+    self.data_files = data_files
     self.selection = selection
     self.signal_model = signal_model
+    self.background_model = background_model
+    self.do_blind = do_blind
     self.file_type = file_type
     self.nbins = nbins
     self.title = title
     self.outdirlabel = outdirlabel
     self.plot_pulls = plot_pulls
 
-    self.label = 'm{}_ctau_{}'.format(self.signal_file.mass, self.signal_file.ctau).replace('.', 'p') 
 
     signal_model_list = ['doubleCB', 'doubleCBPlusGaussian']
-    if self.signal_model not in signal_model_list:
+    if self.signal_model != None and self.signal_model not in signal_model_list:
       raise RuntimeError('Unrecognised signal model "{}". Please choose among {}'.format(self.signal_model, signal_model_list))
+
+    background_model_list = ['chebychev']
+    if self.background_model != None and self.background_model not in background_model_list:
+      raise RuntimeError('Unrecognised background model "{}". Please choose among {}'.format(self.background_model, background_model_list))
 
     #TODO there are no weights applied so far (incl. ctau, hlt, pu weights)
 
-  def performFit(self):
+  def performSignalFit(self):
+    # define label
+    label = 'm{}_ctau_{}'.format(self.signal_file.mass, self.signal_file.ctau).replace('.', 'p') 
+
     # open the file and get the tree
     inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False)
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
@@ -148,14 +157,9 @@ class Fitter(Tools):
     # construct a histogram with the pulls of the data w.r.t the curve
     #RooHist* hpull = frame->residHist()
     # pull is same as residuals, but is furthermore divided by the low y error in each bin
-    #RooHist* hpull = frame->pullHist()
     hpull = frame.pullHist()
     for i in range(0, frame.GetNbinsX()):
        hpull.SetPointError(i,0,0,0,0)
-    #for(int i(0) i<frame->GetNbinsX() ++i)
-    #{
-    #    hpull->SetPointError(i,0,0,0,0)
-    #}
 
     # create a new frame to draw the pull distribution and add the distribution to the frame
     frame2 = mupi_invmass.frame(ROOT.RooFit.Title(" "))
@@ -209,8 +213,8 @@ class Fitter(Tools):
     # save output
     canv.cd()
     outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
-    canv.SaveAs("{}/fit_{}.png".format(outputdir, self.label))
-    canv.SaveAs("{}/fit_{}.pdf".format(outputdir, self.label))
+    canv.SaveAs("{}/fit_{}.png".format(outputdir, label))
+    canv.SaveAs("{}/fit_{}.pdf".format(outputdir, label))
 
     #delete hist
     #delete canv
@@ -252,8 +256,174 @@ class Fitter(Tools):
       fgauss.Draw("same")
       ROOT.gStyle.SetOptFit(0011)
      
-      canv_pull.SaveAs("{}/pulls_{}.png".format(outputdir, self.label))
-      canv_pull.SaveAs("{}/pulls_{}.pdf".format(outputdir, self.label))
+      canv_pull.SaveAs("{}/pulls_{}.png".format(outputdir, label))
+      canv_pull.SaveAs("{}/pulls_{}.pdf".format(outputdir, label))
+
+
+  def performBackgroundFit(self, mass, resolution):
+    # define label
+    label = 'm{}'.format(mass).replace('.', 'p') 
+    if self.do_blind: label += '_blind'
+
+    # get the tree
+    treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
+    tree = ROOT.TChain(treename)
+    for data_file in self.data_files:
+      tree.Add(data_file.filename)  
+
+    # declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
+    nsigma = 2 if not self.do_blind else 5
+    binMin = mass - nsigma * resolution 
+    binMax = mass + nsigma * resolution
+    nbins = self.nbins
+
+    hist_name = 'hist'
+    hist = ROOT.TH1D(hist_name, hist_name, nbins, binMin, binMax)
+    branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
+    background_selection = self.selection
+    tree.Project(hist_name, branch_name, background_selection)
+
+    mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", binMin, binMax)
+    mupi_invmass.setBins(nbins)
+
+    # define blinded region
+    blind_range_min = mass - 2*resolution
+    blind_range_max = mass + 2*resolution
+    mupi_invmass.setRange("fit_region_1", binMin, blind_range_min)
+    mupi_invmass.setRange("fit_region_2", blind_range_max, binMax)
+
+    rdh = ROOT.RooDataHist("rdh", "rdh", ROOT.RooArgList(mupi_invmass), hist)
+    if self.do_blind:
+      getattr(rdh, 'reduce')(ROOT.RooFit.CutRange('fit_range_min,fit_range_max'))
+
+    # Define the PDF to fit: 
+    if self.background_model == 'chebychev':
+      a0 = ROOT.RooRealVar('a0', 'a0', 0.01, -10, 10)
+      background_model = ROOT.RooChebychev('background_model', 'background_model', mupi_invmass, ROOT.RooArgList(a0))
+    
+    # define the frame where to plot
+    canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
+
+    # and the two pads
+    pad1 = ROOT.TPad("pad1", "pad1", 0.01, 0.2, 0.99, 0.99)
+    pad1.SetLeftMargin(0.15)
+    pad2 = ROOT.TPad("pad2", "pad2", 0.01, 0.01, 0.99, 0.2)
+    pad2.SetLeftMargin(0.15)
+    pad1.Draw()
+    pad2.Draw()
+
+    frame = mupi_invmass.frame(ROOT.RooFit.Title(self.title))
+
+    # plot the data
+    if self.do_blind:
+      rdh.plotOn(frame, ROOT.RooFit.Name("data"), ROOT.RooFit.CutRange('fit_region_1,fit_region_2'))
+    else:
+      rdh.plotOn(frame, ROOT.RooFit.Name("data"))
+
+    # fit the PDF to the data
+    if self.do_blind:
+      result = background_model.fitTo(rdh, ROOT.RooFit.CutRange('fit_range_1,fit_range_2'))
+    else:
+      result = background_model.fitTo(rdh)
+
+    # plot the fit 		
+    if self.do_blind:
+      background_model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name("background_model"), ROOT.RooFit.Components("background_model"), ROOT.RooFit.Range('fit_region_1,fit_region_2'), ROOT.RooFit.NormRange('fit_region_1,fit_region_2'))
+    else:
+      background_model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name("background_model"), ROOT.RooFit.Components("background_model"))
+
+    # and write the fit parameters
+    background_model.paramOn(frame,   
+         ROOT.RooFit.Layout(0.2, 0.4, 0.8),
+         ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
+         )
+
+    frame.getAttText().SetTextSize(0.03)
+    frame.getAttLine().SetLineColorAlpha(0, 0)
+    frame.getAttFill().SetFillColorAlpha(0, 0)
+
+    # compute the chisquare
+    chisquare = frame.chiSquare("background_model","data")
+
+    # and print it
+    label1 = ROOT.TPaveText(0.62,0.65,0.72,0.8,"brNDC")
+    label1.SetBorderSize(0)
+    label1.SetFillColor(ROOT.kWhite)
+    label1.SetTextSize(0.03)
+    label1.SetTextFont(42)
+    label1.SetTextAlign(11)
+    label1.AddText('Mass window around {}GeV'.format(mass))
+    qte = '#chi^{2}/ndof'
+    label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
+    print "chisquare = {}".format(chisquare)
+
+    # We define and plot the residuals 		
+    if self.do_blind:
+      curve1 = frame.getObject(1)
+      curve2 = frame.getObject(2)
+      datahist = frame.getHist('data')
+      hpull1 = datahist.makePullHist(curve1, True)
+      hpull2 = datahist.makePullHist(curve2, True)
+      frame2 = mupi_invmass.frame(ROOT.RooFit.Title(" "))
+      frame2.addPlotable(hpull1,"P")
+      frame2.addPlotable(hpull2,"P")
+    else:
+      hpull = frame.pullHist()
+      for i in range(0, frame.GetNbinsX()):
+         hpull.SetPointError(i,0,0,0,0)
+      frame2 = mupi_invmass.frame(ROOT.RooFit.Title(" "))
+      frame2.addPlotable(hpull,"P")
+
+    # plot of the curve and the fit
+    canv.cd()
+    pad1.cd()
+
+    frame.GetXaxis().SetTitleSize(0.04)
+    frame.GetXaxis().SetTitle("#mu#pi invariant mass [GeV]")
+    frame.GetYaxis().SetTitleSize(0.04)
+    frame.GetYaxis().SetTitleOffset(1.1)
+    frame.Draw()
+    label1.Draw()
+
+    # add the legend
+    #leg = self.tools.getRootTLegend(xmin=0.6, ymin=0.4, xmax=0.8, ymax=0.6, size=0.03, do_alpha=True)
+    #if self.signal_model == 'doubleCB':
+    #  model_label = 'Double Crystal Ball'
+    #elif self.signal_model == 'doubleCBPlusGaussian':
+    #  model_label = 'Double Crystal Ball + Gaussian'
+    #leg.AddEntry(frame.findObject('signal_model'), model_label)
+    #leg.AddEntry(frame.findObject('CBpdf_1'), 'CB_1')
+    #leg.AddEntry(frame.findObject('CBpdf_2'), 'CB_2')
+    #if self.signal_model == 'doubleCBPlusGaussian':
+    #  leg.AddEntry(frame.findObject('gaussian'), 'Gaussian')
+    #leg.Draw()
+
+    # plot of the residuals
+    pad2.cd()
+    ROOT.gPad.SetLeftMargin(0.15) 
+    ROOT.gPad.SetPad(0.01,0.01,0.99,0.2)
+
+    frame2.GetYaxis().SetNdivisions(3)
+    frame2.GetYaxis().SetLabelSize(0.17)
+    frame2.GetYaxis().SetTitleSize(0.17)
+    frame2.GetYaxis().SetTitleOffset(0.24)
+    frame2.GetYaxis().SetRangeUser(-5,5)	
+    frame2.GetYaxis().SetTitle("Pulls")	
+    frame2.GetXaxis().SetTitle("")	
+    frame2.GetXaxis().SetLabelOffset(5)	
+    frame2.Draw()
+
+    line = ROOT.TLine()
+    line.DrawLine(binMin,0,binMax,0)
+    line.SetLineColor(2)
+    line.DrawLine(binMin,-3,binMax,-3)
+    line.DrawLine(binMin,3,binMax,3)
+
+    # save output
+    canv.cd()
+    outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
+    canv.SaveAs("{}/bkg_fit_{}.png".format(outputdir, label))
+    canv.SaveAs("{}/bkg_fit_{}.pdf".format(outputdir, label))
 
 
 if __name__ == '__main__':
@@ -264,8 +434,25 @@ if __name__ == '__main__':
   selection = 'sv_lxy>5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.3 && sv_lxysig>100 && abs(mu_dxysig)>15 && abs(pi_dxysig)>20 '
   signal_model = 'doubleCBPlusGaussian'
   signal_files = signal_samples['V10_30Dec21_m3'] 
+  background_model = 'chebychev'
+  data_files = data_samples['V10_30Dec21']
+  do_blind = False
+  nbins = 80
 
   for signal_file in signal_files:
-    fitter = Fitter(signal_file=signal_file, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
-    fitter.performFit()
+    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model=signal_model, nbins=150, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+    #fitter.performSignalFit()
+
+  fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+  fitter.performBackgroundFit(mass=3, resolution=0.023)
+
+  selection = 'sv_lxy<=1 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.1 && sv_lxysig>30 && abs(mu_dxysig)>5 && abs(pi_dxysig)>10'
+  fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+  fitter.performBackgroundFit(mass=3, resolution=0.023)
+
+  selection = 'sv_lxy>1 && sv_lxy<=5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.2 && sv_lxysig>100 && abs(mu_dxysig)>12 && abs(pi_dxysig)>25'
+  fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+  fitter.performBackgroundFit(mass=3, resolution=0.023)
+
+
 
