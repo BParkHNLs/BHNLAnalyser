@@ -39,8 +39,10 @@ class Config(object):
                do_ABCD=None,
                do_ABCDHybrid=None,
                do_TF=None,
+               do_shape_analysis=None,
                do_categories=None,
                add_Bc=None,
+               plot_prefit=None,
                lumi_target=None,
                sigma_B=None,
                sigma_mult_window=None,
@@ -78,8 +80,10 @@ class Config(object):
     self.do_ABCD = do_ABCD
     self.do_ABCDHybrid = do_ABCDHybrid
     self.do_TF = do_TF
+    self.do_shape_analysis = do_shape_analysis
     self.do_categories = do_categories
     self.add_Bc = add_Bc
+    self.plot_prefit = plot_prefit
     self.lumi_target = lumi_target
     self.sigma_B = sigma_B
     self.sigma_mult_window = sigma_mult_window
