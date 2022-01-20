@@ -1,3 +1,5 @@
+import os
+from os import path
 import ROOT
 from ROOT import RooFit
 
@@ -5,7 +7,7 @@ from tools import Tools
 from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file='', data_files='', selection='', signal_model=None, background_model=None, do_blind=False, file_type='flat', nbins=250, title=' ', outdirlabel='testing', plot_pulls=True):
+  def __init__(self, signal_file='', data_files='', selection='', signal_model=None, background_model=None, do_blind=False, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', plot_pulls=True):
     self.tools = Tools()
     self.signal_file = signal_file
     self.data_files = data_files
@@ -16,8 +18,12 @@ class Fitter(Tools):
     self.file_type = file_type
     self.nbins = nbins
     self.title = title
-    self.outdirlabel = outdirlabel
+    self.outputdir = outputdir
     self.plot_pulls = plot_pulls
+    if self.outputdir != '': self.outputdir = self.outputdir + '/fits'
+    else: self.outputdir = './myPlots/fits/' + outdirlabel
+    if not path.exists(self.outputdir):
+      os.system('mkdir -p {}'.format(self.outputdir))
 
 
     signal_model_list = ['doubleCB', 'doubleCBPlusGaussian']
@@ -29,6 +35,8 @@ class Fitter(Tools):
       raise RuntimeError('Unrecognised background model "{}". Please choose among {}'.format(self.background_model, background_model_list))
 
     #TODO there are no weights applied so far (incl. ctau, hlt, pu weights)
+    #TODO make sure that the data is normalised to the yields inserted in the datacard
+    #TODO make sure that the pdfs are named according to the process name in the datacard
 
   def performSignalFit(self):
     # define label
@@ -212,9 +220,8 @@ class Fitter(Tools):
 
     # save output
     canv.cd()
-    outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
-    canv.SaveAs("{}/fit_{}.png".format(outputdir, label))
-    canv.SaveAs("{}/fit_{}.pdf".format(outputdir, label))
+    canv.SaveAs("{}/sig_fit_{}.png".format(self.outputdir, label))
+    canv.SaveAs("{}/sig_fit_{}.pdf".format(self.outputdir, label))
 
     #delete hist
     #delete canv
@@ -421,9 +428,8 @@ class Fitter(Tools):
 
     # save output
     canv.cd()
-    outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
-    canv.SaveAs("{}/bkg_fit_{}.png".format(outputdir, label))
-    canv.SaveAs("{}/bkg_fit_{}.pdf".format(outputdir, label))
+    canv.SaveAs("{}/bkg_fit_{}.png".format(self.outputdir, label))
+    canv.SaveAs("{}/bkg_fit_{}.pdf".format(self.outputdir, label))
 
 
 if __name__ == '__main__':
