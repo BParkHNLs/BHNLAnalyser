@@ -7,7 +7,7 @@ from tools import Tools
 from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file='', data_files='', selection='', signal_model=None, background_model=None, do_blind=False, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', plot_pulls=True):
+  def __init__(self, signal_file='', data_files='', selection='', signal_model=None, background_model=None, do_blind=False, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True):
     self.tools = Tools()
     self.signal_file = signal_file
     self.data_files = data_files
@@ -18,12 +18,13 @@ class Fitter(Tools):
     self.file_type = file_type
     self.nbins = nbins
     self.title = title
-    self.outputdir = outputdir
     self.plot_pulls = plot_pulls
+    self.outputdir = outputdir
     if self.outputdir != '': self.outputdir = self.outputdir + '/fits'
     else: self.outputdir = './myPlots/fits/' + outdirlabel
     if not path.exists(self.outputdir):
       os.system('mkdir -p {}'.format(self.outputdir))
+    self.category_label = category_label
 
 
     signal_model_list = ['doubleCB', 'doubleCBPlusGaussian']
@@ -40,7 +41,8 @@ class Fitter(Tools):
 
   def performSignalFit(self):
     # define label
-    label = 'm{}_ctau_{}'.format(self.signal_file.mass, self.signal_file.ctau).replace('.', 'p') 
+    label = 'm{}_ctau_{}_{}'.format(self.signal_file.mass, self.signal_file.ctau, self.signal_model).replace('.', 'p') 
+    if self.category_label != '': label += '_{}'.format(self.category_label)
 
     # open the file and get the tree
     inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False)
@@ -269,7 +271,8 @@ class Fitter(Tools):
 
   def performBackgroundFit(self, mass, resolution):
     # define label
-    label = 'm{}'.format(mass).replace('.', 'p') 
+    label = 'm{}_{}'.format(mass, self.background_model).replace('.', 'p') 
+    if self.category_label != '': label += '_{}'.format(self.category_label)
     if self.do_blind: label += '_blind'
 
     # get the tree
