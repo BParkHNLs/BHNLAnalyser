@@ -19,6 +19,7 @@ class Fitter(Tools):
     self.nbins = nbins
     self.title = title
     self.plot_pulls = plot_pulls
+    self.workspacedir = outputdir #TODO adapt
     self.outputdir = outputdir
     if self.outputdir != '': self.outputdir = self.outputdir + '/fits'
     else: self.outputdir = './myPlots/fits/' + outdirlabel
@@ -217,15 +218,35 @@ class Fitter(Tools):
       a0 = ROOT.RooRealVar('a0', 'a0', 0.01, -10, 10)
       background_model = ROOT.RooChebychev('qcd', 'qcd', mupi_invmass, ROOT.RooArgList(a0))
 
+    # getting the observed data #TODO create function
+    treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
+    tree = ROOT.TChain(treename)
+    for data_file in self.data_files:
+      tree.Add(data_file.filename) 
+
+    bin_min, bin_max = self.getFitRegion()
+    nbins = self.nbins
+    hist_name = 'hist'
+    hist = ROOT.TH1D(hist_name, hist_name, nbins, bin_min, bin_max)
+    branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
+    selection = self.selection
+    tree.Project(hist_name, branch_name , selection)
+    data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(mupi_invmass), hist)
+
     # import the model in a workspace
-    output_file = ROOT.TFile('workspace_{}.root'.format(label), 'RECREATE' if do_recreate else 'UPDATE')
+    #workspace_filename = '{}/workspace_{}.root'.format(self.outputdir, label)
+    workspace_filename = '{}/workspace_{}.root'.format(self.workspacedir, label)
+    output_file = ROOT.TFile(workspace_filename, 'RECREATE') # if do_recreate else 'UPDATE')
     workspace = ROOT.RooWorkspace('workspace', 'workspace')
     getattr(workspace, 'import')(signal_model)
     getattr(workspace, 'import')(background_model)
+    getattr(workspace, 'import')(data_obs)
     workspace.Write()
-    workspace.Print()
+    #workspace.Print()
     #workspace.writeToFile('workspace_{}.root'.format(label))
     output_file.Close()
+
+    print '--> {} created'.format(workspace_filename)
 
     ## workspace will remain in memory after macro finishes
     ##ROOT.gDirectory.Add(workspace)
@@ -262,18 +283,23 @@ class Fitter(Tools):
 
     # get the label
     if label == '' and process == 'signal': label = self.getSignalLabel() 
-    print '\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nbkg label ',self.getBackgroundLabel()
     if label == '' and process == 'background': label = self.getBackgroundLabel() 
 
     # load the workspace
-    ws_file = self.tools.getRootFile('workspace_{}.root'.format(label), with_ext=False)
+    workspace_filename = '{}/workspace_{}.root'.format(self.workspacedir, label)
+    ws_file = self.tools.getRootFile(workspace_filename, with_ext=False)
     ws = ws_file.Get('workspace')
     ws.Print()
 
     # open the file and get the tree
-    inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False)
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
-    tree = self.tools.getTree(inputfile, treename)
+    if process == 'signal':
+      inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False)
+      tree = self.tools.getTree(inputfile, treename)
+    else:
+      tree = ROOT.TChain(treename)
+      for data_file in self.data_files:
+        tree.Add(data_file.filename) 
 
     # get signal mass
     signal_mass = self.signal_file.mass
@@ -336,7 +362,7 @@ class Fitter(Tools):
     frame.getAttFill().SetFillColorAlpha(0, 0)
 
     # compute the chisquare
-    chisquare = frame.chiSquare("sig","data")
+    chisquare = frame.chiSquare(pdf_name,"data")
 
     # and print it
     label1 = ROOT.TPaveText(0.62,0.65,0.72,0.8,"brNDC")
@@ -349,7 +375,7 @@ class Fitter(Tools):
       label_text = 'mass {}GeV, ctau {}mm'.format(signal_mass, self.signal_file.ctau)
     else: 
       label_text = 'Mass window around {}GeV'.format(signal_mass)
-    label1.AddText('mass {}GeV, ctau {}mm'.format(signal_mass, self.signal_file.ctau))
+    label1.AddText(label_text)
     qte = '#chi^{2}/ndof'
     label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
     print "chisquare = {}".format(chisquare)
@@ -487,10 +513,10 @@ if __name__ == '__main__':
     fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model=signal_model, background_model=background_model, do_blind=do_blind, nbins=150, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
     #fitter.writeSignalModel(label='test')
     #fitter.writeBackgroundModel(label='test')
-    fitter.writeFitModels(label='test')
     #fitter.createFitWorkspace()
+    fitter.writeFitModels(label='test')
     #fitter.performFit(process='signal', label='test')
-    fitter.performFit(process='background', label='test')
+    #fitter.performFit(process='background', label='test')
 
   #fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
   #fitter.performBackgroundFit(mass=3, resolution=0.023)
