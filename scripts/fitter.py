@@ -20,6 +20,8 @@ class Fitter(Tools):
     self.title = title
     self.plot_pulls = plot_pulls
     self.workspacedir = outputdir #TODO adapt
+    if self.workspacedir == '':
+      self.workspacedir = './'
     self.outputdir = outputdir
     if self.outputdir != '': self.outputdir = self.outputdir + '/fits'
     else: self.outputdir = './myPlots/fits/' + outdirlabel
@@ -28,7 +30,7 @@ class Fitter(Tools):
     self.category_label = category_label
 
 
-    signal_model_list = ['doubleCB', 'doubleCBPlusGaussian']
+    signal_model_list = ['doubleCB', 'doubleCBPlusGaussian', 'voigtian']
     if self.signal_model != None and self.signal_model not in signal_model_list:
       raise RuntimeError('Unrecognised signal model "{}". Please choose among {}'.format(self.signal_model, signal_model_list))
 
@@ -180,10 +182,10 @@ class Fitter(Tools):
     mupi_invmass.setBins(nbins)
 
     # Define the signal model 
-    mean_init = signal_mass - 0.01*signal_mass
-    mean_min = signal_mass - 0.05*signal_mass
-    mean_max = signal_mass + 0.05*signal_mass
-    mean  = ROOT.RooRealVar("mean","mean", mean_init, mean_min, mean_max)
+    #mean_init = signal_mass - 0.01*signal_mass
+    #mean_min = signal_mass - 0.05*signal_mass
+    #mean_max = signal_mass + 0.05*signal_mass
+    mean  = ROOT.RooRealVar("mean","mean", signal_mass)
 
     sigma = ROOT.RooRealVar("sigma", "sigma", 0.01, 0.005, 0.15)
 
@@ -212,6 +214,12 @@ class Fitter(Tools):
     elif self.signal_model == 'doubleCBPlusGaussian':
       doubleCBpdf = ROOT.RooAddPdf("doubleCBpdf", "doubleCBpdf", CBpdf_1, CBpdf_2, sigfrac_CB)
       signal_model = ROOT.RooAddPdf('sig', 'sig', doubleCBpdf, gaussian, sigfrac_gauss) # make sure that the model has the same name as in datacard 
+
+    elif self.signal_model == 'voigtian':
+      mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", signal_mass)
+      gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.01, 0., 5.)
+      sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.01, 0.005, 0.15)
+      signal_model = ROOT.RooVoigtian('sig', 'sig', mupi_invmass, mean_voigtian, gamma_voigtian, sigma_voigtian)
 
     # Define the background model 
     if self.background_model == 'chebychev':
@@ -345,10 +353,11 @@ class Fitter(Tools):
     # plot the fit 		
     pdf_name = 'sig' if process == 'signal' else 'qcd'
     if process == 'signal':
-      ws.pdf(pdf_name).plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
-      ws.pdf(pdf_name).plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2"),ROOT.RooFit.Components("CBpdf_2"), ROOT.RooFit.LineStyle(ROOT.kDashed))
-      if self.signal_model == 'doubleCBPlusGaussian':
-        ws.pdf(pdf_name).plotOn(frame, ROOT.RooFit.LineColor(6),ROOT.RooFit.Name("gaussian"),ROOT.RooFit.Components("gaussian"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+      if self.signal_model == 'doubleCB' or self.signal_model == 'doubleCBPlusGaussian':
+        ws.pdf(pdf_name).plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+        ws.pdf(pdf_name).plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2"),ROOT.RooFit.Components("CBpdf_2"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+        if self.signal_model == 'doubleCBPlusGaussian':
+          ws.pdf(pdf_name).plotOn(frame, ROOT.RooFit.LineColor(6),ROOT.RooFit.Name("gaussian"),ROOT.RooFit.Components("gaussian"), ROOT.RooFit.LineStyle(ROOT.kDashed))
     ws.pdf(pdf_name).plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name(pdf_name), ROOT.RooFit.Components(pdf_name))
 
     # and write the fit parameters
@@ -407,11 +416,14 @@ class Fitter(Tools):
         model_label = 'Double Crystal Ball'
       elif self.signal_model == 'doubleCBPlusGaussian':
         model_label = 'Double Crystal Ball + Gaussian'
+      elif self.signal_model == 'voigtian':
+        model_label = 'Voigtian'
       leg.AddEntry(frame.findObject(pdf_name), model_label)
-      leg.AddEntry(frame.findObject('CBpdf_1'), 'CB_1')
-      leg.AddEntry(frame.findObject('CBpdf_2'), 'CB_2')
-      if self.signal_model == 'doubleCBPlusGaussian':
-        leg.AddEntry(frame.findObject('gaussian'), 'Gaussian')
+      if self.signal_model == 'doubleCB' or self.signal_model == 'doubleCBPlusGaussian':
+        leg.AddEntry(frame.findObject('CBpdf_1'), 'CB_1')
+        leg.AddEntry(frame.findObject('CBpdf_2'), 'CB_2')
+        if self.signal_model == 'doubleCBPlusGaussian':
+          leg.AddEntry(frame.findObject('gaussian'), 'Gaussian')
     else:
       if self.background_model == 'chebychev':
         model_label = 'Chebychev'
@@ -501,7 +513,7 @@ if __name__ == '__main__':
   outdirlabel = 'V10_30Dec21_samples_sel'
   plot_pulls = True
   selection = 'sv_lxy>5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.3 && sv_lxysig>100 && abs(mu_dxysig)>15 && abs(pi_dxysig)>20 '
-  signal_model = 'doubleCB'
+  signal_model = 'voigtian'
   signal_files = signal_samples['V10_30Dec21_m3'] 
   background_model = 'chebychev'
   data_files = data_samples['V10_30Dec21']
@@ -515,7 +527,7 @@ if __name__ == '__main__':
     #fitter.writeBackgroundModel(label='test')
     #fitter.createFitWorkspace()
     fitter.writeFitModels(label='test')
-    #fitter.performFit(process='signal', label='test')
+    fitter.performFit(process='signal', label='test')
     #fitter.performFit(process='background', label='test')
 
   #fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
