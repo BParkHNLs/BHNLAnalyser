@@ -179,7 +179,7 @@ class Fitter(Tools):
     nbins = self.nbins
 
     mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", bin_min, bin_max)
-    mupi_invmass.setBins(nbins)
+    #mupi_invmass.setBins(nbins)
 
     # Define the signal model 
     #mean_init = signal_mass - 0.01*signal_mass
@@ -239,8 +239,9 @@ class Fitter(Tools):
     branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
     selection = self.selection
     tree.Project(hist_name, branch_name , selection)
-    data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(mupi_invmass), hist)
-
+    #data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(mupi_invmass), hist)
+    data_obs = ROOT.RooDataSet("data_obs", "data_obs", ROOT.RooArgSet(mupi_invmass)) #TODO for the moment does not contain sensible data
+    
     # import the model in a workspace
     #workspace_filename = '{}/workspace_{}.root'.format(self.outputdir, label)
     workspace_filename = '{}/workspace_{}.root'.format(self.workspacedir, label)
