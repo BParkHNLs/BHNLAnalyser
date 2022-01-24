@@ -40,6 +40,7 @@ def getOptions():
   parser.add_argument('--do_ABCDHybrid'    ,           dest='do_ABCDHybrid'    , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
   parser.add_argument('--do_TF'            ,           dest='do_TF'            , help='compute yields with the TF method'        , action='store_true', default=False)
   parser.add_argument('--do_shape_analysis',           dest='do_shape_analysis', help='perform shape-based analysis'             , action='store_true', default=False)
+  parser.add_argument('--do_shape_TH1'     ,           dest='do_shape_TH1'     , help='perform shape-based analysis with histo'  , action='store_true', default=False)
   parser.add_argument('--do_categories'    ,           dest='do_categories'    , help='compute yields in categories'             , action='store_true', default=False)
   parser.add_argument('--add_Bc'           ,           dest='add_Bc'           , help='add the Bc samples'                       , action='store_true', default=False)
   parser.add_argument('--plot_prefit'      ,           dest='plot_prefit'      , help='produce prefit plots'                     , action='store_true', default=False)
@@ -75,7 +76,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_shape_analysis=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_shape_analysis=False, do_shape_TH1=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -87,6 +88,7 @@ class DatacardsMaker(Tools):
     self.do_ABCDHybrid = do_ABCDHybrid 
     self.do_TF = do_TF 
     self.do_shape_analysis = do_shape_analysis
+    self.do_shape_TH1 = do_shape_TH1
     self.do_categories = do_categories
     self.categories = categories
     if do_categories and categories == None:
@@ -189,7 +191,7 @@ class DatacardsMaker(Tools):
     background_model = 'chebychev' #TODO
     do_blind = False #TODO
     nbins = 80 #TODO
-    plot_pulls = False #TODO
+    plot_pulls = True #TODO
     outputdir = self.outputdir
 
     fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model=signal_model, background_model=background_model, do_blind=do_blind, nbins=nbins, outputdir=outputdir, category_label=category.label, plot_pulls=plot_pulls)
@@ -202,16 +204,89 @@ class DatacardsMaker(Tools):
       fitter.performFit(process='background', label=label)
 
 
+  def createSigHisto(self, category, signal_file, signal_yields, label):
+    signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
+    #label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling)
+
+    rootfile_name = 'shape_{}.root'.format(label)
+    root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'RECREATE')  
+    root_file.cd()
+
+    from quantity import Quantity
+    sigma = signal_file.resolution
+    quantity = Quantity(name_flat='hnl_mass', nbins=80, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
+
+    # data
+    #TODO make it the real obs
+    data_hist = ROOT.TH1D('data_obs', 'data_obs', quantity.nbins, quantity.bin_min, quantity.bin_max)
+    root_file.cd()
+    data_hist.Write()
+
+    # signal shape
+    #f = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+signal_file.filename, 'READ')
+    treename = 'signal_tree'
+    f_signal = self.tools.getRootFile(signal_file.filename)
+    tree_signal = self.getTree(f_signal, treename)
+
+    #filename = signal_file.filename
+    #original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
+    #target_ctau = signal_file.ctau
+    #ctau_weight = -99
+    #if float(original_ctau) != float(target_ctau):
+    #  ctau_weight = '({ctau0} / {ctau1} * exp((1./{ctau0} - 1./{ctau1}) * gen_hnl_ct))'.format(ctau0=original_ctau, ctau1=target_ctau)
+    ctau_weight = '(1)'
+
+    signal_selection = 'ismatched==1 && {}'.format(self.baseline_selection)
+    if self.do_categories:
+      category_selection = category.definition_flat + ' && ' + category.cutbased_selection
+      signal_selection += ' && {}'.format(category_selection)
+    hist_sig = self.tools.createHisto(tree_signal, quantity, hist_name='sig', branchname='flat', selection=signal_selection, weight=ctau_weight)
+
+    hist_sig.Scale(signal_yields/hist_sig.Integral())
+    root_file.cd() 
+    hist_sig.Write()
+    root_file.Close()
+
+
+  def createBkgHisto(self, category, mass, resolution, background_yields, label): #TODO this function is redundant, merge it with previous one
+    rootfile_name = 'shape_{}.root'.format(label)
+    root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'UPDATE')  
+    root_file.cd()
+
+    from quantity import Quantity
+    quantity = Quantity(name_flat='hnl_mass', nbins=80, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
+
+    # background shape
+    treename = 'signal_tree'
+    tree_bkg = ROOT.TChain(treename)
+    for data_file in self.data_files:
+      tree_bkg.Add(data_file.filename) 
+
+    background_selection = self.baseline_selection
+    if self.do_categories:
+      category_selection = category.definition_flat + ' && ' + category.cutbased_selection
+      background_selection += ' && {}'.format(category_selection)
+    hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='qcd', branchname='flat', selection=background_selection)
+
+    hist_bkg.Scale(background_yields/hist_bkg.Integral())
+    root_file.cd() 
+    hist_bkg.Write()
+    root_file.Close()
+
+
   def writeCard(self, label, signal_yields, background_yields):
     datacard_name = 'datacard_{}.txt'.format(label)
     if self.do_shape_analysis:
-      #shape_line = 'shapes *    {lbl}  {outdir}/workspace_{lbl}.root workspace:$PROCESS'.format(
       shape_line = 'shapes *    {lbl}  ./workspace_{lbl}.root workspace:$PROCESS'.format(
           lbl = label,
-          #outdir = self.outputdir,
+          )
+    elif self.do_shape_TH1:
+      shape_line = 'shapes *          {lbl}   shape_{lbl}.root   $PROCESS $PROCESS_$SYSTEMATIC'.format(
+          lbl = label,
           )
     else:
       shape_line = '' 
+    #TODO add shape uncertainties
     datacard = open('{}/{}'.format(self.outputdir, datacard_name), 'w+')
     datacard.write(
 '''\
@@ -294,6 +369,9 @@ bkg {bkg_yields}
           # get the model shape
           if self.do_shape_analysis:
             self.createModels(signal_file=signal_file, category=category, label=label)
+          elif self.do_shape_TH1:
+            self.createSigHisto(category=category, signal_file=signal_file, signal_yields=signal_yields, label=label)
+            self.createBkgHisto(category=category, mass=window['mass'], resolution=window['resolution'], background_yields=background_yields, label=label)
 
           # create the datacard
           self.writeCard(label=label, signal_yields=signal_yields, background_yields=background_yields)
@@ -343,6 +421,7 @@ if __name__ == '__main__':
     weight_hlt = opt.weight_hlt
 
     do_shape_analysis = opt.do_shape_analysis
+    do_shape_TH1 = opt.do_shape_TH1
     do_categories = opt.do_categories
     add_Bc = opt.add_Bc
 
@@ -355,6 +434,7 @@ if __name__ == '__main__':
         white_list = white_list,
         baseline_selection = baseline_selection, 
         do_shape_analysis = do_shape_analysis,
+        do_shape_TH1 = do_shape_TH1,
         do_categories = do_categories, 
         categories = categories, 
         category_label = opt.category_label, 
