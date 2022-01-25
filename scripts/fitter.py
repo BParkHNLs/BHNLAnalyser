@@ -268,8 +268,6 @@ class Fitter(Tools):
 
   def createFitModels(self, label='', do_recreate=True):
     print ' --- Creating Fit Models --- '
-    # get the label
-    #if label == '': label = self.getSignalLabel() 
 
     # get the signal region
     signal_mass = self.signal_file.mass
@@ -281,38 +279,33 @@ class Fitter(Tools):
 
     ### Signal Model ###
 
-    # Define the signal model 
-    #mean_init = signal_mass - 0.01*signal_mass
-    #mean_min = signal_mass - 0.05*signal_mass
-    #mean_max = signal_mass + 0.05*signal_mass
-    self.mean_CB  = ROOT.RooRealVar("mean_CB","mean_CB", signal_mass)
-    self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", 0.01, 0.005, 0.15)
+    if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
+      self.mean_CB  = ROOT.RooRealVar("mean_CB","mean_CB", signal_mass)
+      self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", 0.01, 0.005, 0.15)
 
-    self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
-    self.n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
-    self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
-    self.n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
+      self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
+      self.n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
+      self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
+      self.n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
 
-    self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", self.mupi_invmass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
-    self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", self.mupi_invmass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
+      self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", self.mupi_invmass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
+      self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", self.mupi_invmass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
 
-    # defines the relative importance of the two CBs
-    self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5, 0.0 ,1.0)
+      # defines the relative importance of the two CBs
+      self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5, 0.0 ,1.0)
 
-    if self.signal_model_label == 'doubleCBPlusGaussian':
-      self.sigma_gauss = ROOT.RooRealVar("sigma_gauss", "sigma_gauss", 0.01, 0.005, 0.15)
-      self.gaussian = ROOT.RooGaussian('gaussian', 'gaussian', self.mupi_invmass, self.mean_CB, self.sigma_gauss)
+      if self.signal_model_label == 'doubleCB':
+        self.signal_model = ROOT.RooAddPdf("sig", "sig", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
 
-      # defines the relative importance of gaussian wrt doubleCB
-      self.sigfrac_gauss = ROOT.RooRealVar("sigfrac_gauss","sigfrac_gauss", 0.5, 0.0 ,1.0)
+      if self.signal_model_label == 'doubleCBPlusGaussian':
+        self.sigma_gauss = ROOT.RooRealVar("sigma_gauss", "sigma_gauss", 0.01, 0.005, 0.15)
+        self.gaussian = ROOT.RooGaussian('gaussian', 'gaussian', self.mupi_invmass, self.mean_CB, self.sigma_gauss)
 
-    # build the signal model
-    if self.signal_model_label == 'doubleCB':
-      self.signal_model = ROOT.RooAddPdf("sig", "sig", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
+        # defines the relative importance of gaussian wrt doubleCB
+        self.sigfrac_gauss = ROOT.RooRealVar("sigfrac_gauss","sigfrac_gauss", 0.5, 0.0 ,1.0)
 
-    elif self.signal_model_label == 'doubleCBPlusGaussian':
-      self.doubleCBpdf = ROOT.RooAddPdf("doubleCBpdf", "doubleCBpdf", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
-      self.signal_model = ROOT.RooAddPdf('sig', 'sig', self.doubleCBpdf, self.gaussian, self.sigfrac_gauss) # make sure that the model has the same name as in datacard 
+        self.doubleCBpdf = ROOT.RooAddPdf("doubleCBpdf", "doubleCBpdf", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
+        self.signal_model = ROOT.RooAddPdf('sig', 'sig', self.doubleCBpdf, self.gaussian, self.sigfrac_gauss) # make sure that the model has the same name as in datacard 
 
     elif self.signal_model_label == 'voigtian':
       self.mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", signal_mass)
@@ -320,49 +313,21 @@ class Fitter(Tools):
       self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.01, 0.005, 0.15)
       self.signal_model = ROOT.RooVoigtian('sig', 'sig', self.mupi_invmass, self.mean_voigtian, self.gamma_voigtian, self.sigma_voigtian)
 
+    ### Background Model ###
+
     # Define the background model 
     if self.background_model_label == 'chebychev':
+      self.n_bkg = ROOT.RooRealVar('n_bkg', 'n_bkg', 100, 0, 100000)
       self.a0 = ROOT.RooRealVar('a0', 'a0', 0.01, -10, 10)
-      self.background_model = ROOT.RooChebychev('qcd', 'qcd', self.mupi_invmass, ROOT.RooArgList(self.a0))
+      self.chebychev = ROOT.RooChebychev('chebychev', 'chebychev', self.mupi_invmass, ROOT.RooArgList(self.a0))
+      self.background_model = ROOT.RooAddPdf('qcd', 'qcd', ROOT.RooArgList(self.chebychev), ROOT.RooArgList(self.n_bkg))
       #a0 = ROOT.RooRealVar('a0', 'a0', -1.36, -1.52, -1.20)
       #a1 = ROOT.RooRealVar('a1', 'a1', 0.53, 0.29, 0.76)
       #a2 = ROOT.RooRealVar('a2', 'a2', -0.14, -0.32, 0.04)
       #background_model = ROOT.RooChebychev('qcd', 'qcd', mupi_invmass, ROOT.RooArgList(a0, a1, a2))
 
-    # getting the observed data #TODO create function
-    #treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
-    #tree = ROOT.TChain(treename)
-    #for data_file in self.data_files:
-    #  tree.Add(data_file.filename) 
-
-    #bin_min, bin_max = self.getFitRegion()
-    #nbins = self.nbins
-    #hist_name = 'hist'
-    #hist = ROOT.TH1D(hist_name, hist_name, nbins, bin_min, bin_max)
-    #branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
-    #selection = self.selection
-    #tree.Project(hist_name, branch_name , selection)
-    ##data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(mupi_invmass), hist)
-    #data_obs = ROOT.RooDataSet("data_obs", "data_obs", ROOT.RooArgSet(mupi_invmass)) #TODO for the moment does not contain sensible data
-    #
-    ## import the model in a workspace
-    ##workspace_filename = '{}/workspace_{}.root'.format(self.outputdir, label)
-    #workspace_filename = '{}/workspace_{}.root'.format(self.workspacedir, label)
-    #output_file = ROOT.TFile(workspace_filename, 'RECREATE') # if do_recreate else 'UPDATE')
-    #workspace = ROOT.RooWorkspace('workspace', 'workspace')
-    #getattr(workspace, 'import')(signal_model)
-    #getattr(workspace, 'import')(background_model)
-    #getattr(workspace, 'import')(data_obs)
-    #workspace.Write()
-    #workspace.Print()
-    ##workspace.writeToFile('workspace_{}.root'.format(label))
-    #output_file.Close()
-
     print '--> Models created'
-    #print '--> {} created'.format(workspace_filename)
 
-    ## workspace will remain in memory after macro finishes
-    ##ROOT.gDirectory.Add(workspace)
 
   #def createFitWorkspace(self, label=''):
   #  if label == '': label = self.getSignalLabel()
@@ -805,6 +770,13 @@ class Fitter(Tools):
     canv_pull.SaveAs("{}/{}_pulls_{}.pdf".format(self.outputdir, process, label))
 
 
+  def getBackgroundYieldsFromFit(self):
+    # one has to make sure that the fit was run beforehand
+    if self.n_bkg.getVal() ==  100.:
+      raise RuntimeError('[fitter] It seems like the fit was not performed. Please check. \n-->Aborting')
+    return self.n_bkg.getVal()
+
+
   def createWorkspace(self, label=''):
     if label == '': label = self.getSignalLabel()
 
@@ -832,18 +804,20 @@ class Fitter(Tools):
     # create factory
     bin_min, bin_max = self.getFitRegion()
     workspace.factory('mupi_invmass[{}, {}]'.format(bin_min, bin_max)) #TODO instead use the sigma from the fit
-    workspace.factory('RooVoigtian::sig(mupi_invmass, mean_voigtian[{m}], gamma_voigtian[{g}], sigma_voigtian[{s}])'.format(
-          m = self.mean_voigtian.getVal(),
-          g = self.gamma_voigtian.getVal(),
-          s = self.sigma_voigtian.getVal(),
+    if self.signal_model_label == 'voigtian':
+      workspace.factory('RooVoigtian::sig(mupi_invmass, mean_voigtian[{m}], gamma_voigtian[{g}], sigma_voigtian[{s}])'.format(
+            m = self.mean_voigtian.getVal(),
+            g = self.gamma_voigtian.getVal(),
+            s = self.sigma_voigtian.getVal(),
+            )
           )
-        )
-    workspace.factory('RooChebychev::qcd(mupi_invmass, a0[{ini}, {down}, {up}])'.format(
-          ini = self.a0.getVal(),
-          down = self.a0.getVal() - 2*self.a0.getError(),
-          up = self.a0.getVal() + 2*self.a0.getError(),
+    if self.background_model_label == 'chebychev':
+      workspace.factory('RooChebychev::qcd(mupi_invmass, a0[{ini}, {down}, {up}])'.format(
+            ini = self.a0.getVal(),
+            down = self.a0.getVal() - 2*self.a0.getError(),
+            up = self.a0.getVal() + 2*self.a0.getError(),
+            )
           )
-        )
 
     getattr(workspace, 'import')(data_obs)
     workspace.Write()
@@ -853,11 +827,11 @@ class Fitter(Tools):
     print '--> {} created'.format(workspace_filename)
 
 
-  def process(self):
+  def process(self, label=''):
     self.createFitModels()
-    self.performFit(process='signal', label='test2')
-    self.performFit(process='background', label='test2')
-    self.createWorkspace(label='test2')
+    self.performFit(process='signal', label=label)
+    self.performFit(process='background', label=label)
+    self.createWorkspace(label=label)
 
 
 
