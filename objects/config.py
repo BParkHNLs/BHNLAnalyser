@@ -39,6 +39,7 @@ class Config(object):
                do_ABCD=None,
                do_ABCDHybrid=None,
                do_TF=None,
+               do_counting=None,
                do_shape_analysis=None,
                do_shape_TH1=None,
                do_categories=None,
@@ -81,6 +82,7 @@ class Config(object):
     self.do_ABCD = do_ABCD
     self.do_ABCDHybrid = do_ABCDHybrid
     self.do_TF = do_TF
+    self.do_counting = do_counting
     self.do_shape_analysis = do_shape_analysis
     self.do_shape_TH1 = do_shape_TH1
     self.do_categories = do_categories
@@ -186,8 +188,8 @@ class Config(object):
 
     print '       ---> Datacard request OK'
 
-    if self.do_shape_analysis + self.do_shape_TH1 != 1:
-      raise RuntimeError("Please specify which analysis strategy to use among ['do_shape_analysis', 'do_shape_TH1']")
+    if if self.do_counting + self.do_shape_analysis + self.do_shape_TH1 != 1:
+      raise RuntimeError("Please specify which analysis strategy to use among ['do_counting', 'do_shape_analysis', 'do_shape_TH1']")
       
 
   # check that either lumi or shape, or can process both in parallel?

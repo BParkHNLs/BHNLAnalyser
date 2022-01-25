@@ -39,6 +39,7 @@ def getOptions():
   parser.add_argument('--do_ABCD'          ,           dest='do_ABCD'          , help='compute yields with the ABCD method'      , action='store_true', default=False)
   parser.add_argument('--do_ABCDHybrid'    ,           dest='do_ABCDHybrid'    , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
   parser.add_argument('--do_TF'            ,           dest='do_TF'            , help='compute yields with the TF method'        , action='store_true', default=False)
+  parser.add_argument('--do_counting'      ,           dest='do_counting'      , help='perform counting experiment'              , action='store_true', default=False)
   parser.add_argument('--do_shape_analysis',           dest='do_shape_analysis', help='perform shape-based analysis'             , action='store_true', default=False)
   parser.add_argument('--do_shape_TH1'     ,           dest='do_shape_TH1'     , help='perform shape-based analysis with histo'  , action='store_true', default=False)
   parser.add_argument('--do_categories'    ,           dest='do_categories'    , help='compute yields in categories'             , action='store_true', default=False)
@@ -76,7 +77,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_shape_analysis=False, do_shape_TH1=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -87,6 +88,7 @@ class DatacardsMaker(Tools):
     self.do_ABCD = do_ABCD 
     self.do_ABCDHybrid = do_ABCDHybrid 
     self.do_TF = do_TF 
+    self.do_counting = do_counting
     self.do_shape_analysis = do_shape_analysis
     self.do_shape_TH1 = do_shape_TH1
     self.do_categories = do_categories
@@ -345,6 +347,8 @@ bkg {bkg_yields}
       if self.do_categories and 'incl' in category.label: continue
       if not self.do_categories and 'incl' not in category.label: continue
 
+      if category.label != 'lxy1to5_OS': continue
+
       if self.category_label != None and category.label != self.category_label: continue # needed for category parallelisation on the batch
 
       # loop on the different mass windows
@@ -420,12 +424,13 @@ if __name__ == '__main__':
     add_weight_hlt = opt.add_weight_hlt
     weight_hlt = opt.weight_hlt
 
+    do_counting = opt.do_counting
     do_shape_analysis = opt.do_shape_analysis
     do_shape_TH1 = opt.do_shape_TH1
     do_categories = opt.do_categories
     add_Bc = opt.add_Bc
 
-    plot_prefit = opt.plot_prefit #TODO
+    plot_prefit = opt.plot_prefit
 
     DatacardsMaker(
         data_files = data_files, 
@@ -433,6 +438,7 @@ if __name__ == '__main__':
         qcd_files = qcd_files,
         white_list = white_list,
         baseline_selection = baseline_selection, 
+        do_counting = do_counting,
         do_shape_analysis = do_shape_analysis,
         do_shape_TH1 = do_shape_TH1,
         do_categories = do_categories, 
