@@ -225,6 +225,10 @@ class Fitter(Tools):
     if self.background_model == 'chebychev':
       a0 = ROOT.RooRealVar('a0', 'a0', 0.01, -10, 10)
       background_model = ROOT.RooChebychev('qcd', 'qcd', mupi_invmass, ROOT.RooArgList(a0))
+      #a0 = ROOT.RooRealVar('a0', 'a0', -1.36, -1.52, -1.20)
+      #a1 = ROOT.RooRealVar('a1', 'a1', 0.53, 0.29, 0.76)
+      #a2 = ROOT.RooRealVar('a2', 'a2', -0.14, -0.32, 0.04)
+      #background_model = ROOT.RooChebychev('qcd', 'qcd', mupi_invmass, ROOT.RooArgList(a0, a1, a2))
 
     # getting the observed data #TODO create function
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
@@ -251,7 +255,7 @@ class Fitter(Tools):
     getattr(workspace, 'import')(background_model)
     getattr(workspace, 'import')(data_obs)
     workspace.Write()
-    #workspace.Print()
+    workspace.Print()
     #workspace.writeToFile('workspace_{}.root'.format(label))
     output_file.Close()
 
@@ -298,7 +302,8 @@ class Fitter(Tools):
     workspace_filename = '{}/workspace_{}.root'.format(self.workspacedir, label)
     ws_file = self.tools.getRootFile(workspace_filename, with_ext=False)
     ws = ws_file.Get('workspace')
-    ws.Print()
+    #ws.Print()
+    pdf_name = 'sig' if process == 'signal' else 'qcd'
 
     # open the file and get the tree
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
@@ -349,10 +354,9 @@ class Fitter(Tools):
     fit_range_min = bin_min #signal_mass - 0.1*signal_mass
     fit_range_max = bin_max #signal_mass + 0.1*signal_mass
     ws.var('mupi_invmass').setRange("peak", fit_range_min, fit_range_max)
-    result = ws.pdf('sig').fitTo(rdh, ROOT.RooFit.Range("peak"))
+    result = ws.pdf(pdf_name).fitTo(rdh, ROOT.RooFit.Range("peak"))
 
     # plot the fit 		
-    pdf_name = 'sig' if process == 'signal' else 'qcd'
     if process == 'signal':
       if self.signal_model == 'doubleCB' or self.signal_model == 'doubleCBPlusGaussian':
         ws.pdf(pdf_name).plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
@@ -527,9 +531,9 @@ if __name__ == '__main__':
     #fitter.writeSignalModel(label='test')
     #fitter.writeBackgroundModel(label='test')
     #fitter.createFitWorkspace()
-    fitter.writeFitModels(label='test')
-    fitter.performFit(process='signal', label='test')
-    #fitter.performFit(process='background', label='test')
+  fitter.writeFitModels(label='test')
+  fitter.performFit(process='signal', label='test')
+  fitter.performFit(process='background', label='test')
 
   #fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
   #fitter.performBackgroundFit(mass=3, resolution=0.023)
