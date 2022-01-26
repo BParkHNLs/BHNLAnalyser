@@ -29,6 +29,9 @@ class Fitter(Tools):
     if not path.exists(self.outputdir):
       os.system('mkdir -p {}'.format(self.outputdir))
     self.category_label = category_label
+    # define window sizes (multiples of sigma)
+    self.mass_window_size = 2
+    self.fit_window_size = 4
 
 
     signal_model_list = ['doubleCB', 'doubleCBPlusGaussian', 'voigtian']
@@ -43,11 +46,8 @@ class Fitter(Tools):
     #TODO make sure that the data is normalised to the yields inserted in the datacard
     #TODO make sure that the pdfs are named according to the process name in the datacard
 
-  def getFitRegion(self, nsigma=2):
-  #def getRegion(self, nsigma=2):
+  def getRegion(self, nsigma=2):
     signal_mass = self.signal_file.mass
-    #bin_min = signal_mass - 0.15 * signal_mass
-    #bin_max = signal_mass + 0.15 * signal_mass
     signal_resolution = self.signal_file.resolution
     bin_min = signal_mass - nsigma * signal_resolution
     bin_max = signal_mass + nsigma * signal_resolution
@@ -106,7 +106,7 @@ class Fitter(Tools):
 
   #  # get the signal region
   #  signal_mass = self.signal_file.mass
-  #  bin_min, bin_max = self.getFitRegion()
+  #  bin_min, bin_max = self.getRegion()
   #  nbins = self.nbins
 
   #  mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", bin_min, bin_max)
@@ -172,7 +172,7 @@ class Fitter(Tools):
   #  mass = self.signal_file.mass
 
   #  # declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
-  #  bin_min, bin_max = self.getFitRegion()
+  #  bin_min, bin_max = self.getRegion()
   #  nbins = self.nbins
 
   #  mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", bin_min, bin_max)
@@ -208,7 +208,7 @@ class Fitter(Tools):
 
   #  # get the signal region
   #  signal_mass = self.signal_file.mass
-  #  bin_min, bin_max = self.getFitRegion()
+  #  bin_min, bin_max = self.getRegion()
   #  nbins = self.nbins
 
   #  mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", bin_min, bin_max)
@@ -269,7 +269,7 @@ class Fitter(Tools):
   #  for data_file in self.data_files:
   #    tree.Add(data_file.filename) 
 
-  #  bin_min, bin_max = self.getFitRegion()
+  #  bin_min, bin_max = self.getRegion()
   #  nbins = self.nbins
   #  hist_name = 'hist'
   #  hist = ROOT.TH1D(hist_name, hist_name, nbins, bin_min, bin_max)
@@ -303,7 +303,7 @@ class Fitter(Tools):
 
     # get the signal region
     signal_mass = self.signal_file.mass
-    bin_min, bin_max = self.getFitRegion() #TODO
+    bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
     nbins = self.nbins
 
     self.mupi_invmass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
@@ -416,7 +416,7 @@ class Fitter(Tools):
   #  signal_mass = self.signal_file.mass
 
   #  # declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
-  #  bin_min, bin_max = self.getFitRegion()
+  #  bin_min, bin_max = self.getRegion()
   #  nbins = self.nbins
 
   #  # build the binned data
@@ -592,24 +592,27 @@ class Fitter(Tools):
       for data_file in self.data_files:
         tree.Add(data_file.filename) 
 
+    # define ranges and binning
+    mass_window_min, mass_window_max = self.getRegion(nsigma=self.mass_window_size)
+    if self.do_blind:
+      fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
+    else:
+      fit_window_min, fit_window_max = self.getRegion(nsigma=self.mass_window_size)
+
     # define selection
     if process == 'signal':
       cond = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
     else:
       cond = 'hnl_pt > 0' # dummy condition
     selection = cond + ' && ' + self.selection
-
-    # define range and binning
-    bin_min, bin_max = self.getFitRegion()
-    nbins = self.nbins
+    if self.do_blind:
+      selection += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
 
     if self.do_binned_fit:
-      # declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
-      bin_min, bin_max = self.getFitRegion()
-
       # build the binned data
       hist_name = 'hist'
-      hist = ROOT.TH1D(hist_name, hist_name, nbins, bin_min, bin_max)
+      #hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
+      hist = ROOT.TH1D(hist_name, hist_name, self.nbins, fit_window_min, fit_window_max)
       branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
       tree.Project(hist_name, branch_name , selection)
       rdh = ROOT.RooDataHist("rdh", "rdh", ROOT.RooArgList(self.mupi_invmass), hist)
@@ -621,12 +624,9 @@ class Fitter(Tools):
       ROOT.SetOwnership(self.mupi_invmass, False)
       quantity_set.add(self.mupi_invmass)
      
-      print 'creating roodataset'
-      print selection
-      print self.signal_file.filename
+      print '-> creating unbinned dataset'
       rds = ROOT.RooDataSet('rds', 'rds', tree, quantity_set, selection)
-      rds.Print()
-      print 'roodataset created'
+      print '-> unbinned dataset created'
 
     # create canvas
     canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
@@ -647,20 +647,26 @@ class Fitter(Tools):
     else:
       rds.plotOn(frame, ROOT.RooFit.Name("data"), ROOT.RooFit.Binning(self.nbins))
 
+    # define fit ranges
+    self.mupi_invmass.setRange("peak", mass_window_min, mass_window_max)
+    self.mupi_invmass.setRange('sideband_left', fit_window_min, mass_window_min)
+    self.mupi_invmass.setRange('sideband_right', mass_window_max, fit_window_max)
+    if process == 'signal' or (process == 'background' and not self.do_blind):
+      fit_range = 'peak'
+    else:
+      fit_range = 'sideband_left,sideband_right'
+
     # fit the PDF to the data
-    fit_range_min = bin_min #signal_mass - 0.1*signal_mass
-    fit_range_max = bin_max #signal_mass + 0.1*signal_mass
-    self.mupi_invmass.setRange("peak", fit_range_min, fit_range_max)
     if process == 'signal':
       if self.do_binned_fit:
-        result = self.signal_model.fitTo(rdh, ROOT.RooFit.Range("peak"))
+        result = self.signal_model.fitTo(rdh, ROOT.RooFit.Range(fit_range))
       else:
-        result = self.signal_model.fitTo(rds, ROOT.RooFit.Range("peak"))
+        result = self.signal_model.fitTo(rds, ROOT.RooFit.Range(fit_range))
     else:
       if self.do_binned_fit:
-        result = self.background_model.fitTo(rdh, ROOT.RooFit.Range("peak"))
+        result = self.background_model.fitTo(rdh, ROOT.RooFit.Range(fit_range))
       else:
-        result = self.background_model.fitTo(rds, ROOT.RooFit.Range("peak"))
+        result = self.background_model.fitTo(rds, ROOT.RooFit.Range(fit_range))
 
     # plot the fit 		
     pdf_name = 'sig' if process == 'signal' else 'qcd'
@@ -713,13 +719,22 @@ class Fitter(Tools):
     print "chisquare = {}".format(chisquare)
 
     # We define and plot the pull 		
-    hpull = frame.pullHist()
-    for i in range(0, frame.GetNbinsX()):
-       hpull.SetPointError(i,0,0,0,0)
-
-    # create a new frame to draw the pull distribution and add the distribution to the frame
-    frame2 = self.mupi_invmass.frame(ROOT.RooFit.Title(" "))
-    frame2.addPlotable(hpull,"P")#,"E3")
+    if self.do_blind:
+      curve1 = frame.getObject(1)
+      curve2 = frame.getObject(2)
+      datahist = frame.getHist('data')
+      hpull1 = datahist.makePullHist(curve1, True)
+      hpull2 = datahist.makePullHist(curve2, True)
+      frame2 = self.mupi_invmass.frame(ROOT.RooFit.Title(" "))
+      frame2.addPlotable(hpull1,"P")
+      frame2.addPlotable(hpull2,"P")
+      hpull = frame.pullHist() # needed to get pull distribution
+    else:
+      hpull = frame.pullHist()
+      for i in range(0, frame.GetNbinsX()):
+         hpull.SetPointError(i,0,0,0,0)
+      frame2 = self.mupi_invmass.frame(ROOT.RooFit.Title(" "))
+      frame2.addPlotable(hpull,"P")
 
     # plot of the curve and the fit
     canv.cd()
@@ -768,6 +783,12 @@ class Fitter(Tools):
     frame2.GetXaxis().SetLabelOffset(5)	
     frame2.Draw()
 
+    if process == 'signal' or (process == 'background' and not self.do_blind):
+      bin_min = mass_window_min
+      bin_max = mass_window_max
+    else:
+      bin_min = fit_window_min
+      bin_max = fit_window_max
     line = ROOT.TLine()
     line.DrawLine(bin_min,0,bin_max,0)
     line.SetLineColor(2)
@@ -794,7 +815,10 @@ class Fitter(Tools):
     canv_pull = self.tools.createTCanvas(name="canv_pull", dimx=700, dimy=600)
     hist_pull = ROOT.TH1D("hist_pull", "hist_pull", 120, -5, 5)
 
-    bin_min, bin_max = self.getFitRegion()
+    if process == 'signal' or (process == 'background' and not self.do_blind):
+      bin_min, bin_max = self.getRegion(nsigma=self.mass_window_size)
+    else:
+      bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
    
     for i in range(0, hpull.GetN()):
       x = ROOT.Double()
@@ -833,9 +857,12 @@ class Fitter(Tools):
 
   def getBackgroundYieldsFromFit(self):
     # one has to make sure that the fit was run beforehand
-    if self.n_bkg.getVal() ==  100.:
+    n_bkg = self.n_bkg.getVal()
+    if n_bkg ==  100.:
       raise RuntimeError('[fitter] It seems like the fit was not performed. Please check. \n-->Aborting')
-    return self.n_bkg.getVal()
+    if self.do_blind:
+      n_bkg = n_bkg * self.mass_window_size / self.fit_window_size
+    return n_bkg
 
 
   def createWorkspace(self, label=''):
@@ -847,7 +874,7 @@ class Fitter(Tools):
     #for data_file in self.data_files:
     #  tree.Add(data_file.filename) 
 
-    #bin_min, bin_max = self.getFitRegion()
+    #bin_min, bin_max = self.getRegion()
     #nbins = self.nbins
     #hist_name = 'hist'
     #hist = ROOT.TH1D(hist_name, hist_name, nbins, bin_min, bin_max)
@@ -863,7 +890,7 @@ class Fitter(Tools):
     workspace = ROOT.RooWorkspace('workspace', 'workspace')
 
     # create factory
-    bin_min, bin_max = self.getFitRegion()
+    bin_min, bin_max = self.getRegion()
     workspace.factory('mupi_invmass[{}, {}]'.format(bin_min, bin_max)) #TODO instead use the sigma from the fit
     if self.signal_model_label == 'voigtian':
       workspace.factory('RooVoigtian::sig(mupi_invmass, mean_voigtian[{m}], gamma_voigtian[{g}], sigma_voigtian[{s}])'.format(
@@ -891,8 +918,8 @@ class Fitter(Tools):
   def process(self, label=''):
     #self.defineVariables()
     self.createFitModels()
-    self.performFit(process='signal', label=label)
-    #self.performFit(process='background', label=label)
+    #self.performFit(process='signal', label=label)
+    self.performFit(process='background', label=label)
     #self.createWorkspace(label=label)
 
 
@@ -907,9 +934,9 @@ if __name__ == '__main__':
   signal_files = signal_samples['V10_30Dec21_m3'] 
   background_model_label = 'chebychev'
   data_files = data_samples['V10_30Dec21']
-  do_blind = False
+  do_blind = True
   do_binned_fit = True
-  nbins = 80
+  nbins = 50
 
   label = 'test'
   for signal_file in signal_files:
