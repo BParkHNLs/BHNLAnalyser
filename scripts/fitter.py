@@ -105,8 +105,8 @@ class Fitter(Tools):
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
     nbins = self.nbins
 
-    self.mupi_invmass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
-    #mupi_invmass.setBins(nbins)
+    self.hnl_mass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
+    #hnl_mass.setBins(nbins)
 
     ### Signal Model ###
 
@@ -119,8 +119,8 @@ class Fitter(Tools):
       self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
       self.n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
 
-      self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", self.mupi_invmass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
-      self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", self.mupi_invmass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
+      self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
+      self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
 
       # defines the relative importance of the two CBs
       self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5, 0.0 ,1.0)
@@ -130,7 +130,7 @@ class Fitter(Tools):
 
       if self.signal_model_label == 'doubleCBPlusGaussian':
         self.sigma_gauss = ROOT.RooRealVar("sigma_gauss", "sigma_gauss", 0.01, 0.005, 0.15)
-        self.gaussian = ROOT.RooGaussian('gaussian', 'gaussian', self.mupi_invmass, self.mean_CB, self.sigma_gauss)
+        self.gaussian = ROOT.RooGaussian('gaussian', 'gaussian', self.hnl_mass, self.mean_CB, self.sigma_gauss)
 
         # defines the relative importance of gaussian wrt doubleCB
         self.sigfrac_gauss = ROOT.RooRealVar("sigfrac_gauss","sigfrac_gauss", 0.5, 0.0 ,1.0)
@@ -142,7 +142,7 @@ class Fitter(Tools):
       self.mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", signal_mass)
       self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.01, 0., 5.)
       self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.01, 0.005, 0.15)
-      self.signal_model = ROOT.RooVoigtian('sig', 'sig', self.mupi_invmass, self.mean_voigtian, self.gamma_voigtian, self.sigma_voigtian)
+      self.signal_model = ROOT.RooVoigtian('sig', 'sig', self.hnl_mass, self.mean_voigtian, self.gamma_voigtian, self.sigma_voigtian)
 
     ### Background Model ###
 
@@ -150,12 +150,12 @@ class Fitter(Tools):
     if self.background_model_label == 'chebychev':
       self.n_bkg = ROOT.RooRealVar('n_bkg', 'n_bkg', 100, 0, 100000)
       self.a0 = ROOT.RooRealVar('a0', 'a0', 0.01, -10, 10)
-      self.chebychev = ROOT.RooChebychev('chebychev', 'chebychev', self.mupi_invmass, ROOT.RooArgList(self.a0))
+      self.chebychev = ROOT.RooChebychev('chebychev', 'chebychev', self.hnl_mass, ROOT.RooArgList(self.a0))
       self.background_model = ROOT.RooAddPdf('qcd', 'qcd', ROOT.RooArgList(self.chebychev), ROOT.RooArgList(self.n_bkg))
       #a0 = ROOT.RooRealVar('a0', 'a0', -1.36, -1.52, -1.20)
       #a1 = ROOT.RooRealVar('a1', 'a1', 0.53, 0.29, 0.76)
       #a2 = ROOT.RooRealVar('a2', 'a2', -0.14, -0.32, 0.04)
-      #background_model = ROOT.RooChebychev('qcd', 'qcd', mupi_invmass, ROOT.RooArgList(a0, a1, a2))
+      #background_model = ROOT.RooChebychev('qcd', 'qcd', hnl_mass, ROOT.RooArgList(a0, a1, a2))
 
     print '--> Models created'
 
@@ -209,14 +209,14 @@ class Fitter(Tools):
       hist = ROOT.TH1D(hist_name, hist_name, self.nbins, fit_window_min, fit_window_max)
       branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
       tree.Project(hist_name, branch_name , selection)
-      rdh = ROOT.RooDataHist("rdh", "rdh", ROOT.RooArgList(self.mupi_invmass), hist)
+      rdh = ROOT.RooDataHist("rdh", "rdh", ROOT.RooArgList(self.hnl_mass), hist)
 
     else:
       # get RooArgSet
       quantity_set = self.getQuantitySet()
-      # add mupi_invmass to the RooArgSet
-      ROOT.SetOwnership(self.mupi_invmass, False)
-      quantity_set.add(self.mupi_invmass)
+      # add hnl_mass to the RooArgSet
+      ROOT.SetOwnership(self.hnl_mass, False)
+      quantity_set.add(self.hnl_mass)
      
       print '-> creating unbinned dataset'
       rds = ROOT.RooDataSet('rds', 'rds', tree, quantity_set, selection)
@@ -233,7 +233,7 @@ class Fitter(Tools):
     pad1.Draw()
     pad2.Draw()
 
-    frame = self.mupi_invmass.frame(ROOT.RooFit.Title(self.title))
+    frame = self.hnl_mass.frame(ROOT.RooFit.Title(self.title))
 
     # plot the data
     if self.do_binned_fit:
@@ -242,9 +242,9 @@ class Fitter(Tools):
       rds.plotOn(frame, ROOT.RooFit.Name("data"), ROOT.RooFit.Binning(self.nbins))
 
     # define fit ranges
-    self.mupi_invmass.setRange("peak", mass_window_min, mass_window_max)
-    self.mupi_invmass.setRange('sideband_left', fit_window_min, mass_window_min)
-    self.mupi_invmass.setRange('sideband_right', mass_window_max, fit_window_max)
+    self.hnl_mass.setRange("peak", mass_window_min, mass_window_max)
+    self.hnl_mass.setRange('sideband_left', fit_window_min, mass_window_min)
+    self.hnl_mass.setRange('sideband_right', mass_window_max, fit_window_max)
     if process == 'signal' or (process == 'background' and not self.do_blind):
       fit_range = 'peak'
     else:
@@ -319,7 +319,7 @@ class Fitter(Tools):
       datahist = frame.getHist('data')
       hpull1 = datahist.makePullHist(curve1, True)
       hpull2 = datahist.makePullHist(curve2, True)
-      frame2 = self.mupi_invmass.frame(ROOT.RooFit.Title(" "))
+      frame2 = self.hnl_mass.frame(ROOT.RooFit.Title(" "))
       frame2.addPlotable(hpull1,"P")
       frame2.addPlotable(hpull2,"P")
       hpull = frame.pullHist() # needed to get pull distribution
@@ -327,7 +327,7 @@ class Fitter(Tools):
       hpull = frame.pullHist()
       for i in range(0, frame.GetNbinsX()):
          hpull.SetPointError(i,0,0,0,0)
-      frame2 = self.mupi_invmass.frame(ROOT.RooFit.Title(" "))
+      frame2 = self.hnl_mass.frame(ROOT.RooFit.Title(" "))
       frame2.addPlotable(hpull,"P")
 
     # plot of the curve and the fit
@@ -460,23 +460,33 @@ class Fitter(Tools):
 
 
   def createWorkspace(self, label=''):
+    print ' --- Creating Fit Workspace --- '
+
     if label == '': label = self.getSignalLabel()
 
     # getting the observed data #TODO create function
-    #treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
-    #tree = ROOT.TChain(treename)
-    #for data_file in self.data_files:
-    #  tree.Add(data_file.filename) 
+    treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
+    tree = ROOT.TChain(treename)
+    for data_file in self.data_files:
+      tree.Add(data_file.filename) 
 
-    #bin_min, bin_max = self.getRegion()
-    #nbins = self.nbins
-    #hist_name = 'hist'
-    #hist = ROOT.TH1D(hist_name, hist_name, nbins, bin_min, bin_max)
-    #branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
-    #selection = self.selection
-    #tree.Project(hist_name, branch_name , selection)
-    #data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(mupi_invmass), hist)
-    data_obs = ROOT.RooDataSet("data_obs", "data_obs", ROOT.RooArgSet(self.mupi_invmass)) #TODO for the moment does not contain sensible data
+    # create binned dataset
+    bin_min, bin_max = self.getRegion()
+    hist_name = 'hist'
+    hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
+    branch_name = 'hnl_mass'
+    tree.Project(hist_name, branch_name, self.selection)
+    data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(self.hnl_mass), hist)
+
+    #data_obs = ROOT.RooDataSet("data_obs", "data_obs", ROOT.RooArgSet(self.hnl_mass)) #TODO for the moment does not contain sensible data
+
+    # create unbinned dataset
+    #quantity_set = self.getQuantitySet()
+    # add hnl_mass to the RooArgSet
+    #quantity_set.add(self.hnl_mass)
+    #print '-> creating unbinned dataset'
+    #data_obs = ROOT.RooDataSet('data_obs', 'data_obs', tree, quantity_set, self.selection)
+    #print '-> unbinned dataset created'
     
     # import the model in a workspace
     workspace_filename = '{}/workspace_{}.root'.format(self.workspacedir, label)
@@ -485,16 +495,16 @@ class Fitter(Tools):
 
     # create factory
     bin_min, bin_max = self.getRegion()
-    workspace.factory('mupi_invmass[{}, {}]'.format(bin_min, bin_max)) #TODO instead use the sigma from the fit
+    workspace.factory('hnl_mass[{}, {}]'.format(bin_min, bin_max)) #TODO instead use the sigma from the fit
     if self.signal_model_label == 'voigtian':
-      workspace.factory('RooVoigtian::sig(mupi_invmass, mean_voigtian[{m}], gamma_voigtian[{g}], sigma_voigtian[{s}])'.format(
+      workspace.factory('RooVoigtian::sig(hnl_mass, mean_voigtian[{m}], gamma_voigtian[{g}], sigma_voigtian[{s}])'.format(
             m = self.mean_voigtian.getVal(),
             g = self.gamma_voigtian.getVal(),
             s = self.sigma_voigtian.getVal(),
             )
           )
     if self.background_model_label == 'chebychev':
-      workspace.factory('RooChebychev::qcd(mupi_invmass, a0[{ini}, {down}, {up}])'.format(
+      workspace.factory('RooChebychev::qcd(hnl_mass, a0[{ini}, {down}, {up}])'.format(
             ini = self.a0.getVal(),
             down = self.a0.getVal() - 2*self.a0.getError(),
             up = self.a0.getVal() + 2*self.a0.getError(),
@@ -512,9 +522,9 @@ class Fitter(Tools):
   def process(self, label=''):
     #self.defineVariables()
     self.createFitModels()
-    #self.performFit(process='signal', label=label)
+    self.performFit(process='signal', label=label)
     self.performFit(process='background', label=label)
-    #self.createWorkspace(label=label)
+    self.createWorkspace(label=label)
 
 
 
