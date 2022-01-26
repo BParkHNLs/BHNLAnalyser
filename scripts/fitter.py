@@ -188,10 +188,7 @@ class Fitter(Tools):
 
     # define ranges and binning
     mass_window_min, mass_window_max = self.getRegion(nsigma=self.mass_window_size)
-    if self.do_blind:
-      fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
-    else:
-      fit_window_min, fit_window_max = self.getRegion(nsigma=self.mass_window_size)
+    fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
 
     # define selection
     if process == 'signal':
@@ -199,7 +196,7 @@ class Fitter(Tools):
     else:
       cond = 'hnl_pt > 0' # dummy condition
     selection = cond + ' && ' + self.selection
-    if self.do_blind:
+    if process == 'background' and self.do_blind:
       selection += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
 
     if self.do_binned_fit:
@@ -243,10 +240,13 @@ class Fitter(Tools):
 
     # define fit ranges
     self.hnl_mass.setRange("peak", mass_window_min, mass_window_max)
+    self.hnl_mass.setRange('full', fit_window_min, fit_window_max)
     self.hnl_mass.setRange('sideband_left', fit_window_min, mass_window_min)
     self.hnl_mass.setRange('sideband_right', mass_window_max, fit_window_max)
-    if process == 'signal' or (process == 'background' and not self.do_blind):
+    if process == 'signal': # or (process == 'background' and not self.do_blind):
       fit_range = 'peak'
+    elif process == 'background' and not self.do_blind:
+      fit_range = 'full'
     else:
       fit_range = 'sideband_left,sideband_right'
 
@@ -313,7 +313,7 @@ class Fitter(Tools):
     print "chisquare = {}".format(chisquare)
 
     # We define and plot the pull 		
-    if self.do_blind:
+    if process == 'background' and  self.do_blind:
       curve1 = frame.getObject(1)
       curve2 = frame.getObject(2)
       datahist = frame.getHist('data')
@@ -377,7 +377,7 @@ class Fitter(Tools):
     frame2.GetXaxis().SetLabelOffset(5)	
     frame2.Draw()
 
-    if process == 'signal' or (process == 'background' and not self.do_blind):
+    if process == 'signal': # or (process == 'background' and not self.do_blind):
       bin_min = mass_window_min
       bin_max = mass_window_max
     else:
@@ -409,7 +409,7 @@ class Fitter(Tools):
     canv_pull = self.tools.createTCanvas(name="canv_pull", dimx=700, dimy=600)
     hist_pull = ROOT.TH1D("hist_pull", "hist_pull", 120, -5, 5)
 
-    if process == 'signal' or (process == 'background' and not self.do_blind):
+    if process == 'signal': # or (process == 'background' and not self.do_blind):
       bin_min, bin_max = self.getRegion(nsigma=self.mass_window_size)
     else:
       bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
@@ -454,8 +454,9 @@ class Fitter(Tools):
     n_bkg = self.n_bkg.getVal()
     if n_bkg ==  100.:
       raise RuntimeError('[fitter] It seems like the fit was not performed. Please check. \n-->Aborting')
-    if self.do_blind:
-      n_bkg = n_bkg * self.mass_window_size / self.fit_window_size
+    # the following not needed if we keep the sidebands
+    #if self.do_blind:
+    #  n_bkg = n_bkg * self.mass_window_size / self.fit_window_size
     return n_bkg
 
 
@@ -494,7 +495,7 @@ class Fitter(Tools):
     workspace = ROOT.RooWorkspace('workspace', 'workspace')
 
     # create factory
-    bin_min, bin_max = self.getRegion()
+    bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size) # sidebands are included
     workspace.factory('hnl_mass[{}, {}]'.format(bin_min, bin_max)) #TODO instead use the sigma from the fit
     if self.signal_model_label == 'voigtian':
       workspace.factory('RooVoigtian::sig(hnl_mass, mean_voigtian[{m}], gamma_voigtian[{g}], sigma_voigtian[{s}])'.format(
