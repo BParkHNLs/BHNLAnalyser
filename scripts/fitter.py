@@ -7,13 +7,14 @@ from tools import Tools
 from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file='', data_files='', selection='', signal_model_label=None, background_model_label=None, do_blind=False, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True):
+  def __init__(self, signal_file='', data_files='', selection='', signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True):
     self.tools = Tools()
     self.signal_file = signal_file
     self.data_files = data_files
     self.selection = selection
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
+    self.do_binned_fit = do_binned_fit
     self.do_blind = do_blind
     self.file_type = file_type
     self.nbins = nbins
@@ -43,6 +44,7 @@ class Fitter(Tools):
     #TODO make sure that the pdfs are named according to the process name in the datacard
 
   def getFitRegion(self, nsigma=2):
+  #def getRegion(self, nsigma=2):
     signal_mass = self.signal_file.mass
     #bin_min = signal_mass - 0.15 * signal_mass
     #bin_max = signal_mass + 0.15 * signal_mass
@@ -65,6 +67,36 @@ class Fitter(Tools):
     return label
 
 
+  def getQuantitySet(self):
+    '''
+      If performing unbinned fit, make sure that all variables used in the selection cuts
+      are defined here
+    '''
+    quantities = [
+      ROOT.RooRealVar('ismatched', 'ismatched', -2, 2),
+      ROOT.RooRealVar('hnl_pt', 'hnl_pt', 0., 13000.),
+      ROOT.RooRealVar('sv_lxy', 'sv_lxy', 0., 13000.),
+      ROOT.RooRealVar('trgmu_charge', 'trgmu_charge', -2, 2),
+      ROOT.RooRealVar('mu_charge', 'mu_charge', -2, 2),
+      ROOT.RooRealVar('trgmu_softid', 'trgmu_softid', -2, 2),
+      ROOT.RooRealVar('mu_looseid', 'mu_looseid', -2, 2),
+      ROOT.RooRealVar('pi_packedcandhashighpurity', 'pi_packedcandhashighpurity', -2, 2),
+      ROOT.RooRealVar('trgmu_mu_mass', 'trgmu_mu_mass', 0., 13000.),
+      ROOT.RooRealVar('hnl_charge', 'hnl_charge', -2, 2),
+      ROOT.RooRealVar('pi_pt', 'pi_pt', 0., 13000.),
+      ROOT.RooRealVar('sv_lxysig', 'sv_lxysig', 0., 13000.),
+      ROOT.RooRealVar('mu_dxysig', 'mu_dxysig', -13000., 13000.),
+      ROOT.RooRealVar('pi_dxysig', 'pi_dxysig', -13000., 13000.),
+    ]
+
+    quantity_set = ROOT.RooArgSet()
+    for quantity in quantities:
+      ROOT.SetOwnership(quantity, False)
+      quantity_set.add(quantity)
+
+    return quantity_set
+      
+    
   #def writeSignalModel(self, label='', do_recreate=True):
   #  '''
   #    Write the signal model in a workspace
@@ -274,7 +306,7 @@ class Fitter(Tools):
     bin_min, bin_max = self.getFitRegion() #TODO
     nbins = self.nbins
 
-    self.mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", bin_min, bin_max)
+    self.mupi_invmass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
     #mupi_invmass.setBins(nbins)
 
     ### Signal Model ###
@@ -547,6 +579,9 @@ class Fitter(Tools):
     if label == '' and process == 'signal': label = self.getSignalLabel() 
     if label == '' and process == 'background': label = self.getBackgroundLabel() 
 
+    # get signal mass
+    signal_mass = self.signal_file.mass
+
     # open the file and get the tree
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     if process == 'signal':
@@ -557,24 +592,41 @@ class Fitter(Tools):
       for data_file in self.data_files:
         tree.Add(data_file.filename) 
 
-    # get signal mass
-    signal_mass = self.signal_file.mass
-
-    # declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
-    bin_min, bin_max = self.getFitRegion()
-    nbins = self.nbins
-
-    # build the binned data
-    hist_name = 'hist'
-    hist = ROOT.TH1D(hist_name, hist_name, nbins, bin_min, bin_max)
-    branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
+    # define selection
     if process == 'signal':
-      cond = 'ismatched==1 && mu_isdsa==0' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1 && Muon_isDSAMuon[BToMuMuPi_sel_mu_idx]==0'
+      cond = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
     else:
       cond = 'hnl_pt > 0' # dummy condition
     selection = cond + ' && ' + self.selection
-    tree.Project(hist_name, branch_name , selection)
-    rdh = ROOT.RooDataHist("rdh", "rdh", ROOT.RooArgList(self.mupi_invmass), hist)
+
+    # define range and binning
+    bin_min, bin_max = self.getFitRegion()
+    nbins = self.nbins
+
+    if self.do_binned_fit:
+      # declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
+      bin_min, bin_max = self.getFitRegion()
+
+      # build the binned data
+      hist_name = 'hist'
+      hist = ROOT.TH1D(hist_name, hist_name, nbins, bin_min, bin_max)
+      branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
+      tree.Project(hist_name, branch_name , selection)
+      rdh = ROOT.RooDataHist("rdh", "rdh", ROOT.RooArgList(self.mupi_invmass), hist)
+
+    else:
+      # get RooArgSet
+      quantity_set = self.getQuantitySet()
+      # add mupi_invmass to the RooArgSet
+      ROOT.SetOwnership(self.mupi_invmass, False)
+      quantity_set.add(self.mupi_invmass)
+     
+      print 'creating roodataset'
+      print selection
+      print self.signal_file.filename
+      rds = ROOT.RooDataSet('rds', 'rds', tree, quantity_set, selection)
+      rds.Print()
+      print 'roodataset created'
 
     # create canvas
     canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
@@ -590,16 +642,25 @@ class Fitter(Tools):
     frame = self.mupi_invmass.frame(ROOT.RooFit.Title(self.title))
 
     # plot the data
-    rdh.plotOn(frame, ROOT.RooFit.Name("data"))
+    if self.do_binned_fit:
+      rdh.plotOn(frame, ROOT.RooFit.Name("data"))
+    else:
+      rds.plotOn(frame, ROOT.RooFit.Name("data"), ROOT.RooFit.Binning(self.nbins))
 
     # fit the PDF to the data
     fit_range_min = bin_min #signal_mass - 0.1*signal_mass
     fit_range_max = bin_max #signal_mass + 0.1*signal_mass
     self.mupi_invmass.setRange("peak", fit_range_min, fit_range_max)
     if process == 'signal':
-      result = self.signal_model.fitTo(rdh, ROOT.RooFit.Range("peak"))
+      if self.do_binned_fit:
+        result = self.signal_model.fitTo(rdh, ROOT.RooFit.Range("peak"))
+      else:
+        result = self.signal_model.fitTo(rds, ROOT.RooFit.Range("peak"))
     else:
-      result = self.background_model.fitTo(rdh, ROOT.RooFit.Range("peak"))
+      if self.do_binned_fit:
+        result = self.background_model.fitTo(rdh, ROOT.RooFit.Range("peak"))
+      else:
+        result = self.background_model.fitTo(rds, ROOT.RooFit.Range("peak"))
 
     # plot the fit 		
     pdf_name = 'sig' if process == 'signal' else 'qcd'
@@ -828,10 +889,11 @@ class Fitter(Tools):
 
 
   def process(self, label=''):
+    #self.defineVariables()
     self.createFitModels()
     self.performFit(process='signal', label=label)
-    self.performFit(process='background', label=label)
-    self.createWorkspace(label=label)
+    #self.performFit(process='background', label=label)
+    #self.createWorkspace(label=label)
 
 
 
@@ -846,11 +908,12 @@ if __name__ == '__main__':
   background_model_label = 'chebychev'
   data_files = data_samples['V10_30Dec21']
   do_blind = False
+  do_binned_fit = True
   nbins = 80
 
   label = 'test'
   for signal_file in signal_files:
-    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_blind=do_blind, nbins=150, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
     #fitter.writeSignalModel(label='test')
     #fitter.writeBackgroundModel(label='test')
     #fitter.createFitWorkspace()
