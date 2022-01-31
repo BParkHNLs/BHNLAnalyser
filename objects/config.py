@@ -42,6 +42,12 @@ class Config(object):
                do_counting=None,
                do_shape_analysis=None,
                do_shape_TH1=None,
+               signal_model_label=None, 
+               background_model_label=None,
+               do_binned_fit=None, 
+               do_blind=None, 
+               nbins=None, 
+               plot_pulls=None,
                do_categories=None,
                add_Bc=None,
                plot_prefit=None,
@@ -85,6 +91,12 @@ class Config(object):
     self.do_counting = do_counting
     self.do_shape_analysis = do_shape_analysis
     self.do_shape_TH1 = do_shape_TH1
+    self.signal_model_label = signal_model_label
+    self.background_model_label = background_model_label
+    self.do_binned_fit = do_binned_fit
+    self.do_blind = do_blind
+    self.nbins = nbins
+    self.plot_pulls = plot_pulls
     self.do_categories = do_categories
     self.add_Bc = add_Bc
     self.plot_prefit = plot_prefit
@@ -188,8 +200,16 @@ class Config(object):
 
     print '       ---> Datacard request OK'
 
-    if if self.do_counting + self.do_shape_analysis + self.do_shape_TH1 != 1:
+    if self.do_counting + self.do_shape_analysis + self.do_shape_TH1 != 1:
       raise RuntimeError("Please specify which analysis strategy to use among ['do_counting', 'do_shape_analysis', 'do_shape_TH1']")
+
+    signal_model_list = ['voigtian']
+    if self.do_shape_analysis and self.signal_model_label not in signal_model_list:
+      raise RuntimeError('Please make sure to enter a valid signal model. Choose among {}'.format(signal_model_list))
+
+    background_model_list = ['chebychev']
+    if self.do_shape_analysis and self.background_model_label not in background_model_list:
+      raise RuntimeError('Please make sure to enter a valid background model. Choose among {}'.format(background_model_list))
       
 
   # check that either lumi or shape, or can process both in parallel?
