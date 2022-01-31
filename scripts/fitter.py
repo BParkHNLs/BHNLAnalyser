@@ -17,7 +17,7 @@ class Fitter(Tools):
     self.do_binned_fit = do_binned_fit
     self.do_blind = do_blind
     self.file_type = file_type
-    self.nbins = nbins
+    self.nbins = int(nbins)
     self.title = title
     self.plot_pulls = plot_pulls
     self.workspacedir = outputdir #TODO adapt
@@ -103,10 +103,9 @@ class Fitter(Tools):
     # get the signal region
     signal_mass = self.signal_file.mass
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
-    nbins = self.nbins
 
     self.hnl_mass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
-    #hnl_mass.setBins(nbins)
+    #self.hnl_mass.setBins(self.nbins)
 
     ### Signal Model ###
 
@@ -460,6 +459,16 @@ class Fitter(Tools):
     return n_bkg
 
 
+  #def getBackgroundYieldsFromFit(self):
+  #  self.createFitModels()
+  #  self.performFit(process='background', label=label)
+  #  n_bkg = self.n_bkg.getVal()
+  #  # the following not needed if we keep the sidebands
+  #  #if self.do_blind:
+  #  #  n_bkg = n_bkg * self.mass_window_size / self.fit_window_size
+  #  return n_bkg
+
+
   def createWorkspace(self, label=''):
     print ' --- Creating Fit Workspace --- '
 
@@ -505,12 +514,27 @@ class Fitter(Tools):
             )
           )
     if self.background_model_label == 'chebychev':
+      #workspace.factory('RooChebychev::qcd(hnl_mass, a0{lbl}[{ini}, {down}, {up}])'.format(
       workspace.factory('RooChebychev::qcd(hnl_mass, a0[{ini}, {down}, {up}])'.format(
+            lbl = label,
             ini = self.a0.getVal(),
-            down = self.a0.getVal() - 2*self.a0.getError(),
-            up = self.a0.getVal() + 2*self.a0.getError(),
+            down = self.a0.getVal() - self.a0.getError(),
+            #down = self.a0.getError(),
+            up = self.a0.getVal() + self.a0.getError(),
+            #up = self.a0.getError(),
             )
           )
+      #workspace.factory('RooChebychev::qcd(hnl_mass, a0[{ini}])'.format(
+      #      ini = self.a0.getVal(),
+      #      )
+      #    )
+
+    it = workspace.allVars().createIterator() 
+    all_vars = [it.Next() for _ in range( workspace.allVars().getSize())] 
+    for var in all_vars: 
+      var.setBins(self.nbins)
+      if var.GetName() in ['mean_voigtian', 'gamma_voigtian', 'sigma_voigtian']: 
+        var.setConstant()
 
     getattr(workspace, 'import')(data_obs)
     workspace.Write()
@@ -521,7 +545,6 @@ class Fitter(Tools):
 
 
   def process(self, label=''):
-    #self.defineVariables()
     self.createFitModels()
     self.performFit(process='signal', label=label)
     self.performFit(process='background', label=label)
