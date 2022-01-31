@@ -20,31 +20,37 @@ from qcd_white_list import white_list
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Script to produce the datacards', add_help=True)
-  parser.add_argument('--outdirlabel'      , type=str, dest='outdirlabel'      , help='name of the outdir'                                            , default=None)
-  parser.add_argument('--subdirlabel'      , type=str, dest='subdirlabel'      , help='name of the subdir'                                            , default=None)
-  #parser.add_argument('--cardlabel'       , type=str, dest='cardlabel'        , help='label of the datacard'                                         , default=None)
-  parser.add_argument('--data_label'       , type=str, dest='data_label'       , help='which data samples to consider?'                               , default='V07_18Aug21')
-  parser.add_argument('--qcd_label'        , type=str, dest='qcd_label'        , help='which qcd samples to consider?'                                , default='V07_18Aug21')
-  parser.add_argument('--signal_label'     , type=str, dest='signal_label'     , help='which signal samples to consider?'                             , default='private')
-  parser.add_argument('--selection_label'  , type=str, dest='selection_label'  , help='apply a baseline selection_label?'                             , default='standard')
-  parser.add_argument('--categories_label ', type=str, dest='categories_label' , help='label of the list of categories'                               , default='standard')
-  parser.add_argument('--category_label'   , type=str, dest='category_label'   , help='label of a given category within this list'                    , default=None)
-  parser.add_argument('--ABCD_label'       , type=str, dest='ABCD_label'       , help='which ABCD regions?'                                           , default='cos2d_svprob')
-  parser.add_argument('--lumi_target'      , type=str, dest='lumi_target'      , help='which luminosity should the yields be normalised to?'          , default='41.599')
-  parser.add_argument('--sigma_B'          , type=str, dest='sigma_B'          , help='which value of the B cross section?'                           , default='472.8e9')
-  parser.add_argument('--sigma_mult'       , type=str, dest='sigma_mult'       , help='size n*sigma of the window around a given mass'                , default='20')
-  parser.add_argument('--weight_hlt'       , type=str, dest='weight_hlt'       , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
-  parser.add_argument('--qcd_white_list '  , type=str, dest='qcd_white_list'   , help='pthat range to consider for qcd samples'                       , default='20to300')
-  parser.add_argument('--add_weight_hlt'   ,           dest='add_weight_hlt'   , help='add hlt weight'                           , action='store_true', default=False)
-  parser.add_argument('--do_ABCD'          ,           dest='do_ABCD'          , help='compute yields with the ABCD method'      , action='store_true', default=False)
-  parser.add_argument('--do_ABCDHybrid'    ,           dest='do_ABCDHybrid'    , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
-  parser.add_argument('--do_TF'            ,           dest='do_TF'            , help='compute yields with the TF method'        , action='store_true', default=False)
-  parser.add_argument('--do_counting'      ,           dest='do_counting'      , help='perform counting experiment'              , action='store_true', default=False)
-  parser.add_argument('--do_shape_analysis',           dest='do_shape_analysis', help='perform shape-based analysis'             , action='store_true', default=False)
-  parser.add_argument('--do_shape_TH1'     ,           dest='do_shape_TH1'     , help='perform shape-based analysis with histo'  , action='store_true', default=False)
-  parser.add_argument('--do_categories'    ,           dest='do_categories'    , help='compute yields in categories'             , action='store_true', default=False)
-  parser.add_argument('--add_Bc'           ,           dest='add_Bc'           , help='add the Bc samples'                       , action='store_true', default=False)
-  parser.add_argument('--plot_prefit'      ,           dest='plot_prefit'      , help='produce prefit plots'                     , action='store_true', default=False)
+  parser.add_argument('--outdirlabel'           , type=str, dest='outdirlabel'           , help='name of the outdir'                                            , default=None)
+  parser.add_argument('--subdirlabel'           , type=str, dest='subdirlabel'           , help='name of the subdir'                                            , default=None)
+  #parser.add_argument('--cardlabel'            , type=str, dest='cardlabel'             , help='label of the datacard'                                         , default=None)
+  parser.add_argument('--data_label'            , type=str, dest='data_label'            , help='which data samples to consider?'                               , default='V07_18Aug21')
+  parser.add_argument('--qcd_label'             , type=str, dest='qcd_label'             , help='which qcd samples to consider?'                                , default='V07_18Aug21')
+  parser.add_argument('--signal_label'          , type=str, dest='signal_label'          , help='which signal samples to consider?'                             , default='private')
+  parser.add_argument('--selection_label'       , type=str, dest='selection_label'       , help='apply a baseline selection_label?'                             , default='standard')
+  parser.add_argument('--categories_label '     , type=str, dest='categories_label'      , help='label of the list of categories'                               , default='standard')
+  parser.add_argument('--category_label'        , type=str, dest='category_label'        , help='label of a given category within this list'                    , default=None)
+  parser.add_argument('--ABCD_label'            , type=str, dest='ABCD_label'            , help='which ABCD regions?'                                           , default='cos2d_svprob')
+  parser.add_argument('--signal_model_label'    , type=str, dest='signal_model_label'    , help='name of the signal pdf'                                        , default='voigtiant')
+  parser.add_argument('--background_model_label', type=str, dest='background_model_label', help='name of the background pdf'                                    , default='chebychev')
+  parser.add_argument('--nbins'                 , type=str, dest='nbins'                 , help='number of bins when using shapes'                              , default='40')
+  parser.add_argument('--lumi_target'           , type=str, dest='lumi_target'           , help='which luminosity should the yields be normalised to?'          , default='41.599')
+  parser.add_argument('--sigma_B'               , type=str, dest='sigma_B'               , help='which value of the B cross section?'                           , default='472.8e9')
+  parser.add_argument('--sigma_mult'            , type=str, dest='sigma_mult'            , help='size n*sigma of the window around a given mass'                , default='20')
+  parser.add_argument('--weight_hlt'            , type=str, dest='weight_hlt'            , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
+  parser.add_argument('--qcd_white_list '       , type=str, dest='qcd_white_list'        , help='pthat range to consider for qcd samples'                       , default='20to300')
+  parser.add_argument('--add_weight_hlt'        ,           dest='add_weight_hlt'        , help='add hlt weight'                           , action='store_true', default=False)
+  parser.add_argument('--do_ABCD'               ,           dest='do_ABCD'               , help='compute yields with the ABCD method'      , action='store_true', default=False)
+  parser.add_argument('--do_ABCDHybrid'         ,           dest='do_ABCDHybrid'         , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
+  parser.add_argument('--do_TF'                 ,           dest='do_TF'                 , help='compute yields with the TF method'        , action='store_true', default=False)
+  parser.add_argument('--do_counting'           ,           dest='do_counting'           , help='perform counting experiment'              , action='store_true', default=False)
+  parser.add_argument('--do_shape_analysis'     ,           dest='do_shape_analysis'     , help='perform shape-based analysis'             , action='store_true', default=False)
+  parser.add_argument('--do_shape_TH1'          ,           dest='do_shape_TH1'          , help='perform shape-based analysis with histo'  , action='store_true', default=False)
+  parser.add_argument('--do_binned_fit'         ,           dest='do_binned_fit'         , help='perform binned fit when shape analysis'   , action='store_true', default=False)
+  parser.add_argument('--do_blind'              ,           dest='do_blind'              , help='perform blind fit when shape analysis'    , action='store_true', default=False)
+  parser.add_argument('--plot_pulls'            ,           dest='plot_pulls'            , help='plot pull distribution'                   , action='store_true', default=False)
+  parser.add_argument('--do_categories'         ,           dest='do_categories'         , help='compute yields in categories'             , action='store_true', default=False)
+  parser.add_argument('--add_Bc'                ,           dest='add_Bc'                , help='add the Bc samples'                       , action='store_true', default=False)
+  parser.add_argument('--plot_prefit'           ,           dest='plot_prefit'           , help='produce prefit plots'                     , action='store_true', default=False)
   #parser.add_argument('--submit_batch', dest='submit_batch', help='submit on the batch?', action='store_true', default=False)
   return parser.parse_args()
 
@@ -77,7 +83,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -91,6 +97,12 @@ class DatacardsMaker(Tools):
     self.do_counting = do_counting
     self.do_shape_analysis = do_shape_analysis
     self.do_shape_TH1 = do_shape_TH1
+    self.signal_model_label = signal_model_label
+    self.background_model_label = background_model_label
+    self.do_binned_fit = do_binned_fit
+    self.do_blind = do_blind
+    self.nbins = nbins
+    self.plot_pulls = plot_pulls
     self.do_categories = do_categories
     self.categories = categories
     if do_categories and categories == None:
@@ -182,28 +194,22 @@ class DatacardsMaker(Tools):
       label = 'bhnl_incl_m_{}_v2_{}'.format(signal_mass, signal_coupling)
     else:
       label = 'bhnl_cat_{}_m_{}_v2_{}'.format(category.label, signal_mass, signal_coupling)
+    label = label.replace('.', 'p').replace('-', 'm')
     return label
 
 
-  def createModels(self, signal_file, category, label):
+  def runFitter(self, signal_file, category, label):
     selection = self.baseline_selection
     if self.do_categories:
       selection += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
-    signal_model = 'voigtian' #TODO
-    background_model = 'chebychev' #TODO
-    do_blind = False #TODO
-    nbins = 80 #TODO
-    plot_pulls = True #TODO
-    outputdir = self.outputdir
 
-    fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model=signal_model, background_model=background_model, do_blind=do_blind, nbins=nbins, outputdir=outputdir, category_label=category.label, plot_pulls=plot_pulls)
-    fitter.writeFitModels(label=label)
+    fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls)
+    fitter.process(label=label)
 
-    if self.plot_prefit: #TODO implement in different function?
-      #outputdir = self.outputdir_plots
-      fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model=signal_model, background_model=background_model, do_blind=do_blind, nbins=nbins, outputdir=outputdir, category_label=category.label, plot_pulls=plot_pulls)
-      fitter.performFit(process='signal', label=label)
-      fitter.performFit(process='background', label=label)
+    background_yields = fitter.getBackgroundYieldsFromFit() #TODO not its place
+    lumi_true = self.tools.getDataLumi(self.data_files)
+    if background_yields != 1e-9: background_yields = background_yields * self.lumi_target/lumi_true
+    return background_yields
 
 
   def createSigHisto(self, category, signal_file, signal_yields, label):
@@ -218,9 +224,17 @@ class DatacardsMaker(Tools):
     sigma = signal_file.resolution
     quantity = Quantity(name_flat='hnl_mass', nbins=80, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
 
-    # data
+    # data #TODO
     #TODO make it the real obs
-    data_hist = ROOT.TH1D('data_obs', 'data_obs', quantity.nbins, quantity.bin_min, quantity.bin_max)
+    #data_hist = ROOT.TH1D('data_obs', 'data_obs', quantity.nbins, quantity.bin_min, quantity.bin_max)
+    treename = 'signal_tree'
+    tree_data = ROOT.TChain(treename)
+    for data_file in self.data_files:
+      tree_data.Add(data_file.filename) 
+    hist_name = 'data_obs'
+    data_hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
+    branch_name = 'hnl_mass'
+    tree_data.Project(hist_name, branch_name, self.baseline_selection + ' && ' + category.definition_flat + ' && ' + category.cutbased_selection) #TODO selection 
     root_file.cd()
     data_hist.Write()
 
@@ -279,15 +293,36 @@ class DatacardsMaker(Tools):
   def writeCard(self, label, signal_yields, background_yields):
     datacard_name = 'datacard_{}.txt'.format(label)
     if self.do_shape_analysis:
-      shape_line = 'shapes *    {lbl}  ./workspace_{lbl}.root workspace:$PROCESS'.format(
+      shape_line = 'shapes *    {lbl}  workspace_{lbl}.root workspace:$PROCESS'.format(
           lbl = label,
           )
+      norm_line = 'qcd_norm_{lbl}      rateParam   {lbl}   qcd   1.'.format(
+          lbl = label,
+          )
+      autostat_line = ''
+      #param_line = 'a0{lbl}  param   {val} {err}'.format(
+      #    lbl = label, 
+      #    val = 0.1, #TODO
+      #    err = 0.1, #TODO
+      #    )
+      param_line = ''
     elif self.do_shape_TH1:
       shape_line = 'shapes *          {lbl}   shape_{lbl}.root   $PROCESS $PROCESS_$SYSTEMATIC'.format(
           lbl = label,
           )
+      norm_line = ''
+      autostat_line = '{lbl} autoMCStats 0 0 1'.format(
+          lbl = label,
+          )
+      param_line = ''
     else:
-      shape_line = '' 
+      shape_line = ''
+      norm_line = ''
+      autostat_line = '{lbl} autoMCStats 0 0 1'.format(
+          lbl = label,
+          )
+      param_line = ''
+
     #TODO add shape uncertainties
     datacard = open('{}/{}'.format(self.outputdir, datacard_name), 'w+')
     datacard.write(
@@ -310,12 +345,18 @@ lumi                                       lnN           1.025                  
 syst_sig_{lbl}                             lnN           1.3                            -    
 syst_bkg_{lbl}                             lnN           -                              1.3   
 --------------------------------------------------------------------------------------------------------------------------------------------
+{norm_line}
+{param_line}
+{autostat_line}
 '''.format(
             shape_line = shape_line,
             lbl = label,
             obs =  -1, # for the moment, we only look at blinded data
             sig_yields = signal_yields,
             bkg_yields = background_yields,
+            norm_line = norm_line,
+            autostat_line = autostat_line,
+            param_line = param_line,
         )
       )
 
@@ -347,19 +388,22 @@ bkg {bkg_yields}
       if self.do_categories and 'incl' in category.label: continue
       if not self.do_categories and 'incl' not in category.label: continue
 
-      if category.label != 'lxy1to5_OS': continue
-
       if self.category_label != None and category.label != self.category_label: continue # needed for category parallelisation on the batch
+
+      if category.label != 'lxy1to5_SS': continue
 
       # loop on the different mass windows
       for window in self.getWindowList():
 
         # get the background yields
-        background_yields = self.getBackgroundYields(mass=window['mass'], resolution=window['resolution'], category=category)
+        if not self.do_shape_analysis: #FIXME
+          background_yields = self.getBackgroundYields(mass=window['mass'], resolution=window['resolution'], category=category)
 
         # loop on the signal points
         for signal_file in signal_files:
           if signal_file.mass != window['mass']: continue
+
+          if signal_file.ctau != 10.: continue
 
           # get the signal mass/coupling
           signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
@@ -372,7 +416,9 @@ bkg {bkg_yields}
       
           # get the model shape
           if self.do_shape_analysis:
-            self.createModels(signal_file=signal_file, category=category, label=label)
+            #self.createModels(signal_file=signal_file, category=category, label=label)
+            background_yields = self.runFitter(signal_file=signal_file, category=category, label=label) #FIXME
+            #self.runFitter(signal_file=signal_file, category=category, label=label) #FIXME
           elif self.do_shape_TH1:
             self.createSigHisto(category=category, signal_file=signal_file, signal_yields=signal_yields, label=label)
             self.createBkgHisto(category=category, mass=window['mass'], resolution=window['resolution'], background_yields=background_yields, label=label)
@@ -416,6 +462,13 @@ if __name__ == '__main__':
     do_TF = opt.do_TF
     ABCD_regions = ABCD_regions[opt.ABCD_label]
 
+    signal_model_label = opt.signal_model_label
+    background_model_label = opt.background_model_label
+    do_binned_fit = opt.do_binned_fit
+    nbins = opt.nbins
+    do_blind = opt.do_blind
+    plot_pulls = opt.plot_pulls
+
     lumi_target = opt.lumi_target
     sigma_B = opt.sigma_B
 
@@ -448,6 +501,12 @@ if __name__ == '__main__':
         do_ABCD = do_ABCD,
         do_ABCDHybrid = do_ABCDHybrid,
         do_TF = do_TF,
+        signal_model_label = signal_model_label,
+        background_model_label = background_model_label,
+        do_binned_fit = do_binned_fit,
+        nbins = nbins,
+        do_blind = do_blind,
+        plot_pulls = plot_pulls,
         lumi_target = lumi_target,
         sigma_B = sigma_B,
         sigma_mult = sigma_mult,
