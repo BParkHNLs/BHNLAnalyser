@@ -199,17 +199,31 @@ class DatacardsMaker(Tools):
 
 
   def runFitter(self, signal_file, category, label):
+    '''
+      Run the parametric shapes and extract the yields
+    '''
+    # initialise the fitter
     selection = self.baseline_selection
     if self.do_categories:
       selection += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
 
-    fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls)
+    fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls)
+
+    # perform the fits and write the workspaces
     fitter.process(label=label)
 
+    if self.plot_prefit:
+      fitter.producePrefitPlot(label=label)
+
+    # extract the background yields from the fit
     background_yields = fitter.getBackgroundYieldsFromFit() #TODO not its place
     lumi_true = self.tools.getDataLumi(self.data_files)
     if background_yields != 1e-9: background_yields = background_yields * self.lumi_target/lumi_true
-    return background_yields
+
+    # get the signal yields directly from the histogram
+    signal_yields = fitter.getSignalYieldsFromHist()
+
+    return signal_yields, background_yields
 
 
   def createSigHisto(self, category, signal_file, signal_yields, label):
@@ -412,13 +426,15 @@ bkg {bkg_yields}
           label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
 
           # get the signal yields
-          signal_yields = self.getSignalYields(signal_file=signal_file, category=category)
+          if not self.do_shape_analysis:
+            signal_yields = self.getSignalYields(signal_file=signal_file, category=category)
       
           # get the model shape
           if self.do_shape_analysis:
             #self.createModels(signal_file=signal_file, category=category, label=label)
-            background_yields = self.runFitter(signal_file=signal_file, category=category, label=label) #FIXME
+            signal_yields, background_yields = self.runFitter(signal_file=signal_file, category=category, label=label) #FIXME
             #self.runFitter(signal_file=signal_file, category=category, label=label) #FIXME
+
           elif self.do_shape_TH1:
             self.createSigHisto(category=category, signal_file=signal_file, signal_yields=signal_yields, label=label)
             self.createBkgHisto(category=category, mass=window['mass'], resolution=window['resolution'], background_yields=background_yields, label=label)
