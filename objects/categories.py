@@ -61,6 +61,145 @@ categories['standard'] = [
           ),
 ]
 
+categories['all_categories'] = [
+  Category(label = 'incl',
+           title = 'inclusive',
+           definition_flat = 'hnl_pt > 0',
+           definition_nano = 'BToMuMuPi_hnl_pt > 0',
+           cutbased_selection = 'hnl_pt > 0'
+          ),
+  Category(label = 'lxy0to1_OS',
+           title = 'l_{xy}<=1cm, OS',
+           definition_flat = 'sv_lxy<=1 && trgmu_charge!=mu_charge',
+           cutbased_selection = 'sv_lxysig>25 && pi_dcasig>9'
+          ),
+  Category(label = 'lxy1to3_OS',
+           title = '(1<l_{xy}<=3)cm, OS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=3 && trgmu_charge!=mu_charge',
+           cutbased_selection = 'mu_dxy>0.01 && sv_lxysig>40 && pi_dcasig>20'
+          ),
+  Category(label = 'lxy1to5_OS',
+           title = '(1<l_{xy}<=5)cm, OS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=5 && trgmu_charge!=mu_charge',
+           #cutbased_selection = 'hnl_pt > 0' #'mu_isdsa!=1 && b_mass>1.7 && b_pt>10 && pi_dcasig>8 && sv_lxysig>30 && pi_pt>1'
+          ),
+  Category(label = 'lxy1to10_OS',
+           title = '(1<l_{xy}<=10)cm, OS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=10 && trgmu_charge!=mu_charge',
+           cutbased_selection = 'abs(cos_theta_star_pion)<0.87 && mu_dxy>0.01 && pi_pt>0.9 && sv_lxysig>60 && pi_dcasig>25'
+          ),
+  Category(label = 'lxy1to20_OS',
+           title = '(1<l_{xy}<=20)cm, OS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=20 && trgmu_charge!=mu_charge',
+           cutbased_selection = 'abs(cos_theta_star_pion)<0.87 && mu_dxy>0.01 && pi_pt>0.9 && sv_lxysig>60 && pi_dcasig>25'
+          ),
+  Category(label = 'lxy3to5_OS',
+           title = '(3<l_{xy}<=5)cm, OS',
+           definition_flat = 'sv_lxy>3 && sv_lxy<=5 && trgmu_charge!=mu_charge',
+           #cutbased_selection = 'mu_numberofpixellayers<4 && mu_numberofvalidpixelhits<5 && abs(cos_theta_star_pion)<0.85 && mu_dxy>0.03 && pi_pt>0.9 && sv_lxysig>50'
+          ),
+  Category(label = 'lxy3to10_OS',
+           title = '(3<l_{xy}<=10)cm, OS',
+           definition_flat = 'sv_lxy>3 && sv_lxy<=10 && trgmu_charge!=mu_charge',
+           cutbased_selection = 'mu_numberofpixellayers<4 && mu_numberofvalidpixelhits<5 && abs(cos_theta_star_pion)<0.85 && mu_dxy>0.03 && pi_pt>0.9 && sv_lxysig>50'
+          ),
+  Category(label = 'lxy3to20_OS',
+           title = '(3<l_{xy}<=20)cm, OS',
+           definition_flat = 'sv_lxy>3 && sv_lxy<=20 && trgmu_charge!=mu_charge',
+           cutbased_selection = 'mu_numberofpixellayers<4 && abs(cos_theta_star_pion)<0.87 && mu_dxy>0.03 && pi_pt>0.8 && sv_lxysig>50'
+          ),
+  Category(label = 'lxy5to10_OS',
+           title = '(5<l_{xy}<=10)cm, OS',
+           definition_flat = 'sv_lxy>5 && sv_lxy<=10 && trgmu_charge!=mu_charge',
+           #cutbased_selection = 'mu_numberofpixellayers<4 && mu_numberofvalidpixelhits<5 && abs(cos_theta_star_pion)<0.85 && mu_dxy>0.03 && pi_pt>0.9 && sv_lxysig>50'
+          ),
+  Category(label = 'lxy5to20_OS',
+           title = '(5<l_{xy}<=20)cm, OS',
+           definition_flat = 'sv_lxy>5 && sv_lxy<=20 && trgmu_charge!=mu_charge',
+           #cutbased_selection = 'mu_numberofpixellayers<4 && abs(cos_theta_star_pion)<0.87 && mu_dxy>0.03 && pi_pt>0.8 && sv_lxysig>50'
+          ),
+  Category(label = 'lxygt5_OS',
+           title = 'l_{xy}>5cm, OS',
+           definition_flat = 'sv_lxy>5 && trgmu_charge!=mu_charge',
+           #cutbased_selection = 'hnl_pt > 0' # 'mu_isdsa!=1 && b_mass>1.2 && pi_dcasig>8 && sv_lxysig>40 && pi_pt>1.3'
+          ),
+  Category(label = 'lxygt10_OS',
+           title = 'l_{xy}>10cm, OS',
+           definition_flat = 'sv_lxy>10 && trgmu_charge!=mu_charge',
+           cutbased_selection = 'mu_numberofpixellayers<3 && mu_numberoftrackerlayers<13 && mu_numberofvalidpixelhits<3 && abs(cos_theta_star_pion)<0.8 && mu_dxy>0.03 && pi_pt>1.3'
+          ),
+  Category(label = 'lxygt20_OS',
+           title = 'l_{xy}>20cm, OS',
+           definition_flat = 'sv_lxy>20 && trgmu_charge!=mu_charge',
+           cutbased_selection = 'mu_numberofpixellayers<2 && mu_numberoftrackerlayers<13 && mu_numberofvalidpixelhits<2 && abs(cos_theta_star_pion)<0.8 && mu_dxy>0.03 && mu_trkisoid==1 && pi_pt>1.8'
+          ),
+  Category(label = 'lxy0to1_SS',
+           title = 'l_{xy}<=1cm, SS',
+           definition_flat = 'sv_lxy<=1 && trgmu_charge==mu_charge',
+           cutbased_selection = 'sv_lxysig>25 && pi_dcasig>9'
+          ),
+  Category(label = 'lxy1to3_SS',
+           title = '(1<l_{xy}<=3)cm, SS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=3 && trgmu_charge==mu_charge',
+           cutbased_selection = 'mu_dxy>0.01 && sv_lxysig>40 && pi_dcasig>20'
+          ),
+  Category(label = 'lxy1to5_SS',
+           title = '(1<l_{xy}<=5)cm, SS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=5 && trgmu_charge==mu_charge',
+           #cutbased_selection = 'hnl_pt > 0' #'mu_isdsa!=1 && b_mass>1.7 && b_pt>10 && pi_dcasig>8 && sv_lxysig>30 && pi_pt>1'
+          ),
+  Category(label = 'lxy1to10_SS',
+           title = '(1<l_{xy}<=10)cm, SS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=10 && trgmu_charge==mu_charge',
+           cutbased_selection = 'abs(cos_theta_star_pion)<0.87 && mu_dxy>0.01 && pi_pt>0.9 && sv_lxysig>60 && pi_dcasig>25'
+          ),
+  Category(label = 'lxy1to20_SS',
+           title = '(1<l_{xy}<=20)cm, SS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=20 && trgmu_charge==mu_charge',
+           cutbased_selection = 'abs(cos_theta_star_pion)<0.87 && mu_dxy>0.01 && pi_pt>0.9 && sv_lxysig>60 && pi_dcasig>25'
+          ),
+  Category(label = 'lxy3to5_SS',
+           title = '(3<l_{xy}<=5)cm, SS',
+           definition_flat = 'sv_lxy>3 && sv_lxy<=5 && trgmu_charge==mu_charge',
+           #cutbased_selection = 'mu_numberofpixellayers<4 && mu_numberofvalidpixelhits<5 && abs(cos_theta_star_pion)<0.85 && mu_dxy>0.03 && pi_pt>0.9 && sv_lxysig>50'
+          ),
+  Category(label = 'lxy3to10_SS',
+           title = '(3<l_{xy}<=10)cm, SS',
+           definition_flat = 'sv_lxy>3 && sv_lxy<=10 && trgmu_charge==mu_charge',
+           cutbased_selection = 'mu_numberofpixellayers<4 && mu_numberofvalidpixelhits<5 && abs(cos_theta_star_pion)<0.85 && mu_dxy>0.03 && pi_pt>0.9 && sv_lxysig>50'
+          ),
+  Category(label = 'lxy3to20_SS',
+           title = '(3<l_{xy}<=20)cm, SS',
+           definition_flat = 'sv_lxy>3 && sv_lxy<=20 && trgmu_charge==mu_charge',
+           cutbased_selection = 'mu_numberofpixellayers<4 && abs(cos_theta_star_pion)<0.87 && mu_dxy>0.03 && pi_pt>0.8 && sv_lxysig>50'
+          ),
+  Category(label = 'lxy5to10_SS',
+           title = '(5<l_{xy}<=10)cm, SS',
+           definition_flat = 'sv_lxy>5 && sv_lxy<=10 && trgmu_charge==mu_charge',
+           #cutbased_selection = 'mu_numberofpixellayers<4 && mu_numberofvalidpixelhits<5 && abs(cos_theta_star_pion)<0.85 && mu_dxy>0.03 && pi_pt>0.9 && sv_lxysig>50'
+          ),
+  Category(label = 'lxy5to20_SS',
+           title = '(5<l_{xy}<=20)cm, SS',
+           definition_flat = 'sv_lxy>5 && sv_lxy<=20 && trgmu_charge==mu_charge',
+           #cutbased_selection = 'mu_numberofpixellayers<4 && abs(cos_theta_star_pion)<0.87 && mu_dxy>0.03 && pi_pt>0.8 && sv_lxysig>50'
+          ),
+  Category(label = 'lxygt5_SS',
+           title = 'l_{xy}>5cm, SS',
+           definition_flat = 'sv_lxy>5 && trgmu_charge==mu_charge',
+           #cutbased_selection = 'hnl_pt > 0' #'mu_isdsa!=1 && b_mass>1.2 && pi_dcasig>8 && sv_lxysig>40 && pi_pt>1.3'
+          ),
+  Category(label = 'lxygt10_SS',
+           title = 'l_{xy}>10cm, SS',
+           definition_flat = 'sv_lxy>10 && trgmu_charge==mu_charge',
+           cutbased_selection = 'mu_numberofpixellayers<3 && mu_numberoftrackerlayers<13 && mu_numberofvalidpixelhits<3 && abs(cos_theta_star_pion)<0.8 && mu_dxy>0.03 && pi_pt>1.3'
+          ),
+  Category(label = 'lxygt20_SS',
+           title = 'l_{xy}>20cm, SS',
+           definition_flat = 'sv_lxy>20 && trgmu_charge==mu_charge',
+           cutbased_selection = 'mu_numberofpixellayers<2 && mu_numberoftrackerlayers<13 && mu_numberofvalidpixelhits<2 && abs(cos_theta_star_pion)<0.8 && mu_dxy>0.03 && mu_trkisoid==1 && pi_pt>1.8'
+          ),
+]
+
 categories['study_Nov21'] = [
   Category(label = 'incl',
            title = 'inclusive',
