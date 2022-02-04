@@ -402,7 +402,8 @@ class ComputeYields(Tools):
     hist_flat_bin = self.tools.createHisto(tree_sig, quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight=weight)
 
     bin_err = ROOT.double(0.)
-    n_selected_bin = hist_flat_bin.IntegralAndError(0, 13000, bin_err)
+    #n_selected_bin = hist_flat_bin.IntegralAndError(0, 13000, bin_err)
+    n_selected_bin = hist_flat_bin.Integral() #FIXME error, overflow?
     
     #print 'n_selected_bin',n_selected_bin
 
