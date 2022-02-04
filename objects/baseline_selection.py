@@ -45,6 +45,21 @@ selection['study_Nov21'] = Selection(
     ])
 )
 
+selection['baseline_30Dec21'] = Selection(
+    flat = ' && '.join([
+      'mu_isdsa !=1',
+      'trgmu_softid == 1',
+      'mu_looseid == 1',
+      #'mu_customisedid == 1',
+      'pi_packedcandhashighpurity == 1',
+      #'trgmu_pi_mass < 4.5',
+      #'trgmu_mu_mass < 4.5',
+      '((trgmu_charge!=mu_charge && abs(trgmu_mu_mass-3.097)>0.15 && abs(trgmu_mu_mass-3.686)>0.08 && abs(trgmu_mu_mass-1.019)>0.01) || (trgmu_charge==mu_charge))',
+      #'deltar_trgmu_pi < 1.5',
+      #'deltar_trgmu_mu < 1',
+    ])
+)
+
 selection['mass_charge'] = Selection(
     flat = ' && '.join([
       'b_mass < 6.4',
