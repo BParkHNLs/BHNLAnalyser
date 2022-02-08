@@ -101,7 +101,7 @@ class DatacardsMaker(Tools):
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
     self.do_blind = do_blind
-    self.nbins = nbins
+    self.nbins = int(nbins)
     self.plot_pulls = plot_pulls
     self.do_categories = do_categories
     self.categories = categories
@@ -215,10 +215,10 @@ class DatacardsMaker(Tools):
     if self.plot_prefit:
       fitter.producePrefitPlot(label=label)
 
-    # extract the background yields from the fit
+    # extract the background yields from the fit and normalise to lumi
     background_yields = fitter.getBackgroundYieldsFromFit() #TODO not its place
     lumi_true = self.tools.getDataLumi(self.data_files)
-    if background_yields != 1e-9: background_yields = background_yields * self.lumi_target/lumi_true
+    background_yields = background_yields * self.lumi_target/lumi_true
 
     # get the signal yields directly from the histogram
     signal_yields = fitter.getSignalYieldsFromHist()
@@ -228,7 +228,6 @@ class DatacardsMaker(Tools):
 
   def createSigHisto(self, category, signal_file, signal_yields, label):
     signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
-    #label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling)
 
     rootfile_name = 'shape_{}.root'.format(label)
     root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'RECREATE')  
@@ -236,11 +235,9 @@ class DatacardsMaker(Tools):
 
     from quantity import Quantity
     sigma = signal_file.resolution
-    quantity = Quantity(name_flat='hnl_mass', nbins=80, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
+    quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
 
     # data #TODO
-    #TODO make it the real obs
-    #data_hist = ROOT.TH1D('data_obs', 'data_obs', quantity.nbins, quantity.bin_min, quantity.bin_max)
     treename = 'signal_tree'
     tree_data = ROOT.TChain(treename)
     for data_file in self.data_files:
@@ -248,31 +245,27 @@ class DatacardsMaker(Tools):
     hist_name = 'data_obs'
     data_hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
     branch_name = 'hnl_mass'
-    tree_data.Project(hist_name, branch_name, self.baseline_selection + ' && ' + category.definition_flat + ' && ' + category.cutbased_selection) #TODO selection 
+    selection_data = self.baseline_selection 
+    if self.do_categories: selection_data += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
+    tree_data.Project(hist_name, branch_name, selection_data)
     root_file.cd()
     data_hist.Write()
 
     # signal shape
-    #f = ROOT.TFile.Open('root://t3dcachedb.psi.ch:1094/'+signal_file.filename, 'READ')
     treename = 'signal_tree'
     f_signal = self.tools.getRootFile(signal_file.filename)
     tree_signal = self.getTree(f_signal, treename)
 
-    #filename = signal_file.filename
-    #original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
-    #target_ctau = signal_file.ctau
-    #ctau_weight = -99
-    #if float(original_ctau) != float(target_ctau):
-    #  ctau_weight = '({ctau0} / {ctau1} * exp((1./{ctau0} - 1./{ctau1}) * gen_hnl_ct))'.format(ctau0=original_ctau, ctau1=target_ctau)
-    ctau_weight = '(1)'
+    weight_ctau = self.tools.getCtauWeight(signal_file)
+    weight_signal = self.tools.getSignalWeight(signal_file=signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target)
+    weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
 
     signal_selection = 'ismatched==1 && {}'.format(self.baseline_selection)
     if self.do_categories:
       category_selection = category.definition_flat + ' && ' + category.cutbased_selection
       signal_selection += ' && {}'.format(category_selection)
-    hist_sig = self.tools.createHisto(tree_signal, quantity, hist_name='sig', branchname='flat', selection=signal_selection, weight=ctau_weight)
+    hist_sig = self.tools.createHisto(tree_signal, quantity, hist_name='sig', branchname='flat', selection=signal_selection, weight=weight_sig)
 
-    hist_sig.Scale(signal_yields/hist_sig.Integral())
     root_file.cd() 
     hist_sig.Write()
     root_file.Close()
@@ -284,24 +277,58 @@ class DatacardsMaker(Tools):
     root_file.cd()
 
     from quantity import Quantity
-    quantity = Quantity(name_flat='hnl_mass', nbins=80, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
+    quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
 
-    # background shape
-    treename = 'signal_tree'
-    tree_bkg = ROOT.TChain(treename)
-    for data_file in self.data_files:
-      tree_bkg.Add(data_file.filename) 
+    use_data=False
+    if use_data:
+      # background shape, taken from data for now
+      treename = 'signal_tree'
+      tree_bkg = ROOT.TChain(treename)
+      for data_file in self.data_files:
+        tree_bkg.Add(data_file.filename) 
 
-    background_selection = self.baseline_selection
-    if self.do_categories:
-      category_selection = category.definition_flat + ' && ' + category.cutbased_selection
-      background_selection += ' && {}'.format(category_selection)
-    hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='qcd', branchname='flat', selection=background_selection)
+      background_selection = self.baseline_selection
+      if self.do_categories:
+        category_selection = category.definition_flat + ' && ' + category.cutbased_selection
+        background_selection += ' && {}'.format(category_selection)
+      hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='qcd', branchname='flat', selection=background_selection)
 
-    hist_bkg.Scale(background_yields/hist_bkg.Integral())
+      hist_bkg.Scale(background_yields/hist_bkg.Integral())
+
+    else:
+      # take shape from qcd mc
+      int_mc_tot = 0.
+      hist_bkg = ROOT.TH1D('qcd', 'qcd', quantity.nbins, quantity.bin_min, quantity.bin_max)
+      hist_bkg.Sumw2()
+
+      background_selection = baseline_selection
+      if self.do_categories:
+        category_selection = category.definition_flat + ' && ' + category.cutbased_selection
+        background_selection += ' && {}'.format(category_selection)
+
+      for ifile, qcd_file in enumerate(self.qcd_files):
+        qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
+        if qcd_file_pthatrange not in self.white_list: continue
+
+        f_qcd = ROOT.TFile.Open(qcd_file.filename, 'READ')
+        tree_qcd = self.getTree(f_qcd, 'signal_tree')
+        tree_run = self.getTree(f_qcd, 'run_tree')
+
+        weight_qcd = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
+        weight_qcd = '({})'.format(weight_qcd)
+        hist_qcd = self.tools.createHisto(tree_qcd, quantity, hist_name='hist_qcd', branchname='flat', selection=background_selection, weight=weight_qcd) 
+
+        int_mc_tot += hist_qcd.Integral()
+
+        hist_bkg.Add(hist_qcd)
+
+      hist_bkg.Scale(background_yields/int_mc_tot)
+
     root_file.cd() 
     hist_bkg.Write()
     root_file.Close()
+
+    print '--> {}/{} created'.format(self.outputdir, rootfile_name)
 
 
   def writeCard(self, label, signal_yields, background_yields):
@@ -404,7 +431,7 @@ bkg {bkg_yields}
 
       if self.category_label != None and category.label != self.category_label: continue # needed for category parallelisation on the batch
 
-      if category.label != 'lxy1to5_SS': continue
+      #if category.label != 'lxy1to5_SS' and category.label != 'lxy0to1_SS': continue
 
       # loop on the different mass windows
       for window in self.getWindowList():
@@ -417,7 +444,8 @@ bkg {bkg_yields}
         for signal_file in signal_files:
           if signal_file.mass != window['mass']: continue
 
-          if signal_file.ctau != 10.: continue
+          #if signal_file.ctau != 0.1 and signal_file.ctau != 10.: continue
+          #if signal_file.ctau != 0.1: continue
 
           # get the signal mass/coupling
           signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
