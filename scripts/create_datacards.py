@@ -39,6 +39,7 @@ def getOptions():
   parser.add_argument('--sigma_mult'            , type=str, dest='sigma_mult'            , help='size n*sigma of the window around a given mass'                , default='20')
   parser.add_argument('--weight_hlt'            , type=str, dest='weight_hlt'            , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
   parser.add_argument('--qcd_white_list '       , type=str, dest='qcd_white_list'        , help='pthat range to consider for qcd samples'                       , default='20to300')
+  parser.add_argument('--CMStag '               , type=str, dest='CMStag'                , help='CMS tag to be added if --add_CMSlabel'                         , default='Preliminary')
   parser.add_argument('--add_weight_hlt'        ,           dest='add_weight_hlt'        , help='add hlt weight'                           , action='store_true', default=False)
   parser.add_argument('--do_ABCD'               ,           dest='do_ABCD'               , help='compute yields with the ABCD method'      , action='store_true', default=False)
   parser.add_argument('--do_ABCDHybrid'         ,           dest='do_ABCDHybrid'         , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
@@ -53,6 +54,8 @@ def getOptions():
   parser.add_argument('--do_categories'         ,           dest='do_categories'         , help='compute yields in categories'             , action='store_true', default=False)
   parser.add_argument('--add_Bc'                ,           dest='add_Bc'                , help='add the Bc samples'                       , action='store_true', default=False)
   parser.add_argument('--plot_prefit'           ,           dest='plot_prefit'           , help='produce prefit plots'                     , action='store_true', default=False)
+  parser.add_argument('--add_CMSlabel'          ,           dest='add_CMSlabel'          , help='add CMS label'                            , action='store_true', default=False)
+  parser.add_argument('--add_lumilabel'         ,           dest='add_lumilabel'         , help='add CMS label'                            , action='store_true', default=False)
   #parser.add_argument('--submit_batch', dest='submit_batch', help='submit on the batch?', action='store_true', default=False)
   return parser.parse_args()
 
@@ -85,7 +88,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -126,6 +129,9 @@ class DatacardsMaker(Tools):
       if self.do_shape_analysis: self.outputdir_plots += '/fits'
       if not path.exists(self.outputdir_plots):
         os.system('mkdir -p {}'.format(self.outputdir_plots))
+    self.add_CMSlabel = add_CMSlabel
+    self.add_lumilabel = add_lumilabel
+    self.CMStag = CMStag
   
     ROOT.gROOT.SetBatch(True)
 
@@ -224,7 +230,7 @@ class DatacardsMaker(Tools):
     if self.do_categories:
       selection += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
 
-    fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls)
+    fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
 
     # perform the fits and write the workspaces
     fitter.process(label=label)
@@ -417,7 +423,7 @@ syst_bkg_{lbl}                             lnN           -                      
             param_line = param_line,
         )
       )
-
+#TODO remove bkg syst for shape analysis
 #{lbl} autoMCStats 0 0 1 Removed for the moment
 
     datacard.close()
@@ -449,6 +455,7 @@ bkg {bkg_yields}
       if self.category_label != None and category.label != self.category_label: continue # needed for category parallelisation on the batch
 
       #if category.label != 'lxy1to5_SS' and category.label != 'lxy0to1_SS': continue
+      if category.label != 'lxy1to5_SS': continue
 
       # loop on the different mass windows
       for window in self.getWindowList():
@@ -462,7 +469,7 @@ bkg {bkg_yields}
           if signal_file.mass != window['mass']: continue
 
           #if signal_file.ctau != 0.1 and signal_file.ctau != 10.: continue
-          #if signal_file.ctau != 0.1: continue
+          if signal_file.ctau != 0.1: continue
 
           # get the signal mass/coupling
           signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
@@ -546,6 +553,9 @@ if __name__ == '__main__':
     add_Bc = opt.add_Bc
 
     plot_prefit = opt.plot_prefit
+    add_CMSlabel = opt.add_CMSlabel
+    add_lumilabel = opt.add_lumilabel
+    CMStag = opt.CMStag
 
     DatacardsMaker(
         data_files = data_files, 
@@ -579,6 +589,9 @@ if __name__ == '__main__':
         plot_prefit = plot_prefit,
         outdirlabel = outdirlabel,
         subdirlabel = subdirlabel,
+        add_CMSlabel = add_CMSlabel,
+        add_lumilabel = add_lumilabel,
+        CMStag = CMStag,
     ).process() 
 
   else:

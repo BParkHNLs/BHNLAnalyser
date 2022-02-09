@@ -7,7 +7,7 @@ from tools import Tools
 from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file='', data_files='', selection='', signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True):
+  def __init__(self, signal_file='', data_files='', selection='', signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.signal_file = signal_file
     self.data_files = data_files
@@ -32,6 +32,9 @@ class Fitter(Tools):
     if not path.exists(self.outputdir):
       os.system('mkdir -p {}'.format(self.outputdir))
     self.category_label = category_label
+    self.add_CMSlabel = add_CMSlabel
+    self.add_lumilabel = add_lumilabel
+    self.CMStag = CMStag
     # define window sizes (multiples of sigma)
     self.mass_window_size = 3
     self.fit_window_size = 6
@@ -456,6 +459,10 @@ class Fitter(Tools):
         leg.AddEntry(frame.findObject(pdf_name), model_label)
       leg.Draw()
 
+    # add the labels
+    if self.add_CMSlabel: self.tools.printCMSTag(pad1, self.CMStag, size=0.5)
+    if self.add_lumilabel: self.tools.printLumiTag(pad1, self.lumi_true, size=0.5, offset=0.55)
+
     # plot of the residuals
     pad2.cd()
     ROOT.gPad.SetLeftMargin(0.15) 
@@ -489,8 +496,6 @@ class Fitter(Tools):
       plot_label = self.getBackgroundLabel() + '_' + self.getSignalLabel()
     canv.SaveAs("{}/{}_fit_{}.png".format(self.outputdir, process, plot_label))
     canv.SaveAs("{}/{}_fit_{}.pdf".format(self.outputdir, process, plot_label))
-
-    #TODO add CMS and lumi labels
 
     # additionally, get the pull histogram
     if self.plot_pulls and process != 'both':
@@ -708,20 +713,23 @@ if __name__ == '__main__':
   nbins = 30
   lumi_target = 5.302
   sigma_B = 472.8e9
+  add_CMSlabel = True
+  add_lumilabel = True
+  CMStag = 'Preliminary'
 
   label = 'test'
   for signal_file in signal_files:
     if signal_file.ctau != 0.1: continue
-    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag)
     #fitter.writeSignalModel(label='test')
     #fitter.writeBackgroundModel(label='test')
     #fitter.createFitWorkspace()
     #fitter.writeFitModels(label='test')
     #fitter.performFit(process='signal', label='test')
     #fitter.performFit(process='background', label='test')
-    #fitter.process()
+    fitter.process()
     #fitter.producePrefitPlot()
-    print fitter.getSignalYieldsFromHist()
+    #print fitter.getSignalYieldsFromHist()
 
   #fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
   #fitter.performBackgroundFit(mass=3, resolution=0.023)
