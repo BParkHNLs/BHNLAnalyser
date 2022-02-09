@@ -17,6 +17,7 @@ class Fitter(Tools):
     self.do_binned_fit = do_binned_fit
     self.do_blind = do_blind
     self.lumi_target = lumi_target
+    self.lumi_true = self.tools.getDataLumi(self.data_files)
     self.sigma_B = sigma_B
     self.file_type = file_type
     self.nbins = int(nbins)
@@ -33,7 +34,7 @@ class Fitter(Tools):
     self.category_label = category_label
     # define window sizes (multiples of sigma)
     self.mass_window_size = 3
-    self.fit_window_size = 12
+    self.fit_window_size = 6
 
 
     signal_model_list = ['doubleCB', 'doubleCBPlusGaussian', 'voigtian']
@@ -201,7 +202,7 @@ class Fitter(Tools):
 
     # define signal weights
     weight_ctau = self.tools.getCtauWeight(self.signal_file)
-    weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target)
+    weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_true)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
 
     if self.do_binned_fit:
@@ -489,8 +490,10 @@ class Fitter(Tools):
     canv.SaveAs("{}/{}_fit_{}.png".format(self.outputdir, process, plot_label))
     canv.SaveAs("{}/{}_fit_{}.pdf".format(self.outputdir, process, plot_label))
 
+    #TODO add CMS and lumi labels
+
     # additionally, get the pull histogram
-    if self.plot_pulls:
+    if self.plot_pulls and process != 'both':
       self.getPullDistribution(process, hpull, plot_label)
 
     print ' --- End Run fit --- '
@@ -615,6 +618,8 @@ class Fitter(Tools):
     hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
     branch_name = 'hnl_mass'
     tree.Project(hist_name, branch_name, self.selection)
+    # normalise to the target luminosity
+    hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
     data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(self.hnl_mass), hist)
 
     #data_obs = ROOT.RooDataSet("data_obs", "data_obs", ROOT.RooArgSet(self.hnl_mass)) #TODO for the moment does not contain sensible data
