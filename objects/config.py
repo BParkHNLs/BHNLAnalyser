@@ -32,6 +32,7 @@ class Config(object):
                do_log=None, 
                add_overflow=None,
                add_CMSlabel=None,
+               add_lumilabel=None,
                CMStag=None,
 
                # for datacards
@@ -84,6 +85,7 @@ class Config(object):
     self.do_log = do_log
     self.add_overflow = add_overflow
     self.add_CMSlabel = add_CMSlabel
+    self.add_lumilabel = add_lumilabel
     self.CMStag = CMStag
     self.ABCD_label = ABCD_label
     self.do_ABCD = do_ABCD
