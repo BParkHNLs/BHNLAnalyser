@@ -39,6 +39,7 @@ class Config(object):
                do_ABCD=None,
                do_ABCDHybrid=None,
                do_TF=None,
+               do_realData=None,
                do_counting=None,
                do_shape_analysis=None,
                do_shape_TH1=None,
@@ -88,6 +89,7 @@ class Config(object):
     self.do_ABCD = do_ABCD
     self.do_ABCDHybrid = do_ABCDHybrid
     self.do_TF = do_TF
+    self.do_realData = do_realData
     self.do_counting = do_counting
     self.do_shape_analysis = do_shape_analysis
     self.do_shape_TH1 = do_shape_TH1
@@ -192,8 +194,8 @@ class Config(object):
     else: 
       print '       ---> Plotter request OK'
 
-    if self.do_ABCD + self.do_ABCDHybrid + self.do_TF != 1:
-      raise RuntimeError('Please choose only one of the following background estimation method "[do_ABCD, do_ABCDHybrid, do_TF]"')
+    if self.do_ABCD + self.do_ABCDHybrid + self.do_TF + self.do_realData != 1:
+      raise RuntimeError('Please choose only one of the following background estimation method "[do_ABCD, do_ABCDHybrid, do_TF, do_realData]"')
 
     if self.sigma_B not in [472.8e9, 327e9]:
       raise RuntimeError('The value of sigma_B not in [472.8e9, 327e9]. Please check')

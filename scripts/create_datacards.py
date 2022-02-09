@@ -7,6 +7,7 @@ import math
 from compute_yields import ComputeYields
 from tools import Tools
 from fitter import Fitter
+from quantity import Quantity
 
 import sys
 sys.path.append('../objects')
@@ -42,6 +43,7 @@ def getOptions():
   parser.add_argument('--do_ABCD'               ,           dest='do_ABCD'               , help='compute yields with the ABCD method'      , action='store_true', default=False)
   parser.add_argument('--do_ABCDHybrid'         ,           dest='do_ABCDHybrid'         , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
   parser.add_argument('--do_TF'                 ,           dest='do_TF'                 , help='compute yields with the TF method'        , action='store_true', default=False)
+  parser.add_argument('--do_realData'           ,           dest='do_realData'           , help='get the number of data yields'            , action='store_true', default=False)
   parser.add_argument('--do_counting'           ,           dest='do_counting'           , help='perform counting experiment'              , action='store_true', default=False)
   parser.add_argument('--do_shape_analysis'     ,           dest='do_shape_analysis'     , help='perform shape-based analysis'             , action='store_true', default=False)
   parser.add_argument('--do_shape_TH1'          ,           dest='do_shape_TH1'          , help='perform shape-based analysis with histo'  , action='store_true', default=False)
@@ -83,7 +85,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -94,6 +96,7 @@ class DatacardsMaker(Tools):
     self.do_ABCD = do_ABCD 
     self.do_ABCDHybrid = do_ABCDHybrid 
     self.do_TF = do_TF 
+    self.do_realData = do_realData 
     self.do_counting = do_counting
     self.do_shape_analysis = do_shape_analysis
     self.do_shape_TH1 = do_shape_TH1
@@ -154,6 +157,20 @@ class DatacardsMaker(Tools):
       background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0]
     elif self.do_TF:
       background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromMC(mass=mass, resolution=resolution, sigma_mult_window=self.sigma_mult)[0]
+    elif self.do_realData:
+      # get the number of (unblinded) data entries in the 2 sigma window
+      quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
+      treename = 'signal_tree'
+      tree_data = ROOT.TChain(treename)
+      for data_file in self.data_files:
+        tree_data.Add(data_file.filename) 
+      hist_name = 'data_hist'
+      data_hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
+      branch_name = 'hnl_mass'
+      selection_data = self.baseline_selection 
+      if self.do_categories: selection_data += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
+      tree_data.Project(hist_name, branch_name, selection_data)
+      background_yields = data_hist.Integral()
 
     if background_yields == 0.: background_yields = 1e-9
 
@@ -233,7 +250,7 @@ class DatacardsMaker(Tools):
     root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'RECREATE')  
     root_file.cd()
 
-    from quantity import Quantity
+    #from quantity import Quantity
     sigma = signal_file.resolution
     quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
 
@@ -504,6 +521,7 @@ if __name__ == '__main__':
     do_ABCD = opt.do_ABCD
     do_ABCDHybrid = opt.do_ABCDHybrid
     do_TF = opt.do_TF
+    do_realData = opt.do_realData
     ABCD_regions = ABCD_regions[opt.ABCD_label]
 
     signal_model_label = opt.signal_model_label
@@ -545,6 +563,7 @@ if __name__ == '__main__':
         do_ABCD = do_ABCD,
         do_ABCDHybrid = do_ABCDHybrid,
         do_TF = do_TF,
+        do_realData = do_realData,
         signal_model_label = signal_model_label,
         background_model_label = background_model_label,
         do_binned_fit = do_binned_fit,
