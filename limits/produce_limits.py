@@ -33,7 +33,7 @@ if __name__ == "__main__":
         v2 = Tools().getVV(mass=float(opt.mass), ctau=float(opt.ctau), ismaj=True)
         coupling = getCouplingLabel(v2)
 
-        command = 'combine -M AsymptoticLimits {s}/datacard_combined_m_{m}_v2_{c}.txt'.format(s=opt.subdirlabel, m=mass, c=coupling)
+        command = 'combine -M AsymptoticLimits {s}/datacard_combined_m_{m}_v2_{c}.txt'.format(s=opt.subdirlabel, m=mass.replace('.', 'p'), c=coupling.replace('.', 'p').replace('-', 'm'))
         if opt.run_blind:
           command += ' --run blind'
         
