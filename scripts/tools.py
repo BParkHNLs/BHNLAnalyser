@@ -274,14 +274,14 @@ class Tools(object):
     pad.Update()
 
 
-  def printLumiTag(self, pad, lumi_target, size=0.43, offset=0.57):
+  def printLumiTag(self, pad, lumi, size=0.43, offset=0.57):
     pad.cd()
     tag = ROOT.TLatex()
     tag.SetNDC()
-    lumi_text = str(round(lumi_target, 2)) + ' fb^{-1} (13 TeV)'
+    lumi_text = str(round(lumi, 2)) + ' fb^{-1} (13 TeV)'
     tag.SetTextFont(42)
     tag.SetTextAlign(11) 
-    tag.SetTextSize(size*pad.GetTopMargin())    
+    tag.SetTextSize(0.9*size*pad.GetTopMargin())    
     tag.DrawLatex(pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), lumi_text)
     pad.Update()
 
