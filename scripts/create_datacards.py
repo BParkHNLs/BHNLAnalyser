@@ -124,11 +124,6 @@ class DatacardsMaker(Tools):
     self.outputdir = './outputs/{}/datacards/{}'.format(outdirlabel, subdirlabel)
     if not path.exists(self.outputdir):
       os.system('mkdir -p {}'.format(self.outputdir))
-    if self.plot_prefit:
-      self.outputdir_plots = self.outputdir + '/plots_prefit'
-      if self.do_shape_analysis: self.outputdir_plots += '/fits'
-      if not path.exists(self.outputdir_plots):
-        os.system('mkdir -p {}'.format(self.outputdir_plots))
     self.add_CMSlabel = add_CMSlabel
     self.add_lumilabel = add_lumilabel
     self.CMStag = CMStag
@@ -160,7 +155,7 @@ class DatacardsMaker(Tools):
     if self.do_ABCD:
       background_yields = ComputeYields(data_files=self.data_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0] 
     elif self.do_ABCDHybrid:
-      background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0]
+      background_yields = 1e4 #ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0]
     elif self.do_TF:
       background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromMC(mass=mass, resolution=resolution, sigma_mult_window=self.sigma_mult)[0]
     elif self.do_realData:
@@ -180,9 +175,7 @@ class DatacardsMaker(Tools):
 
     if background_yields == 0.: background_yields = 1e-9
 
-    lumi_true = 0. #0.774 #data_file.lumi
-    for data_file in self.data_files:
-      lumi_true += data_file.lumi
+    lumi_true = self.tools.getDataLumi(self.data_files)
     if background_yields != 1e-9: background_yields = background_yields * self.lumi_target/lumi_true
 
     return background_yields
@@ -239,7 +232,7 @@ class DatacardsMaker(Tools):
       fitter.producePrefitPlot(label=label)
 
     # extract the background yields from the fit and normalise to lumi
-    background_yields = fitter.getBackgroundYieldsFromFit() #TODO not its place
+    background_yields = fitter.getBackgroundYieldsFromFit()
     lumi_true = self.tools.getDataLumi(self.data_files)
     background_yields = background_yields * self.lumi_target/lumi_true
 
@@ -256,25 +249,9 @@ class DatacardsMaker(Tools):
     root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'RECREATE')  
     root_file.cd()
 
-    #from quantity import Quantity
     sigma = signal_file.resolution
     quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
 
-    # data #TODO
-    treename = 'signal_tree'
-    tree_data = ROOT.TChain(treename)
-    for data_file in self.data_files:
-      tree_data.Add(data_file.filename) 
-    hist_name = 'data_obs'
-    data_hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
-    branch_name = 'hnl_mass'
-    selection_data = self.baseline_selection 
-    if self.do_categories: selection_data += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
-    tree_data.Project(hist_name, branch_name, selection_data)
-    root_file.cd()
-    data_hist.Write()
-
-    # signal shape
     treename = 'signal_tree'
     f_signal = self.tools.getRootFile(signal_file.filename)
     tree_signal = self.getTree(f_signal, treename)
@@ -294,15 +271,14 @@ class DatacardsMaker(Tools):
     root_file.Close()
 
 
-  def createBkgHisto(self, category, mass, resolution, background_yields, label): #TODO this function is redundant, merge it with previous one
+  def createBkgHisto(self, category, mass, resolution, background_yields, label):
     rootfile_name = 'shape_{}.root'.format(label)
     root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'UPDATE')  
     root_file.cd()
 
-    from quantity import Quantity
     quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
 
-    use_data=False
+    use_data=True
     if use_data:
       # background shape, taken from data for now
       treename = 'signal_tree'
@@ -351,6 +327,30 @@ class DatacardsMaker(Tools):
     hist_bkg.Write()
     root_file.Close()
 
+
+  def createDataObsHisto(self, category, mass, resolution, label):
+    rootfile_name = 'shape_{}.root'.format(label)
+    root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'UPDATE')  
+    root_file.cd()
+
+    quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
+
+    treename = 'signal_tree'
+    tree_data = ROOT.TChain(treename)
+    for data_file in self.data_files:
+      tree_data.Add(data_file.filename) 
+    hist_name = 'data_obs'
+    data_hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
+    branch_name = 'hnl_mass'
+    selection_data = self.baseline_selection 
+    if self.do_categories: selection_data += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
+    tree_data.Project(hist_name, branch_name, selection_data)
+    data_hist.Scale(self.lumi_target/self.tools.getDataLumi(self.data_files))
+
+    root_file.cd()
+    data_hist.Write()
+    root_file.Close()
+
     print '--> {}/{} created'.format(self.outputdir, rootfile_name)
 
 
@@ -366,10 +366,10 @@ class DatacardsMaker(Tools):
       autostat_line = ''
       #param_line = 'a0{lbl}  param   {val} {err}'.format(
       #    lbl = label, 
-      #    val = 0.1, #TODO
-      #    err = 0.1, #TODO
+      #    val = 0.1,
+      #    err = 0.1,
       #    )
-      param_line = ''
+      bkg_syst_line = ''
     elif self.do_shape_TH1:
       shape_line = 'shapes *          {lbl}   shape_{lbl}.root   $PROCESS $PROCESS_$SYSTEMATIC'.format(
           lbl = label,
@@ -378,16 +378,19 @@ class DatacardsMaker(Tools):
       autostat_line = '{lbl} autoMCStats 0 0 1'.format(
           lbl = label,
           )
-      param_line = ''
+      bkg_syst_line = 'syst_bkg_{lbl}                             lnN           -                              1.3 '.format(
+          lbl = label,
+          )
     else:
       shape_line = ''
       norm_line = ''
       autostat_line = '{lbl} autoMCStats 0 0 1'.format(
           lbl = label,
           )
-      param_line = ''
+      bkg_syst_line = 'syst_bkg_{lbl}                             lnN           -                              1.3 '.format(
+          lbl = label,
+          )
 
-    #TODO add shape uncertainties
     datacard = open('{}/{}'.format(self.outputdir, datacard_name), 'w+')
     datacard.write(
 '''\
@@ -407,10 +410,9 @@ rate                                                     {sig_yields}           
 --------------------------------------------------------------------------------------------------------------------------------------------
 lumi                                       lnN           1.025                          -   
 syst_sig_{lbl}                             lnN           1.3                            -    
-syst_bkg_{lbl}                             lnN           -                              1.3   
+{bkg_syst_line}   
 --------------------------------------------------------------------------------------------------------------------------------------------
 {norm_line}
-{param_line}
 {autostat_line}
 '''.format(
             shape_line = shape_line,
@@ -418,13 +420,11 @@ syst_bkg_{lbl}                             lnN           -                      
             obs =  -1, # for the moment, we only look at blinded data
             sig_yields = signal_yields,
             bkg_yields = background_yields,
+            bkg_syst_line = bkg_syst_line,
             norm_line = norm_line,
             autostat_line = autostat_line,
-            param_line = param_line,
         )
       )
-#TODO remove bkg syst for shape analysis
-#{lbl} autoMCStats 0 0 1 Removed for the moment
 
     datacard.close()
     print '--> {}/{} created'.format(self.outputdir, datacard_name)
@@ -455,13 +455,12 @@ bkg {bkg_yields}
       if self.category_label != None and category.label != self.category_label: continue # needed for category parallelisation on the batch
 
       #if category.label != 'lxy1to5_SS' and category.label != 'lxy0to1_SS': continue
-      if category.label != 'lxy1to5_SS': continue
 
       # loop on the different mass windows
       for window in self.getWindowList():
 
-        # get the background yields
-        if not self.do_shape_analysis: #FIXME
+        # get the background yields (if not shape analysis)
+        if not self.do_shape_analysis:
           background_yields = self.getBackgroundYields(mass=window['mass'], resolution=window['resolution'], category=category)
 
         # loop on the signal points
@@ -469,7 +468,6 @@ bkg {bkg_yields}
           if signal_file.mass != window['mass']: continue
 
           #if signal_file.ctau != 0.1 and signal_file.ctau != 10.: continue
-          if signal_file.ctau != 0.1: continue
 
           # get the signal mass/coupling
           signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
@@ -477,19 +475,18 @@ bkg {bkg_yields}
           # get the process label
           label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
 
-          # get the signal yields
+          # get the signal yields (if not shape analysis)
           if not self.do_shape_analysis:
             signal_yields = self.getSignalYields(signal_file=signal_file, category=category)
       
-          # get the model shape
+          # get the model shape and yields for shape analysis
           if self.do_shape_analysis:
-            #self.createModels(signal_file=signal_file, category=category, label=label)
-            signal_yields, background_yields = self.runFitter(signal_file=signal_file, category=category, label=label) #FIXME
-            #self.runFitter(signal_file=signal_file, category=category, label=label) #FIXME
+            signal_yields, background_yields = self.runFitter(signal_file=signal_file, category=category, label=label)
 
           elif self.do_shape_TH1:
             self.createSigHisto(category=category, signal_file=signal_file, signal_yields=signal_yields, label=label)
             self.createBkgHisto(category=category, mass=window['mass'], resolution=window['resolution'], background_yields=background_yields, label=label)
+            self.createDataObsHisto(category=category, mass=window['mass'], resolution=window['resolution'], label=label)
 
           # create the datacard
           self.writeCard(label=label, signal_yields=signal_yields, background_yields=background_yields)
@@ -497,10 +494,6 @@ bkg {bkg_yields}
           # save yields summary
           self.writeYieldsForPlots(label=label, signal_yields=signal_yields, background_yields=background_yields)
 
-    # create plots
-    #if self.plot_prefit_binned:
-    #  self.plot(mass=window['mass'], category=category)
-          
 
 
 if __name__ == '__main__':
