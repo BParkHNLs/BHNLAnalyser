@@ -32,6 +32,7 @@ class Config(object):
                do_log=None, 
                add_overflow=None,
                add_CMSlabel=None,
+               add_lumilabel=None,
                CMStag=None,
 
                # for datacards
@@ -39,8 +40,19 @@ class Config(object):
                do_ABCD=None,
                do_ABCDHybrid=None,
                do_TF=None,
+               do_realData=None,
+               do_counting=None,
+               do_shape_analysis=None,
+               do_shape_TH1=None,
+               signal_model_label=None, 
+               background_model_label=None,
+               do_binned_fit=None, 
+               do_blind=None, 
+               nbins=None, 
+               plot_pulls=None,
                do_categories=None,
                add_Bc=None,
+               plot_prefit=None,
                lumi_target=None,
                sigma_B=None,
                sigma_mult_window=None,
@@ -73,13 +85,25 @@ class Config(object):
     self.do_log = do_log
     self.add_overflow = add_overflow
     self.add_CMSlabel = add_CMSlabel
+    self.add_lumilabel = add_lumilabel
     self.CMStag = CMStag
     self.ABCD_label = ABCD_label
     self.do_ABCD = do_ABCD
     self.do_ABCDHybrid = do_ABCDHybrid
     self.do_TF = do_TF
+    self.do_realData = do_realData
+    self.do_counting = do_counting
+    self.do_shape_analysis = do_shape_analysis
+    self.do_shape_TH1 = do_shape_TH1
+    self.signal_model_label = signal_model_label
+    self.background_model_label = background_model_label
+    self.do_binned_fit = do_binned_fit
+    self.do_blind = do_blind
+    self.nbins = nbins
+    self.plot_pulls = plot_pulls
     self.do_categories = do_categories
     self.add_Bc = add_Bc
+    self.plot_prefit = plot_prefit
     self.lumi_target = lumi_target
     self.sigma_B = sigma_B
     self.sigma_mult_window = sigma_mult_window
@@ -172,13 +196,24 @@ class Config(object):
     else: 
       print '       ---> Plotter request OK'
 
-    if self.do_ABCD + self.do_ABCDHybrid + self.do_TF != 1:
-      raise RuntimeError('Please choose only one of the following background estimation method "[do_ABCD, do_ABCDHybrid, do_TF]"')
+    if self.do_ABCD + self.do_ABCDHybrid + self.do_TF + self.do_realData != 1:
+      raise RuntimeError('Please choose only one of the following background estimation method "[do_ABCD, do_ABCDHybrid, do_TF, do_realData]"')
 
     if self.sigma_B not in [472.8e9, 327e9]:
       raise RuntimeError('The value of sigma_B not in [472.8e9, 327e9]. Please check')
 
     print '       ---> Datacard request OK'
+
+    if self.do_counting + self.do_shape_analysis + self.do_shape_TH1 != 1:
+      raise RuntimeError("Please specify which analysis strategy to use among ['do_counting', 'do_shape_analysis', 'do_shape_TH1']")
+
+    signal_model_list = ['voigtian']
+    if self.do_shape_analysis and self.signal_model_label not in signal_model_list:
+      raise RuntimeError('Please make sure to enter a valid signal model. Choose among {}'.format(signal_model_list))
+
+    background_model_list = ['chebychev']
+    if self.do_shape_analysis and self.background_model_label not in background_model_list:
+      raise RuntimeError('Please make sure to enter a valid background model. Choose among {}'.format(background_model_list))
       
 
   # check that either lumi or shape, or can process both in parallel?

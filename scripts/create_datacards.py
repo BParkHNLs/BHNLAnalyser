@@ -6,6 +6,8 @@ import math
 
 from compute_yields import ComputeYields
 from tools import Tools
+from fitter import Fitter
+from quantity import Quantity
 
 import sys
 sys.path.append('../objects')
@@ -19,27 +21,41 @@ from qcd_white_list import white_list
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Script to produce the datacards', add_help=True)
-  parser.add_argument('--outdirlabel'     , type=str, dest='outdirlabel'     , help='name of the outdir'                                            , default=None)
-  parser.add_argument('--subdirlabel'     , type=str, dest='subdirlabel'     , help='name of the subdir'                                            , default=None)
-  #parser.add_argument('--cardlabel'       , type=str, dest='cardlabel'       , help='label of the datacard'                                         , default=None)
-  parser.add_argument('--data_label'      , type=str, dest='data_label'      , help='which data samples to consider?'                               , default='V07_18Aug21')
-  parser.add_argument('--qcd_label'       , type=str, dest='qcd_label'       , help='which qcd samples to consider?'                                , default='V07_18Aug21')
-  parser.add_argument('--signal_label'    , type=str, dest='signal_label'    , help='which signal samples to consider?'                             , default='private')
-  parser.add_argument('--selection_label' , type=str, dest='selection_label' , help='apply a baseline selection_label?'                             , default='standard')
-  parser.add_argument('--categories_label', type=str, dest='categories_label', help='label of the list of categories'                               , default='standard')
-  parser.add_argument('--category_label'  , type=str, dest='category_label'  , help='label of a given category within this list'                    , default=None)
-  parser.add_argument('--ABCD_label'      , type=str, dest='ABCD_label'      , help='which ABCD regions?'                                           , default='cos2d_svprob')
-  parser.add_argument('--lumi_target'     , type=str, dest='lumi_target'     , help='which luminosity should the yields be normalised to?'          , default='41.599')
-  parser.add_argument('--sigma_B'         , type=str, dest='sigma_B'         , help='which value of the B cross section?'                           , default='472.8e9')
-  parser.add_argument('--sigma_mult'      , type=str, dest='sigma_mult'      , help='size n*sigma of the window around a given mass'                , default='20')
-  parser.add_argument('--weight_hlt'      , type=str, dest='weight_hlt'      , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
-  parser.add_argument('--qcd_white_list ' , type=str, dest='qcd_white_list'  , help='pthat range to consider for qcd samples'                       , default='20to300')
-  parser.add_argument('--add_weight_hlt'  ,           dest='add_weight_hlt'  , help='add hlt weight'                           , action='store_true', default=False)
-  parser.add_argument('--do_ABCD'         ,           dest='do_ABCD'         , help='compute yields with the ABCD method'      , action='store_true', default=False)
-  parser.add_argument('--do_ABCDHybrid'   ,           dest='do_ABCDHybrid'   , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
-  parser.add_argument('--do_TF'           ,           dest='do_TF'           , help='compute yields with the TF method'        , action='store_true', default=False)
-  parser.add_argument('--do_categories'   ,           dest='do_categories'   , help='compute yields in categories'             , action='store_true', default=False)
-  parser.add_argument('--add_Bc'          ,           dest='add_Bc'          , help='add the Bc samples'                       , action='store_true', default=False)
+  parser.add_argument('--outdirlabel'           , type=str, dest='outdirlabel'           , help='name of the outdir'                                            , default=None)
+  parser.add_argument('--subdirlabel'           , type=str, dest='subdirlabel'           , help='name of the subdir'                                            , default=None)
+  #parser.add_argument('--cardlabel'            , type=str, dest='cardlabel'             , help='label of the datacard'                                         , default=None)
+  parser.add_argument('--data_label'            , type=str, dest='data_label'            , help='which data samples to consider?'                               , default='V07_18Aug21')
+  parser.add_argument('--qcd_label'             , type=str, dest='qcd_label'             , help='which qcd samples to consider?'                                , default='V07_18Aug21')
+  parser.add_argument('--signal_label'          , type=str, dest='signal_label'          , help='which signal samples to consider?'                             , default='private')
+  parser.add_argument('--selection_label'       , type=str, dest='selection_label'       , help='apply a baseline selection_label?'                             , default='standard')
+  parser.add_argument('--categories_label '     , type=str, dest='categories_label'      , help='label of the list of categories'                               , default='standard')
+  parser.add_argument('--category_label'        , type=str, dest='category_label'        , help='label of a given category within this list'                    , default=None)
+  parser.add_argument('--ABCD_label'            , type=str, dest='ABCD_label'            , help='which ABCD regions?'                                           , default='cos2d_svprob')
+  parser.add_argument('--signal_model_label'    , type=str, dest='signal_model_label'    , help='name of the signal pdf'                                        , default='voigtiant')
+  parser.add_argument('--background_model_label', type=str, dest='background_model_label', help='name of the background pdf'                                    , default='chebychev')
+  parser.add_argument('--nbins'                 , type=str, dest='nbins'                 , help='number of bins when using shapes'                              , default='40')
+  parser.add_argument('--lumi_target'           , type=str, dest='lumi_target'           , help='which luminosity should the yields be normalised to?'          , default='41.599')
+  parser.add_argument('--sigma_B'               , type=str, dest='sigma_B'               , help='which value of the B cross section?'                           , default='472.8e9')
+  parser.add_argument('--sigma_mult'            , type=str, dest='sigma_mult'            , help='size n*sigma of the window around a given mass'                , default='20')
+  parser.add_argument('--weight_hlt'            , type=str, dest='weight_hlt'            , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
+  parser.add_argument('--qcd_white_list '       , type=str, dest='qcd_white_list'        , help='pthat range to consider for qcd samples'                       , default='20to300')
+  parser.add_argument('--CMStag '               , type=str, dest='CMStag'                , help='CMS tag to be added if --add_CMSlabel'                         , default='Preliminary')
+  parser.add_argument('--add_weight_hlt'        ,           dest='add_weight_hlt'        , help='add hlt weight'                           , action='store_true', default=False)
+  parser.add_argument('--do_ABCD'               ,           dest='do_ABCD'               , help='compute yields with the ABCD method'      , action='store_true', default=False)
+  parser.add_argument('--do_ABCDHybrid'         ,           dest='do_ABCDHybrid'         , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
+  parser.add_argument('--do_TF'                 ,           dest='do_TF'                 , help='compute yields with the TF method'        , action='store_true', default=False)
+  parser.add_argument('--do_realData'           ,           dest='do_realData'           , help='get the number of data yields'            , action='store_true', default=False)
+  parser.add_argument('--do_counting'           ,           dest='do_counting'           , help='perform counting experiment'              , action='store_true', default=False)
+  parser.add_argument('--do_shape_analysis'     ,           dest='do_shape_analysis'     , help='perform shape-based analysis'             , action='store_true', default=False)
+  parser.add_argument('--do_shape_TH1'          ,           dest='do_shape_TH1'          , help='perform shape-based analysis with histo'  , action='store_true', default=False)
+  parser.add_argument('--do_binned_fit'         ,           dest='do_binned_fit'         , help='perform binned fit when shape analysis'   , action='store_true', default=False)
+  parser.add_argument('--do_blind'              ,           dest='do_blind'              , help='perform blind fit when shape analysis'    , action='store_true', default=False)
+  parser.add_argument('--plot_pulls'            ,           dest='plot_pulls'            , help='plot pull distribution'                   , action='store_true', default=False)
+  parser.add_argument('--do_categories'         ,           dest='do_categories'         , help='compute yields in categories'             , action='store_true', default=False)
+  parser.add_argument('--add_Bc'                ,           dest='add_Bc'                , help='add the Bc samples'                       , action='store_true', default=False)
+  parser.add_argument('--plot_prefit'           ,           dest='plot_prefit'           , help='produce prefit plots'                     , action='store_true', default=False)
+  parser.add_argument('--add_CMSlabel'          ,           dest='add_CMSlabel'          , help='add CMS label'                            , action='store_true', default=False)
+  parser.add_argument('--add_lumilabel'         ,           dest='add_lumilabel'         , help='add CMS label'                            , action='store_true', default=False)
   #parser.add_argument('--submit_batch', dest='submit_batch', help='submit on the batch?', action='store_true', default=False)
   return parser.parse_args()
 
@@ -72,7 +88,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, outdirlabel='', subdirlabel=''):
+  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -83,6 +99,16 @@ class DatacardsMaker(Tools):
     self.do_ABCD = do_ABCD 
     self.do_ABCDHybrid = do_ABCDHybrid 
     self.do_TF = do_TF 
+    self.do_realData = do_realData 
+    self.do_counting = do_counting
+    self.do_shape_analysis = do_shape_analysis
+    self.do_shape_TH1 = do_shape_TH1
+    self.signal_model_label = signal_model_label
+    self.background_model_label = background_model_label
+    self.do_binned_fit = do_binned_fit
+    self.do_blind = do_blind
+    self.nbins = int(nbins)
+    self.plot_pulls = plot_pulls
     self.do_categories = do_categories
     self.categories = categories
     if do_categories and categories == None:
@@ -94,9 +120,15 @@ class DatacardsMaker(Tools):
     self.weight_hlt = weight_hlt
     self.add_weight_hlt = add_weight_hlt
     self.add_Bc = add_Bc
+    self.plot_prefit = plot_prefit
     self.outputdir = './outputs/{}/datacards/{}'.format(outdirlabel, subdirlabel)
     if not path.exists(self.outputdir):
       os.system('mkdir -p {}'.format(self.outputdir))
+    self.add_CMSlabel = add_CMSlabel
+    self.add_lumilabel = add_lumilabel
+    self.CMStag = CMStag
+  
+    ROOT.gROOT.SetBatch(True)
 
 
   def getWindowList(self):
@@ -123,15 +155,27 @@ class DatacardsMaker(Tools):
     if self.do_ABCD:
       background_yields = ComputeYields(data_files=self.data_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0] 
     elif self.do_ABCDHybrid:
-      background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0]
+      background_yields = 1e4 #ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromABCDHybrid(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0]
     elif self.do_TF:
       background_yields = ComputeYields(data_files=self.data_files, qcd_files=self.qcd_files, selection=background_selection, white_list=self.white_list).computeBkgYieldsFromMC(mass=mass, resolution=resolution, sigma_mult_window=self.sigma_mult)[0]
+    elif self.do_realData:
+      # get the number of (unblinded) data entries in the 2 sigma window
+      quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
+      treename = 'signal_tree'
+      tree_data = ROOT.TChain(treename)
+      for data_file in self.data_files:
+        tree_data.Add(data_file.filename) 
+      hist_name = 'data_hist'
+      data_hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
+      branch_name = 'hnl_mass'
+      selection_data = self.baseline_selection 
+      if self.do_categories: selection_data += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
+      tree_data.Project(hist_name, branch_name, selection_data)
+      background_yields = data_hist.Integral()
 
     if background_yields == 0.: background_yields = 1e-9
 
-    lumi_true = 0. #0.774 #data_file.lumi
-    for data_file in self.data_files:
-      lumi_true += data_file.lumi
+    lumi_true = self.tools.getDataLumi(self.data_files)
     if background_yields != 1e-9: background_yields = background_yields * self.lumi_target/lumi_true
 
     return background_yields
@@ -166,17 +210,195 @@ class DatacardsMaker(Tools):
       label = 'bhnl_incl_m_{}_v2_{}'.format(signal_mass, signal_coupling)
     else:
       label = 'bhnl_cat_{}_m_{}_v2_{}'.format(category.label, signal_mass, signal_coupling)
+    label = label.replace('.', 'p').replace('-', 'm')
     return label
+
+
+  def runFitter(self, signal_file, category, label):
+    '''
+      Run the parametric shapes and extract the yields
+    '''
+    # initialise the fitter
+    selection = self.baseline_selection
+    if self.do_categories:
+      selection += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
+
+    fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
+
+    # perform the fits and write the workspaces
+    fitter.process(label=label)
+
+    if self.plot_prefit:
+      fitter.producePrefitPlot(label=label)
+
+    # extract the background yields from the fit and normalise to lumi
+    background_yields = fitter.getBackgroundYieldsFromFit()
+    lumi_true = self.tools.getDataLumi(self.data_files)
+    background_yields = background_yields * self.lumi_target/lumi_true
+
+    # get the signal yields directly from the histogram
+    signal_yields = fitter.getSignalYieldsFromHist()
+
+    return signal_yields, background_yields
+
+
+  def createSigHisto(self, category, signal_file, signal_yields, label):
+    signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
+
+    rootfile_name = 'shape_{}.root'.format(label)
+    root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'RECREATE')  
+    root_file.cd()
+
+    sigma = signal_file.resolution
+    quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
+
+    treename = 'signal_tree'
+    f_signal = self.tools.getRootFile(signal_file.filename)
+    tree_signal = self.getTree(f_signal, treename)
+
+    weight_ctau = self.tools.getCtauWeight(signal_file)
+    weight_signal = self.tools.getSignalWeight(signal_file=signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target)
+    weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
+
+    signal_selection = 'ismatched==1 && {}'.format(self.baseline_selection)
+    if self.do_categories:
+      category_selection = category.definition_flat + ' && ' + category.cutbased_selection
+      signal_selection += ' && {}'.format(category_selection)
+    hist_sig = self.tools.createHisto(tree_signal, quantity, hist_name='sig', branchname='flat', selection=signal_selection, weight=weight_sig)
+
+    root_file.cd() 
+    hist_sig.Write()
+    root_file.Close()
+
+
+  def createBkgHisto(self, category, mass, resolution, background_yields, label):
+    rootfile_name = 'shape_{}.root'.format(label)
+    root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'UPDATE')  
+    root_file.cd()
+
+    quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
+
+    use_data=True
+    if use_data:
+      # background shape, taken from data for now
+      treename = 'signal_tree'
+      tree_bkg = ROOT.TChain(treename)
+      for data_file in self.data_files:
+        tree_bkg.Add(data_file.filename) 
+
+      background_selection = self.baseline_selection
+      if self.do_categories:
+        category_selection = category.definition_flat + ' && ' + category.cutbased_selection
+        background_selection += ' && {}'.format(category_selection)
+      hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='qcd', branchname='flat', selection=background_selection)
+
+      hist_bkg.Scale(background_yields/hist_bkg.Integral())
+
+    else:
+      # take shape from qcd mc
+      int_mc_tot = 0.
+      hist_bkg = ROOT.TH1D('qcd', 'qcd', quantity.nbins, quantity.bin_min, quantity.bin_max)
+      hist_bkg.Sumw2()
+
+      background_selection = baseline_selection
+      if self.do_categories:
+        category_selection = category.definition_flat + ' && ' + category.cutbased_selection
+        background_selection += ' && {}'.format(category_selection)
+
+      for ifile, qcd_file in enumerate(self.qcd_files):
+        qcd_file_pthatrange = self.tools.getPthatRange(qcd_file.label)
+        if qcd_file_pthatrange not in self.white_list: continue
+
+        f_qcd = ROOT.TFile.Open(qcd_file.filename, 'READ')
+        tree_qcd = self.getTree(f_qcd, 'signal_tree')
+        tree_run = self.getTree(f_qcd, 'run_tree')
+
+        weight_qcd = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
+        weight_qcd = '({})'.format(weight_qcd)
+        hist_qcd = self.tools.createHisto(tree_qcd, quantity, hist_name='hist_qcd', branchname='flat', selection=background_selection, weight=weight_qcd) 
+
+        int_mc_tot += hist_qcd.Integral()
+
+        hist_bkg.Add(hist_qcd)
+
+      hist_bkg.Scale(background_yields/int_mc_tot)
+
+    root_file.cd() 
+    hist_bkg.Write()
+    root_file.Close()
+
+
+  def createDataObsHisto(self, category, mass, resolution, label):
+    rootfile_name = 'shape_{}.root'.format(label)
+    root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'UPDATE')  
+    root_file.cd()
+
+    quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
+
+    treename = 'signal_tree'
+    tree_data = ROOT.TChain(treename)
+    for data_file in self.data_files:
+      tree_data.Add(data_file.filename) 
+    hist_name = 'data_obs'
+    data_hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
+    branch_name = 'hnl_mass'
+    selection_data = self.baseline_selection 
+    if self.do_categories: selection_data += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
+    tree_data.Project(hist_name, branch_name, selection_data)
+    data_hist.Scale(self.lumi_target/self.tools.getDataLumi(self.data_files))
+
+    root_file.cd()
+    data_hist.Write()
+    root_file.Close()
+
+    print '--> {}/{} created'.format(self.outputdir, rootfile_name)
 
 
   def writeCard(self, label, signal_yields, background_yields):
     datacard_name = 'datacard_{}.txt'.format(label)
+    if self.do_shape_analysis:
+      shape_line = 'shapes *    {lbl}  workspace_{lbl}.root workspace:$PROCESS'.format(
+          lbl = label,
+          )
+      norm_line = 'qcd_norm_{lbl}      rateParam   {lbl}   qcd   1.'.format(
+          lbl = label,
+          )
+      autostat_line = ''
+      #param_line = 'a0{lbl}  param   {val} {err}'.format(
+      #    lbl = label, 
+      #    val = 0.1,
+      #    err = 0.1,
+      #    )
+      bkg_syst_line = ''
+    elif self.do_shape_TH1:
+      shape_line = 'shapes *          {lbl}   shape_{lbl}.root   $PROCESS $PROCESS_$SYSTEMATIC'.format(
+          lbl = label,
+          )
+      norm_line = ''
+      autostat_line = '{lbl} autoMCStats 0 0 1'.format(
+          lbl = label,
+          )
+      bkg_syst_line = 'syst_bkg_{lbl}                             lnN           -                              1.3 '.format(
+          lbl = label,
+          )
+    else:
+      shape_line = ''
+      norm_line = ''
+      autostat_line = '{lbl} autoMCStats 0 0 1'.format(
+          lbl = label,
+          )
+      bkg_syst_line = 'syst_bkg_{lbl}                             lnN           -                              1.3 '.format(
+          lbl = label,
+          )
+
     datacard = open('{}/{}'.format(self.outputdir, datacard_name), 'w+')
     datacard.write(
 '''\
 imax 1 number of bins
 jmax 1 number of backgrounds
 kmax * number of nuisance parameters
+--------------------------------------------------------------------------------------------------------------------------------------------
+{shape_line} 
 --------------------------------------------------------------------------------------------------------------------------------------------
 bin               {lbl}
 observation       {obs}
@@ -188,14 +410,19 @@ rate                                                     {sig_yields}           
 --------------------------------------------------------------------------------------------------------------------------------------------
 lumi                                       lnN           1.025                          -   
 syst_sig_{lbl}                             lnN           1.3                            -    
-syst_bkg_{lbl}                             lnN           -                              1.3   
+{bkg_syst_line}   
 --------------------------------------------------------------------------------------------------------------------------------------------
-{lbl} autoMCStats 0 0 1
+{norm_line}
+{autostat_line}
 '''.format(
+            shape_line = shape_line,
             lbl = label,
             obs =  -1, # for the moment, we only look at blinded data
             sig_yields = signal_yields,
             bkg_yields = background_yields,
+            bkg_syst_line = bkg_syst_line,
+            norm_line = norm_line,
+            autostat_line = autostat_line,
         )
       )
 
@@ -221,31 +448,26 @@ bkg {bkg_yields}
 
 
   def process(self):
-    #baseline_selection = '(trgmu_mu_mass<3.03 || trgmu_mu_mass>3.15) && hnl_charge==0 && b_mass<5.5'
-    #baseline_selection = 'mu_isdsa!=1 && hnl_charge==0 && b_mass<6.4 && deltar_mu_pi>0.1 && deltar_mu_pi<1.7 && deltar_trgmu_mu<1 && deltar_trgmu_pi<1.5 && pi_pt>0.8'
-    #baseline_selection = 'trgmu_looseid==1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && ((mu_isglobalmuon==1 && mu_numberofstations>0 && mu_numberoftrackerlayers<18) || (mu_isglobalmuon!=1 && mu_calocompatibility>0.05 && mu_numberoftrackerlayers>6 && mu_numberoftrackerlayers<16 && mu_numberofvalidpixelhits<6))'
-    # for bkg TF method
-    #baseline_selection = 'mu_isdsa!=1 && b_mass<6.4 && hnl_cos2d>0.993 && sv_prob>0.05 && deltar_mu_pi>0.1 && deltar_mu_pi<1.7 && deltar_trgmu_mu<1 && deltar_trgmu_pi<1.5 && pi_pt>0.8'
-
-    #baseline_selection = 'hnl_charge==0 && b_mass<6.4 && deltar_mu_pi>0.1 && deltar_mu_pi<1.7 && deltar_trgmu_mu<1 && deltar_trgmu_pi<1.5 && pi_pt>0.8 && trgmu_looseid==1 && trgmu_softid==1 && mu_looseid==1 && mu_intimemuon==1 && mu_trackerhighpurityflag==1 && ((mu_isglobalmuon==1 && mu_numberofstations>0 && mu_numberoftrackerlayers<18) || (mu_isglobalmuon!=1 && mu_calocompatibility>0.05 && mu_numberoftrackerlayers>6 && mu_numberoftrackerlayers<16 && mu_numberofvalidpixelhits<6))' # used for sensitivity
-    #baseline_selection = 'mu_isdsa!=1 && hnl_charge==0 && b_mass<6.4 && deltar_mu_pi>0.1 && deltar_mu_pi<1.7 && deltar_trgmu_mu<1 && deltar_trgmu_pi<1.5 && pi_pt>0.8'
-    #baseline_selection = 'hnl_charge==0 && b_mass<6.4'
-
     for category in categories:
       if self.do_categories and 'incl' in category.label: continue
       if not self.do_categories and 'incl' not in category.label: continue
 
       if self.category_label != None and category.label != self.category_label: continue # needed for category parallelisation on the batch
 
+      #if category.label != 'lxy1to5_SS' and category.label != 'lxy0to1_SS': continue
+
       # loop on the different mass windows
       for window in self.getWindowList():
 
-        # get the background yields
-        background_yields = self.getBackgroundYields(mass=window['mass'], resolution=window['resolution'], category=category)
+        # get the background yields (if not shape analysis)
+        if not self.do_shape_analysis:
+          background_yields = self.getBackgroundYields(mass=window['mass'], resolution=window['resolution'], category=category)
 
         # loop on the signal points
         for signal_file in signal_files:
           if signal_file.mass != window['mass']: continue
+
+          #if signal_file.ctau != 0.1 and signal_file.ctau != 10.: continue
 
           # get the signal mass/coupling
           signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
@@ -253,8 +475,18 @@ bkg {bkg_yields}
           # get the process label
           label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
 
-          # get the signal yields
-          signal_yields = self.getSignalYields(signal_file=signal_file, category=category)
+          # get the signal yields (if not shape analysis)
+          if not self.do_shape_analysis:
+            signal_yields = self.getSignalYields(signal_file=signal_file, category=category)
+      
+          # get the model shape and yields for shape analysis
+          if self.do_shape_analysis:
+            signal_yields, background_yields = self.runFitter(signal_file=signal_file, category=category, label=label)
+
+          elif self.do_shape_TH1:
+            self.createSigHisto(category=category, signal_file=signal_file, signal_yields=signal_yields, label=label)
+            self.createBkgHisto(category=category, mass=window['mass'], resolution=window['resolution'], background_yields=background_yields, label=label)
+            self.createDataObsHisto(category=category, mass=window['mass'], resolution=window['resolution'], label=label)
 
           # create the datacard
           self.writeCard(label=label, signal_yields=signal_yields, background_yields=background_yields)
@@ -262,10 +494,6 @@ bkg {bkg_yields}
           # save yields summary
           self.writeYieldsForPlots(label=label, signal_yields=signal_yields, background_yields=background_yields)
 
-    # create plots
-    #if self.plot_prefit_binned:
-    #  self.plot(mass=window['mass'], category=category)
-          
 
 
 if __name__ == '__main__':
@@ -293,7 +521,15 @@ if __name__ == '__main__':
     do_ABCD = opt.do_ABCD
     do_ABCDHybrid = opt.do_ABCDHybrid
     do_TF = opt.do_TF
+    do_realData = opt.do_realData
     ABCD_regions = ABCD_regions[opt.ABCD_label]
+
+    signal_model_label = opt.signal_model_label
+    background_model_label = opt.background_model_label
+    do_binned_fit = opt.do_binned_fit
+    nbins = opt.nbins
+    do_blind = opt.do_blind
+    plot_pulls = opt.plot_pulls
 
     lumi_target = opt.lumi_target
     sigma_B = opt.sigma_B
@@ -303,8 +539,16 @@ if __name__ == '__main__':
     add_weight_hlt = opt.add_weight_hlt
     weight_hlt = opt.weight_hlt
 
+    do_counting = opt.do_counting
+    do_shape_analysis = opt.do_shape_analysis
+    do_shape_TH1 = opt.do_shape_TH1
     do_categories = opt.do_categories
     add_Bc = opt.add_Bc
+
+    plot_prefit = opt.plot_prefit
+    add_CMSlabel = opt.add_CMSlabel
+    add_lumilabel = opt.add_lumilabel
+    CMStag = opt.CMStag
 
     DatacardsMaker(
         data_files = data_files, 
@@ -312,6 +556,9 @@ if __name__ == '__main__':
         qcd_files = qcd_files,
         white_list = white_list,
         baseline_selection = baseline_selection, 
+        do_counting = do_counting,
+        do_shape_analysis = do_shape_analysis,
+        do_shape_TH1 = do_shape_TH1,
         do_categories = do_categories, 
         categories = categories, 
         category_label = opt.category_label, 
@@ -319,14 +566,25 @@ if __name__ == '__main__':
         do_ABCD = do_ABCD,
         do_ABCDHybrid = do_ABCDHybrid,
         do_TF = do_TF,
+        do_realData = do_realData,
+        signal_model_label = signal_model_label,
+        background_model_label = background_model_label,
+        do_binned_fit = do_binned_fit,
+        nbins = nbins,
+        do_blind = do_blind,
+        plot_pulls = plot_pulls,
         lumi_target = lumi_target,
         sigma_B = sigma_B,
         sigma_mult = sigma_mult,
         weight_hlt = weight_hlt,
         add_weight_hlt = add_weight_hlt,
         add_Bc = add_Bc, 
+        plot_prefit = plot_prefit,
         outdirlabel = outdirlabel,
         subdirlabel = subdirlabel,
+        add_CMSlabel = add_CMSlabel,
+        add_lumilabel = add_lumilabel,
+        CMStag = CMStag,
     ).process() 
 
   else:

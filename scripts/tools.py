@@ -125,6 +125,34 @@ class Tools(object):
     return weight
 
 
+  def getSignalWeight(self, signal_file, sigma_B, lumi, isBc=False):
+    '''
+      weight = sigma_B * lumi * v_square * BR(B->muNX) * BR(N->mupi) * filter_eff / N_mini   
+    '''
+    # coupling square
+    v_square = self.getVV(mass=signal_file.mass, ctau=signal_file.ctau, ismaj=True)
+
+    # production branching ratio
+    from decays import Decays 
+    dec = Decays(mass=signal_file.mass, mixing_angle_square=1) # we factorise the mixing angle 
+    if not isBc: BR_prod = dec.BR_tot_mu 
+    else: BR_prod = dec.BR_Bc_mu 
+
+    # decay branching ratio
+    BR_NToMuPi = self.gamma_partial(mass=signal_file.mass, vv=v_square) / self.gamma_total(mass=signal_file.mass, vv=v_square)
+
+    # number of generated events
+    filter_efficiency = signal_file.filter_efficiency if not isBc else signal_file.filter_efficiency_Bc
+    f = self.getRootFile(signal_file.filename)
+    tree_run = self.getTree(f, 'run_tree')
+    n_gen = self.getNminiAODEvts(tree_run)
+    n_generated = 0.5 * n_gen / filter_efficiency # 0.5 factor since samples were produced 50% muon 50% electron  
+
+    weight = sigma_B / 0.4 * lumi * v_square * BR_prod * BR_NToMuPi / n_generated 
+
+    return weight
+
+
   def getCtauWeight(self, signal_file):
     filename = signal_file.filename # might need to be modified later on for Bc
     #original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
@@ -245,6 +273,17 @@ class Tools(object):
     tag.DrawLatex(pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), cms_tag)      
     pad.Update()
 
+
+  def printLumiTag(self, pad, lumi, size=0.43, offset=0.57):
+    pad.cd()
+    tag = ROOT.TLatex()
+    tag.SetNDC()
+    lumi_text = str(round(lumi, 2)) + ' fb^{-1} (13 TeV)'
+    tag.SetTextFont(42)
+    tag.SetTextAlign(11) 
+    tag.SetTextSize(0.9*size*pad.GetTopMargin())    
+    tag.DrawLatex(pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), lumi_text)
+    pad.Update()
 
 
   #def getRatioGraph(self, hist1, hist2):

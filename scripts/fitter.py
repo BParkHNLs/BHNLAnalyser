@@ -1,194 +1,430 @@
+import os
+from os import path
 import ROOT
 from ROOT import RooFit
 
 from tools import Tools
+from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, filename='', file_type='flat', nbins=250, title=' ', outdirlabel='testing', label=''):
+  def __init__(self, signal_file='', data_files='', selection='', signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
-    self.filename = filename
+    self.signal_file = signal_file
+    self.data_files = data_files
+    self.selection = selection
+    self.signal_model_label = signal_model_label
+    self.background_model_label = background_model_label
+    self.do_binned_fit = do_binned_fit
+    self.do_blind = do_blind
+    self.lumi_target = lumi_target
+    self.lumi_true = self.tools.getDataLumi(self.data_files)
+    self.sigma_B = sigma_B
     self.file_type = file_type
-    self.nbins = nbins
+    self.nbins = int(nbins)
     self.title = title
-    self.outdirlabel = outdirlabel
-    self.label = label
+    self.plot_pulls = plot_pulls
+    self.workspacedir = outputdir #TODO adapt
+    if self.workspacedir == '':
+      self.workspacedir = './'
+    self.outputdir = outputdir
+    if self.outputdir != '': self.outputdir = self.outputdir + '/fits'
+    else: self.outputdir = './myPlots/fits/' + outdirlabel
+    if not path.exists(self.outputdir):
+      os.system('mkdir -p {}'.format(self.outputdir))
+    self.category_label = category_label
+    self.add_CMSlabel = add_CMSlabel
+    self.add_lumilabel = add_lumilabel
+    self.CMStag = CMStag
+    # define window sizes (multiples of sigma)
+    self.mass_window_size = 3
+    self.fit_window_size = 6
 
-  def performFit(self):
-    # open the file and get the tree
-    inputfile = ROOT.TFile.Open(self.filename)
-    treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
-    tree = self.tools.getTree(inputfile, treename)
+
+    signal_model_list = ['doubleCB', 'doubleCBPlusGaussian', 'voigtian']
+    if self.signal_model_label != None and self.signal_model_label not in signal_model_list:
+      raise RuntimeError('Unrecognised signal model "{}". Please choose among {}'.format(self.signal_model_label, signal_model_list))
+
+    background_model_list = ['chebychev']
+    if self.background_model_label != None and self.background_model_label not in background_model_list:
+      raise RuntimeError('Unrecognised background model "{}". Please choose among {}'.format(self.background_model_label, background_model_list))
+
+    #TODO there are no weights applied so far (incl. ctau, hlt, pu weights)
+    #TODO make sure that the data is normalised to the yields inserted in the datacard
+    #TODO make sure that the pdfs are named according to the process name in the datacard
+
+  def getRegion(self, nsigma=2):
+    signal_mass = self.signal_file.mass
+    signal_resolution = self.signal_file.resolution
+    bin_min = signal_mass - nsigma * signal_resolution
+    bin_max = signal_mass + nsigma * signal_resolution
+    return bin_min, bin_max
+
+
+  def getSignalLabel(self):
+    label = 'm{}_ctau_{}_{}'.format(self.signal_file.mass, self.signal_file.ctau, self.signal_model_label).replace('.', 'p') 
+    if self.category_label != '': label += '_{}'.format(self.category_label)
+    return label
+
+
+  def getBackgroundLabel(self):
+    label = 'm{}_{}'.format(self.signal_file.mass, self.background_model_label).replace('.', 'p') 
+    if self.category_label != '': label += '_{}'.format(self.category_label)
+    if self.do_blind: label += '_blind'
+    return label
+
+
+  def getQuantitySet(self):
+    '''
+      If performing unbinned fit, make sure that all variables used in the selection cuts
+      are defined here
+    '''
+    quantities = [
+      ROOT.RooRealVar('ismatched', 'ismatched', -2, 2),
+      ROOT.RooRealVar('hnl_pt', 'hnl_pt', 0., 13000.),
+      ROOT.RooRealVar('sv_lxy', 'sv_lxy', 0., 13000.),
+      ROOT.RooRealVar('trgmu_charge', 'trgmu_charge', -2, 2),
+      ROOT.RooRealVar('mu_charge', 'mu_charge', -2, 2),
+      ROOT.RooRealVar('trgmu_softid', 'trgmu_softid', -2, 2),
+      ROOT.RooRealVar('mu_looseid', 'mu_looseid', -2, 2),
+      ROOT.RooRealVar('pi_packedcandhashighpurity', 'pi_packedcandhashighpurity', -2, 2),
+      ROOT.RooRealVar('trgmu_mu_mass', 'trgmu_mu_mass', 0., 13000.),
+      ROOT.RooRealVar('hnl_charge', 'hnl_charge', -2, 2),
+      ROOT.RooRealVar('pi_pt', 'pi_pt', 0., 13000.),
+      ROOT.RooRealVar('sv_lxysig', 'sv_lxysig', 0., 13000.),
+      ROOT.RooRealVar('mu_dxysig', 'mu_dxysig', -13000., 13000.),
+      ROOT.RooRealVar('pi_dxysig', 'pi_dxysig', -13000., 13000.),
+    ]
+
+    quantity_set = ROOT.RooArgSet()
+    for quantity in quantities:
+      ROOT.SetOwnership(quantity, False)
+      quantity_set.add(quantity)
+
+    return quantity_set
+      
+    
+  def createFitModels(self, label='', do_recreate=True):
+    print ' --- Creating Fit Models --- '
+
+    # get the signal region
+    signal_mass = self.signal_file.mass
+    bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
+
+    self.hnl_mass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
+    #self.hnl_mass.setBins(self.nbins)
+
+    ### Signal Model ###
+
+    if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
+      self.mean_CB  = ROOT.RooRealVar("mean_CB","mean_CB", signal_mass)
+      self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", 0.01, 0.005, 0.15)
+
+      self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
+      self.n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
+      self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
+      self.n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
+
+      self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
+      self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
+
+      # defines the relative importance of the two CBs
+      self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5, 0.0 ,1.0)
+
+      if self.signal_model_label == 'doubleCB':
+        self.signal_model = ROOT.RooAddPdf("sig", "sig", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
+
+      if self.signal_model_label == 'doubleCBPlusGaussian':
+        self.sigma_gauss = ROOT.RooRealVar("sigma_gauss", "sigma_gauss", 0.01, 0.005, 0.15)
+        self.gaussian = ROOT.RooGaussian('gaussian', 'gaussian', self.hnl_mass, self.mean_CB, self.sigma_gauss)
+
+        # defines the relative importance of gaussian wrt doubleCB
+        self.sigfrac_gauss = ROOT.RooRealVar("sigfrac_gauss","sigfrac_gauss", 0.5, 0.0 ,1.0)
+
+        self.doubleCBpdf = ROOT.RooAddPdf("doubleCBpdf", "doubleCBpdf", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
+        self.signal_model = ROOT.RooAddPdf('sig', 'sig', self.doubleCBpdf, self.gaussian, self.sigfrac_gauss) # make sure that the model has the same name as in datacard 
+
+    elif self.signal_model_label == 'voigtian':
+      self.mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", signal_mass)
+      self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.01, 0., 5.)
+      self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.01, 0.005, 0.15)
+      self.signal_model = ROOT.RooVoigtian('sig', 'sig', self.hnl_mass, self.mean_voigtian, self.gamma_voigtian, self.sigma_voigtian)
+
+    ### Background Model ###
+
+    # Define the background model 
+    if self.background_model_label == 'chebychev':
+      self.n_bkg = ROOT.RooRealVar('n_bkg', 'n_bkg', 100, 0, 100000)
+      self.a0 = ROOT.RooRealVar('a0', 'a0', 0.01, -10, 10)
+      self.chebychev = ROOT.RooChebychev('chebychev', 'chebychev', self.hnl_mass, ROOT.RooArgList(self.a0))
+      self.background_model = ROOT.RooAddPdf('qcd', 'qcd', ROOT.RooArgList(self.chebychev), ROOT.RooArgList(self.n_bkg))
+      #a0 = ROOT.RooRealVar('a0', 'a0', -1.36, -1.52, -1.20)
+      #a1 = ROOT.RooRealVar('a1', 'a1', 0.53, 0.29, 0.76)
+      #a2 = ROOT.RooRealVar('a2', 'a2', -0.14, -0.32, 0.04)
+      #background_model = ROOT.RooChebychev('qcd', 'qcd', hnl_mass, ROOT.RooArgList(a0, a1, a2))
+
+    print '--> Models created'
+
+
+  def performFit(self, process, label=''):
+    '''
+      process corresponds to either 'signal' or 'background'
+    '''
+    print ' --- Running the fits --- '
+
+    if process not in ['signal', 'background', 'both']:
+      raise RuntimeError("[fitter] Unrecognised process. Please choose among ['signal', 'background', 'both']")
+
+    # get the label
+    if label == '' and process == 'signal': label = self.getSignalLabel() 
+    if label == '' and process == 'background': label = self.getBackgroundLabel() 
+    if label == '' and process == 'both': label = self.getSignalLabel() + '_' + self.getBackgroundLabel()
 
     # get signal mass
-    for entry in tree:
-      signal_mass = entry.gen_hnl_mass
-      #signal_mass = 3.0
-      break 
+    signal_mass = self.signal_file.mass
 
-    # we declare invariant mass as a RooRealVar (for the residual) and as a RooDataHist (for the fit):
-    binMin = signal_mass - 0.15*signal_mass
-    binMax = signal_mass + 0.15*signal_mass
-    nbins = self.nbins
+    # open the file and get the tree
+    treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
+    if process == 'signal' or process == 'both':
+      inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False)
+      tree_sig = self.tools.getTree(inputfile, treename)
+    if process == 'background' or process == 'both':
+      tree_data = ROOT.TChain(treename)
+      for data_file in self.data_files:
+        tree_data.Add(data_file.filename) 
 
-    hist = ROOT.TH1D("hist", "hist", nbins, binMin, binMax)
-    c1 = self.tools.createTCanvas(name='c1', dimx=700, dimy=600)
-    #tree->Draw("TMath::Sqrt(E1*E1 - px1*px1 - py1*py1 - pz1*pz1 + E2*E2 - px2*px2 - py2*py2 - pz2*pz2 + 2*E1*E2 - 2*px1*px2 -2*py1*py2 -2*pz1*pz2)>>hist", "pt1>13 && pt2>11")
-    branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
-    cond = 'ismatched==1 && mu_isdsa==0' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1 && Muon_isDSAMuon[BToMuMuPi_sel_mu_idx]==0'
-    tree.Draw("{}>>hist".format(branch_name), cond, 'goff')
+    # define ranges and binning
+    mass_window_min, mass_window_max = self.getRegion(nsigma=self.mass_window_size)
+    fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
 
-    mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", binMin, binMax)
-    mupi_invmass.setBins(nbins)
+    # define selection
+    cond_sig = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
+    selection_sig = cond_sig + ' && ' + self.selection
+    selection_bkg = self.selection
+    if self.do_blind:
+      selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
 
-    rdh = ROOT.RooDataHist("rdh", "rdh", ROOT.RooArgList(mupi_invmass), hist)
+    # define signal weights
+    weight_ctau = self.tools.getCtauWeight(self.signal_file)
+    weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_true)
+    weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
 
-    # Define the PDF to fit: 
-    # Double sided crystal ball
-    # we declare all the parameters needed for the fits	
-    mean_init = signal_mass - 0.01*signal_mass
-    mean_min = signal_mass - 0.05*signal_mass
-    mean_max = signal_mass + 0.05*signal_mass
-    mean  = ROOT.RooRealVar("mean","mean", mean_init, mean_min, mean_max)
+    if self.do_binned_fit:
+      # build the binned data
+      hist_name = 'hist'
+      hist = ROOT.TH1D(hist_name, hist_name, self.nbins, fit_window_min, fit_window_max)
+      branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
+      if process == 'signal' or process == 'both':
+        tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
+        rdh_sig = ROOT.RooDataHist("rdh_sig", "rdh_sig", ROOT.RooArgList(self.hnl_mass), hist)
+      if process == 'background' or process == 'both':
+        tree_data.Project(hist_name, branch_name , selection_bkg)
+        rdh_bkg = ROOT.RooDataHist("rdh_bkg", "rdh_bkg", ROOT.RooArgList(self.hnl_mass), hist)
+    else:
+      # get RooArgSet
+      quantity_set = self.getQuantitySet()
+      # add hnl_mass to the RooArgSet
+      ROOT.SetOwnership(self.hnl_mass, False)
+      quantity_set.add(self.hnl_mass)
+     
+      if process == 'signal' or process == 'both':
+        print '-> creating unbinned dataset'
+        rds_sig = ROOT.RooDataSet('rds_sig', 'rds_sig', tree_sig, quantity_set, selection)
+        print '-> unbinned dataset created'
+      if process == 'background' or process == 'both':
+        print '-> creating unbinned dataset'
+        rds_bkg = ROOT.RooDataSet('rds_bkg', 'rds_bkg', tree_bkg, quantity_set, selection)
+        print '-> unbinned dataset created'
 
-    sigma = ROOT.RooRealVar("sigma","sigma", 0.01, 0.005, 0.15)
-
-    alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
-    n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
-    alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
-    n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
-
-    CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", mupi_invmass, mean, sigma, alpha_1, n_1)
-    CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", mupi_invmass, mean, sigma, alpha_2, n_2)
-
-    # defines the relative importance of the two CBs
-    sigfrac = ROOT.RooRealVar("sigfrac","sigfrac", 0.5, 0.0 ,1.0)
-
-    # we add the two CB pdfs together
-    #RooAddPdf *signalPdf= new RooAddPdf("signalPdf", "signalPdf", RooArgList(*CBpdf_1, *CBpdf_2), *sigfrac) 
-    doubleCBpdf = ROOT.RooAddPdf("doubleCBpdf", "doubleCBpdf", CBpdf_1, CBpdf_2, sigfrac)
-
-    # background
-    #RooRealVar *tau = new RooRealVar("tau", "tau", -0.039, -0.045, 0.)
-    #tau->setConstant()
-    #RooExponential *ExpPdf = new RooExponential("ExpPdf", "ExpPdf", *mupi_invmass, *tau)
-
-    #RooRealVar *a0 = new RooRealVar("a1", "a1", 100, 90, 110)
-    #RooRealVar *a1 = new RooRealVar("a0", "a0", -0.05, -10, 0.)
-    #RooRealVar *a2 = new RooRealVar("a2", "a2", -0.09, -100, 0.)
-    #RooPolynomial *PolyPdf = new RooPolynomial("PolyPdf","PolyPdf", *mupi_invmass ,RooArgList(*a0,*a1))
-    #RooRealVar *bkgfrac  = new RooRealVar("bkgfrac","bkgfrac", 0.0 ,1.0)
-    #RooAddPdf *ExpPdf= new RooAddPdf("ExpPdf", "ExpPdf", RooArgList(*PolyPdf, *ExpPdf1), *bkgfrac) 
-
-    # model (signal + background)
-    #RooRealVar* nsig = new RooRealVar("nsig", "nsig", 200, 0, 1000000)
-    #RooRealVar* nbkg = new RooRealVar("nbkg", "nbkg", 500, 0, 1000000)
-
-    #RooRealVar* fsig = new RooRealVar("fsig", "fsig", 0, 1)
-
-    #RooAddPdf* model = new RooAddPdf("model","model" ,RooArgList(*signalPdf,*ExpPdf), *fsig)
-
-    # we define the frame where to plot
+    # create canvas
     canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
 
     # and the two pads
     pad1 = ROOT.TPad("pad1", "pad1", 0.01, 0.2, 0.99, 0.99)
     pad1.SetLeftMargin(0.15)
-    #pad1->SetLogx()
-    #pad1->SetLogy()
     pad2 = ROOT.TPad("pad2", "pad2", 0.01, 0.01, 0.99, 0.2)
     pad2.SetLeftMargin(0.15)
-    #pad2->SetLogx()
     pad1.Draw()
     pad2.Draw()
 
-    #RooPlot *frame = mupi_invmass->frame(Title(""))
-    frame = mupi_invmass.frame(ROOT.RooFit.Title(self.title))
+    frame = self.hnl_mass.frame(ROOT.RooFit.Title(self.title))
 
-    # plot the data
-    rdh.plotOn(frame, ROOT.RooFit.Name("data"))
+    # define fit ranges
+    self.hnl_mass.setRange("peak", mass_window_min, mass_window_max)
+    self.hnl_mass.setRange('full', fit_window_min, fit_window_max)
+    self.hnl_mass.setRange('sideband_left', fit_window_min, mass_window_min)
+    self.hnl_mass.setRange('sideband_right', mass_window_max, fit_window_max)
 
-    # fit the PDF to the data
-    #RooFitResult *result
-    #result = doubleCBpdf.fitTo(rdh)
-    fit_range_min = signal_mass - 0.1*signal_mass
-    fit_range_max = signal_mass + 0.1*signal_mass
-    mupi_invmass.setRange("peak", fit_range_min, fit_range_max)
-    result = doubleCBpdf.fitTo(rdh, ROOT.RooFit.Range("peak"))
+    if process != 'both':
+      # plot the data
+      if self.do_binned_fit:
+        if process == 'signal':
+          rdh_sig.plotOn(frame, ROOT.RooFit.Name("data_sig"))
+        if process == 'background':
+          rdh_bkg.plotOn(frame, ROOT.RooFit.Name("data_bkg"))
+      else:
+        if process == 'signal':
+          rds_sig.plotOn(frame, ROOT.RooFit.Name("data_sig"), ROOT.RooFit.Binning(self.nbins))
+        if process == 'background':
+          rds_bkg.plotOn(frame, ROOT.RooFit.Name("data_bkg"), ROOT.RooFit.Binning(self.nbins))
 
-    # plot the fit 		
-    #model->plotOn(frame,LineColor(2),RooFit::Name("CBpdf_1"),Components("CBpdf_1"))
-    #model->plotOn(frame,LineColor(3),RooFit::Name("CBpdf_2"),Components("CBpdf_2"))
-    #model->plotOn(frame,LineColor(6),RooFit::Name("signalPdf"),Components("signalPdf"))
-    #model->plotOn(frame,LineColor(2),RooFit::Name("ExpPdf"),Components("ExpPdf"), LineStyle(kDashed))
-    #model->plotOn(frame,LineColor(4),RooFit::Name("model"), Components("model"))
-    doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name("doubleCBpdf"), ROOT.RooFit.Components("doubleCBpdf"))
+      if process == 'signal': # or (process == 'background' and not self.do_blind):
+        fit_range = 'peak'
+      elif process == 'background' and not self.do_blind:
+        fit_range = 'full'
+      else:
+        fit_range = 'sideband_left,sideband_right'
+
+      # fit the PDF to the data
+      if process == 'signal':
+        if self.do_binned_fit:
+          result_sig = self.signal_model.fitTo(rdh_sig, ROOT.RooFit.Range(fit_range), ROOT.RooFit.SumW2Error(ROOT.kTRUE), ROOT.RooFit.Save())
+          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(ROOT.kOrange+7), ROOT.RooFit.Name('sig'), ROOT.RooFit.Components('sig'))
+        else:
+          result_sig = self.signal_model.fitTo(rds_sig, ROOT.RooFit.Range(fit_range))
+      else:
+        if self.do_binned_fit:
+          result_bkg = self.background_model.fitTo(rdh_bkg, ROOT.RooFit.Range(fit_range))
+        else:
+          result_bkg = self.background_model.fitTo(rds_bkg, ROOT.RooFit.Range(fit_range))
+
+      # plot the fit 		
+      pdf_name = 'sig' if process == 'signal' else 'qcd'
+      if process == 'signal':
+        if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
+          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2"),ROOT.RooFit.Components("CBpdf_2"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+          if self.signal_model_label == 'doubleCBPlusGaussian':
+            self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(6),ROOT.RooFit.Name("gaussian"),ROOT.RooFit.Components("gaussian"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+        self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name(pdf_name), ROOT.RooFit.Components(pdf_name))
+      else:
+        self.background_model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name(pdf_name), ROOT.RooFit.Components(pdf_name))
+
+
+    else: # fit both the signal and background
+      # start with the signal
+      # plot the data
+      if self.do_binned_fit:
+        rdh_sig.plotOn(frame, ROOT.RooFit.Name("data_sig"), ROOT.RooFit.DrawOption('B'), ROOT.RooFit.FillColor(ROOT.kOrange+7), ROOT.RooFit.FillStyle(3003), ROOT.RooFit.DataError(ROOT.RooAbsData.None), ROOT.RooFit.XErrorSize(0))
+        #rdh_sig.plotOn(frame, ROOT.RooFit.Name("data_sig"))
+      else:
+        rds_sig.plotOn(frame, ROOT.RooFit.Name("data_sig"), ROOT.RooFit.Binning(self.nbins), ROOT.RooFit.DrawOption('B'), ROOT.RooFit.FillColor(ROOT.kOrange+7), ROOT.RooFit.FillStyle(3003), ROOT.RooFit.DataError(ROOT.RooAbsData.None), ROOT.RooFit.XErrorSize(0))
+
+      # fit the signal  
+      if self.do_binned_fit:
+        result_sig = self.signal_model.fitTo(rdh_sig, ROOT.RooFit.Range('peak'), ROOT.RooFit.SumW2Error(ROOT.kTRUE), ROOT.RooFit.Save())
+      else:
+        result_sig = self.signal_model.fitTo(rds_sig, ROOT.RooFit.Range('peak'))
+
+      # plot the fit
+      if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
+        self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+        self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2"),ROOT.RooFit.Components("CBpdf_2"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+        if self.signal_model_label == 'doubleCBPlusGaussian':
+          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(6),ROOT.RooFit.Name("gaussian"),ROOT.RooFit.Components("gaussian"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+      self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(ROOT.kOrange+7), ROOT.RooFit.Name('sig'), ROOT.RooFit.Components('sig'))
+
+      # then the background
+      # plot the data
+      if self.do_binned_fit:
+        rdh_bkg.plotOn(frame, ROOT.RooFit.Name("data_bkg"))
+      else:
+        rds_bkg.plotOn(frame, ROOT.RooFit.Name("data_bkg"), ROOT.RooFit.Binning(self.nbins))
+
+      # fit the background
+      if not self.do_blind: fit_range = 'full'
+      else: fit_range = 'sideband_left,sideband_right'
+      if self.do_binned_fit:
+        result_bkg = self.background_model.fitTo(rdh_bkg, ROOT.RooFit.Range(fit_range))
+      else:
+        result_bkg = self.background_model.fitTo(rds_bkg, ROOT.RooFit.Range(fit_range))
+
+      # plot the fit
+      self.background_model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name('qcd'), ROOT.RooFit.Components('qcd'))
 
     # and write the fit parameters
-    #model->paramOn(frame,   
-    doubleCBpdf.paramOn(frame,   
-         #ROOT.RooFit.Layout(0.67, 0.87, 0.85),
-         ROOT.RooFit.Layout(0.2, 0.4, 0.8),
-         ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
-         )
+    if process != 'both':
+      if process == 'signal':
+        self.signal_model.paramOn(frame,   
+             ROOT.RooFit.Layout(0.2, 0.4, 0.8),
+             ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
+             )
+      if process == 'background':
+        self.background_model.paramOn(frame,   
+             ROOT.RooFit.Layout(0.2, 0.4, 0.8),
+             ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
+             )
+      frame.getAttText().SetTextSize(0.03)
+      frame.getAttLine().SetLineColorAlpha(0, 0)
+      frame.getAttFill().SetFillColorAlpha(0, 0)
+    else:
+      self.signal_model.paramOn(frame,   
+           ROOT.RooFit.Layout(0.2, 0.3, 0.8),
+           ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
+           )
+      frame.getAttText().SetTextSize(0.03)
+      frame.getAttLine().SetLineColorAlpha(0, 0)
+      frame.getAttFill().SetFillColorAlpha(0, 0)
 
-    frame.getAttText().SetTextSize(0.03)
-    frame.getAttLine().SetLineColorAlpha(0, 0)
-    frame.getAttFill().SetFillColorAlpha(0, 0)
+      self.background_model.paramOn(frame,   
+           ROOT.RooFit.Layout(0.2, 0.3, 0.65),
+           ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
+           )
+      frame.getAttText().SetTextSize(0.03)
+      frame.getAttLine().SetLineColorAlpha(0, 0)
+      frame.getAttFill().SetFillColorAlpha(0, 0)
 
-    # we compute the chisquare
-    chisquare = frame.chiSquare("doubleCBpdf","data")
+    # compute the chisquare
+    if process != 'both':
+      if process == 'signal':
+        chisquare = frame.chiSquare("sig","data_sig")
+      else:
+        chisquare = frame.chiSquare("qcd","data_bkg")
 
     # and print it
-    #label1 = ROOT.TPaveText(0.2,0.75,0.3,0.85,"brNDC")
     label1 = ROOT.TPaveText(0.62,0.65,0.72,0.8,"brNDC")
     label1.SetBorderSize(0)
     label1.SetFillColor(ROOT.kWhite)
     label1.SetTextSize(0.03)
     label1.SetTextFont(42)
     label1.SetTextAlign(11)
-    #label1->AddText("Double-Sided CrystalBall PDF")
-    #chi2 = to_string(chisquare)
-    #label1.AddText('#chi^{2}/ndof = {}'.format(chisquare))
-    qte = '#chi^{2}/ndof'
-    label1.AddText('Double sided Crystal Ball')
-    label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
-    print "chisquare = {}".format(chisquare)
+    if process == 'signal' or process == 'both':
+      label_text = 'mass {}GeV, ctau {}mm'.format(signal_mass, self.signal_file.ctau)
+    else: 
+      label_text = 'Mass window around {}GeV'.format(signal_mass)
+    label1.AddText(label_text)
+    if process != 'both':
+      qte = '#chi^{2}/ndof'
+      label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
+      print "chisquare = {}".format(chisquare)
 
-    # we add the legend
-    '''
-    TLegend* leg = new TLegend(0.2, 0.15, 0.3, 0.35)
-    #leg->AddEntry(frame->findObject("CBpdf_1"), "CB_1")
-    #leg->AddEntry(frame->findObject("CBpdf_2"), "CB_2")
-    #leg->AddEntry(frame->findObject("signalPdf"), "signal")
-    leg->AddEntry(frame->findObject("ExpPdf"), "bkg")
-    leg->AddEntry(frame->findObject("model"), "signal+bkg")
-    leg->SetTextSize(0.03)
-    leg->SetTextFont(42)
-    leg->SetTextAlign(11)
-    leg->SetLineColor(0)
-    leg->SetFillColorAlpha(0, 0)
-    leg->SetBorderSize(0)
-    '''
-
-    # We define and plot the residuals 		
-    # construct a histogram with the pulls of the data w.r.t the curve
-    #RooHist* hpull = frame->residHist()
-    # pull is same as residuals, but is furthermore divided by the low y error in each bin
-    #RooHist* hpull = frame->pullHist()
-    hpull = frame.pullHist()
-    for i in range(0, frame.GetNbinsX()):
-       hpull.SetPointError(i,0,0,0,0)
-    #for(int i(0) i<frame->GetNbinsX() ++i)
-    #{
-    #    hpull->SetPointError(i,0,0,0,0)
-    #}
-
-    # create a new frame to draw the pull distribution and add the distribution to the frame
-    #RooPlot* frame2 = mupi_invmass->frame(Title(" "))
-    frame2 = mupi_invmass.frame(ROOT.RooFit.Title(" "))
-    #frame2->addPlotable(hpull,"P")#,"E3")
-    frame2.addPlotable(hpull,"P")#,"E3")
-
+    # We define and plot the pull 		
+    if process != 'both':
+      if process == 'background' and self.do_blind:
+        curve1 = frame.getObject(1)
+        curve2 = frame.getObject(2)
+        datahist = frame.getHist('data_bkg')
+        hpull1 = datahist.makePullHist(curve1, True)
+        hpull2 = datahist.makePullHist(curve2, True)
+        frame2 = self.hnl_mass.frame(ROOT.RooFit.Title(" "))
+        frame2.addPlotable(hpull1,"P")
+        frame2.addPlotable(hpull2,"P")
+        hpull = frame.pullHist() # needed to get pull distribution
+      else:
+        hpull = frame.pullHist()
+        for i in range(0, frame.GetNbinsX()):
+           hpull.SetPointError(i,0,0,0,0)
+        frame2 = self.hnl_mass.frame(ROOT.RooFit.Title(" "))
+        frame2.addPlotable(hpull,"P")
+    else:
+      curve1 = frame.getObject(3)
+      curve2 = frame.getObject(4)
+      datahist = frame.getHist('data_bkg')
+      hpull1 = datahist.makePullHist(curve1, True)
+      hpull2 = datahist.makePullHist(curve2, True)
+      frame2 = self.hnl_mass.frame(ROOT.RooFit.Title(" "))
+      frame2.addPlotable(hpull1,"P")
+      frame2.addPlotable(hpull2,"P")
+      hpull = frame.pullHist() # needed to get pull distribution
 
     # plot of the curve and the fit
     canv.cd()
@@ -200,8 +436,32 @@ class Fitter(Tools):
     frame.GetYaxis().SetTitleOffset(1.1)
     frame.Draw()
     label1.Draw()
-    #leg.Draw()
 
+    # add the legend
+    if process != 'both':
+      leg = self.tools.getRootTLegend(xmin=0.6, ymin=0.4, xmax=0.8, ymax=0.6, size=0.03, do_alpha=True)
+      if process == 'signal':
+        if self.signal_model_label == 'doubleCB':
+          model_label = 'Double Crystal Ball'
+        elif self.signal_model_label == 'doubleCBPlusGaussian':
+          model_label = 'Double Crystal Ball + Gaussian'
+        elif self.signal_model_label == 'voigtian':
+          model_label = 'Voigtian'
+        leg.AddEntry(frame.findObject(pdf_name), model_label)
+        if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
+          leg.AddEntry(frame.findObject('CBpdf_1'), 'CB_1')
+          leg.AddEntry(frame.findObject('CBpdf_2'), 'CB_2')
+          if self.signal_model_label == 'doubleCBPlusGaussian':
+            leg.AddEntry(frame.findObject('gaussian'), 'Gaussian')
+      else:
+        if self.background_model_label == 'chebychev':
+          model_label = 'Chebychev'
+        leg.AddEntry(frame.findObject(pdf_name), model_label)
+      leg.Draw()
+
+    # add the labels
+    if self.add_CMSlabel: self.tools.printCMSTag(pad1, self.CMStag, size=0.5)
+    if self.add_lumilabel: self.tools.printLumiTag(pad1, self.lumi_true, size=0.5, offset=0.55)
 
     # plot of the residuals
     pad2.cd()
@@ -218,44 +478,50 @@ class Fitter(Tools):
     frame2.GetXaxis().SetLabelOffset(5)	
     frame2.Draw()
 
+    bin_min = fit_window_min
+    bin_max = fit_window_max
     line = ROOT.TLine()
-    line.DrawLine(binMin,0,binMax,0)
+    line.DrawLine(bin_min,0,bin_max,0)
     line.SetLineColor(2)
-    line.DrawLine(binMin,-3,binMax,-3)
-    line.DrawLine(binMin,3,binMax,3)
+    line.DrawLine(bin_min,-3,bin_max,-3)
+    line.DrawLine(bin_min,3,bin_max,3)
 
     # save output
     canv.cd()
-    outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
-    canv.SaveAs("{}/fit_{}.png".format(outputdir, label))
-    canv.SaveAs("{}/fit_{}.pdf".format(outputdir, label))
-
-    #delete hist
-    #delete canv
+    if process == 'signal':
+      plot_label = self.getSignalLabel() 
+    elif process == 'background': 
+      plot_label = self.getBackgroundLabel()
+    else:
+      plot_label = self.getBackgroundLabel() + '_' + self.getSignalLabel()
+    canv.SaveAs("{}/{}_fit_{}.png".format(self.outputdir, process, plot_label))
+    canv.SaveAs("{}/{}_fit_{}.pdf".format(self.outputdir, process, plot_label))
 
     # additionally, get the pull histogram
+    if self.plot_pulls and process != 'both':
+      self.getPullDistribution(process, hpull, plot_label)
+
+    print ' --- End Run fit --- '
+
+
+  def getPullDistribution(self, process, hpull, label):
+    '''
+      Create pull distribution and fit it with a Gaussian
+    '''
     canv_pull = self.tools.createTCanvas(name="canv_pull", dimx=700, dimy=600)
-   
     hist_pull = ROOT.TH1D("hist_pull", "hist_pull", 120, -5, 5)
+
+    if process == 'signal': # or (process == 'background' and not self.do_blind):
+      bin_min, bin_max = self.getRegion(nsigma=self.mass_window_size)
+    else:
+      bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
    
     for i in range(0, hpull.GetN()):
-    #for(Int_t i=0 i<hpull->GetN() i++) {
- 
-      #Double_t x,point
-      #hpull->GetPoint(i,x,point) 
-      #x = 0.
       x = ROOT.Double()
-      #point = 0.
       point = ROOT.Double()
       hpull.GetPoint(i,x,point) 
-      if x<binMin or x>binMax: continue
-
-      #if (x<binMin || x>binMax) continue 
-
-      #cout << x << " " << point << endl
-      #hist_pull->Fill(point)
+      if x<bin_min or x>bin_max: continue
       hist_pull.Fill(point)
-   #}
 
     hist_pull.SetTitle("")
     hist_pull.SetLineColor(4)
@@ -275,200 +541,206 @@ class Fitter(Tools):
     hist_pull.Draw()
 
     # and fit it
-    #TF1* fgauss= new TF1("fgauss", "gaus", -5, 5)
     fgauss= ROOT.TF1("fgauss", "gaus", -5, 5)
     fgauss.SetLineColor(2)
     hist_pull.Fit("fgauss")
     fgauss.Draw("same")
     ROOT.gStyle.SetOptFit(0011)
    
-    #canv_pull.SaveAs("test.png")  
-    canv_pull.SaveAs("{}/pulls_{}.png".format(outputdir, label))
-    canv_pull.SaveAs("{}/pulls_{}.pdf".format(outputdir, label))
+    canv_pull.SaveAs("{}/{}_pulls_{}.png".format(self.outputdir, process, label))
+    canv_pull.SaveAs("{}/{}_pulls_{}.pdf".format(self.outputdir, process, label))
+
+
+  def getBackgroundYieldsFromFit(self):
+    # one has to make sure that the fit was run beforehand
+    n_bkg = self.n_bkg.getVal()
+    if n_bkg ==  100.:
+      raise RuntimeError('[fitter] It seems like the fit was not performed. Please check. \n-->Aborting')
+    # the following not needed if we keep the sidebands
+    #if self.do_blind:
+    #  n_bkg = n_bkg * self.mass_window_size / self.fit_window_size
+    return n_bkg
+
+
+  #def getBackgroundYieldsFromFit(self):
+  #  self.createFitModels()
+  #  self.performFit(process='background', label=label)
+  #  n_bkg = self.n_bkg.getVal()
+  #  # the following not needed if we keep the sidebands
+  #  #if self.do_blind:
+  #  #  n_bkg = n_bkg * self.mass_window_size / self.fit_window_size
+  #  return n_bkg
+
+
+  def getSignalYieldsFromHist(self):
+    '''
+      Returns the normalised number of signal yields in the fit window
+    '''
+
+    # define ranges and binning
+    fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
+
+    # get the tree
+    inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False)
+    treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
+    tree_sig = self.tools.getTree(inputfile, treename)
+
+    # define selection
+    cond_sig = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
+    selection_sig = cond_sig + ' && ' + self.selection
+
+    # define signal weights
+    weight_ctau = self.tools.getCtauWeight(self.signal_file)
+    weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target)
+    weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
+
+    # create histogram
+    hist_name = 'hist_signal'
+    hist = ROOT.TH1D(hist_name, hist_name, self.nbins, fit_window_min, fit_window_max)
+    branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
+    tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
+
+    # get the number of yields
+    n_sig = hist.Integral()
+
+    return n_sig
+
+
+  def createWorkspace(self, label=''):
+    print ' --- Creating Fit Workspace --- '
+
+    if label == '': label = self.getSignalLabel()
+
+    # getting the observed data #TODO create function
+    treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
+    tree = ROOT.TChain(treename)
+    for data_file in self.data_files:
+      tree.Add(data_file.filename) 
+
+    # create binned dataset
+    bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
+    hist_name = 'hist'
+    hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
+    branch_name = 'hnl_mass'
+    tree.Project(hist_name, branch_name, self.selection)
+    # normalise to the target luminosity
+    hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
+    data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(self.hnl_mass), hist)
+
+    #data_obs = ROOT.RooDataSet("data_obs", "data_obs", ROOT.RooArgSet(self.hnl_mass)) #TODO for the moment does not contain sensible data
+
+    # create unbinned dataset
+    #quantity_set = self.getQuantitySet()
+    # add hnl_mass to the RooArgSet
+    #quantity_set.add(self.hnl_mass)
+    #print '-> creating unbinned dataset'
+    #data_obs = ROOT.RooDataSet('data_obs', 'data_obs', tree, quantity_set, self.selection)
+    #print '-> unbinned dataset created'
+    
+    # import the model in a workspace
+    workspace_filename = '{}/workspace_{}.root'.format(self.workspacedir, label)
+    output_file = ROOT.TFile(workspace_filename, 'RECREATE')
+    workspace = ROOT.RooWorkspace('workspace', 'workspace')
+
+    # create factory
+    bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size) # sidebands are included
+    workspace.factory('hnl_mass[{}, {}]'.format(bin_min, bin_max)) #TODO instead use the sigma from the fit
+    if self.signal_model_label == 'voigtian':
+      workspace.factory('RooVoigtian::sig(hnl_mass, mean_voigtian[{m}], gamma_voigtian[{g}], sigma_voigtian[{s}])'.format(
+            m = self.mean_voigtian.getVal(),
+            g = self.gamma_voigtian.getVal(),
+            s = self.sigma_voigtian.getVal(),
+            )
+          )
+    if self.background_model_label == 'chebychev':
+      #workspace.factory('RooChebychev::qcd(hnl_mass, a0{lbl}[{ini}, {down}, {up}])'.format(
+      workspace.factory('RooChebychev::qcd(hnl_mass, a0[{ini}, {down}, {up}])'.format(
+            lbl = label,
+            ini = self.a0.getVal(),
+            down = self.a0.getVal() - self.a0.getError(),
+            #down = self.a0.getError(),
+            up = self.a0.getVal() + self.a0.getError(),
+            #up = self.a0.getError(),
+            )
+          )
+      #workspace.factory('RooChebychev::qcd(hnl_mass, a0[{ini}])'.format(
+      #      ini = self.a0.getVal(),
+      #      )
+      #    )
+
+    it = workspace.allVars().createIterator() 
+    all_vars = [it.Next() for _ in range( workspace.allVars().getSize())] 
+    for var in all_vars: 
+      var.setBins(self.nbins)
+      if var.GetName() in ['mean_voigtian', 'gamma_voigtian', 'sigma_voigtian']: 
+        var.setConstant()
+
+    getattr(workspace, 'import')(data_obs)
+    workspace.Write()
+    workspace.Print()
+    output_file.Close()
+
+    print '--> {} created'.format(workspace_filename)
+
+
+  def producePrefitPlot(self, label=''):
+    self.createFitModels()
+    self.performFit(process='both', label=label)
+
+
+  def process(self, label=''):
+    self.createFitModels()
+    self.performFit(process='signal', label=label)
+    self.performFit(process='background', label=label)
+    self.createWorkspace(label=label)
+
+
 
 
 if __name__ == '__main__':
-  #ROOT.gROOT.SetBatch(True)
+  ROOT.gROOT.SetBatch(True)
 
-  #inputfile = ROOT.TFile.Open("/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_standardgenmatching.root")
-  #TFile* inputfile = TFile::Open("/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_updatedgenmatching_mu_0p1_0p25_pi_0p15_0p5_massreldiff_0p1.root")
+  outdirlabel = 'V10_30Dec21_samples_sel'
+  plot_pulls = True
+  #selection = 'sv_lxy>5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.3 && sv_lxysig>100 && abs(mu_dxysig)>15 && abs(pi_dxysig)>20 '
+  selection = 'sv_lxy>1 && sv_lxy<=5 && trgmu_charge==mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.2 && sv_lxysig>100 && abs(mu_dxysig)>12 && abs(pi_dxysig)>25'
+  signal_model_label = 'voigtian'
+  signal_files = signal_samples['V10_30Dec21_m3'] 
+  background_model_label = 'chebychev'
+  data_files = data_samples['V10_30Dec21']
+  do_blind = True
+  do_binned_fit = True
+  nbins = 30
+  lumi_target = 5.302
+  sigma_B = 472.8e9
+  add_CMSlabel = True
+  add_lumilabel = True
+  CMStag = 'Preliminary'
 
-  #outdirlabel = 'dsamuon_study'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_dsamuons_dr0p25.root'
-  #title = 'DSA Muons'
-  #label = 'dsa_muons'
-  #fitter = Fitter(filename=filename, file_type='nano', nbins=150, title=title, outdirlabel=outdirlabel, label=label)
-  #fitter = Fitter(filename=filename, file_type='nano', nbins=90, title=title, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  label = 'test'
+  for signal_file in signal_files:
+    if signal_file.ctau != 0.1: continue
+    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag)
+    #fitter.writeSignalModel(label='test')
+    #fitter.writeBackgroundModel(label='test')
+    #fitter.createFitWorkspace()
+    #fitter.writeFitModels(label='test')
+    #fitter.performFit(process='signal', label='test')
+    #fitter.performFit(process='background', label='test')
+    fitter.process()
+    #fitter.producePrefitPlot()
+    #print fitter.getSignalYieldsFromHist()
 
-  outdirlabel = 'Bc_29Jun21'
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_Bc/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root'
-  label = 'm3'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+  #fitter.performBackgroundFit(mass=3, resolution=0.023)
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21_Bc/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_29Jun21.root'
-  label = 'm4p5'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #selection = 'sv_lxy<=1 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.1 && sv_lxysig>30 && abs(mu_dxysig)>5 && abs(pi_dxysig)>10'
+  #fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+  #fitter.performBackgroundFit(mass=3, resolution=0.023)
 
-  outdirlabel = 'dsa_study'
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_fittedmass_looseselection_originalmatching.root'
-  label = 'unresolved_fittedmass_looseselection_originalmatching_nodsa'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
+  #selection = 'sv_lxy>1 && sv_lxy<=5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.2 && sv_lxysig>100 && abs(mu_dxysig)>12 && abs(pi_dxysig)>25'
+  #fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
+  #fitter.performBackgroundFit(mass=3, resolution=0.023)
 
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_resolved_motherpdgid_unfittedmass.root'
-  label = 'resolved_nodsa'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  outdirlabel = 'matching_study_resolved_vs_unresolved'
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_29Jun21.root'
-  label = 'resolved_nodsa'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_18Aug21.root'
-  label = 'unresolved_nodsa'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  outdirlabel = 'check_central_samples'
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V01_selected/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root'
-  label = 'm3_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V01_selected/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root'
-  label = 'm4p5_ctau1'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-
-  outdirlabel = 'central_samples'
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm1_ctau1000'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm1_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm1_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm1p5_ctau1000'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm1p5_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN1p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm1p5_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm2_ctau1000'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm2_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN2p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm2_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm3_ctau1000'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm3_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm3_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm3_ctau1'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm4p5_ctau100'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm4p5_ctau10'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm4p5_ctau1'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V09_06Nov21/BToNMuX_NToEMuPi_SoftQCD_b_mN4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Nov21.root'
-  label = 'm4p5_ctau0p1'
-  fitter = Fitter(filename=filename, nbins=150, outdirlabel=outdirlabel, label=label)
-  fitter.performFit()
-
-  #outdirlabel = 'genmatching_comparison'
-
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_selected_updatedgenmatching.root'
-  #title = 'Updated gen-matching'
-  #label = 'V20_emu_updatedgenmatching'
-  #fitter = Fitter(filename=filename, nbins=150, title=title, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/flat_bparknano_selected_initialgenmatching.root'
-  #title = 'Initial gen-matching'
-  #label = 'V20_emu_initialgenmatching'
-  #fitter = Fitter(filename=filename, nbins=150, title=title, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_selected_updatedgenmatching.root'
-  #title = 'Updated gen-matching'
-  #label = 'V21_updatedgenmatching'
-  #fitter = Fitter(filename=filename, nbins=150, title=title, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/flat_bparknano_selected_initialgenmatching.root'
-  #title = 'Initial gen-matching'
-  #label = 'V21_initialgenmatching'
-  #fitter = Fitter(filename=filename, nbins=150, title=title, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_selected_updatedgenmatching.root'
-  #title = 'Updated gen-matching'
-  #label = 'V26_updatedgenmatching'
-  #fitter = Fitter(filename=filename, nbins=150, title=title, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
-
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/flat_bparknano_selected_initialgenmatching.root'
-  #title = 'Initial gen-matching'
-  #label = 'V26_initialgenmatching'
-  #fitter = Fitter(filename=filename, nbins=150, title=title, outdirlabel=outdirlabel, label=label)
-  #fitter.performFit()
 
 

@@ -11,15 +11,15 @@ sys.path.append('./cfgs')
 
 #"----------------User's decision board-----------------"
 
-output_label = 'V09_06Nov21'
-tag = 'cos2d_svprob_0p996_3cat_0_1_5_significance_study_Nov21_2sigmawindow_ABCDHybrid_fullA'
-cfg_filename = '06Nov21_cfg.py'
-submit_batch = False
+output_label = 'V10_30Dec21'
+tag = 'shape_analysis_fulllumi_nbins50_window6_v1'
+cfg_filename = 'V10_30Dec21_cfg.py'
+submit_batch = True
 do_plotter = False
 do_datacards = True
 do_limits = True
 
-###
+### in do_limits
 do_combine_datacards = True
 do_produce_limits = True
 do_plot_limits = True
@@ -120,7 +120,7 @@ class BHNLLauncher(object):
         'cp -r ./limits/*py $workdir',
         'cp -r ./objects/*py $workdir',
         'cp -r ./data $workdir/..',
-        '{}'.format('cp -r ./outputs/{}/datacards/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_combine_datacards else ''),
+        '{}'.format('cp -r ./outputs/{}/datacards/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
         '{}'.format('cp -r ./outputs/{}/datacards_combined/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
         '{}'.format('cp -r ./outputs/{}/limits/{}/results $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_plot_limits else ''),
         'cd $workdir',
@@ -196,8 +196,8 @@ class BHNLLauncher(object):
       if not path.exists(logdir_name):
         os.system('mkdir -p {}'.format(logdir_name))
 
-      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
-      command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
+      #command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
           ld = logdir_name,
           lbl=label,
           ) 
@@ -224,17 +224,31 @@ class BHNLLauncher(object):
         '--categories_label {}'.format(self.cfg.categories_label),
         '--category_label {}'.format(category.label),
         '--ABCD_label {}'.format(self.cfg.ABCD_label),
+        '--signal_model_label {}'.format(self.cfg.signal_model_label),
+        '--background_model_label {}'.format(self.cfg.background_model_label),
+        '--nbins {}'.format(self.cfg.nbins),
         '--lumi_target {}'.format(self.cfg.lumi_target),
         '--sigma_B {}'.format(self.cfg.sigma_B),
         '--sigma_mult {}'.format(self.cfg.sigma_mult_window),
         '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
         #'--weight_pu {}'.format(self.cfg.branch_weight_pu),
+        '--CMStag {}'.format(self.cfg.CMStag),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
         '{}'.format('--do_ABCD' if self.cfg.do_ABCD else ''),
         '{}'.format('--do_ABCDHybrid' if self.cfg.do_ABCDHybrid else ''),
         '{}'.format('--do_TF' if self.cfg.do_TF else ''),
+        '{}'.format('--do_realData' if self.cfg.do_realData else ''),
+        '{}'.format('--do_counting' if self.cfg.do_counting else ''),
+        '{}'.format('--do_shape_analysis' if self.cfg.do_shape_analysis else ''),
+        '{}'.format('--do_shape_TH1' if self.cfg.do_shape_TH1 else ''),
+        '{}'.format('--do_binned_fit' if self.cfg.do_binned_fit else ''),
+        '{}'.format('--do_blind' if self.cfg.do_blind else ''),
+        '{}'.format('--plot_pulls' if self.cfg.plot_pulls else ''),
         '{}'.format('--do_categories' if self.cfg.do_categories else ''),
         '{}'.format('--add_Bc' if self.cfg.add_Bc else ''),
+        '{}'.format('--plot_prefit' if self.cfg.plot_prefit else ''),
+        '{}'.format('--add_CMSlabel' if self.cfg.add_CMSlabel else ''),
+        '{}'.format('--add_lumilabel' if self.cfg.add_lumilabel else ''),
         ])
 
     # write the submitter
@@ -452,10 +466,10 @@ class BHNLLauncher(object):
           print '\n -> Launching the combination of the datacards'
           for mass in self.getMassList(signal_label):
             if self.submit_batch and self.do_datacards:
-              job_id = self.launchCombineDatacards(mass=mass, do_dependency=True, job_id=self.getJobIdsList(dependency_datacards[signal_label]))
+              job_id = self.launchCombineDatacards(mass=str(mass).replace('.', 'p'), do_dependency=True, job_id=self.getJobIdsList(dependency_datacards[signal_label]))
             else:
-              job_id = self.launchCombineDatacards(mass=mass, do_dependency=False)
-          dependency_combined_datacards[signal_label].append(job_id)
+              job_id = self.launchCombineDatacards(mass=str(mass).replace('.', 'p'), do_dependency=False)
+            dependency_combined_datacards[signal_label].append(job_id)
 
       if self.do_produce_limits:
         dependency_limits = []

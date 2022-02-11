@@ -9,9 +9,9 @@ cfg = Config(
     #-#-#-#-#-#-#-#-#-#-#-#-#-#
 
     # ---     SAMPLES     --- #
-    data_label = 'V09_06Nov21',
-    qcd_label = 'V09_06Nov21',
-    signal_labels = ['central_V09_06Nov21_m1', 'central_V09_06Nov21_m3', 'central_V09_06Nov21_m4p5'],
+    data_label = 'V10_30Dec21',
+    qcd_label = 'V10_30Dec21',
+    signal_labels = ['V10_30Dec21_m1', 'V10_30Dec21_m1p5', 'V10_30Dec21_m2', 'V10_30Dec21_m3', 'V10_30Dec21_m4p5'],
     sample_type = 'flat',
     tree_name = 'signal_tree',
     qcd_white_list = '20to300',
@@ -22,14 +22,14 @@ cfg = Config(
     # ----------------------- #
 
     # ---    SELECTION    --- #
-    selection_label = 'study_Nov21',
+    selection_label = 'baseline_30Dec21',
     # ----------------------- #
 
     # ---     WEIGHTS     --- #
-    add_weight_hlt = True,
+    add_weight_hlt = False,
     add_weight_pu = True,
     branch_weight_hlt = 'weight_hlt_HLT_Mu9_IP6_A1_6',
-    branch_weight_pu = 'weight_pu_qcd_A',
+    branch_weight_pu = 'weight_pu_qcd_D',
     # ----------------------- #
 
 
@@ -39,32 +39,51 @@ cfg = Config(
     # quantities 
     quantities_label = ['all', 'muonId_study_displacedmuon', 'trackId'],
     # what to plot
-    plot_CR = True,
-    plot_SR = False,
+    plot_CR = False,
+    plot_SR = True,
     plot_dataSig = False,
     # plot style
-    do_shape = True,
-    do_luminorm = False,
-    do_stack = True,
+    do_shape = False,
+    do_luminorm = True,
+    do_stack = False,
     do_log = False,
     plot_ratio = False,
-    add_overflow = False, 
+    add_overflow = True, 
     add_CMSlabel = True,
+    add_lumilabel = True,
     CMStag = 'Preliminary',
 
 
     #-#-#-#-#-#-#-#-#-#-#-#-#-#
     ###    Datacard info    ###
     #-#-#-#-#-#-#-#-#-#-#-#-#-#
-    ABCD_label = 'cos2d_svprob_0p996',
+    # choose analysis strategy
+    do_counting = False,
+    do_shape_analysis = True,
+    do_shape_TH1 = False,
+    lumi_target = 41.6,
+
+    # if counting, or shape_TH1, choose bkg estimation method
     do_ABCD = False,
     do_ABCDHybrid = True,
     do_TF = False,
+    do_realData = False,
+    ABCD_label = 'cos2d_svprob_0p996',
+    sigma_mult_window = 2,
+
+    # if shape analysis
+    signal_model_label = 'voigtian',
+    background_model_label = 'chebychev',
+    do_binned_fit = True,
+    do_blind = True,
+    nbins = 50, 
+    plot_pulls = True,
+
+    # further options
     do_categories = True,
     add_Bc = False,
-    lumi_target = 41.6,
+    plot_prefit = True,
     sigma_B = 472.8e9,
-    sigma_mult_window = 2,
 
 
     #-#-#-#-#-#-#-#-#-#-#-#-#-#
