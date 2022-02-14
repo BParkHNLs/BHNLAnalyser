@@ -48,6 +48,8 @@ class Config(object):
                background_model_label=None,
                do_binned_fit=None, 
                do_blind=None, 
+               mass_window_size=None,
+               fit_window_size=None,
                nbins=None, 
                plot_pulls=None,
                do_categories=None,
@@ -99,6 +101,8 @@ class Config(object):
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
     self.do_blind = do_blind
+    self.mass_window_size = mass_window_size
+    self.fit_window_size = fit_window_size
     self.nbins = nbins
     self.plot_pulls = plot_pulls
     self.do_categories = do_categories

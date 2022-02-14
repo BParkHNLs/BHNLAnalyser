@@ -7,7 +7,7 @@ from tools import Tools
 from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file='', data_files='', selection='', mass='', resolution='', signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
+  def __init__(self, signal_file='', data_files='', selection='', mass='', resolution='', signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.signal_file = signal_file
     self.data_files = data_files
@@ -38,8 +38,8 @@ class Fitter(Tools):
     self.add_lumilabel = add_lumilabel
     self.CMStag = CMStag
     # define window sizes (multiples of sigma)
-    self.mass_window_size = 3 #TODO parse
-    self.fit_window_size = 5 #TODO parse
+    self.mass_window_size = mass_window_size
+    self.fit_window_size = fit_window_size
 
 
     signal_model_list = ['doubleCB', 'doubleCBPlusGaussian', 'voigtian']
@@ -760,10 +760,13 @@ if __name__ == '__main__':
   add_lumilabel = True
   CMStag = 'Preliminary'
 
+  mass_window_size = 3
+  fit_window_size = 6
+
   label = 'test'
   for signal_file in signal_files:
     if signal_file.ctau != 0.1: continue
-    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag)
+    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, mass_window_size=mass_window_size, fit_window_size=fit_window_size, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag)
     #fitter.writeSignalModel(label='test')
     #fitter.writeBackgroundModel(label='test')
     #fitter.createFitWorkspace()
