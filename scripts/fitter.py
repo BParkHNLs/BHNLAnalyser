@@ -7,11 +7,13 @@ from tools import Tools
 from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file='', data_files='', selection='', signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
+  def __init__(self, signal_file='', data_files='', selection='', mass='', resolution='', signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.signal_file = signal_file
     self.data_files = data_files
     self.selection = selection
+    self.mass = mass
+    self.resolution = resolution
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
@@ -36,8 +38,8 @@ class Fitter(Tools):
     self.add_lumilabel = add_lumilabel
     self.CMStag = CMStag
     # define window sizes (multiples of sigma)
-    self.mass_window_size = 3
-    self.fit_window_size = 6
+    self.mass_window_size = 3 #TODO parse
+    self.fit_window_size = 5 #TODO parse
 
 
     signal_model_list = ['doubleCB', 'doubleCBPlusGaussian', 'voigtian']
@@ -48,15 +50,15 @@ class Fitter(Tools):
     if self.background_model_label != None and self.background_model_label not in background_model_list:
       raise RuntimeError('Unrecognised background model "{}". Please choose among {}'.format(self.background_model_label, background_model_list))
 
-    #TODO there are no weights applied so far (incl. ctau, hlt, pu weights)
-    #TODO make sure that the data is normalised to the yields inserted in the datacard
-    #TODO make sure that the pdfs are named according to the process name in the datacard
+    #TODO there are no weights applied so far (e.g hlt, pu weights)
+    #TODO fit the signal in fit_window, extract the sigma from there, and build the fit_window in the final workspace from that? 
+    # (maybe not so optimal since would mean to rerun background for each signal. Otherwise save resolutions in a dict in objects?)
 
-  def getRegion(self, nsigma=2):
-    signal_mass = self.signal_file.mass
-    signal_resolution = self.signal_file.resolution
-    bin_min = signal_mass - nsigma * signal_resolution
-    bin_max = signal_mass + nsigma * signal_resolution
+  def getRegion(self, mass=None, resolution=None, nsigma=2):
+    if mass == None: mass = self.signal_file.mass
+    if resolution == None: resolution = self.signal_file.resolution
+    bin_min = mass - nsigma * resolution
+    bin_max = mass + nsigma * resolution
     return bin_min, bin_max
 
 
@@ -463,6 +465,8 @@ class Fitter(Tools):
     if self.add_CMSlabel: self.tools.printCMSTag(pad1, self.CMStag, size=0.5)
     if self.add_lumilabel: self.tools.printLumiTag(pad1, self.lumi_true, size=0.5, offset=0.55)
 
+    #TODO print category label
+
     # plot of the residuals
     pad2.cd()
     ROOT.gPad.SetLeftMargin(0.15) 
@@ -606,7 +610,7 @@ class Fitter(Tools):
     return n_sig
 
 
-  def createWorkspace(self, label=''):
+  def createWorkspace(self, label=''): #TODO do we want to save signal and background pdfs in different workspace?
     print ' --- Creating Fit Workspace --- '
 
     if label == '': label = self.getSignalLabel()
@@ -676,6 +680,45 @@ class Fitter(Tools):
         var.setConstant()
 
     getattr(workspace, 'import')(data_obs)
+    workspace.Write()
+    workspace.Print()
+    output_file.Close()
+
+    print '--> {} created'.format(workspace_filename)
+
+
+  def createFTestInputWorkspace(self):
+    '''
+      Create workspace containing the RooDataHist used as an input to the F-test
+    '''
+    treename = 'signal_tree'
+    branch_name = 'hnl_mass'
+    hist_name = 'hist'
+
+    # get the tree
+    tree = ROOT.TChain(treename)
+    for data_file in self.data_files:
+      tree.Add(data_file.filename) 
+
+    # create the histogram
+    bin_min, bin_max = self.getRegion(mass=self.mass, resolution=self.resolution, nsigma=self.fit_window_size)
+    hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
+    tree.Project(hist_name, branch_name, self.selection)
+
+    # normalise to the target luminosity
+    hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
+
+    # create the binned dataset
+    hnl_mass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
+    hnl_mass_rdh = ROOT.RooDataHist("hnl_mass_rdh", "hnl_mass_rdh", ROOT.RooArgList(hnl_mass), hist)
+
+    # import the model in a workspace
+    label = 'm_{}_cat_{}'.format(self.mass, self.category_label)
+    workspace_filename = '{}/input_workspace_fTest_{}.root'.format(self.workspacedir, label)
+    output_file = ROOT.TFile(workspace_filename, 'RECREATE')
+    workspace = ROOT.RooWorkspace('fTest_workspace', 'fTest_workspace')
+
+    getattr(workspace, 'import')(hnl_mass_rdh)
     workspace.Write()
     workspace.Print()
     output_file.Close()
