@@ -64,13 +64,13 @@ class Fitter(Tools):
 
 
   def getSignalLabel(self):
-    label = 'm{}_ctau_{}_{}'.format(self.signal_file.mass, self.signal_file.ctau, self.signal_model_label).replace('.', 'p') 
+    label = 'm_{}_ctau_{}_{}'.format(self.signal_file.mass, self.signal_file.ctau, self.signal_model_label).replace('.', 'p') 
     if self.category_label != '': label += '_{}'.format(self.category_label)
     return label
 
 
   def getBackgroundLabel(self):
-    label = 'm{}_{}'.format(self.mass, self.background_model_label).replace('.', 'p') 
+    label = 'm_{}_{}'.format(self.mass, self.background_model_label).replace('.', 'p') 
     if self.category_label != '': label += '_{}'.format(self.category_label)
     if self.do_blind: label += '_blind'
     return label
@@ -354,7 +354,7 @@ class Fitter(Tools):
     if process != 'both':
       if process == 'signal':
         self.signal_model.paramOn(frame,   
-             ROOT.RooFit.Layout(0.2, 0.4, 0.8),
+             ROOT.RooFit.Layout(0.165, 0.4, 0.8),
              ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
              )
       if process == 'background':
@@ -406,6 +406,14 @@ class Fitter(Tools):
       label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
       print "chisquare = {}".format(chisquare)
 
+    label2 = ROOT.TPaveText(0.62,0.8,0.72,0.86,"brNDC")
+    label2.SetBorderSize(0)
+    label2.SetFillColorAlpha(0, 0)
+    label2.SetTextSize(0.04)
+    label2.SetTextFont(22)
+    label2.SetTextAlign(11)
+    label2.AddText(self.category_label)
+
     # We define and plot the pull 		
     if process != 'both':
       if process == 'background' and self.do_blind:
@@ -445,10 +453,11 @@ class Fitter(Tools):
     frame.GetYaxis().SetTitleOffset(1.1)
     frame.Draw()
     label1.Draw()
+    label2.Draw()
 
     # add the legend
     if process != 'both':
-      leg = self.tools.getRootTLegend(xmin=0.6, ymin=0.4, xmax=0.8, ymax=0.6, size=0.03, do_alpha=True)
+      leg = self.tools.getRootTLegend(xmin=0.6, ymin=0.5, xmax=0.8, ymax=0.63, size=0.03, do_alpha=True)
       if process == 'signal':
         if self.signal_model_label == 'doubleCB':
           model_label = 'Double Crystal Ball'
@@ -471,8 +480,6 @@ class Fitter(Tools):
     # add the labels
     if self.add_CMSlabel: self.tools.printCMSTag(pad1, self.CMStag, size=0.5)
     if self.add_lumilabel: self.tools.printLumiTag(pad1, self.lumi_true, size=0.5, offset=0.55)
-
-    #TODO print category label
 
     # plot of the residuals
     pad2.cd()
@@ -736,6 +743,8 @@ class Fitter(Tools):
     '''
       Create workspace containing the RooDataHist used as an input to the F-test
     '''
+    print ' --- Creating Input Workspace to F-Test --- '
+
     treename = 'signal_tree'
     branch_name = 'hnl_mass'
     hist_name = 'hist'
@@ -825,7 +834,8 @@ if __name__ == '__main__':
   label = 'test'
   for signal_file in signal_files:
     if signal_file.ctau != 0.1: continue
-    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, mass_window_size=mass_window_size, fit_window_size=fit_window_size, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag, mass=signal_file.mass, resolution=signal_file.resolution)
+    category_label = 'lxy1to5_SS'
+    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, mass_window_size=mass_window_size, fit_window_size=fit_window_size, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag, mass=signal_file.mass, resolution=signal_file.resolution, category_label=category_label)
     #fitter.writeSignalModel(label='test')
     #fitter.writeBackgroundModel(label='test')
     #fitter.createFitWorkspace()
