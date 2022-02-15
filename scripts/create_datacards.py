@@ -33,6 +33,8 @@ def getOptions():
   parser.add_argument('--ABCD_label'            , type=str, dest='ABCD_label'            , help='which ABCD regions?'                                           , default='cos2d_svprob')
   parser.add_argument('--signal_model_label'    , type=str, dest='signal_model_label'    , help='name of the signal pdf'                                        , default='voigtiant')
   parser.add_argument('--background_model_label', type=str, dest='background_model_label', help='name of the background pdf'                                    , default='chebychev')
+  parser.add_argument('--mass_window_size'      , type=str, dest='mass_window_size'      , help='sigma multiplier for the mass window'                          , default='2')
+  parser.add_argument('--fit_window_size'       , type=str, dest='fit_window_size'       , help='sigma multiplier for the fit window'                           , default='6')
   parser.add_argument('--nbins'                 , type=str, dest='nbins'                 , help='number of bins when using shapes'                              , default='40')
   parser.add_argument('--lumi_target'           , type=str, dest='lumi_target'           , help='which luminosity should the yields be normalised to?'          , default='41.599')
   parser.add_argument('--sigma_B'               , type=str, dest='sigma_B'               , help='which value of the B cross section?'                           , default='472.8e9')
@@ -48,6 +50,7 @@ def getOptions():
   parser.add_argument('--do_counting'           ,           dest='do_counting'           , help='perform counting experiment'              , action='store_true', default=False)
   parser.add_argument('--do_shape_analysis'     ,           dest='do_shape_analysis'     , help='perform shape-based analysis'             , action='store_true', default=False)
   parser.add_argument('--do_shape_TH1'          ,           dest='do_shape_TH1'          , help='perform shape-based analysis with histo'  , action='store_true', default=False)
+  parser.add_argument('--use_discrete_profiling',           dest='use_discrete_profiling', help='use discrete profiling method'            , action='store_true', default=False)
   parser.add_argument('--do_binned_fit'         ,           dest='do_binned_fit'         , help='perform binned fit when shape analysis'   , action='store_true', default=False)
   parser.add_argument('--do_blind'              ,           dest='do_blind'              , help='perform blind fit when shape analysis'    , action='store_true', default=False)
   parser.add_argument('--plot_pulls'            ,           dest='plot_pulls'            , help='plot pull distribution'                   , action='store_true', default=False)
@@ -88,7 +91,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag=''):
+  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -103,10 +106,13 @@ class DatacardsMaker(Tools):
     self.do_counting = do_counting
     self.do_shape_analysis = do_shape_analysis
     self.do_shape_TH1 = do_shape_TH1
+    self.use_discrete_profiling = use_discrete_profiling
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
     self.do_blind = do_blind
+    self.mass_window_size = int(mass_window_size)
+    self.fit_window_size = int(fit_window_size)
     self.nbins = int(nbins)
     self.plot_pulls = plot_pulls
     self.do_categories = do_categories
@@ -205,41 +211,101 @@ class DatacardsMaker(Tools):
     return signal_mass, signal_coupling
 
 
-  def getLabel(self, signal_mass='', signal_coupling='', category=''):
+  def getCardLabel(self, signal_mass='', signal_coupling='', category=''):
     if not self.do_categories:
-      label = 'bhnl_incl_m_{}_v2_{}'.format(signal_mass, signal_coupling)
+      label = 'bhnl_m_{}_v2_{}_incl'.format(signal_mass, signal_coupling)
     else:
-      label = 'bhnl_cat_{}_m_{}_v2_{}'.format(category.label, signal_mass, signal_coupling)
+      label = 'bhnl_m_{}_v2_{}_cat_{}'.format(signal_mass, signal_coupling, category.label)
     label = label.replace('.', 'p').replace('-', 'm')
     return label
 
 
-  def runFitter(self, signal_file, category, label):
+  def getCategoryLabel(self, signal_mass='', category=''):
+    if not self.do_categories:
+      label = 'bhnl_m_{}_incl'.format(signal_mass)
+    else:
+      label = 'bhnl_m_{}_cat_{}'.format(signal_mass, category.label)
+    label = label.replace('.', 'p').replace('-', 'm')
+    return label
+
+
+  def runFitter(self, process='', signal_file=None, mass=None, resolution=None, category='', label=''):
     '''
       Run the parametric shapes and extract the yields
     '''
+    if process not in ['signal', 'background', 'data_obs']:
+      raise RuntimeError("[create_datacards] Unkown process '{}'. Please choose among ['signal', 'background', 'data_obs']")
+
     # initialise the fitter
     selection = self.baseline_selection
     if self.do_categories:
       selection += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
 
-    fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
+    if process == 'signal':
+      fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
 
-    # perform the fits and write the workspaces
-    fitter.process(label=label)
+      # perform the fits and write the workspaces
+      fitter.process_signal(label=label)
 
-    if self.plot_prefit:
-      fitter.producePrefitPlot(label=label)
+      # get the signal yields directly from the histogram
+      yields = fitter.getSignalYieldsFromHist()
 
-    # extract the background yields from the fit and normalise to lumi
-    background_yields = fitter.getBackgroundYieldsFromFit()
-    lumi_true = self.tools.getDataLumi(self.data_files)
-    background_yields = background_yields * self.lumi_target/lumi_true
+      # produce prefit plots
+      if self.plot_prefit:
+        fitter.producePrefitPlot(label=label)
 
-    # get the signal yields directly from the histogram
-    signal_yields = fitter.getSignalYieldsFromHist()
+    elif process == 'background':
+      fitter = Fitter(data_files=self.data_files, mass=mass, resolution=resolution, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
 
-    return signal_yields, background_yields
+      # perform the fits and write the workspaces
+      fitter.process_background(label=label)
+
+      # extract the background yields from the fit and normalise to lumi
+      background_yields = fitter.getBackgroundYieldsFromFit()
+      lumi_true = self.tools.getDataLumi(self.data_files)
+      yields = background_yields * self.lumi_target/lumi_true
+
+    elif process == 'data_obs':
+      fitter = Fitter(data_files=self.data_files, mass=mass, resolution=resolution, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
+
+      # perform the fits and write the workspaces
+      fitter.process_data_obs(label=label)
+
+      yields = -1 if self.do_blind else -1 #FIXME
+
+    return yields
+
+
+  def runFTestRoutine(self, mass, resolution, window_size, category):
+    # define selection
+    selection = self.baseline_selection
+    if self.do_categories:
+      selection += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
+
+    # produce input workspace 
+    fitter = Fitter(data_files=self.data_files, mass=mass, resolution=resolution, selection=selection, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, lumi_target=self.lumi_target)
+    fitter.createFTestInputWorkspace()
+
+    # run the F-test and save the output multipdf in a workspace
+    command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins}'.format(
+        inws = '{}/input_workspace_fTest_m_{}_cat_{}.root'.format(self.outputdir, mass, category.label),
+        outws = '{}/workspace_background_multipdf_bhnl_m_{}_cat_{}.root'.format(self.outputdir, mass, category.label),
+        outdir = self.outputdir + '/fTest',
+        cat = category.label,
+        m = mass,
+        ml = str(mass).replace('.', 'p'),
+        rsl = resolution, 
+        fws = self.fit_window_size, 
+        mws = self.mass_window_size,
+        nbins = self.nbins,
+        )
+    if self.do_blind: command_ftest += ' --blind'
+
+    os.system(command_ftest)
+
+    background_yields = 1. # the rate in the datacard is set to 1 as the background normalisation is contained in the workspace
+
+    return background_yields
 
 
   def createSigHisto(self, category, signal_file, signal_yields, label):
@@ -354,15 +420,18 @@ class DatacardsMaker(Tools):
     print '--> {}/{} created'.format(self.outputdir, rootfile_name)
 
 
-  def writeCard(self, label, signal_yields, background_yields):
-    datacard_name = 'datacard_{}.txt'.format(label)
-    if self.do_shape_analysis:
-      shape_line = 'shapes *    {lbl}  workspace_{lbl}.root workspace:$PROCESS'.format(
-          lbl = label,
-          )
+  def writeCard(self, card_label, cat_label, signal_yields, background_yields):
+    datacard_name = 'datacard_{}.txt'.format(card_label)
+    if self.do_shape_analysis and not self.use_discrete_profiling:
+      shape_line = '\n'.join([
+          'shapes     sig        {lbl}   workspace_signal_{cardlbl}.root      workspace:sig'.format(lbl=cat_label, cardlbl=card_label),
+          'shapes     qcd        {lbl}   workspace_background_{lbl}.root      workspace:qcd'.format(lbl = cat_label),
+          'shapes     data_obs   {lbl}   workspace_data_obs_{lbl}.root        workspace:data_obs'.format(lbl=cat_label),
+          ])
       norm_line = 'qcd_norm_{lbl}      rateParam   {lbl}   qcd   1.'.format(
-          lbl = label,
+          lbl = cat_label,
           )
+      index_line = ''
       autostat_line = ''
       #param_line = 'a0{lbl}  param   {val} {err}'.format(
       #    lbl = label, 
@@ -370,25 +439,39 @@ class DatacardsMaker(Tools):
       #    err = 0.1,
       #    )
       bkg_syst_line = ''
+    elif self.do_shape_analysis and self.use_discrete_profiling:
+      shape_line = '\n'.join([
+          'shapes     sig        {lbl}   workspace_signal_{cardlbl}.root           workspace:sig'.format(lbl=cat_label, cardlbl=card_label),
+          'shapes     qcd        {lbl}   workspace_background_multipdf_{lbl}.root  workspace:qcd_multipdf'.format(lbl = cat_label),
+          'shapes     data_obs   {lbl}   workspace_data_obs_{lbl}.root             workspace:data_obs'.format(lbl=cat_label),
+          ])
+      norm_line = ''.format(
+          lbl = cat_label,
+          )
+      index_line = 'pdfindex_{lbl}    discrete'.format(lbl=cat_label)
+      autostat_line = ''
+      bkg_syst_line = ''
     elif self.do_shape_TH1:
       shape_line = 'shapes *          {lbl}   shape_{lbl}.root   $PROCESS $PROCESS_$SYSTEMATIC'.format(
-          lbl = label,
+          lbl = cat_label,
           )
       norm_line = ''
+      index_line = ''
       autostat_line = '{lbl} autoMCStats 0 0 1'.format(
-          lbl = label,
+          lbl = cat_label,
           )
       bkg_syst_line = 'syst_bkg_{lbl}                             lnN           -                              1.3 '.format(
-          lbl = label,
+          lbl = cat_label,
           )
     else:
       shape_line = ''
       norm_line = ''
+      index_line = ''
       autostat_line = '{lbl} autoMCStats 0 0 1'.format(
-          lbl = label,
+          lbl = cat_label,
           )
       bkg_syst_line = 'syst_bkg_{lbl}                             lnN           -                              1.3 '.format(
-          lbl = label,
+          lbl = cat_label,
           )
 
     datacard = open('{}/{}'.format(self.outputdir, datacard_name), 'w+')
@@ -413,15 +496,17 @@ syst_sig_{lbl}                             lnN           1.3                    
 {bkg_syst_line}   
 --------------------------------------------------------------------------------------------------------------------------------------------
 {norm_line}
+{index_line}
 {autostat_line}
 '''.format(
             shape_line = shape_line,
-            lbl = label,
-            obs =  -1, # for the moment, we only look at blinded data
+            lbl = cat_label,
+            obs =  -1, # for the moment, we only look at blinded data #TODO implement not blind option
             sig_yields = signal_yields,
             bkg_yields = background_yields,
             bkg_syst_line = bkg_syst_line,
             norm_line = norm_line,
+            index_line = index_line,
             autostat_line = autostat_line,
         )
       )
@@ -458,41 +543,53 @@ bkg {bkg_yields}
 
       # loop on the different mass windows
       for window in self.getWindowList():
+        # get the category label
+        cat_label = self.getCategoryLabel(signal_mass=window['mass'], category=category)
 
-        # get the background yields (if not shape analysis)
-        if not self.do_shape_analysis:
+        # get the background yields
+        if self.do_counting or self.do_shape_TH1:
           background_yields = self.getBackgroundYields(mass=window['mass'], resolution=window['resolution'], category=category)
+
+        elif self.do_shape_analysis and not self.use_discrete_profiling:
+          background_yields = self.runFitter(process='background', mass=window['mass'], resolution=window['resolution'], category=category, label=cat_label) 
+          data_obs = self.runFitter(process='data_obs', mass=window['mass'], resolution=window['resolution'], category=category, label=cat_label)
+
+        elif self.do_shape_analysis and self.use_discrete_profiling:
+          background_yields = self.runFTestRoutine(mass=window['mass'], resolution=window['resolution'], window_size=self.fit_window_size, category=category)
+          data_obs = self.runFitter(process='data_obs', mass=window['mass'], resolution=window['resolution'], category=category, label=cat_label)
 
         # loop on the signal points
         for signal_file in signal_files:
           if signal_file.mass != window['mass']: continue
 
-          #if signal_file.ctau != 0.1 and signal_file.ctau != 10.: continue
+          #if signal_file.ctau != 0.1: continue # and signal_file.ctau != 10.: continue
+          #if signal_file.ctau != 100.: continue # and signal_file.ctau != 10.: continue
 
           # get the signal mass/coupling
           signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
 
           # get the process label
-          label = self.getLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
+          card_label = self.getCardLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
 
           # get the signal yields (if not shape analysis)
-          if not self.do_shape_analysis:
+          if self.do_counting or self.do_shape_TH1:
             signal_yields = self.getSignalYields(signal_file=signal_file, category=category)
       
           # get the model shape and yields for shape analysis
           if self.do_shape_analysis:
-            signal_yields, background_yields = self.runFitter(signal_file=signal_file, category=category, label=label)
+            signal_yields = self.runFitter(process='signal', signal_file=signal_file, category=category, label=card_label)
 
-          elif self.do_shape_TH1:
-            self.createSigHisto(category=category, signal_file=signal_file, signal_yields=signal_yields, label=label)
-            self.createBkgHisto(category=category, mass=window['mass'], resolution=window['resolution'], background_yields=background_yields, label=label)
-            self.createDataObsHisto(category=category, mass=window['mass'], resolution=window['resolution'], label=label)
+          # create histograme for non-parametric shape strategy
+          if self.do_shape_TH1:
+            self.createSigHisto(category=category, signal_file=signal_file, signal_yields=signal_yields, label=card_label)
+            self.createBkgHisto(category=category, mass=window['mass'], resolution=window['resolution'], background_yields=background_yields, label=cat_label)
+            self.createDataObsHisto(category=category, mass=window['mass'], resolution=window['resolution'], label=cat_label)
 
           # create the datacard
-          self.writeCard(label=label, signal_yields=signal_yields, background_yields=background_yields)
+          self.writeCard(card_label=card_label, cat_label=cat_label, signal_yields=signal_yields, background_yields=background_yields)
 
           # save yields summary
-          self.writeYieldsForPlots(label=label, signal_yields=signal_yields, background_yields=background_yields)
+          self.writeYieldsForPlots(label=card_label, signal_yields=signal_yields, background_yields=background_yields)
 
 
 
@@ -527,6 +624,8 @@ if __name__ == '__main__':
     signal_model_label = opt.signal_model_label
     background_model_label = opt.background_model_label
     do_binned_fit = opt.do_binned_fit
+    mass_window_size = opt.mass_window_size
+    fit_window_size = opt.fit_window_size
     nbins = opt.nbins
     do_blind = opt.do_blind
     plot_pulls = opt.plot_pulls
@@ -542,6 +641,7 @@ if __name__ == '__main__':
     do_counting = opt.do_counting
     do_shape_analysis = opt.do_shape_analysis
     do_shape_TH1 = opt.do_shape_TH1
+    use_discrete_profiling = opt.use_discrete_profiling
     do_categories = opt.do_categories
     add_Bc = opt.add_Bc
 
@@ -559,6 +659,7 @@ if __name__ == '__main__':
         do_counting = do_counting,
         do_shape_analysis = do_shape_analysis,
         do_shape_TH1 = do_shape_TH1,
+        use_discrete_profiling = use_discrete_profiling,
         do_categories = do_categories, 
         categories = categories, 
         category_label = opt.category_label, 
@@ -570,6 +671,8 @@ if __name__ == '__main__':
         signal_model_label = signal_model_label,
         background_model_label = background_model_label,
         do_binned_fit = do_binned_fit,
+        mass_window_size = mass_window_size,
+        fit_window_size = fit_window_size, 
         nbins = nbins,
         do_blind = do_blind,
         plot_pulls = plot_pulls,
