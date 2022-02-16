@@ -179,6 +179,9 @@ class Fitter(Tools):
     if process not in ['signal', 'background', 'both']:
       raise RuntimeError("[fitter] Unrecognised process. Please choose among ['signal', 'background', 'both']")
 
+    # enforce blinding for prefit plots
+    if process == 'both': self.do_blind = True
+
     # get the label
     if label == '' and process == 'signal': label = self.getSignalLabel() 
     if label == '' and process == 'background': label = self.getBackgroundLabel() 
