@@ -901,7 +901,7 @@ int main(int argc, char* argv[]){
 
             // Calculate goodness of fit (will use toys for lowstats)
             double gofProb =0; 
-            plot(mass,bkgPdf,data,Form("%s/%s%d_%s",outDir.c_str(),funcType->c_str(),order,catname.c_str()),category_label,fit_window_min,fit_window_max,mass_window_min,mass_window_max,nBinsForFit,nBinsForPlot,fitStatus,&gofProb);
+            plot(mass,bkgPdf,data,Form("%s/%s%d_m_%s_cat_%s",outDir.c_str(),funcType->c_str(),order,mN_label.c_str(),catname.c_str()),category_label,fit_window_min,fit_window_max,mass_window_min,mass_window_max,nBinsForFit,nBinsForPlot,fitStatus,&gofProb);
 
             if ((prob < upperEnvThreshold) ) { // Looser requirements for the envelope
 
@@ -937,7 +937,7 @@ int main(int argc, char* argv[]){
     choices_envelope_vec.push_back(choices_envelope);
     pdfs_vec.push_back(pdfs);
 
-    plot(mass,pdfs,data,Form("%s/truths_%s",outDir.c_str(),catname.c_str()),category_label,cat,fit_window_min,fit_window_max,mass_window_min,mass_window_max,nBinsForPlot);
+    plot(mass,pdfs,data,Form("%s/truths_m_%s_cat_%s",outDir.c_str(),mN_label.c_str(),catname.c_str()),category_label,cat,fit_window_min,fit_window_max,mass_window_min,mass_window_max,nBinsForPlot);
 
     if (saveMultiPdf){
       // Put selectedModels into a MultiPdf
@@ -968,7 +968,7 @@ int main(int argc, char* argv[]){
       outputws->import(catIndex);
       //outputws->import(dataBinned);
       outputws->import(*data);
-      plot(mass,pdf,&catIndex,data,Form("%s/multipdf_%s",outDir.c_str(),catname.c_str()),category_label,cat,fit_window_min,fit_window_max,mass_window_min,mass_window_max,nBinsForPlot,bestFitPdfIndex);
+      plot(mass,pdf,&catIndex,data,Form("%s/multipdf_m_%s_cat_%s",outDir.c_str(),mN_label.c_str(),catname.c_str()),category_label,cat,fit_window_min,fit_window_max,mass_window_min,mass_window_max,nBinsForPlot,bestFitPdfIndex);
 
     } // end if saveMultiPdf
 
