@@ -78,7 +78,7 @@ for idc_ref in the_set_datacards:
     name = idc_ref.split('/')[-1]
     signal_mass = name[name.find('m_')+2:name.find('_', name.find('m_')+2)]
     #print signal_mass
-    signal_coupling = name[name.find('v2_')+3:name.find('.txt')]
+    signal_coupling = name[name.find('v2_')+3:name.find('_cat')]
     #print signal_coupling
    
     # get white/black listed mass/couplings
