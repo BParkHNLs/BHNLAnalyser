@@ -252,6 +252,11 @@ double getGoodnessOfFit(RooRealVar *mass, RooAbsPdf *mpdf, RooDataSet *data, std
  
   if ((double)data->sumEntries()/nBinsForFit < 5 ){
 
+    // for the moment, do not compute p-value when statistics is too low, 
+    // and remove criterium on the p-value to enter the envelope for those cases
+    prob = -1.;
+
+    /*
     std::cout << "[INFO] Running toys for GOF test " << std::endl;
     // store pre-fit params 
     RooArgSet *params = pdf->getParameters(*data);
@@ -275,6 +280,9 @@ double getGoodnessOfFit(RooRealVar *mass, RooAbsPdf *mpdf, RooDataSet *data, std
       double chi2_t = plot_t->chiSquare(np);
       if( chi2_t>=chi2) npass++;
       toy_chi2.push_back(chi2_t*(nBinsForFit-np));
+      //TCanvas *can = new TCanvas();
+      //plot_t->Draw();
+      //can->SaveAs("test.png");
       delete plot_t;
     }
     std::cout << "[INFO] complete" << std::endl;
@@ -297,6 +305,7 @@ double getGoodnessOfFit(RooRealVar *mass, RooAbsPdf *mpdf, RooDataSet *data, std
 
     // back to best fit   
     params->assignValueOnly(preParams);
+    */
   } else {
     prob = TMath::Prob(chi2*(nBinsForFit-np),nBinsForFit-np);
   }
@@ -758,7 +767,6 @@ int main(int argc, char* argv[]){
     map<string,RooAbsPdf*> pdfs;
     map<string,RooAbsPdf*> allPdfs;
     string catname = Form("%s",category_label[cat].c_str()); //TODO keep?
-    std::cout << std::endl << "ici " << category_label[cat].c_str() << std::endl << std::endl;
 
     // Option 1: Use as input an unbinned RooDataSet and bin it
     /*
@@ -906,7 +914,7 @@ int main(int argc, char* argv[]){
             if ((prob < upperEnvThreshold) ) { // Looser requirements for the envelope
 
               //if (gofProb > minGofThreshold || order == truthOrder ) {  // Good looking fit or one of our regular truth functions
-              if (gofProb > minGofThreshold) { // minimal requirement on the goodness of fit
+              if (gofProb == -1 || gofProb > minGofThreshold) { // minimal requirement on the goodness of fit (in the case where the statistics is enough)
 
                 std::cout << "[INFO] Adding to Envelope " << bkgPdf->GetName() << " "<< gofProb 
                   << " 2xNLL + c is " << myNll + bkgPdf->getVariables()->getSize() <<  std::endl;
