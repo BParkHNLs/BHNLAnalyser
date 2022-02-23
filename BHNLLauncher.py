@@ -12,7 +12,7 @@ sys.path.append('./cfgs')
 #"----------------User's decision board-----------------"
 
 output_label = 'V10_30Dec21'
-tag = 'shape_analysis_fulllumi_nbins50_window6_v1'
+tag = 'shape_analysis_lumiD1_nbins100_window5_discrete_profiling_fullBPark_v2'
 cfg_filename = 'V10_30Dec21_cfg.py'
 submit_batch = True
 do_plotter = False
@@ -25,12 +25,16 @@ do_produce_limits = True
 do_plot_limits = True
 
 
+### other
+do_check_config = True
+do_standard_queue = True
+
 #'------------------------------------------------------'
 
 
 
 class BHNLLauncher(object):
-  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits):
+  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits, do_check_config, do_standard_queue):
     self.cfg_name = cfg_name
     self.outlabel = outlabel
     self.tag = tag
@@ -41,6 +45,8 @@ class BHNLLauncher(object):
     self.do_combine_datacards = do_combine_datacards
     self.do_produce_limits = do_produce_limits
     self.do_plot_limits = do_plot_limits
+    self.do_check_config = do_check_config
+    self.do_standard_queue = do_standard_queue
 
 
   def printHeader(self):
@@ -120,6 +126,7 @@ class BHNLLauncher(object):
         'cp -r ./limits/*py $workdir',
         'cp -r ./objects/*py $workdir',
         'cp -r ./data $workdir/..',
+        '{}'.format('cp -r ./flashgg_plugin $workdir' if self.do_datacards and self.cfg.use_discrete_profiling else ''),
         '{}'.format('cp -r ./outputs/{}/datacards/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
         '{}'.format('cp -r ./outputs/{}/datacards_combined/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
         '{}'.format('cp -r ./outputs/{}/limits/{}/results $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_plot_limits else ''),
@@ -196,8 +203,8 @@ class BHNLLauncher(object):
       if not path.exists(logdir_name):
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
-      #command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p {que} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
+          que = 'standard' if self.do_standard_queue else 'short',
           ld = logdir_name,
           lbl=label,
           ) 
@@ -226,6 +233,8 @@ class BHNLLauncher(object):
         '--ABCD_label {}'.format(self.cfg.ABCD_label),
         '--signal_model_label {}'.format(self.cfg.signal_model_label),
         '--background_model_label {}'.format(self.cfg.background_model_label),
+        '--fit_window_size {}'.format(self.cfg.fit_window_size),
+        '--mass_window_size {}'.format(self.cfg.mass_window_size),
         '--nbins {}'.format(self.cfg.nbins),
         '--lumi_target {}'.format(self.cfg.lumi_target),
         '--sigma_B {}'.format(self.cfg.sigma_B),
@@ -241,6 +250,7 @@ class BHNLLauncher(object):
         '{}'.format('--do_counting' if self.cfg.do_counting else ''),
         '{}'.format('--do_shape_analysis' if self.cfg.do_shape_analysis else ''),
         '{}'.format('--do_shape_TH1' if self.cfg.do_shape_TH1 else ''),
+        '{}'.format('--use_discrete_profiling' if self.cfg.use_discrete_profiling else ''),
         '{}'.format('--do_binned_fit' if self.cfg.do_binned_fit else ''),
         '{}'.format('--do_blind' if self.cfg.do_blind else ''),
         '{}'.format('--plot_pulls' if self.cfg.plot_pulls else ''),
@@ -267,8 +277,8 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
-      command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p {que} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
+          que = 'standard' if self.do_standard_queue else 'short',
           ld = logdir_name,
           lbl=label,
           ) 
@@ -316,7 +326,6 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcscmb_{lbl} {dpd} submitter_{lbl}.sh'.format(
       command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcscmb_{lbl} {dpd} submitter_{lbl}.sh'.format(
           ld = logdir_name,
           lbl = label,
@@ -344,6 +353,7 @@ class BHNLLauncher(object):
         '--subdirlabel {}'.format(self.tag),
         '--mass {}'.format(mass),
         '--ctau {}'.format(ctau), 
+        '{}'.format('--use_discrete_profiling' if self.cfg.use_discrete_profiling else ''),
         '{}'.format('--run_blind' if self.cfg.run_blind else ''),
         ])
 
@@ -363,7 +373,6 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} {dpd} submitter_{lbl}.sh'.format(
       command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} {dpd} submitter_{lbl}.sh'.format(
           ld = logdir_name,
           lbl = label,
@@ -411,7 +420,6 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      #command_submit = 'sbatch -p standard --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=limitplotter_{lbl} {dpd} submitter_{lbl}.sh'.format(
       command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=limitplotter_{lbl} {dpd} submitter_{lbl}.sh'.format(
           ld = logdir_name,
           lbl = label,
@@ -433,8 +441,9 @@ class BHNLLauncher(object):
     print ' -> Getting the config'
     self.cfg = self.getConfig()
 
-    print '\n -> Checking the config'
-    self.cfg.checkConfig()
+    if self.do_check_config:
+      print '\n -> Checking the config'
+      self.cfg.checkConfig()
 
     print '\n -> Copying the config to the output directory'
     self.copyConfig()
@@ -504,7 +513,9 @@ if __name__ == '__main__':
                           do_limits=do_limits, 
                           do_combine_datacards=do_combine_datacards, 
                           do_produce_limits=do_produce_limits, 
-                          do_plot_limits=do_plot_limits
+                          do_plot_limits=do_plot_limits,
+                          do_check_config=do_check_config,
+                          do_standard_queue=do_standard_queue
                           )
   launcher.process()
 
