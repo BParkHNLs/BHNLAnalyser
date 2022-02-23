@@ -22,6 +22,13 @@ source env_standalone.sh
 make -j 8; make 
 ```
 
+Re-compile such that the flashgg plugin can run
+```
+cd ../..
+scram b -j 8
+cd HiggsAnalysis/CombinedLimit
+```
+
 Install the BHNLAnalyser tool
 ```
 git clone git@github.com:BParkHNLs/BHNLAnalyser.git
