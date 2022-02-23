@@ -433,7 +433,7 @@ if __name__ == '__main__':
   sv_lxy_sig = Quantity('BToMuMuPi_sv_lxy_sig', 'sv_lxysig', 'sv_lxysig', 'significance of the SV displacement', '>', '', 0, 100)
 
   trg_mu_pt = Quantity('BToMuMuPi_trg_mu_pt', 'trgmu_pt', 'trgmu_pt', 'trigger muon pT', '>', 'GeV', 5, 13)
-  trg_mu_eta = Quantity('fabs(BToMuMuPi_trg_mu_eta)', 'abs(trgmu_eta)', 'trgmu_eta', 'trigger muon #eta', '<', '', 0, 2.5)
+  trg_mu_eta = Quantity('fabs(BToMuMuPi_trg_mu_eta)', 'abs(trgmu_eta)', 'trgmu_eta', 'trigger muon |#eta|', '<', '', 0, 2.5)
   #trg_mu_ip3d = Quantity('BToMuMuPi_trg_mu_ip3d', 'trgmu_ip3d', 'trigger muon IP (3D)', '<', 'cm', 5, 10)
   #trg_mu_sip3d = Quantity('BToMuMuPi_trg_mu_sip3d', 'trg_mu_sip3d', 'trigger muon IP significance (3D)', '>', '', 0, 3)
   trg_mu_dz = Quantity('abs(BToMuMuPi_trg_mu_dz)', 'abs(trgmu_dz)', 'abs(trg_mu_dz)', 'trigger muon |IP| on z', '>', 'cm', 0, 0.01)

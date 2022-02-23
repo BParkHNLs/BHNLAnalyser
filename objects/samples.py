@@ -334,7 +334,7 @@ signal_samples['central_benchmark_looseselection'] = [
       mass = 4.5,
       ctau = 1.0,
       resolution = 0.0373, # to be checked
-      filter_efficiency = 5.53-04,
+      filter_efficiency = 5.53e-04,
       colour = ROOT.kRed+4,
       ),
   SignalSample(
@@ -3360,6 +3360,119 @@ data_samples['V10_30Dec21'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018D/merged/flat_bparknano_30Dec21.root',
       label = 'ParkingBPH1_Run2018D (V10_30Dec21)',
+      lumi = 5.302,
+      ),
+  ]
+
+data_samples['V10_30Dec21_fullBPark'] = [
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018A/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH1_Run2018A (V10_30Dec21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH2_Run2018A/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH2_Run2018A (V10_30Dec21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH3_Run2018A/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH3_Run2018A (V10_30Dec21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH4_Run2018A/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH4_Run2018A (V10_30Dec21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH5_Run2018A/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH5_Run2018A (V10_30Dec21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH6_Run2018A/merged/flat_bparknano_30Dec21_partial.root',
+      label = 'ParkingBPH6_Run2018A (V10_30Dec21)',
+      lumi = 0.774,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018B/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH1_Run2018B (V10_30Dec21)',
+      lumi = 0.991,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH2_Run2018B/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH2_Run2018B (V10_30Dec21)',
+      lumi = 0.991,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH3_Run2018B/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH3_Run2018B (V10_30Dec21)',
+      lumi = 0.991,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH4_Run2018B/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH4_Run2018B (V10_30Dec21)',
+      lumi = 0.991,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH5_Run2018B/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH5_Run2018B (V10_30Dec21)',
+      lumi = 0.991,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH6_Run2018B/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH6_Run2018B (V10_30Dec21)',
+      lumi = 0.377,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018C/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH1_Run2018C (V10_30Dec21)',
+      lumi = 1.103,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH2_Run2018C/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH2_Run2018C (V10_30Dec21)',
+      lumi = 1.103,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH3_Run2018C/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH3_Run2018C (V10_30Dec21)',
+      lumi = 1.103,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH4_Run2018C/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH4_Run2018C (V10_30Dec21)',
+      lumi = 1.103,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH5_Run2018C/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH5_Run2018C (V10_30Dec21)',
+      lumi = 1.103,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018D/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH1_Run2018D (V10_30Dec21)',
+      lumi = 5.302,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH2_Run2018D/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH2_Run2018D (V10_30Dec21)',
+      lumi = 5.302,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH3_Run2018D/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH3_Run2018D (V10_30Dec21)',
+      lumi = 5.302,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH4_Run2018D/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH4_Run2018D (V10_30Dec21)',
+      lumi = 5.302,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH5_Run2018D/merged/flat_bparknano_30Dec21.root',
+      label = 'ParkingBPH5_Run2018D (V10_30Dec21)',
       lumi = 5.302,
       ),
   ]

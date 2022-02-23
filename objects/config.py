@@ -44,10 +44,13 @@ class Config(object):
                do_counting=None,
                do_shape_analysis=None,
                do_shape_TH1=None,
+               use_discrete_profiling=None,
                signal_model_label=None, 
                background_model_label=None,
                do_binned_fit=None, 
                do_blind=None, 
+               mass_window_size=None,
+               fit_window_size=None,
                nbins=None, 
                plot_pulls=None,
                do_categories=None,
@@ -95,10 +98,13 @@ class Config(object):
     self.do_counting = do_counting
     self.do_shape_analysis = do_shape_analysis
     self.do_shape_TH1 = do_shape_TH1
+    self.use_discrete_profiling = use_discrete_profiling
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
     self.do_blind = do_blind
+    self.mass_window_size = mass_window_size
+    self.fit_window_size = fit_window_size
     self.nbins = nbins
     self.plot_pulls = plot_pulls
     self.do_categories = do_categories
@@ -212,7 +218,7 @@ class Config(object):
       raise RuntimeError('Please make sure to enter a valid signal model. Choose among {}'.format(signal_model_list))
 
     background_model_list = ['chebychev']
-    if self.do_shape_analysis and self.background_model_label not in background_model_list:
+    if self.do_shape_analysis  and not self.use_discrete_profiling and self.background_model_label not in background_model_list:
       raise RuntimeError('Please make sure to enter a valid background model. Choose among {}'.format(background_model_list))
       
 

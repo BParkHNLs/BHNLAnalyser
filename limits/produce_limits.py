@@ -10,11 +10,12 @@ from tools import Tools
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Run limit on a single mass/coupling point', add_help=True)
-  parser.add_argument('--outdirlabel', type=str, dest='outdirlabel' , help='name of the outdir'               , default=None)
-  parser.add_argument('--subdirlabel', type=str, dest='subdirlabel' , help='name of the subdir'               , default=None)
-  parser.add_argument('--mass'       , type=str, dest='mass'        , help='mass'                             , default='1.0')
-  parser.add_argument('--ctau'       , type=str, dest='ctau'        , help='ctau'                             , default=None)
-  parser.add_argument('--run_blind'            , dest='run_blind'   , help='run blinded?', action='store_true', default=False)
+  parser.add_argument('--outdirlabel', type=str , dest='outdirlabel'           , help='name of the outdir'                                , default=None)
+  parser.add_argument('--subdirlabel', type=str , dest='subdirlabel'           , help='name of the subdir'                                , default=None)
+  parser.add_argument('--mass'       , type=str , dest='mass'                  , help='mass'                                              , default='1.0')
+  parser.add_argument('--ctau'       , type=str , dest='ctau'                  , help='ctau'                                              , default=None)
+  parser.add_argument('--use_discrete_profiling', dest='use_discrete_profiling', help='use discrete profiling method', action='store_true', default=False)
+  parser.add_argument('--run_blind'             , dest='run_blind'             , help='run blinded?'                 , action='store_true', default=False)
   return parser.parse_args()
 
 
@@ -36,6 +37,8 @@ if __name__ == "__main__":
         command = 'combine -M AsymptoticLimits {s}/datacard_combined_m_{m}_v2_{c}.txt'.format(s=opt.subdirlabel, m=mass.replace('.', 'p'), c=coupling.replace('.', 'p').replace('-', 'm'))
         if opt.run_blind:
           command += ' --run blind'
+        if opt.use_discrete_profiling:
+          command += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
         
         print '\t\t',command
          

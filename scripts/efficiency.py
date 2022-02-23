@@ -48,8 +48,8 @@ class EfficiencyAnalyser(Tools):
 
 
   def getEfficiencyFromNano(self, displacement_bins=None, pt_bins=None):
-    f = PlottingTools.getRootFile(self, self.filename, with_ext=False) 
-    tree = PlottingTools.getTree(self, f, self.treename)
+    f = self.tools.getRootFile(self.filename, with_ext=False) 
+    tree = self.tools.getTree(f, self.treename)
 
     if displacement_bins != None and pt_bins != None:
       n_num = np.zeros((len(displacement_bins), len(pt_bins), len(self.matchings)))  #[[0] * len(displacement_bins)] * len(pt_bins)
@@ -337,7 +337,11 @@ class EfficiencyAnalyser(Tools):
       displacement_bins = [(0, 1000)]
       pt_bins = bins
 
-    efficiency, error = self.getEfficiency(displacement_bins=displacement_bins, pt_bins=pt_bins)
+    #efficiency, error = self.getEfficiency(displacement_bins=displacement_bins, pt_bins=pt_bins)
+    if self.sample_type == 'flat':
+      efficiency, error = self.getEfficiency(displacement_bins=displacement_bins, pt_bins=pt_bins)
+    else:
+      efficiency, error = self.getEfficiencyFromNano(displacement_bins=displacement_bins, pt_bins=pt_bins)
 
     for imatch, matching in enumerate(self.matchings):
       canv_name = 'canv_{}_{}_{}'.format(matching, binning, self.outdirlabel)
@@ -377,7 +381,7 @@ class EfficiencyAnalyser(Tools):
       graph.GetYaxis().SetLabelSize(0.037)
       graph.GetYaxis().SetTitleSize(0.042)
       graph.GetYaxis().SetTitleOffset(1.1)
-      graph.GetYaxis().SetRangeUser(0, 0.5)
+      graph.GetYaxis().SetRangeUser(0, 1.)
 
       #leg = self.tools.getRootTLegend(xmin=0.5, ymin=0.3, xmax=0.7, ymax=0.5, size=0.035)
       #leg.AddEntry(graph, 'slimmed muons')
@@ -458,14 +462,16 @@ if __name__ == '__main__':
   #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/plugins/dumper/flat_bparknano.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_motherpdgid_unfittedmass.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_fittedmass_looseselection_originalmatching.root'
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looselection_updatedmatching_fullgen.root'
+  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looselection_updatedmatching_fullgen.root'
+  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looselection_updatedmatching_fullgen.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_v1.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_minigenmatching_v2.root'
   #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_efficiency_study.root' # used for study on efficiency gain with dsa (Nov 21)
 
   displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
   #displacement_bins = [(0, 3), (3, 5), (5, 10), (10, 20), (20, 100)]
-  pt_bins = [(1, 7), (7, 10), (10, 15), (15, 30), (30, 100)] 
+  #pt_bins = [(1, 7), (7, 10), (10, 15), (15, 30), (30, 100)] 
+  pt_bins = [(1, 7), (7, 8), (8, 9), (9, 10), (10, 12), (12, 20), (20, 30), (30, 100)] 
 
   cuts_mu_pt = [0., 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
   cuts_trigger_mu_pt = [6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0]
@@ -476,16 +482,16 @@ if __name__ == '__main__':
 
   title = ''
 
-  #matchings = ['candidate', 'trigger_muon', 'muon', 'pion']
-  matchings = ['candidate', 'trigger_muon']
+  matchings = ['candidate', 'trigger_muon', 'muon', 'pion']
+  #matchings = ['candidate', 'trigger_muon']
 
-  sample_type = 'flat'
+  sample_type = 'nano'
   process_type = 'mumupi'
   add_dsa = 'no'
 
   analyser = EfficiencyAnalyser(filename=filename, sample_type=sample_type, process_type=process_type, add_dsa=add_dsa, matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel)
 
-  analyser.plot2DEfficiency()
-  analyser.plot1DEfficiency(binning='displacement')
+  #analyser.plot2DEfficiency()
+  #analyser.plot1DEfficiency(binning='displacement')
   analyser.plot1DEfficiency(binning='pt')
 
