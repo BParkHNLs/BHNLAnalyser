@@ -518,6 +518,9 @@ bkg {bkg_yields}
         # get the category label
         cat_label = self.getCategoryLabel(signal_mass=window['mass'], category=category)
 
+        # for the moment, remove low displacement category for mass 3 GeV
+        if float(window['mass']) == 3 and category.label in ['lxy0to1_OS', 'lxy0to1_SS']: continue
+
         # define the selection
         selection = self.baseline_selection
         if self.do_categories:
