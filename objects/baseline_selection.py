@@ -58,6 +58,7 @@ selection['baseline_30Dec21'] = Selection(
       '((trgmu_charge==mu_charge && abs(trgmu_pi_mass-3.097)>0.05 && abs(trgmu_pi_mass-1.76)>0.05) || (trgmu_charge!=mu_charge))',
       #'deltar_trgmu_pi < 1.5',
       #'deltar_trgmu_mu < 1',
+      'sv_lxyz < 100',
     ])
 )
 
