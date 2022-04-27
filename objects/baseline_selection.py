@@ -62,6 +62,13 @@ selection['baseline_30Dec21'] = Selection(
     ])
 )
 
+selection['baseline_sources'] = Selection(
+    flat = ' && '.join([
+      'hnl_charge == 0',
+      'sv_lxyz < 100',
+    ])
+)
+
 selection['mass_charge'] = Selection(
     flat = ' && '.join([
       'b_mass < 6.4',
