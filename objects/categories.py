@@ -4,12 +4,15 @@
 '''
 
 class Category(object):
-  def __init__(self, label='', title='', definition_flat='', definition_nano='', cutbased_selection=''):
+  def __init__(self, label='', title='', definition_flat='', definition_nano='', cutbased_selection='', cutbased_selection_lowmass='', cutbased_selection_mediummass='', cutbased_selection_highmass=''):
     self.label = label
     self.title = title
     self.definition_flat = definition_flat
     self.definition_nano = definition_nano
     self.cutbased_selection = cutbased_selection
+    self.cutbased_selection_lowmass = cutbased_selection_lowmass
+    self.cutbased_selection_mediummass = cutbased_selection_mediummass
+    self.cutbased_selection_highmass = cutbased_selection_highmass
 
 
 categories = {}
@@ -582,6 +585,58 @@ categories['3cat_0_1_5_significance'] = [
            #cutbased_selection = 'hnl_charge==0 && pi_pt>1.5 && sv_lxysig>150 && abs(mu_dxysig)>20'
           ),
 ]
+
+categories['3cat_0_1_5_significance_permass'] = [
+  Category(label = 'incl',
+           title = 'inclusive',
+           definition_flat = 'hnl_pt > 0',
+           definition_nano = 'BToMuMuPi_hnl_pt > 0',
+           cutbased_selection = 'hnl_pt > 0'
+          ),
+  Category(label = 'lxy0to1_OS',
+           title = 'l_{xy}<=1cm, OS',
+           definition_flat = 'sv_lxy<=1 && trgmu_charge!=mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>0.7 && sv_lxysig>50 && min(abs(mu_dxysig), abs(pi_dxysig))>0 && (1-hnl_cos2d)<1e-3',
+           cutbased_selection_mediummass = 'hnl_charge==0 && pi_pt>1 && sv_lxysig>90 && min(abs(mu_dxysig), abs(pi_dxysig))>40 && (1-hnl_cos2d)<1e-3',
+           cutbased_selection_highmass = 'hnl_charge==0 && pi_pt>6 && sv_lxysig>30',
+          ),
+  Category(label = 'lxy1to5_OS',
+           title = '(1<l_{xy}<=5)cm, OS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=5 && trgmu_charge!=mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>0.7 && sv_lxysig>200 && min(abs(mu_dxysig), abs(pi_dxysig))>20 && (1-hnl_cos2d)<1e-4',
+           cutbased_selection_mediummass = 'hnl_charge==0 && pi_pt>2 && sv_lxysig>270 && min(abs(mu_dxysig), abs(pi_dxysig))>25 && (1-hnl_cos2d)<1e-4',
+           cutbased_selection_highmass = 'hnl_charge==0 && pi_pt>4.5 && sv_lxysig>75',
+          ),
+  Category(label = 'lxygt5_OS',
+           title = 'l_{xy}>5cm, OS',
+           definition_flat = 'sv_lxy>5 && trgmu_charge!=mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>2 && sv_lxysig>230 && min(abs(mu_dxysig), abs(pi_dxysig))>60 && (1-hnl_cos2d)<1e-5',
+           cutbased_selection_mediummass = 'hnl_charge==0 && pi_pt>3 && sv_lxysig>200 && min(abs(mu_dxysig), abs(pi_dxysig))>40 && (1-hnl_cos2d)<2e-5',
+           cutbased_selection_highmass = 'hnl_charge==0 && pi_pt>4 && sv_lxysig>150',
+          ),
+  Category(label = 'lxy0to1_SS',
+           title = 'l_{xy}<=1cm, SS',
+           definition_flat = 'sv_lxy<=1 && trgmu_charge==mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>0.7 && sv_lxysig>50 && min(abs(mu_dxysig), abs(pi_dxysig))>0 && (1-hnl_cos2d)<1e-3',
+           cutbased_selection_mediummass = 'hnl_charge==0 && pi_pt>1 && sv_lxysig>90 && min(abs(mu_dxysig), abs(pi_dxysig))>40 && (1-hnl_cos2d)<1e-3',
+           cutbased_selection_highmass = 'hnl_charge==0 && pi_pt>6 && sv_lxysig>30',
+          ),
+  Category(label = 'lxy1to5_SS',
+           title = '(1<l_{xy}<=5)cm, SS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=5 && trgmu_charge==mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>0.7 && sv_lxysig>150 && min(abs(mu_dxysig), abs(pi_dxysig))>20 && (1-hnl_cos2d)<1e-4',
+           cutbased_selection_mediummass = 'hnl_charge==0 && pi_pt>2 && sv_lxysig>200 && min(abs(mu_dxysig), abs(pi_dxysig))>25 && (1-hnl_cos2d)<1e-4',
+           cutbased_selection_highmass = 'hnl_charge==0 && pi_pt>4 && sv_lxysig>75',
+          ),
+  Category(label = 'lxygt5_SS',
+           title = 'l_{xy}>5cm, SS',
+           definition_flat = 'sv_lxy>5 && trgmu_charge==mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>2 && sv_lxysig>230 && min(abs(mu_dxysig), abs(pi_dxysig))>60 && (1-hnl_cos2d)<1e-5',
+           cutbased_selection_mediummass = 'hnl_charge==0 && pi_pt>3 && sv_lxysig>200 && min(abs(mu_dxysig), abs(pi_dxysig))>20 && (1-hnl_cos2d)<2e-5',
+           cutbased_selection_highmass = 'hnl_charge==0 && pi_pt>4 && sv_lxysig>150',
+          ),
+]
+
 
 categories['3cat_0_1_20_significance'] = [
   Category(label = 'incl',
