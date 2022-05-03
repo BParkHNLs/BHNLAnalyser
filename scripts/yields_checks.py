@@ -27,9 +27,9 @@ class YieldsChecks(Tools):
     self.ABCD_regions = ABCD_regions
 
 
-  def plotSigYields(self, lumi=0.774, selection='', label='', outdirlabel='', add_bkg_level=False):
-    canv = self.tools.createTCanvas('canv', dimx=900, dimy=800)
-    #canv = self.tools.createTCanvas('canv', dimx=1200, dimy=800)
+  def plotSigYields(self, lumi=0.774, selection='', label='', outdirlabel=''):
+    #canv = self.tools.createTCanvas('canv', dimx=900, dimy=800)
+    canv = self.tools.createTCanvas('canv', dimx=1200, dimy=800)
     canv.SetLogx()
     canv.SetLogy()
     canv.SetGrid()
@@ -72,7 +72,6 @@ class YieldsChecks(Tools):
     graph_gen_m3.SetMarkerStyle(22)
     graph_gen_m3.SetMarkerSize(2)
     graph_gen_m3.SetMarkerColor(ROOT.kRed+1)
-    graph_gen_m3.SetMarkerColor(ROOT.kRed+1)
     graph_gen_m3.SetLineStyle(9)
     graph_gen_m3.SetLineWidth(2)
     graph_gen_m3.SetLineColor(ROOT.kRed+1)
@@ -88,13 +87,15 @@ class YieldsChecks(Tools):
     graph_gen_m4p5.SetLineWidth(2)
     graph_gen_m4p5.SetLineColor(ROOT.kRed+4)
 
-    samples_m1 = signal_samples['limits_m1_29Sep21']
-    samples_m3 = signal_samples['limits_m3_29Sep21']
-    samples_m4p5 = signal_samples['limits_m4p5_29Sep21']
-
-    #samples_m1 = signal_samples['central_V09_06Nov21_m1']
-    #samples_m3 = signal_samples['central_V09_06Nov21_m3']
-    #samples_m4p5 = signal_samples['central_V09_06Nov21_m4p5']
+    signal_label_m1 = 'V10_30Dec21_m1_large'
+    signal_label_m3 = 'V10_30Dec21_m3_large'
+    signal_label_m4p5 = 'V10_30Dec21_m4p5_large'
+    #signal_label_m1 = 'V00_looseselection_m1'
+    #signal_label_m3 = 'V00_looseselection_m3'
+    #signal_label_m4p5 = 'V00_looseselection_m4p5'
+    samples_m1 = signal_samples[signal_label_m1]
+    samples_m3 = signal_samples[signal_label_m3]
+    samples_m4p5 = signal_samples[signal_label_m4p5]
 
     graph_dummy = ROOT.TGraph()
     graph_m1 = ROOT.TGraphAsymmErrors()
@@ -102,8 +103,7 @@ class YieldsChecks(Tools):
     graph_m4p5 = ROOT.TGraphAsymmErrors()
 
     graph_dummy.SetPoint(0, 1e-6, 1e-7)
-    #graph_dummy.SetPoint(1, 1e-1, 1e10)
-    graph_dummy.SetPoint(1, 1, 1e10)
+    graph_dummy.SetPoint(1, 1e-1, 1e10)
     graph_dummy.SetMarkerStyle(0)
     graph_dummy.SetMarkerSize(0)
     graph_dummy.SetMarkerColor(0)
@@ -112,8 +112,7 @@ class YieldsChecks(Tools):
     graph_dummy.GetXaxis().SetLabelSize(0.037)
     graph_dummy.GetXaxis().SetTitleSize(0.042)
     graph_dummy.GetXaxis().SetTitleOffset(1.1)
-    #graph_dummy.GetYaxis().SetTitle('Signal yields')
-    graph_dummy.GetYaxis().SetTitle('Yields')
+    graph_dummy.GetYaxis().SetTitle('Signal yields')
     graph_dummy.GetYaxis().SetLabelSize(0.037)
     graph_dummy.GetYaxis().SetTitleSize(0.042)
     graph_dummy.GetYaxis().SetTitleOffset(1.1)
@@ -123,12 +122,11 @@ class YieldsChecks(Tools):
       # get signal coupling
       signal_mass = signal_file.mass
       signal_ctau = signal_file.ctau
-      signal_resolution = signal_file.resolution
       signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
       signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
-      signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9) 
+      signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, signal_label=signal_label_m1, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9) 
 
       # fill graph
       point = graph_m1.GetN()
@@ -136,38 +134,24 @@ class YieldsChecks(Tools):
       #graph_m1.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
       graph_m1.SetPointError(point, 0, 0, 0, 0)
 
-    if add_bkg_level:
-      background_yields = ComputeYields(data_files=self.data_files, selection=selection).computeBkgYieldsFromABCDData(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)[0]
-      #background_yields = background_yields * lumi/lumi_true
-      background_yields = background_yields * 41.6/(0.774*0.108)
-
-      bkg_line_m1 = ROOT.TLine(1e-6, background_yields, 1, background_yields)
-      #bkg_line_m1.SetLineColor(ROOT.kOrange+0)
-      bkg_line_m1.SetLineColor(ROOT.kBlue)
-      bkg_line_m1.SetLineWidth(3)
-      bkg_line_m1.SetLineStyle(9)
-
     graph_m1.SetMarkerStyle(20)
     graph_m1.SetMarkerSize(2)
-    #graph_m1.SetMarkerColor(ROOT.kOrange+0)
-    graph_m1.SetMarkerColor(ROOT.kBlue)
+    graph_m1.SetMarkerColor(ROOT.kOrange+0)
     graph_m1.SetLineStyle(1)
     graph_m1.SetLineWidth(2)
-    #graph_m1.SetLineColor(ROOT.kOrange+0)
-    graph_m1.SetLineColor(ROOT.kBlue)
-
+    graph_m1.SetLineColor(ROOT.kOrange+0)
 
     print '\n mass 3'
     for signal_file in samples_m3:
       # get signal coupling
       signal_mass = signal_file.mass
       signal_ctau = signal_file.ctau
-      signal_resolution = signal_file.resolution
       signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
       signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
-      signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9) 
+      #signal_selection = 'ismatched==1 && sv_lxyz<1' if selection=='' else 'ismatched==1 && sv_lxyz<1 && {}'.format(selection)
+      signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, signal_label=signal_label_m3, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9) 
 
       # fill graph
       point = graph_m3.GetN()
@@ -175,16 +159,6 @@ class YieldsChecks(Tools):
       #graph_m3.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
       graph_m3.SetPointError(point, 0, 0, 0, 0)
 
-    #if add_bkg_level:
-    #  background_yields, err, _, _, _ = ComputeYields(data_files=self.data_files, selection=selection).computeBkgYieldsFromABCDData(mass=signal_mass, resolution=signal_resolution, ABCD_regions=self.ABCD_regions)
-    #  #background_yields = background_yields * lumi/lumi_true
-    #  background_yields = background_yields * 41.6/(0.774*0.108)
-
-    #  bkg_line_m3 = ROOT.TLine(1e-6, background_yields, 1e-1, background_yields)
-    #  #bkg_line_m3.SetLineColor(ROOT.kRed+1)
-    #  bkg_line_m3.SetLineColor(ROOT.kBlue)
-    #  bkg_line_m3.SetLineWidth(3)
-    #  bkg_line_m3.SetLineStyle(9)
 
     graph_m3.SetMarkerStyle(20)
     graph_m3.SetMarkerSize(2)
@@ -202,7 +176,7 @@ class YieldsChecks(Tools):
 
       # compute the signal yields
       signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
-      signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9) 
+      signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, signal_label=signal_label_m4p5, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9) 
 
       # fill graph
       point = graph_m4p5.GetN()
@@ -219,27 +193,21 @@ class YieldsChecks(Tools):
 
     graph_dummy.Draw('AP')  
     graph_m1.Draw('PL same')  
-    #graph_m3.Draw('PL same')  
-    #graph_m4p5.Draw('PL same')  
+    graph_m3.Draw('PL same')  
+    graph_m4p5.Draw('PL same')  
     #graph_gen_m1.Draw('PL same')
     #graph_gen_m3.Draw('PL same')
     #graph_gen_m4p5.Draw('PL same')
       
-    if add_bkg_level:
-      bkg_line_m1.Draw('same')
-      #bkg_line_m3.Draw('same')
-
-    #legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
-    legend = self.tools.getRootTLegend(xmin=0.25, ymin=0.2, xmax=0.75, ymax=0.35, size=0.033)
+    legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
     #legend.AddEntry(graph_m1, 'm=1GeV, reco')
-    legend.AddEntry(graph_m1, 'signal, m=1GeV')
+    legend.AddEntry(graph_m1, 'm=1GeV')
     #legend.AddEntry(graph_gen_m1, 'm=1GeV, gen')
-    legend.AddEntry(bkg_line_m1, 'background in 2#sigma window around m=1GeV')
     #legend.AddEntry(graph_m3, 'm=3GeV, reco')
-    #legend.AddEntry(graph_m3, 'm=3GeV')
+    legend.AddEntry(graph_m3, 'm=3GeV')
     #legend.AddEntry(graph_gen_m3, 'm=3GeV, gen')
     #legend.AddEntry(graph_m4p5, 'm=4p5GeV, reco')
-    #legend.AddEntry(graph_m4p5, 'm=4p5GeV')
+    legend.AddEntry(graph_m4p5, 'm=4p5GeV')
     #legend.AddEntry(graph_gen_m4p5, 'm=4p5GeV, gen')
     legend.Draw()
 
@@ -706,8 +674,8 @@ class Significance(object):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  plotSigYields = False
-  plotSigBkgYields = True
+  plotSigYields = True
+  plotSigBkgYields = False
   plotBkgYields = False
   getSignificance = False
 
@@ -721,8 +689,9 @@ if __name__ == '__main__':
     #doABCDHybrid = False
     #doTF = True
 
-    selection = selection['study_Nov21'].flat #'mu_isdsa!=1 && sv_lxy>30 && trgmu_charge==mu_charge'
+    #selection = selection['study_Nov21'].flat #'mu_isdsa!=1 && sv_lxy>30 && trgmu_charge==mu_charge'
     #selection = 'mu_isdsa==1 && sv_lxy>20 && pi_pt>1.1 && mu_ismatchedtoslimmedmuon==0'
+    selection = selection['baseline_30Dec21'].flat
 
     #plotter = YieldsChecks()
     plotter = YieldsChecks(data_files=data_files, qcd_files=qcd_files, white_list=white_list, categories=categories, selection=selection, ABCD_regions=ABCD)
@@ -730,8 +699,7 @@ if __name__ == '__main__':
     #label = 'central_reweighting_allmasses_strategyctaumerged_updatedsigma'
     #label = 'V08_29Sep21_dsa_study_ABCD_m1_nonmatched'
     label = 'test'
-    add_bkg_level = True
-    plotter.plotSigYields(lumi=41.6, selection=selection, label=label, outdirlabel='', add_bkg_level=add_bkg_level)
+    plotter.plotSigYields(lumi=41.6, selection=selection, label=label, outdirlabel='')
 
 
   if plotSigBkgYields:
