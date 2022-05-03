@@ -638,25 +638,27 @@ if __name__ == '__main__':
   #signal_files = signal_samples['central_V09_06Nov21_significance']
 
   signal_m1_ctau1000 = signal_samples['V10_30Dec21_m1'][0]
-  signal_m1_ctau100 = signal_samples['V10_30Dec21_m1'][1]
-  signal_m1_ctau10 = signal_samples['V10_30Dec21_m1'][2]
+  signal_m1_ctau100 = signal_samples['V11_24Apr22_m1'][0]
+  signal_m1_ctau10 = signal_samples['V11_24Apr22_m1'][1]
 
   signal_m1p5_ctau1000 = signal_samples['V10_30Dec21_m1p5'][0]
   signal_m2_ctau1000 = signal_samples['V10_30Dec21_m2'][0]
 
   signal_m3_ctau1000 = signal_samples['V10_30Dec21_m3'][0]
-  signal_m3_ctau100 = signal_samples['V10_30Dec21_m3'][1]
-  signal_m3_ctau10 = signal_samples['V10_30Dec21_m3'][2]
+  signal_m3_ctau100 = signal_samples['V11_24Apr22_m3'][0]
+  signal_m3_ctau10 = signal_samples['V11_24Apr22_m3'][1]
   signal_m3_ctau1 = signal_samples['V10_30Dec21_m3'][3]
 
-  signal_m4p5_ctau100 = signal_samples['V10_30Dec21_m4p5'][0]
+  signal_m4p5_ctau100 = signal_samples['V11_24Apr22_m4p5'][0]
   signal_m4p5_ctau10 = signal_samples['V10_30Dec21_m4p5'][1]
-  signal_m4p5_ctau1 = signal_samples['V10_30Dec21_m4p5'][2]
+  signal_m4p5_ctau1 = signal_samples['V11_24Apr22_m4p5'][1]
   signal_m4p5_ctau0p1 = signal_samples['V10_30Dec21_m4p5'][3]
 
-  data_file = data_samples['V10_30Dec21'][0].filename # we only consider D1 which is unblinded
+  #data_file = data_samples['V10_30Dec21'][0].filename # we only consider D1 which is unblinded
+  data_file = data_samples['V11_24Apr22'][0].filename # we only consider D1 which is unblinded
   #data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018D/merged/flat_bparknano_30Dec21_10Chunks.root'
   #data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_30Dec21.root'
+  #data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_24Apr22.root'
 
   qcd_files = qcd_samples['V10_30Dec21']
 
@@ -695,9 +697,12 @@ if __name__ == '__main__':
   quantity = opt.quantity
   action = opt.action
 
-  if mass == '1': signal_files = [signal_m1_ctau1000, signal_m1_ctau100, signal_m1_ctau10]
-  if mass == '3': signal_files = [signal_m3_ctau1000, signal_m3_ctau100, signal_m3_ctau10, signal_m3_ctau1]
-  if mass == '4p5': signal_files = [signal_m4p5_ctau100, signal_m4p5_ctau10, signal_m4p5_ctau1]
+  #if mass == '1': signal_files = [signal_m1_ctau1000, signal_m1_ctau100, signal_m1_ctau10]
+  if mass == '1': signal_files = [signal_m1_ctau100, signal_m1_ctau10]
+  #if mass == '3': signal_files = [signal_m3_ctau1000, signal_m3_ctau100, signal_m3_ctau10, signal_m3_ctau1]
+  if mass == '3': signal_files = [signal_m3_ctau100, signal_m3_ctau10]
+  #if mass == '4p5': signal_files = [signal_m4p5_ctau100, signal_m4p5_ctau10, signal_m4p5_ctau1]
+  if mass == '4p5': signal_files = [signal_m4p5_ctau100, signal_m4p5_ctau1]
 
   do_lxy0to1_OS = False
   do_lxy0to1_SS = False
@@ -743,7 +748,7 @@ if __name__ == '__main__':
   if action == 'scan_significance': do_scan_significance = True
   if action == 'scan_significance_diff': do_scan_significance_diff = True
   if action == 'print_cutflow': do_print_cutflow = True
-  #if action == 'print_significance': do_print_significance = True 
+  if action == 'print_significance': do_print_significance = True 
 
 
   ### CATEGORY inclusive ###

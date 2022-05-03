@@ -1,38 +1,39 @@
 #!/bin/bash
 
-dirlabel='selection_significance_diff_dataD1_v3'
-quantity='hnl_cos2d'
+#dirlabel='selection_significance_diff_dataD1_v3'
+dirlabel='study_newfilter_v3'
+quantity='min_mu_pi_dxysig'
 action='print_significance'
 
 # list of cuts
 # syntax (m1 m3 m4p5)
-cut_pi_pt_lxy0to1_OS=("0.7" "1." "5.")
-cut_pi_pt_lxy0to1_SS=("0.7" "1." "6.")
-cut_pi_pt_lxy1to5_OS=("0.7" "2" "4.5")
-cut_pi_pt_lxy1to5_SS=("0.7" "2" "4")
-cut_pi_pt_lxygt5_OS=("2" "3." "4.")
-cut_pi_pt_lxygt5_SS=("2" "3." "4.")
+cut_pi_pt_lxy0to1_OS=("0.7" "0.8" "2.")
+cut_pi_pt_lxy0to1_SS=("0.7" "0.8" "2.")
+cut_pi_pt_lxy1to5_OS=("0.7" "1.5" "4.")
+cut_pi_pt_lxy1to5_SS=("0.7" "1.5" "4.")
+cut_pi_pt_lxygt5_OS=("2." "3.5" "5.")
+cut_pi_pt_lxygt5_SS=("2." "3.5" "5.")
 
-cut_sv_lxysig_lxy0to1_OS=("50" "90" "30")
-cut_sv_lxysig_lxy0to1_SS=("50" "90" "30")
-cut_sv_lxysig_lxy1to5_OS=("200" "270" "75")
-cut_sv_lxysig_lxy1to5_SS=("150" "200" "75")
-cut_sv_lxysig_lxygt5_OS=("230" "250" "150")
-cut_sv_lxysig_lxygt5_SS=("230" "200" "150")
+cut_sv_lxysig_lxy0to1_OS=("30" "90" "100")
+cut_sv_lxysig_lxy0to1_SS=("50" "100" "70")
+cut_sv_lxysig_lxy1to5_OS=("150" "300" "100")
+cut_sv_lxysig_lxy1to5_SS=("150" "300" "100")
+cut_sv_lxysig_lxygt5_OS=("150" "300" "200")
+cut_sv_lxysig_lxygt5_SS=("150" "300" "200")
 
-cut_min_mu_pi_dxysig_lxy0to1_OS=("0" "40" "0")
-cut_min_mu_pi_dxysig_lxy0to1_SS=("0" "40" "0")
-cut_min_mu_pi_dxysig_lxy1to5_OS=("20" "25" "0")
-cut_min_mu_pi_dxysig_lxy1to5_SS=("20" "25" "0")
-cut_min_mu_pi_dxysig_lxygt5_OS=("60" "40" "0")
-cut_min_mu_pi_dxysig_lxygt5_SS=("60" "20" "0")
+cut_min_mu_pi_dxysig_lxy0to1_OS=("0" "5" "0")
+cut_min_mu_pi_dxysig_lxy0to1_SS=("0" "5" "0")
+cut_min_mu_pi_dxysig_lxy1to5_OS=("10" "40" "0")
+cut_min_mu_pi_dxysig_lxy1to5_SS=("10" "40" "0")
+cut_min_mu_pi_dxysig_lxygt5_OS=("40" "60" "0")
+cut_min_mu_pi_dxysig_lxygt5_SS=("40" "40" "0")
 
-cut_hnl_cos2d_lxy0to1_OS=("1e-3" "1e-3" "1")
-cut_hnl_cos2d_lxy0to1_SS=("1e-3" "1e-3" "1")
-cut_hnl_cos2d_lxy1to5_OS=("1e-4" "1e-4" "1")
-cut_hnl_cos2d_lxy1to5_SS=("1e-4" "1e-4" "1")
-cut_hnl_cos2d_lxygt5_OS=("1e-5" "2e-5" "1")
-cut_hnl_cos2d_lxygt5_SS=("1e-5" "2e-5" "1")
+cut_hnl_cos2d_lxy0to1_OS=("2e-3" "2e-3" "1")
+cut_hnl_cos2d_lxy0to1_SS=("2e-3" "2e-3" "1")
+cut_hnl_cos2d_lxy1to5_OS=("1e-4" "2e-4" "1")
+cut_hnl_cos2d_lxy1to5_SS=("3e-4" "2e-4" "1")
+cut_hnl_cos2d_lxygt5_OS=("3e-5" "2e-5" "1")
+cut_hnl_cos2d_lxygt5_SS=("3e-5" "2e-5" "1")
 
 cut_mu_dxysig_lxy0to1_OS=("5" "15" "0")
 cut_mu_dxysig_lxy0to1_SS=("5" "15" "0")
@@ -119,7 +120,7 @@ do
       cut_hnl_cos2d=${cut_hnl_cos2d_lxygt5_SS[$idx]}
     fi
 
-    #sbatch -p standard --account t3 -o ./logs/log_${MASS}_${CAT}.txt -e ./logs/log_${MASS}_${CAT}.txt --job-name=selection_${MASS}_${CAT} run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
+    #sbatch -p standard --account t3 -o ./logs/log_${MASS}_${CAT}.txt -e ./logs/log_${MASS}_${CAT}.txt --job-name=selection_${MASS}_${CAT} --time 02:00:00 run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
     sh run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
 
   done
