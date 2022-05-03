@@ -20,7 +20,7 @@ class Quantity(object):
                               
 
 class Selection(Tools):
-  def __init__(self, files, quantity, preexisting_selection=None, npoints=50, sample_type='nano', write_cut_analysis=False, proposed_cut=None):
+  def __init__(self, files, quantity, preexisting_selection=None, npoints=50, sample_type='flat', write_cut_analysis=False, proposed_cut=None):
     self.tools                 = Tools()
     self.files                 = files
     self.quantity              = quantity
@@ -376,15 +376,17 @@ if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
   file_background = FileCollection(
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/bparknano_looseselection_dsaonly.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/bparknano_data_1file_looseselection.root',
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/bparknano_data_1file_looseselection.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/flat_bparknano_data_1file_looseselection.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/merged/bparknano_data_looseselection.root',
       process = 'background',
       )
 
   file_m3 = FileCollection(
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass3.0_ctau100.0/nanoFiles/merged/bparknano_looseselection.root',
       process = 'signal',
       signal_mass = 3,
       signal_ctau = 100,
@@ -392,8 +394,9 @@ if __name__ == '__main__':
 
   file_m4p5 = FileCollection(
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass4.5_ctau1.0/nanoFiles/merged/bparknano_looseselection.root',
       process = 'signal',
       signal_mass = 4.5,
       signal_ctau = 1,
@@ -401,8 +404,9 @@ if __name__ == '__main__':
 
   file_m1 = FileCollection(
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V26/mass1.0_ctau10000.0/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n38/merged/bparknano.root',
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n38/merged/bparknano.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass1.0_ctau1000.0/nanoFiles/merged/bparknano_looseselection.root',
       process = 'signal',
       signal_mass = 1,
       signal_ctau = 1000,
@@ -421,6 +425,10 @@ if __name__ == '__main__':
   files.append(file_m4p5)
   files.append(file_m1)
   #files.append(file_V25)
+
+
+  #trg_cond = Quantity('((BToMuMuPi_trg_mu_pt>7 && abs(BToMuMuPi_trg_mu_eta)<1.5) || (Muon_pt[BToMuMuPi_sel_mu_idx]>7 && abs( Muon_pt[BToMuMuPi_sel_mu_idx])<1.5))', '', 'trg_cond', 'Either muon triggers', '==', '', 0, 10)
+  trg_cond = Quantity('((BToMuMuPi_trg_mu_pt>7 && abs(BToMuMuPi_trg_mu_eta)<1.5) || (Muon_pt[BToMuMuPi_sel_mu_idx]>7 && abs(Muon_eta[BToMuMuPi_sel_mu_idx])<1.5))', '', 'trg_cond', 'Either muon triggers', '==', '', 0, 10)
  
   b_mass = Quantity('BToMuMuPi_mass', 'b_mass', 'b_mass', '#mu#mu#pi invariant mass', '<', 'GeV', 5, 10)
   b_mass_m = Quantity('BToMuMuPi_mass', 'b_mass', 'b_mass', '#mu#mu#pi invariant mass', '>', 'GeV', 0, 3)
@@ -451,8 +459,8 @@ if __name__ == '__main__':
   mu_dxyS = Quantity('abs(Muon_dxyS[BToMuMuPi_sel_mu_idx])', 'abs(mu_dxysig)', 'mu_dxyS', 'displaced muon |IP| significance on xy', '>', '', 0, 2)
   mu_pfiso03rel = Quantity('Muon_pfiso03Rel_all[BToMuMuPi_sel_mu_idx]', 'mu_pfiso03rel', 'mu_pfiso03rel', 'displaced muon relative PF iso03', '<', '', 0, 20)
 
-  pi_pt = Quantity('ProbeTracks_pt[BToMuMuPi_pi_idx]', 'pi_pt', 'pi_pt', 'displaced pion pT', '>', 'GeV', 0, 6)
-  pi_eta = Quantity('abs(ProbeTracks_eta[BToMuMuPi_pi_idx])', 'abs(pi_eta)', 'pi_eta', 'displaced pion |#eta|', '<', '', 0, 2.5)
+  pi_pt = Quantity('BToMuMuPi_pi_pt', 'pi_pt', 'pi_pt', 'displaced pion pT', '>', 'GeV', 0, 6)
+  pi_eta = Quantity('abs(BToMuMuPi_pi_eta)', 'abs(pi_eta)', 'pi_eta', 'displaced pion |#eta|', '<', '', 0, 2.5)
   pi_dz = Quantity('abs(BToMuMuPi_pi_dz)', 'abs(pi_dz)', 'pi_dz', 'displaced pion |IP| on z', '>', 'cm', 0, 0.015)
   pi_dxy = Quantity('abs(BToMuMuPi_pi_dxy)', 'abs(pi_dxy)', 'pi_dxy', 'displaced pion |IP| on xy', '>', 'cm', 0, 0.05)
   pi_dzS = Quantity('abs(BToMuMuPi_pi_dzS)', 'abs(pi_dzsig)', 'pi_dzS', 'displaced pion |IP| significance on z', '>', '', 0, 10)
@@ -494,13 +502,20 @@ if __name__ == '__main__':
 
   #soft_muon = Quantity('b_sel_mu_isSoft', 'mu_isSoft', '==', '', 0, 1)
  
-  printCutflow = True
+  printCutflow = False
   printScan = False
 
   preselection = [] 
 
+  cut_trg_cond = 1
+  if printScan: Selection(files, trg_cond, npoints=30, write_cut_analysis=False, proposed_cut=cut_trg_cond).getScanGraph()
+  #Selection(files, trg_cond, npoints=5, write_cut_analysis=False, proposed_cut=cut_trg_cond).getScanGraph()
+  #Selection(files, trg_cond, npoints=30).getROCGraph()
+  if printCutflow: Selection(files, trg_cond, proposed_cut=cut_trg_cond).printCutflowLine()
+  #Selection(files, trg_cond, proposed_cut=cut_trg_cond).printCutflowLine()
+  preselection.append(PreselectedQuantity(trg_cond, cut_trg_cond))
 
-  cut_trg_mu_pt = 7
+  cut_trg_mu_pt = 1.5 #7
   if printScan: Selection(files, trg_mu_pt, npoints=30, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
   #Selection(files, trg_mu_pt, npoints=5, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
   #Selection(files, trg_mu_pt, npoints=30).getROCGraph()
@@ -508,7 +523,7 @@ if __name__ == '__main__':
   #Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printCutflowLine()
   preselection.append(PreselectedQuantity(trg_mu_pt, cut_trg_mu_pt))
 
-  cut_trg_mu_eta = 1.5
+  cut_trg_mu_eta = 2 #1.5
   if printScan: Selection(files, trg_mu_eta, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_trg_mu_eta).getScanGraph()
   #Selection(files, trg_mu_eta, npoints=30).getROCGraph()
   if printCutflow: Selection(files, trg_mu_eta, preexisting_selection=preselection, proposed_cut=cut_trg_mu_eta).printCutflowLine()
