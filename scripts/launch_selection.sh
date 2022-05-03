@@ -4,6 +4,7 @@
 dirlabel='study_newfilter_v3'
 quantity='min_mu_pi_dxysig'
 action='print_significance'
+submit_batch='0'
 
 # list of cuts
 # syntax (m1 m3 m4p5)
@@ -120,8 +121,11 @@ do
       cut_hnl_cos2d=${cut_hnl_cos2d_lxygt5_SS[$idx]}
     fi
 
-    #sbatch -p standard --account t3 -o ./logs/log_${MASS}_${CAT}.txt -e ./logs/log_${MASS}_${CAT}.txt --job-name=selection_${MASS}_${CAT} --time 02:00:00 run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
-    sh run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
+    if [ $submit_batch == '1' ] ; then
+      sbatch -p standard --account t3 -o ./logs/log_${MASS}_${CAT}.txt -e ./logs/log_${MASS}_${CAT}.txt --job-name=selection_${MASS}_${CAT} --time 02:00:00 run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
+    elif [ $submit_batch == '0' ] ; then
+      sh run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
+    fi
 
   done
 done
