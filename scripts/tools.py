@@ -226,11 +226,12 @@ class Tools(object):
     return box
 
 
-  def printLatexBox(self, x, y, text, size=0.04):
+  def printLatexBox(self, x, y, text, size=0.04, pos='center'):
     box = ROOT.TLatex()
     box.SetNDC()
     box.SetTextFont(42)
-    box.SetTextAlign(22) 
+    if pos == 'center': box.SetTextAlign(22) 
+    else: box.SetTextAlign(12) 
     box.SetTextSize(size)    
     box.DrawLatex(x, y, text)
   
