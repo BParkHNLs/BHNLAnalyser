@@ -19,7 +19,8 @@ class Config(object):
                add_weight_hlt=None,
                add_weight_pu=None,
                branch_weight_hlt=None,
-               branch_weight_pu=None,
+               branch_weight_puqcd=None,
+               branch_weight_pusig=None,
 
                # for plotter
                plot_CR=None, 
@@ -77,7 +78,8 @@ class Config(object):
     self.add_weight_hlt = add_weight_hlt
     self.add_weight_pu = add_weight_pu
     self.branch_weight_hlt = branch_weight_hlt
-    self.branch_weight_pu = branch_weight_pu
+    self.branch_weight_puqcd = branch_weight_puqcd
+    self.branch_weight_pusig = branch_weight_pusig
     self.plot_CR = plot_CR
     self.plot_SR = plot_SR
     self.plot_dataSig = plot_dataSig
