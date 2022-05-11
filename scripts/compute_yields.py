@@ -373,7 +373,7 @@ class ComputeYields(Tools):
   # SIGNAL 
   ###
 
-  def getSignalEfficiency(self, add_weight_hlt=False, weight_hlt='weight_hlt_A1', isBc=False):
+  def getSignalEfficiency(self, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isBc=False):
     '''
       eff(bin) = N_flat(bin) / N_gen
       N_gen = N_reco / filter_efficiency
@@ -382,9 +382,9 @@ class ComputeYields(Tools):
     # get the generated that will be used to do the reweighting (all ctau points at a given mass)
     samples_for_reweighting = []
     the_signal_samples = signal_samples[self.signal_label]
-    do_exclusive_reweighting_fromlargerctau = False
+    do_exclusive_reweighting_fromlargerctau = True
     do_exclusive_reweighting_fromsmallerctau = False
-    do_full_inclusive_reweighting = True
+    do_full_inclusive_reweighting = False
     do_partial_inclusive_reweighting = False
     do_unique_reweighting = False
 
@@ -458,9 +458,9 @@ class ComputeYields(Tools):
         if 'mN4p5' in the_signal_sample.filename and 'ctau100p0mm' in the_signal_sample.filename: 
           samples_for_reweighting.append(the_signal_sample)
 
-    print '\n {}'.format(self.signal_file.ctau)
-    for the_signal_sample in samples_for_reweighting:
-      print the_signal_sample.filename
+    #print '\n {}'.format(self.signal_file.ctau)
+    #for the_signal_sample in samples_for_reweighting:
+      #print the_signal_sample.filename
 
     # get the trees
     filename = self.signal_file.filename if not isBc else self.signal_file.filename_Bc
@@ -546,6 +546,7 @@ class ComputeYields(Tools):
     #(3629644.0 / 1.5 * exp(-gen_hnl_ct / 1.5) * (1. / ( 2128601.0 / 1000.0 * exp(-gen_hnl_ct / 1000.0 + 808459.0 / 100.0 * exp(-gen_hnl_ct / 100.0 + 365329.0 / 10.0 * exp(-gen_hnl_ct / 10.0 + 327255.0 / 1.0 * exp(-gen_hnl_ct / 1.0))))
 
     if add_weight_hlt : weight += ' * ({})'.format(weight_hlt)
+    if add_weight_pu : weight += ' * ({})'.format(weight_pusig)
 
     # plot the weight distribution
     #canv_weight = ROOT.TCanvas('canv_weight', 'canv_weight', 800, 700)
@@ -575,7 +576,7 @@ class ComputeYields(Tools):
     return efficiency, err_efficiency
 
 
-  def computeSignalYields(self, lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, weight_hlt='weight_hlt_A1_6', isBc=False):
+  def computeSignalYields(self, lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isBc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
     '''
@@ -615,7 +616,7 @@ class ComputeYields(Tools):
     lumi_A1 = lumi
 
     # efficiency in the mu-channel
-    efficiency, err_efficiency = self.getSignalEfficiency(add_weight_hlt=add_weight_hlt, weight_hlt=weight_hlt, isBc=isBc)
+    efficiency, err_efficiency = self.getSignalEfficiency(add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, weight_hlt=weight_hlt, weight_pusig=weight_pusig, isBc=isBc)
     #print 'efficiency ',efficiency #efficiency/self.signal_file.filter_efficiency
 
     signal_yields = sigma_HNL * lumi_A1 * efficiency

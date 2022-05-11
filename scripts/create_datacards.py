@@ -40,9 +40,11 @@ def getOptions():
   parser.add_argument('--sigma_B'               , type=str, dest='sigma_B'               , help='which value of the B cross section?'                           , default='472.8e9')
   parser.add_argument('--sigma_mult'            , type=str, dest='sigma_mult'            , help='size n*sigma of the window around a given mass'                , default='20')
   parser.add_argument('--weight_hlt'            , type=str, dest='weight_hlt'            , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
+  parser.add_argument('--weight_pusig'          , type=str, dest='weight_pusig'          , help='name of the branch of pu sig weight'                           , default='weight_pusig_D')
   parser.add_argument('--qcd_white_list '       , type=str, dest='qcd_white_list'        , help='pthat range to consider for qcd samples'                       , default='20to300')
   parser.add_argument('--CMStag '               , type=str, dest='CMStag'                , help='CMS tag to be added if --add_CMSlabel'                         , default='Preliminary')
   parser.add_argument('--add_weight_hlt'        ,           dest='add_weight_hlt'        , help='add hlt weight'                           , action='store_true', default=False)
+  parser.add_argument('--add_weight_pu'         ,           dest='add_weight_pu'         , help='add pu weight'                            , action='store_true', default=False)
   parser.add_argument('--do_ABCD'               ,           dest='do_ABCD'               , help='compute yields with the ABCD method'      , action='store_true', default=False)
   parser.add_argument('--do_ABCDHybrid'         ,           dest='do_ABCDHybrid'         , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
   parser.add_argument('--do_TF'                 ,           dest='do_TF'                 , help='compute yields with the TF method'        , action='store_true', default=False)
@@ -91,10 +93,11 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, add_weight_hlt=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag=''):
+  def __init__(self, data_files='', signal_files='', signal_label='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, weight_pusig=None, add_weight_hlt=True, add_weight_pu=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
+    self.signal_label = signal_label
     self.qcd_files = qcd_files
     self.white_list = white_list
     self.baseline_selection = baseline_selection
@@ -124,7 +127,9 @@ class DatacardsMaker(Tools):
     self.sigma_B = float(sigma_B)
     self.sigma_mult = float(sigma_mult)
     self.weight_hlt = weight_hlt
+    self.weight_pusig = weight_pusig
     self.add_weight_hlt = add_weight_hlt
+    self.add_weight_pu = add_weight_pu
     self.add_Bc = add_Bc
     self.plot_prefit = plot_prefit
     self.outputdir = './outputs/{}/datacards/{}'.format(outdirlabel, subdirlabel)
@@ -185,9 +190,9 @@ class DatacardsMaker(Tools):
   def getSignalYields(self, signal_file, category='', selection=''):
     signal_selection = 'ismatched==1 && ' + selection
 
-    signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, isBc=False)[0]
+    signal_yields = ComputeYields(signal_file=signal_file, signal_label=self.signal_label, selection=signal_selection).computeSignalYields(lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, add_weight_pu=self.add_weight_pu, weight_pusig=self.weight_pusig, isBc=False)[0]
     if self.add_Bc and signal_file.filename_Bc != '':
-      signal_yields += ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, isBc=True)[0]
+      signal_yields += ComputeYields(signal_file=signal_file, signal_label=self.signal_label, selection=signal_selection).computeSignalYields(lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, add_weight_pu=self.add_weight_pu, weight_pusig=self.weight_pusig, isBc=True)[0]
 
       #print 'yields {} + {} = {}'.format(ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, isBc=False)[0], ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, isBc=True), signal_yields)[0]
 
@@ -230,7 +235,7 @@ class DatacardsMaker(Tools):
 
     # initialise the fitter
     if process == 'signal':
-      fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
+      fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
 
       # perform the fits and write the workspaces
       fitter.process_signal(label=label)
@@ -251,7 +256,7 @@ class DatacardsMaker(Tools):
       # extract the background yields from the fit and normalise to lumi
       background_yields = fitter.getBackgroundYieldsFromFit()
       lumi_true = self.tools.getDataLumi(self.data_files)
-      yields = background_yields * self.lumi_target/lumi_true
+      yields = background_yields * self.lumi_target/lumi_true #NOTE this is needed as the background on which the fit is performed is not normalised to lumi
 
     elif process == 'data_obs':
       fitter = Fitter(data_files=self.data_files, mass=mass, resolution=resolution, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
@@ -308,6 +313,8 @@ class DatacardsMaker(Tools):
     weight_ctau = self.tools.getCtauWeight(signal_file)
     weight_signal = self.tools.getSignalWeight(signal_file=signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
+    if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
+    if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
 
     signal_selection = 'ismatched==1 && ' + selection
     hist_sig = self.tools.createHisto(tree_signal, quantity, hist_name='sig', branchname='flat', selection=signal_selection, weight=weight_sig)
@@ -355,6 +362,7 @@ class DatacardsMaker(Tools):
 
         weight_qcd = self.tools.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
         weight_qcd = '({})'.format(weight_qcd)
+        if self.add_weight_hlt: weight_qcd += ' * ({})'.format(self.weight_hlt)
         hist_qcd = self.tools.createHisto(tree_qcd, quantity, hist_name='hist_qcd', branchname='flat', selection=background_selection, weight=weight_qcd) 
 
         int_mc_tot += hist_qcd.Integral()
@@ -591,7 +599,8 @@ if __name__ == '__main__':
     printInfo(opt)
 
     data_files = data_samples[opt.data_label]
-    signal_files = signal_samples[opt.signal_label]
+    signal_label = opt.signal_label
+    signal_files = signal_samples[signal_label]
     qcd_files = qcd_samples[opt.qcd_label]
     
     white_list = white_list[opt.qcd_white_list]
@@ -625,6 +634,9 @@ if __name__ == '__main__':
     add_weight_hlt = opt.add_weight_hlt
     weight_hlt = opt.weight_hlt
 
+    add_weight_pu = opt.add_weight_pu
+    weight_pusig = opt.weight_pusig
+
     do_counting = opt.do_counting
     do_shape_analysis = opt.do_shape_analysis
     do_shape_TH1 = opt.do_shape_TH1
@@ -640,6 +652,7 @@ if __name__ == '__main__':
     DatacardsMaker(
         data_files = data_files, 
         signal_files = signal_files, 
+        signal_label = signal_label,
         qcd_files = qcd_files,
         white_list = white_list,
         baseline_selection = baseline_selection, 
@@ -667,7 +680,9 @@ if __name__ == '__main__':
         sigma_B = sigma_B,
         sigma_mult = sigma_mult,
         weight_hlt = weight_hlt,
+        weight_pusig = weight_pusig,
         add_weight_hlt = add_weight_hlt,
+        add_weight_pu = add_weight_pu,
         add_Bc = add_Bc, 
         plot_prefit = plot_prefit,
         outdirlabel = outdirlabel,

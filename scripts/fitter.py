@@ -7,7 +7,7 @@ from tools import Tools
 from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file=None, data_files='', selection='', mass=None, resolution=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
+  def __init__(self, signal_file=None, data_files='', selection='', mass=None, resolution=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, weight_hlt=None, weight_pusig=None, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.signal_file = signal_file
     self.data_files = data_files
@@ -27,6 +27,10 @@ class Fitter(Tools):
     self.nbins = int(nbins)
     self.title = title
     self.plot_pulls = plot_pulls
+    self.add_weight_hlt = add_weight_hlt
+    self.add_weight_pu = add_weight_pu
+    self.weight_hlt = weight_hlt
+    self.weight_pusig = weight_pusig
     self.workspacedir = outputdir #TODO adapt
     if self.workspacedir == '':
       self.workspacedir = './'
@@ -51,6 +55,7 @@ class Fitter(Tools):
     background_model_list = ['chebychev']
     if self.background_model_label != None and self.background_model_label not in background_model_list:
       raise RuntimeError('Unrecognised background model "{}". Please choose among {}'.format(self.background_model_label, background_model_list))
+
 
     #TODO there are no weights applied so far (e.g hlt, pu weights)
     #TODO fit the signal in fit_window, extract the sigma from there, and build the fit_window in the final workspace from that? 
@@ -148,7 +153,6 @@ class Fitter(Tools):
           self.signal_model = ROOT.RooAddPdf('sig', 'sig', self.doubleCBpdf, self.gaussian, self.sigfrac_gauss) # make sure that the model has the same name as in datacard 
 
       elif self.signal_model_label == 'voigtian':
-        print 'creating voigtian model'
         self.mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", signal_mass)
         self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.01, 0., 5.)
         self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.01, 0.005, 0.15)
@@ -216,6 +220,8 @@ class Fitter(Tools):
       weight_ctau = self.tools.getCtauWeight(self.signal_file)
       weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_true)
       weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
+      if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
+      if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
 
     if self.do_binned_fit:
       # build the binned data
@@ -270,7 +276,6 @@ class Fitter(Tools):
       if self.do_binned_fit:
         if process == 'signal':
           rdh_sig.plotOn(frame, ROOT.RooFit.Name("data_sig"))
-          print 'you see me'
         if process == 'background':
           rdh_bkg.plotOn(frame, ROOT.RooFit.Name("data_bkg"))
       else:
@@ -614,6 +619,8 @@ class Fitter(Tools):
     weight_ctau = self.tools.getCtauWeight(self.signal_file)
     weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
+    if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
+    if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
 
     # create histogram
     hist_name = 'hist_signal'
@@ -760,6 +767,7 @@ class Fitter(Tools):
     # create the histogram
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
     hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
+    #TODO modify the selection to enforce the blinding in the F-Test
     tree.Project(hist_name, branch_name, self.selection)
 
     # normalise to the target luminosity
