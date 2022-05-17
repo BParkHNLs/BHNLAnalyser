@@ -16,6 +16,14 @@ class Category(object):
 
 
 categories = {}
+categories['control_Bc'] = [
+  Category(label = 'incl',
+           title = 'inclusive',
+           definition_flat = 'b_pt > 0',
+           cutbased_selection = 'b_pt > 0',
+          ),
+]
+
 categories['inclusive'] = [
   Category(label = 'incl',
            title = 'inclusive',

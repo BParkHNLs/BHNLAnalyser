@@ -15,6 +15,10 @@ selection['none'] = Selection(
     nano = 'BToMuMuPi_hnl_pt > 0',
 )
 
+selection['control_Bc'] = Selection(
+    flat = 'b_pt > 0',
+)
+
 selection['nodsa'] = Selection(
     flat = 'mu_isdsa!=1',
 )
