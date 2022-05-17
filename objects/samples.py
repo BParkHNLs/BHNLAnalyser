@@ -5697,6 +5697,15 @@ signal_samples['loose'] = [
       ),
   ]
 
+signal_samples['control_Bc'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V39_control_Bc/mass999_ctau999/nanoFiles/merged/flat_bparknano_24Apr22.root',
+      label = 'B_{c}->#mu#mu#pi (V39_control_Bc)',
+      colour = ROOT.kOrange-3,
+      ),
+  ]
+
+
 data_samples = {}
 data_samples['F1'] = [
   DataSample(
@@ -6004,6 +6013,34 @@ data_samples['loose_dsaonly'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/bparknano_looseselection_dsaonly.root',
       label = 'ParkingBPH1_Run2018A (1file)',
+      ),
+  ]
+
+data_samples['control_Bc'] = [
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/merged/flat_bparknano_24Apr22_control_Bc.root',
+      label = 'ParkingBPH1_Run2018D (V11_24Apr22)',
+      lumi = 5.302,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH2_Run2018D/merged/flat_bparknano_24Apr22_control_Bc.root',
+      label = 'ParkingBPH2_Run2018D (V11_24Apr22)',
+      lumi = 5.302,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH3_Run2018D/merged/flat_bparknano_24Apr22_control_Bc.root',
+      label = 'ParkingBPH3_Run2018D (V11_24Apr22)',
+      lumi = 5.302,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH4_Run2018D/merged/flat_bparknano_24Apr22_control_Bc.root',
+      label = 'ParkingBPH4_Run2018D (V11_24Apr22)',
+      lumi = 5.302,
+      ),
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH5_Run2018D/merged/flat_bparknano_24Apr22_control_Bc_partial.root',
+      label = 'ParkingBPH5_Run2018D (V11_24Apr22)',
+      lumi = 5.302,
       ),
   ]
 
