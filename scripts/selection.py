@@ -54,7 +54,7 @@ class SelectedQuantity(object):
 
 
 class Selection(object):
-  def __init__(self, signal_files='', data_file='', qcd_files='', quantity='', category=None, use_data=True, dirlabel='', preexisting_selection=None, proposed_cut=None, white_list=''):
+  def __init__(self, signal_files='', data_file='', qcd_files='', quantity='', tree_name='signal_tree', category=None, use_data=True, dirlabel='', preexisting_selection=None, proposed_cut=None, white_list=''):
     self.tools                 = Tools()
     self.signal_files          = signal_files
     self.data_file             = data_file
@@ -126,7 +126,7 @@ class Selection(object):
       if self.preexisting_selection !=None: selection_sig_ini += ' && {}'.format(self.getSelectionString())
       #print 'selection_sig_ini ',selection_sig_ini
       f_sig = self.tools.getRootFile(signal_file.filename)
-      tree_sig = self.tools.getTree(f_sig, 'signal_tree')
+      tree_sig = self.tools.getTree(f_sig, tree_name)
       initial_sig_entries = self.tools.createHisto(tree_sig, self.hnl_mass, selection=selection_sig_ini).Integral()
       #print 'initial_sig_entries {} '.format(initial_sig_entries)
 
@@ -169,7 +169,7 @@ class Selection(object):
         initial_bkg_entries = self.tools.createWeightedHistoQCDMC(self.qcd_files, white_list=self.white_list, quantity=self.hnl_mass, selection=selection_bkg_ini).Integral() # no weight for the moment
       else:
         f_data = self.tools.getRootFile(self.data_file)
-        tree_data = self.tools.getTree(f_data, 'signal_tree')
+        tree_data = self.tools.getTree(f_data, tree_name)
         hist_data_name = 'hist_data_{}'.format(self.quantity)
         hist_data = self.tools.createHisto(tree_data, self.hnl_mass, hist_name=hist_data_name, branchname='flat', selection=selection_bkg_ini)
         initial_bkg_entries = hist_data.Integral()
@@ -183,7 +183,7 @@ class Selection(object):
           selected_bkg_entries = self.tools.createWeightedHistoQCDMC(self.qcd_files, white_list=self.white_list, quantity=self.hnl_mass, selection=selection_bkg_sel).Integral() # no weight for the moment
         else:
           f_data = self.tools.getRootFile(self.data_file)
-          tree_data = self.tools.getTree(f_data, 'signal_tree')
+          tree_data = self.tools.getTree(f_data, tree_name)
           hist_data_name = 'hist_data_sel_{}'.format(self.quantity)
           hist_data = self.tools.createHisto(tree_data, self.hnl_mass, hist_name=hist_data_name, branchname='flat', selection=selection_bkg_sel)
           selected_bkg_entries = hist_data.Integral()
@@ -273,7 +273,7 @@ class Selection(object):
         #background_yields = background_yields * 41.6/lumi_true
         # get background yields from unblinded data
         f_data = self.tools.getRootFile(self.data_file)
-        tree_data = self.tools.getTree(f_data, 'signal_tree')
+        tree_data = self.tools.getTree(f_data, tree_name)
         background_selection = self.category.definition_flat
         if self.preexisting_selection !=None: background_selection += ' && {}'.format(self.getSelectionString())
         background_selection += ' && {}{}{}'.format(self.quantity.name_flat, self.quantity.logic, cut)
@@ -387,7 +387,7 @@ class Selection(object):
       signal_yields_ini, err_signal_yields_ini = ComputeYields(signal_file=signal_file, selection=signal_selection_ini).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
 
       f_data = self.tools.getRootFile(self.data_file)
-      tree_data = self.tools.getTree(f_data, 'signal_tree')
+      tree_data = self.tools.getTree(f_data, tree_name)
       background_selection_ini = self.category.definition_flat
       if self.preexisting_selection !=None: background_selection_ini += ' && {}'.format(self.getSelectionString())
       hist_data_name = 'hist_data_ini_{}'.format(self.quantity)
@@ -412,7 +412,7 @@ class Selection(object):
 
         # get background yields from unblinded data
         f_data = self.tools.getRootFile(self.data_file)
-        tree_data = self.tools.getTree(f_data, 'signal_tree')
+        tree_data = self.tools.getTree(f_data, tree_name)
         background_selection_sel = self.category.definition_flat
         if self.preexisting_selection !=None: background_selection_sel += ' && {}'.format(self.getSelectionString())
         background_selection_sel += ' && {}{}{}'.format(self.quantity.name_flat, self.quantity.logic, cut)
@@ -509,7 +509,7 @@ class Selection(object):
     for ifile, signal_file in enumerate(self.signal_files):
       self.hnl_mass = Qte(name_flat='hnl_mass', label='hnl_mass', nbins=80, bin_min=signal_file.mass-2*signal_file.resolution, bin_max=signal_file.mass+2*signal_file.resolution)
       f_sig = self.tools.getRootFile(signal_file.filename)
-      tree_sig = self.tools.getTree(f_sig, 'signal_tree')
+      tree_sig = self.tools.getTree(f_sig, tree_name)
 
       #selection_sig_ini = 'ismatched == 1 && trgmu_softid==1 && mu_looseid==1 &&  {}'.format(self.category.definition_flat) 
       selection_sig_ini = 'ismatched == 1 && {}'.format(self.category.definition_flat) 
@@ -526,7 +526,7 @@ class Selection(object):
         initial_bkg_entries = self.tools.createWeightedHistoQCDMC(self.qcd_files, white_list=self.white_list, quantity=self.hnl_mass, selection=selection_bkg_ini).Integral() # no weight for the moment
       else:
         f_data = self.tools.getRootFile(self.data_file)
-        tree_data = self.tools.getTree(f_data, 'signal_tree')
+        tree_data = self.tools.getTree(f_data, tree_name)
         hist_data_name = 'hist_data_{}'.format(self.quantity)
         hist_data = self.tools.createHisto(tree_data, self.hnl_mass, hist_name=hist_data_name, branchname='flat', selection=selection_bkg_ini)
         initial_bkg_entries = hist_data.Integral()
@@ -536,7 +536,7 @@ class Selection(object):
         selected_bkg_entries = self.tools.createWeightedHistoQCDMC(self.qcd_files, white_list=self.white_list, quantity=self.hnl_mass, selection=selection_bkg_sel).Integral() # no weight for the moment
       else:
         f_data = self.tools.getRootFile(self.data_file)
-        tree_data = self.tools.getTree(f_data, 'signal_tree')
+        tree_data = self.tools.getTree(f_data, tree_name)
         hist_data_name = 'hist_data_sel_{}'.format(self.quantity)
         hist_data = self.tools.createHisto(tree_data, self.hnl_mass, hist_name=hist_data_name, branchname='flat', selection=selection_bkg_sel)
         selected_bkg_entries = hist_data.Integral()
@@ -583,7 +583,7 @@ class Selection(object):
       signal_yields_ini, err_signal_yields_ini = ComputeYields(signal_file=signal_file, selection=signal_selection_ini).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
 
       f_data = self.tools.getRootFile(self.data_file)
-      tree_data = self.tools.getTree(f_data, 'signal_tree')
+      tree_data = self.tools.getTree(f_data, tree_name)
       background_selection_ini = self.category.definition_flat
       #print background_selection_ini
       hist_data_name = 'hist_data_ini_{}'.format(self.quantity)
@@ -606,7 +606,7 @@ class Selection(object):
 
       # get background yields from unblinded data
       f_data = self.tools.getRootFile(self.data_file)
-      tree_data = self.tools.getTree(f_data, 'signal_tree')
+      tree_data = self.tools.getTree(f_data, tree_name)
       background_selection_sel = self.category.definition_flat
       if self.preexisting_selection !=None: background_selection_sel += ' && {}'.format(self.getSelectionString())
       #print background_selection_sel
