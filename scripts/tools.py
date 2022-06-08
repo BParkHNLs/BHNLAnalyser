@@ -125,9 +125,9 @@ class Tools(object):
     return weight
 
 
-  def getSignalWeight(self, signal_file, sigma_B, lumi, isBc=False):
+  def getSignalWeight(self, signal_file, sigma_B, lumi, lhe_efficiency=0.08244, isMixed=False, isBc=False):
     '''
-      weight = sigma_B * lumi * v_square * BR(B->muNX) * BR(N->mupi) * filter_eff / N_mini   
+      weight = sigma_B * lumi * v_square * BR(B->muNX) * BR(N->mupi) * filter_eff / N_mini 
     '''
     # coupling square
     v_square = self.getVV(mass=signal_file.mass, ctau=signal_file.ctau, ismaj=True)
@@ -142,21 +142,25 @@ class Tools(object):
     BR_NToMuPi = self.gamma_partial(mass=signal_file.mass, vv=v_square) / self.gamma_total(mass=signal_file.mass, vv=v_square)
 
     # number of generated events
-    filter_efficiency = signal_file.filter_efficiency if not isBc else signal_file.filter_efficiency_Bc
     f = self.getRootFile(signal_file.filename)
     tree_run = self.getTree(f, 'run_tree')
     n_gen = self.getNminiAODEvts(tree_run)
-    n_generated = 0.5 * n_gen / filter_efficiency # 0.5 factor since samples were produced 50% muon 50% electron  
+    # in the case where the samples were produced with both the electron and muon channels, apply a correction
+    corr = 0.5 if isMixed else 1. 
+    filter_efficiency = signal_file.filter_efficiency if not isBc else signal_file.filter_efficiency_Bc
+    efficiency = filter_efficiency if not isBc else filter_efficiency * lhe_efficiency 
+    n_generated = corr * n_gen / efficiency
 
     weight = sigma_B / 0.4 * lumi * v_square * BR_prod * BR_NToMuPi / n_generated 
+    #print 'weight = {} / 0.4 * {} * {} * {} * {} / {}'.format(sigma_B, lumi, v_square, BR_prod, BR_NToMuPi, n_generated)
 
     return weight
 
 
   def getCtauWeight(self, signal_file):
     filename = signal_file.filename # might need to be modified later on for Bc
-    #original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
-    original_ctau = filename[filename.find('ctau')+4:filename.find('mm', filename.find('ctau')+1)]
+    original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
+    #original_ctau = filename[filename.find('ctau')+4:filename.find('mm', filename.find('ctau')+1)]
     original_ctau = original_ctau.replace('p', '.')
     target_ctau = signal_file.ctau
 
