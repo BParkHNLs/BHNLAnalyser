@@ -7,7 +7,7 @@ from tools import Tools
 from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file=None, data_files='', selection='', mass=None, resolution=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, weight_hlt=None, weight_pusig=None, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
+  def __init__(self, signal_file=None, data_files='', selection='', mass=None, resolution=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, weight_hlt=None, weight_pusig=None, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.signal_file = signal_file
     self.data_files = data_files
@@ -23,6 +23,7 @@ class Fitter(Tools):
     self.lumi_target = lumi_target
     self.lumi_true = self.tools.getDataLumi(self.data_files)
     self.sigma_B = sigma_B
+    self.add_Bc = add_Bc
     self.file_type = file_type
     self.nbins = int(nbins)
     self.title = title
@@ -598,7 +599,7 @@ class Fitter(Tools):
   #  return n_bkg
 
 
-  def getSignalYieldsFromHist(self):
+  def getSignalYieldsFromHist(self, filename='', isBc=False):
     '''
       Returns the normalised number of signal yields in the fit window
     '''
@@ -607,7 +608,7 @@ class Fitter(Tools):
     fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
 
     # get the tree
-    inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False)
+    inputfile = self.tools.getRootFile(filename, with_ext=False)
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     tree_sig = self.tools.getTree(inputfile, treename)
 
@@ -617,19 +618,28 @@ class Fitter(Tools):
 
     # define signal weights
     weight_ctau = self.tools.getCtauWeight(self.signal_file)
-    weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target)
+    weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target, isBc=isBc)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
     if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
     if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
 
     # create histogram
-    hist_name = 'hist_signal'
+    hist_name = 'hist_signal_{}'.format(isBc)
     hist = ROOT.TH1D(hist_name, hist_name, self.nbins, fit_window_min, fit_window_max)
     branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
     tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
 
     # get the number of yields
     n_sig = hist.Integral()
+
+    return n_sig
+
+
+  def getSignalYields(self):
+    n_sig = self.getSignalYieldsFromHist(filename=self.signal_file.filename, isBc=False)
+
+    if self.add_Bc:
+      n_sig += self.getSignalYieldsFromHist(filename=self.signal_file.filename_Bc, isBc=True)
 
     return n_sig
 
