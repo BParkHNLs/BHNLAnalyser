@@ -20,7 +20,7 @@ class Quantity(object):
                               
 
 class Selection(Tools):
-  def __init__(self, files, quantity, preexisting_selection=None, npoints=50, sample_type='flat', write_cut_analysis=False, proposed_cut=None):
+  def __init__(self, files, quantity, preexisting_selection=None, npoints=50, sample_type='nano', write_cut_analysis=False, proposed_cut=None):
     self.tools                 = Tools()
     self.files                 = files
     self.quantity              = quantity
@@ -32,8 +32,7 @@ class Selection(Tools):
 
 
     # efficiency will be assessed based on the mass distributions
-    #self.hnl_mass = Quantity('BToMuMuPi_hnl_mass', 'hnl_mass', 'hnl_mass', '', binMin=0, binMax=10000) # with very loose selection some candidates have very large mupi invariant mass
-    self.b_mass = Quantity('BToKMuMu_b_mass', 'b_mass', 'b_mass', '', binMin=0, binMax=10000) # with very loose selection some candidates have very large mupi invariant mass
+    self.hnl_mass = Quantity('BToMuMuPi_hnl_mass', 'hnl_mass', 'hnl_mass', '', binMin=0, binMax=10000) # with very loose selection some candidates have very large mupi invariant mass
     
     # baseline selection
     #self.baseline_selection = ' && '.join(['{}==0'.format('hnl_charge' if str_=='sig' else 'b_hnl_charge')])
@@ -71,23 +70,21 @@ class Selection(Tools):
     '''
 
     filename = file_.sample_name 
-    tree_name = 'Events' if self.sample_type == 'nano' else 'control_tree'
+    tree_name = 'Events' if self.sample_type == 'nano' else 'signal_tree'
 
     cut_variable = self.quantity.name_nano if self.sample_type == 'nano' else self.quantity.name_flat
 
     if self.sample_type == 'nano':
       baseline_selection = 'BToMuMuPi_isMatched==1' if str_=='sig' else 'BToMuMuPi_isMatched>-99'
     else:
-      #baseline_selection = 'ismatched==1' if str_=='sig' else 'ismatched>-99'
-      baseline_selection = 'ismatched==1' if str_=='sig' else '(b_mass<6 || b_mass>7)'
+      baseline_selection = 'ismatched==1' if str_=='sig' else 'ismatched>-99'
     
     c = ROOT.TCanvas()
     f = ROOT.TFile.Open(filename, 'READ')
     tree = f.Get(tree_name)
     
     # elements to fill the histogram
-    #distr_todraw = self.hnl_mass.name_nano if self.sample_type == 'nano' else self.hnl_mass.name_flat
-    distr_todraw = self.b_mass.name_nano if self.sample_type == 'nano' else self.b_mass.name_flat
+    distr_todraw = self.hnl_mass.name_nano if self.sample_type == 'nano' else self.hnl_mass.name_flat
 
     preselection = baseline_selection if self.preexisting_selection==None else baseline_selection + ' && ' + self.getPreselectionString(str_)
     if with_extra_selection:
@@ -95,8 +92,7 @@ class Selection(Tools):
 
     #print preselection
     
-    #hist = ROOT.TH1D('hist', 'hist', 1500, self.hnl_mass.binMin, self.hnl_mass.binMax)
-    hist = ROOT.TH1D('hist', 'hist', 1500, self.b_mass.binMin, self.b_mass.binMax)
+    hist = ROOT.TH1D('hist', 'hist', 1500, self.hnl_mass.binMin, self.hnl_mass.binMax)
     tree.Draw('{}>>hist'.format(distr_todraw), preselection)
 
     hist.SetDirectory(0)
@@ -295,52 +291,53 @@ class Selection(Tools):
     #print 'sig1 {} {}'.format(int(initial_sig_entries), int(initial_bkg_entries))
     #print 'sig1 {} {}'.format(int(proposed_sig_entries), int(proposed_bkg_entries))
 
-    #if len(self.files)==1:
-    cutflow_line = '{qte} {log} {cut} & -{sig_per}\% & -{bkg_per}\% \\ '.format(
-        qte = self.quantity.title, 
-        log = self.quantity.logic, 
-        cut = self.proposed_cut, 
-        sig_per = round((1 - proposed_sig_entries / initial_sig_entries)*100, 2), 
-        bkg_per = round((1 - proposed_bkg_entries / initial_bkg_entries)*100, 2),
-    )
+    if len(self.files)==1:
+      cutflow_line = '{qte} {log} {cut} & -{sig_per}\% & -{bkg_per}\% \\ '.format(
+          qte = self.quantity.title, 
+          log = self.quantity.logic, 
+          cut = self.proposed_cut, 
+          sig_per = round((1 - proposed_sig_entries / initial_sig_entries)*100, 2), 
+          bkg_per = round((1 - proposed_bkg_entries / initial_bkg_entries)*100, 2),
+      )
 
-    #elif len(self.files)==2:
-    #  initial_sig1_entries = self.createHisto(self.files[2], 'sig', False).GetEntries()
-    #  proposed_sig1_entries = self.createHisto(self.files[2], 'sig', True, self.proposed_cut).GetEntries()
+    elif len(self.files)==2:
+      initial_sig1_entries = self.createHisto(self.files[2], 'sig', False).GetEntries()
+      proposed_sig1_entries = self.createHisto(self.files[2], 'sig', True, self.proposed_cut).GetEntries()
 
-    #  ##print 'sig2 {}'.format(int(initial_sig1_entries))
-    #  ##print 'sig2 {}'.format(int(proposed_sig1_entries))
+      ##print 'sig2 {}'.format(int(initial_sig1_entries))
+      ##print 'sig2 {}'.format(int(proposed_sig1_entries))
 
-    #  cutflow_line = '{qte} {log} {cut} & -{sig0_per}\% & -{sig1_per}\% & -{bkg_per}\% \\\ '.format(
-    #      qte = self.quantity.title, 
-    #      log = self.quantity.logic, 
-    #      cut = self.proposed_cut, 
-    #      sig0_per = round((1 - proposed_sig_entries / initial_sig_entries)*100, 2), 
-    #      sig1_per = round((1 - proposed_sig1_entries / initial_sig1_entries)*100, 2), 
-    #      bkg_per = round((1 - proposed_bkg_entries / initial_bkg_entries)*100, 2),
-    #  )
+      cutflow_line = '{qte} {log} {cut} & -{sig0_per}\% & -{sig1_per}\% & -{bkg_per}\% \\\ '.format(
+          qte = self.quantity.title, 
+          log = self.quantity.logic, 
+          cut = self.proposed_cut, 
+          sig0_per = round((1 - proposed_sig_entries / initial_sig_entries)*100, 2), 
+          sig1_per = round((1 - proposed_sig1_entries / initial_sig1_entries)*100, 2), 
+          bkg_per = round((1 - proposed_bkg_entries / initial_bkg_entries)*100, 2),
+      )
 
-    #else:
-    #  initial_sig1_entries = self.createHisto(self.files[2], 'sig', False).GetEntries()
-    #  proposed_sig1_entries = self.createHisto(self.files[2], 'sig', True, self.proposed_cut).GetEntries()
-    #  initial_sig2_entries = self.createHisto(self.files[3], 'sig', False).GetEntries()
-    #  proposed_sig2_entries = self.createHisto(self.files[3], 'sig', True, self.proposed_cut).GetEntries()
+    else:
+      initial_sig1_entries = self.createHisto(self.files[2], 'sig', False).GetEntries()
+      proposed_sig1_entries = self.createHisto(self.files[2], 'sig', True, self.proposed_cut).GetEntries()
+      #initial_sig2_entries = self.createHisto(self.files[3], 'sig', False).GetEntries()
+      #proposed_sig2_entries = self.createHisto(self.files[3], 'sig', True, self.proposed_cut).GetEntries()
 
-    #  #print 'sig2 {}'.format(int(initial_sig1_entries))
-    #  #print 'sig2 {}'.format(int(proposed_sig1_entries))
-    #  #print 'sig3 {}'.format(int(initial_sig2_entries))
-    #  #print 'sig3 {}'.format(int(proposed_sig2_entries))
+      #print 'sig2 {}'.format(int(initial_sig1_entries))
+      #print 'sig2 {}'.format(int(proposed_sig1_entries))
+      #print 'sig3 {}'.format(int(initial_sig2_entries))
+      #print 'sig3 {}'.format(int(proposed_sig2_entries))
 
-    #  cutflow_line = '{qte} {log} {cut} {unit} & -{sig0_per}\% & -{sig1_per}\% & -{sig2_per}\% & -{bkg_per}\% \\\ '.format(
-    #      qte = self.quantity.title, 
-    #      log = self.quantity.logic, 
-    #      cut = self.proposed_cut, 
-    #      unit = self.quantity.units,
-    #      sig0_per = round((1 - proposed_sig_entries / initial_sig_entries)*100, 2) if initial_sig_entries!=0. else '-', 
-    #      sig1_per = round((1 - proposed_sig1_entries / initial_sig1_entries)*100, 2) if initial_sig1_entries!=0. else '-',
-    #      sig2_per = round((1 - proposed_sig2_entries / initial_sig2_entries)*100, 2) if initial_sig2_entries!=0. else '-',
-    #      bkg_per = round((1 - proposed_bkg_entries / initial_bkg_entries)*100, 2) if initial_bkg_entries!=0. else '-',
-    #  )
+      #cutflow_line = '{qte} {log} {cut} {unit} & -{sig0_per}\% & -{sig1_per}\% & -{sig2_per}\% & -{bkg_per}\% \\\ '.format(
+      cutflow_line = '{qte} {log} {cut} {unit} & -{sig0_per}\% & -{sig1_per}\% & -{bkg_per}\% \\\ '.format(
+          qte = self.quantity.title, 
+          log = self.quantity.logic, 
+          cut = self.proposed_cut, 
+          unit = self.quantity.units,
+          sig0_per = round((1 - proposed_sig_entries / initial_sig_entries)*100, 2) if initial_sig_entries!=0. else '-', 
+          sig1_per = round((1 - proposed_sig1_entries / initial_sig1_entries)*100, 2) if initial_sig1_entries!=0. else '-',
+          #sig2_per = round((1 - proposed_sig2_entries / initial_sig2_entries)*100, 2) if initial_sig2_entries!=0. else '-',
+          bkg_per = round((1 - proposed_bkg_entries / initial_bkg_entries)*100, 2) if initial_bkg_entries!=0. else '-',
+      )
 
     cutflow_line = cutflow_line.replace('#eta', '$\eta$')
     cutflow_line = cutflow_line.replace('#mu#mu#pi', '$\mu\mu\pi$')
@@ -390,7 +387,8 @@ if __name__ == '__main__':
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_emu/mass3.0_ctau184.0/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass3.0_ctau100.0/nanoFiles/merged/bparknano_looseselection.root',
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass3.0_ctau100.0/nanoFiles/merged/bparknano_looseselection.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V39_Bc/mass3.0_ctau100.0/nanoFiles/merged/bparknano_loosepreselection.root',
       process = 'signal',
       signal_mass = 3,
       signal_ctau = 100,
@@ -400,7 +398,8 @@ if __name__ == '__main__':
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V21/mass4.5_ctau1.2/nanoFiles/merged/bparknano_looseselection_matched_dsaonly.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_3files.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass4.5_ctau1.0/nanoFiles/merged/bparknano_looseselection.root',
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass4.5_ctau1.0/nanoFiles/merged/bparknano_looseselection.root',
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V39_Bc/mass4.5_ctau1.0/nanoFiles/merged/bparknano_loosepreselection.root',
       process = 'signal',
       signal_mass = 4.5,
       signal_ctau = 1,
@@ -427,7 +426,7 @@ if __name__ == '__main__':
   files.append(file_background)
   files.append(file_m3)
   files.append(file_m4p5)
-  files.append(file_m1)
+  #files.append(file_m1)
   #files.append(file_V25)
 
 
@@ -506,7 +505,7 @@ if __name__ == '__main__':
 
   #soft_muon = Quantity('b_sel_mu_isSoft', 'mu_isSoft', '==', '', 0, 1)
  
-  printCutflow = False
+  printCutflow = True
   printScan = False
 
   preselection = [] 
