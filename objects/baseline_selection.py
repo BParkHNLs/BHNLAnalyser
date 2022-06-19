@@ -16,7 +16,10 @@ selection['none'] = Selection(
 )
 
 selection['control_Bc'] = Selection(
-    flat = 'b_pt > 0',
+    #flat = 'b_pt > 0',
+    #flat = 'abs(dimu_mass-3.097)<0.07 && b_cos2d>0.997 && sv_prob>0.05 && abs(l1_dxy)<0.01 && abs(l2_dxy)<0.015 && mindr>0.3 && sv_lxy>0.02 && sv_lxy<0.075 && b_mass>5.5 && b_mass<7.5',
+    #flat = 'abs(dimu_mass-3.097)<0.07 && b_cos2d>0.998 && sv_prob>0.1 && abs(l1_dxy)<0.015 && abs(l2_dxy)<0.015 && mindr>0.3 && maxdr<1.5 && sv_lxy<0.075 && b_mass>5.5 && b_mass<7.5'
+    flat = 'abs(dimu_mass-3.097)<0.07 && l2_pt>3 && k_pt>1.5 && b_cos2d>0.999 && l1_mediumid==1 && l2_mediumid==1 && sv_prob>0.1 && abs(l1_dxy)<0.05 && abs(l2_dxy)<0.05 && mindr>0.1 && maxdr<1.5 && sv_lxysig>3 && b_mass>5.5 && b_mass<7.5'
 )
 
 selection['nodsa'] = Selection(
