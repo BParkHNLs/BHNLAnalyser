@@ -35,6 +35,7 @@ class Config(object):
                add_CMSlabel=None,
                add_lumilabel=None,
                CMStag=None,
+               do_tdrstyle=None,
 
                # for datacards
                ABCD_label=None,
@@ -92,6 +93,7 @@ class Config(object):
     self.add_CMSlabel = add_CMSlabel
     self.add_lumilabel = add_lumilabel
     self.CMStag = CMStag
+    self.do_tdrstyle = do_tdrstyle
     self.ABCD_label = ABCD_label
     self.do_ABCD = do_ABCD
     self.do_ABCDHybrid = do_ABCDHybrid

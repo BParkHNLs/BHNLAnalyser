@@ -51,6 +51,7 @@ def getOptions():
   parser.add_argument('--do_log'          ,           dest='do_log'          , help='put the Y axis in log scale'              , action='store_true', default=False)
   parser.add_argument('--add_overflow'    ,           dest='add_overflow'    , help='add overflow bin'                         , action='store_true', default=False)
   parser.add_argument('--add_CMSlabel'    ,           dest='add_CMSlabel'    , help='add CMS label'                            , action='store_true', default=False)
+  parser.add_argument('--do_tdrstyle '    ,           dest='do_tdrstyle'     , help='improved style of the plots'              , action='store_true', default=False)
   #parser.add_argument('--submit_batch', dest='submit_batch', help='submit on the batch?', action='store_true', default=False)
   return parser.parse_args()
 
@@ -137,7 +138,7 @@ class Plotter(Tools):
     return max_range
 
 
-  def plot(self, selection='', title='', outdirloc='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd='', weight_pusig='', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary'):
+  def plot(self, selection='', title='', outdirloc='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd='', weight_pusig='', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary', do_tdrstyle=True):
 
     # check the options
     if plot_data and self.data_files == '':
@@ -167,7 +168,10 @@ class Plotter(Tools):
     if do_stack:
       legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.45, xmax=0.84, ymax=0.83, size=0.027)
     else:
-      legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.65, xmax=0.84, ymax=0.83, size=0.027)
+      if not do_tdrstyle:
+        legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.65, xmax=0.84, ymax=0.83, size=0.027)
+      else:
+        legend = self.tools.getRootTLegend(xmin=0.42, ymin=0.57, xmax=0.79, ymax=0.79, size=0.038)
 
     pad_up.cd()
 
@@ -211,7 +215,10 @@ class Plotter(Tools):
 
       if do_shape and int_data_tot != 0.: hist_data_tot.Scale(1./int_data_tot)
 
-      legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label, version_label) if len(self.data_files)>1 else data_file.label))
+      if not do_tdrstyle:
+        legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label, version_label) if len(self.data_files)>1 else data_file.label))
+      else:
+        legend.AddEntry(hist_data_tot, 'data-driven background')
 
       ## set the style
       if plot_data and plot_qcd:
@@ -280,7 +287,7 @@ class Plotter(Tools):
         hist_qcd.SetLineColor(1)
         
         if do_stack:
-          legend.AddEntry(hist_qcd, 'MC - {}'.format(qcd_file.label))
+          legend.AddEntry(hist_qcd, 'QCD MC - {}'.format(qcd_file.label))
         if add_overflow:
           overflow_qcd = hist_qcd.GetBinContent(hist_qcd.GetNbinsX()) + hist_qcd.GetBinContent(hist_qcd.GetNbinsX()+1)
           error_overflow_qcd = math.sqrt(math.pow(hist_qcd.GetBinError(hist_qcd.GetNbinsX()), 2) + math.pow(hist_qcd.GetBinError(hist_qcd.GetNbinsX()+1), 2)) 
@@ -299,7 +306,10 @@ class Plotter(Tools):
       hist_qcd_tot.SetLineColor(1)
     
       if not do_stack:
-        legend.AddEntry(hist_qcd_tot, 'MC - {}'.format(self.getQCDMCLabel(self.white_list[0], self.white_list[len(self.white_list)-1], qcd_file.label)))
+        if not do_tdrstyle:
+          legend.AddEntry(hist_qcd_tot, 'QCD MC - {}'.format(self.getQCDMCLabel(self.white_list[0], self.white_list[len(self.white_list)-1], qcd_file.label)))
+        else:
+          legend.AddEntry(hist_qcd_tot, 'Background - QCD MC')
         
       ## create stack histogram  
       hist_qcd_stack = ROOT.THStack('hist_qcd_stack', '')
@@ -333,8 +343,10 @@ class Plotter(Tools):
     frame.GetYaxis().SetTitleSize(0.042)
     frame.GetYaxis().SetTitleOffset(1.3 if not plot_ratio else 1.1)
     if plot_data and plot_qcd: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_tot, hist_qcd_tot, do_log))
-    elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
-    elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
+    #elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
+    elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
+    #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
+    elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
 
     #ROOT.gStyle.SetPadLeftMargin(0.16) 
     ROOT.gStyle.SetOptStat(0)
@@ -377,7 +389,10 @@ class Plotter(Tools):
     legend.Draw('same')
 
     # add labels
-    self.tools.printLatexBox(0.65, 0.86, title, size=0.04 if plot_ratio else 0.036)
+    if not do_tdrstyle:
+      self.tools.printLatexBox(0.65, 0.86, title, size=0.04 if plot_ratio else 0.036)
+    else:
+      self.tools.printLatexBox(0.60, 0.84, title, size=0.04 if plot_ratio else 0.038)
     if add_CMSlabel: self.tools.printCMSTag(pad_up, CMS_tag, size=0.55 if plot_ratio else 0.43)
     if do_luminorm:
       scale_text = ROOT.TPaveText(0.15, 0.83, 0.3, 0.88, "brNDC")
@@ -555,7 +570,8 @@ if __name__ == '__main__':
                        do_log = opt.do_log,
                        add_overflow = opt.add_overflow,
                        add_CMSlabel = opt.add_CMSlabel,
-                       CMS_tag = opt.CMStag
+                       CMS_tag = opt.CMStag,
+                       do_tdrstyle = do_tdrstyle,
                        )
 
 
@@ -593,7 +609,8 @@ if __name__ == '__main__':
                        do_log = opt.do_log,
                        add_overflow = opt.add_overflow,
                        add_CMSlabel = opt.add_CMSlabel,
-                       CMS_tag = opt.CMStag
+                       CMS_tag = opt.CMStag,
+                       do_tdrstyle = do_tdrstyle,
                        )
     
         if opt.plot_dataSig:
@@ -627,7 +644,8 @@ if __name__ == '__main__':
                        do_log = opt.do_log,
                        add_overflow = opt.add_overflow,
                        add_CMSlabel = opt.add_CMSlabel,
-                       CMS_tag = opt.CMStag
+                       CMS_tag = opt.CMStag,
+                       do_tdrstyle = do_tdrstyle,
                        )
 
   else:
