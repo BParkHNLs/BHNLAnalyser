@@ -74,7 +74,10 @@ class Tools(object):
     '''
       Note that the qcd file label must contain XXtoYY
     '''
-    return label[label.find('pt'):label.find(' ')]
+    if label.find(' ') != -1:
+      return label[label.find('pt'):label.find(' ')]
+    else:
+      return label[label.find('pt'):]
 
 
   def getNminiAODEvts(self, tree_run):
