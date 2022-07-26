@@ -128,7 +128,7 @@ class Tools(object):
     return weight
 
 
-  def getSignalWeight(self, signal_file, sigma_B, lumi, lhe_efficiency=0.08244, isMixed=False, isBc=False):
+  def getSignalWeight(self, signal_file, sigma_B, lumi, lhe_efficiency=0.08244, isBc=False):
     '''
       weight = sigma_B * lumi * v_square * BR(B->muNX) * BR(N->mupi) * filter_eff / N_mini 
     '''
@@ -149,7 +149,7 @@ class Tools(object):
     tree_run = self.getTree(f, 'run_tree')
     n_gen = self.getNminiAODEvts(tree_run)
     # in the case where the samples were produced with both the electron and muon channels, apply a correction
-    corr = 0.5 if isMixed else 1. 
+    corr = signal_file.muon_rate # only consider events that were generated in the muon channel 
     filter_efficiency = signal_file.filter_efficiency if not isBc else signal_file.filter_efficiency_Bc
     efficiency = filter_efficiency if not isBc else filter_efficiency * lhe_efficiency 
     n_generated = corr * n_gen / efficiency
