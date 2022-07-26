@@ -235,7 +235,7 @@ class DatacardsMaker(Tools):
 
     # initialise the fitter
     if process == 'signal':
-      fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, add_Bc=self.add_Bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
+      fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, add_Bc=self.add_Bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
 
       # perform the fits and write the workspaces
       fitter.process_signal(label=label)
@@ -248,7 +248,7 @@ class DatacardsMaker(Tools):
         fitter.producePrefitPlot(label=label)
 
     elif process == 'background':
-      fitter = Fitter(data_files=self.data_files, mass=mass, resolution=resolution, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
+      fitter = Fitter(data_files=self.data_files, mass=mass, resolution=resolution, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
 
       # perform the fits and write the workspaces
       fitter.process_background(label=label)
@@ -259,7 +259,7 @@ class DatacardsMaker(Tools):
       yields = background_yields * self.lumi_target/lumi_true #NOTE this is needed as the background on which the fit is performed is not normalised to lumi
 
     elif process == 'data_obs':
-      fitter = Fitter(data_files=self.data_files, mass=mass, resolution=resolution, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
+      fitter = Fitter(data_files=self.data_files, mass=mass, resolution=resolution, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag)
 
       # perform the fits and write the workspaces
       fitter.process_data_obs(label=label)
@@ -527,7 +527,7 @@ bkg {bkg_yields}
         cat_label = self.getCategoryLabel(signal_mass=window['mass'], category=category)
 
         # for the moment, remove low displacement category for mass 3 GeV
-        if float(window['mass']) == 3 and category.label in ['lxy0to1_OS', 'lxy0to1_SS']: continue
+        if float(window['mass']) == 3 and category.label in ['lxy0to1_OS', 'lxy0to1_SS', 'lxy0to1_OS_Bc', 'lxy0to1_SS_Bc']: continue
 
         # define the selection
         selection = self.baseline_selection
