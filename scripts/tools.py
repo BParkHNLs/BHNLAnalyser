@@ -162,8 +162,10 @@ class Tools(object):
 
   def getCtauWeight(self, signal_file):
     filename = signal_file.filename # might need to be modified later on for Bc
-    original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
-    #original_ctau = filename[filename.find('ctau')+4:filename.find('mm', filename.find('ctau')+1)]
+    if signal_file.is_private:
+      original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
+    else:
+      original_ctau = filename[filename.find('ctau')+4:filename.find('mm', filename.find('ctau')+1)]
     original_ctau = original_ctau.replace('p', '.')
     target_ctau = signal_file.ctau
 
