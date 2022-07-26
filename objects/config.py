@@ -143,9 +143,9 @@ class Config(object):
           raise RuntimeError('Please make sure that the qcd sample label contains "ptXXtoYY" for the white list to work')
         if not ROOT.TFile.Open(sample.filename, 'READ'):
           raise RuntimeError('The sample "{}" does not exist. Please check the filename.'.format(sample.filename))
-        else:
-          if not ROOT.TFile.Open(sample.filename, 'READ').Get(self.tree_name):
-            raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
+        #else:
+        #  if not ROOT.TFile.Open(sample.filename, 'READ').Get(self.tree_name):
+        #    raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
     print '       ---> QCD samples OK'
 
     for signal_label in self.signal_labels:
@@ -187,8 +187,8 @@ class Config(object):
 
     if self.add_weight_hlt and self.branch_weight_hlt == None:
       raise RuntimeError('Please indicate the name of the branch for the hlt weight (branch_weight_hlt)')
-    elif self.add_weight_hlt and self.branch_weight_hlt not in ['weight_hlt_A1', 'weight_hlt_A1_6', 'weight_hlt_A1_6_B1', 'weight_hlt_HLT_Mu9_IP6_A1_6']:
-      raise RuntimeError('Unrecognised branch "{}" for the hlt weight. Please check.'.format(self.branch_weight_hlt))
+    #elif self.add_weight_hlt and self.branch_weight_hlt not in ['weight_hlt_A1', 'weight_hlt_A1_6', 'weight_hlt_A1_6_B1', 'weight_hlt_HLT_Mu9_IP6_A1_6']:
+    #  raise RuntimeError('Unrecognised branch "{}" for the hlt weight. Please check.'.format(self.branch_weight_hlt))
     else:
       print '       ---> HLT weight OK'
 
