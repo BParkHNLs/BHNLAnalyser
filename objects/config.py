@@ -60,6 +60,7 @@ class Config(object):
                plot_prefit=None,
                lumi_target=None,
                sigma_B=None,
+               lhe_efficiency=None,
                sigma_mult_window=None,
 
                # for limits
@@ -116,6 +117,7 @@ class Config(object):
     self.plot_prefit = plot_prefit
     self.lumi_target = lumi_target
     self.sigma_B = sigma_B
+    self.lhe_efficiency = lhe_efficiency
     self.sigma_mult_window = sigma_mult_window
     self.run_blind = run_blind
 

@@ -38,6 +38,7 @@ def getOptions():
   parser.add_argument('--nbins'                 , type=str, dest='nbins'                 , help='number of bins when using shapes'                              , default='40')
   parser.add_argument('--lumi_target'           , type=str, dest='lumi_target'           , help='which luminosity should the yields be normalised to?'          , default='41.599')
   parser.add_argument('--sigma_B'               , type=str, dest='sigma_B'               , help='which value of the B cross section?'                           , default='472.8e9')
+  parser.add_argument('--lhe_efficiency'        , type=str, dest='lhe_efficiency'        , help='LHE efficiency'                                                , default='0.08244')
   parser.add_argument('--sigma_mult'            , type=str, dest='sigma_mult'            , help='size n*sigma of the window around a given mass'                , default='20')
   parser.add_argument('--weight_hlt'            , type=str, dest='weight_hlt'            , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
   parser.add_argument('--weight_pusig'          , type=str, dest='weight_pusig'          , help='name of the branch of pu sig weight'                           , default='weight_pusig_D')
@@ -93,7 +94,7 @@ def printInfo(opt):
   print '\n'
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', signal_label='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, sigma_mult=None, weight_hlt=None, weight_pusig=None, add_weight_hlt=True, add_weight_pu=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag=''):
+  def __init__(self, data_files='', signal_files='', signal_label='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, weight_hlt=None, weight_pusig=None, add_weight_hlt=True, add_weight_pu=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag=''):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -125,6 +126,7 @@ class DatacardsMaker(Tools):
     self.category_label = category_label
     self.lumi_target = float(lumi_target)
     self.sigma_B = float(sigma_B)
+    self.lhe_efficiency = float(lhe_efficiency)
     self.sigma_mult = float(sigma_mult)
     self.weight_hlt = weight_hlt
     self.weight_pusig = weight_pusig
@@ -297,6 +299,7 @@ class DatacardsMaker(Tools):
 
 
   def createSigHisto(self, category, signal_file, signal_yields, selection, label):
+    #TODO modify to account for Bc samples?
     signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
 
     rootfile_name = 'shape_{}.root'.format(label)
@@ -311,7 +314,7 @@ class DatacardsMaker(Tools):
     tree_signal = self.getTree(f_signal, treename)
 
     weight_ctau = self.tools.getCtauWeight(signal_file)
-    weight_signal = self.tools.getSignalWeight(signal_file=signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target)
+    weight_signal = self.tools.getSignalWeight(signal_file=signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target, lhe_efficiency=self.lhe_efficiency)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
     if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
     if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
@@ -628,6 +631,7 @@ if __name__ == '__main__':
 
     lumi_target = opt.lumi_target
     sigma_B = opt.sigma_B
+    lhe_efficiency = opt.lhe_efficiency
 
     sigma_mult = opt.sigma_mult
 
@@ -678,6 +682,7 @@ if __name__ == '__main__':
         plot_pulls = plot_pulls,
         lumi_target = lumi_target,
         sigma_B = sigma_B,
+        lhe_efficiency = lhe_efficiency,
         sigma_mult = sigma_mult,
         weight_hlt = weight_hlt,
         weight_pusig = weight_pusig,
