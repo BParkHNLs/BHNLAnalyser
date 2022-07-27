@@ -571,7 +571,7 @@ if __name__ == '__main__':
                        add_overflow = opt.add_overflow,
                        add_CMSlabel = opt.add_CMSlabel,
                        CMS_tag = opt.CMStag,
-                       do_tdrstyle = do_tdrstyle,
+                       do_tdrstyle = opt.do_tdrstyle,
                        )
 
 
@@ -610,7 +610,7 @@ if __name__ == '__main__':
                        add_overflow = opt.add_overflow,
                        add_CMSlabel = opt.add_CMSlabel,
                        CMS_tag = opt.CMStag,
-                       do_tdrstyle = do_tdrstyle,
+                       do_tdrstyle = opt.do_tdrstyle,
                        )
     
         if opt.plot_dataSig:
@@ -645,7 +645,7 @@ if __name__ == '__main__':
                        add_overflow = opt.add_overflow,
                        add_CMSlabel = opt.add_CMSlabel,
                        CMS_tag = opt.CMStag,
-                       do_tdrstyle = do_tdrstyle,
+                       do_tdrstyle = opt.do_tdrstyle,
                        )
 
   else:
