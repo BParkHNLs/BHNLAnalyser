@@ -7,7 +7,7 @@ from tools import Tools
 from samples import signal_samples, data_samples
 
 class Fitter(Tools):
-  def __init__(self, signal_file=None, data_files='', selection='', mass=None, resolution=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, weight_hlt=None, weight_pusig=None, add_CMSlabel=True, add_lumilabel=True, CMStag=''):
+  def __init__(self, signal_file=None, data_files='', selection='', mass=None, resolution=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, weight_hlt=None, weight_pusig=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.signal_file = signal_file
     self.data_files = data_files
@@ -22,7 +22,9 @@ class Fitter(Tools):
     self.do_blind = do_blind
     self.lumi_target = lumi_target
     self.lumi_true = self.tools.getDataLumi(self.data_files)
+    if self.lumi_true == 42.001: self.lumi_true = 41.6 
     self.sigma_B = sigma_B
+    self.lhe_efficiency = lhe_efficiency
     self.add_Bc = add_Bc
     self.file_type = file_type
     self.nbins = int(nbins)
@@ -41,9 +43,11 @@ class Fitter(Tools):
     if not path.exists(self.outputdir):
       os.system('mkdir -p {}'.format(self.outputdir))
     self.category_label = category_label
+    self.category_title = category_title
     self.add_CMSlabel = add_CMSlabel
     self.add_lumilabel = add_lumilabel
     self.CMStag = CMStag
+    self.do_tdrstyle = do_tdrstyle
     # define window sizes (multiples of sigma)
     self.mass_window_size = mass_window_size
     self.fit_window_size = fit_window_size
@@ -198,7 +202,11 @@ class Fitter(Tools):
     # open the file and get the tree
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     if process == 'signal' or process == 'both':
-      inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False)
+      #FIXME in principle we would like to have the convolution between the two distributions
+      #filename = self.signal_file.filename if 'Bc' not in self.category_label else self.signal_file.filename_Bc
+      #print 'filename {}'.format(filename)
+      #inputfile = self.tools.getRootFile(filename, with_ext=False)
+      inputfile = self.tools.getRootFile(self.signal_file.filename, with_ext=False) #TODO keep? see above comment
       tree_sig = self.tools.getTree(inputfile, treename)
     if process == 'background' or process == 'both':
       tree_data = ROOT.TChain(treename)
@@ -219,7 +227,7 @@ class Fitter(Tools):
     # define signal weights
     if process == 'signal' or process == 'both':
       weight_ctau = self.tools.getCtauWeight(self.signal_file)
-      weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_true)
+      weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_true, lhe_efficiency=self.lhe_efficiency) #TODO what about isBc?
       weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
       if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
       if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
@@ -236,6 +244,7 @@ class Fitter(Tools):
 
       if process == 'background' or process == 'both':
         tree_data.Project(hist_name, branch_name , selection_bkg)
+        #hist.Scale(self.lumi_target/self.lumi_true) #FIXME added in the context of prefit plots for the sps, remove?
         rdh_bkg = ROOT.RooDataHist("rdh_bkg", "rdh_bkg", ROOT.RooArgList(self.hnl_mass), hist)
     else:
       # get RooArgSet
@@ -257,12 +266,15 @@ class Fitter(Tools):
     canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
 
     # and the two pads
-    pad1 = ROOT.TPad("pad1", "pad1", 0.01, 0.2, 0.99, 0.99)
+    if process == 'both': # remove residuals for prefit plots
+      pad1 = ROOT.TPad("pad1", "pad1", 0.01, 0.01, 0.99, 0.99)
+    else:
+      pad1 = ROOT.TPad("pad1", "pad1", 0.01, 0.2, 0.99, 0.99)
     pad1.SetLeftMargin(0.15)
     pad2 = ROOT.TPad("pad2", "pad2", 0.01, 0.01, 0.99, 0.2)
     pad2.SetLeftMargin(0.15)
     pad1.Draw()
-    pad2.Draw()
+    if process != 'both': pad2.Draw()
 
     frame = self.hnl_mass.frame(ROOT.RooFit.Title(self.title))
 
@@ -374,7 +386,7 @@ class Fitter(Tools):
       frame.getAttText().SetTextSize(0.03)
       frame.getAttLine().SetLineColorAlpha(0, 0)
       frame.getAttFill().SetFillColorAlpha(0, 0)
-    else:
+    elif process == 'both' and not self.do_tdrstyle:
       self.signal_model.paramOn(frame,   
            ROOT.RooFit.Layout(0.2, 0.3, 0.8),
            ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
@@ -399,29 +411,52 @@ class Fitter(Tools):
         chisquare = frame.chiSquare("qcd","data_bkg")
 
     # and print it
-    label1 = ROOT.TPaveText(0.62,0.65,0.72,0.8,"brNDC")
+    if not self.do_tdrstyle:
+      label1 = ROOT.TPaveText(0.62,0.65,0.72,0.8,"brNDC")
+    else:
+      label1 = ROOT.TPaveText(0.2,0.65,0.3,0.8,"brNDC")
     label1.SetBorderSize(0)
     label1.SetFillColor(ROOT.kWhite)
-    label1.SetTextSize(0.03)
+    if not self.do_tdrstyle:
+      label1.SetTextSize(0.03)
+    else:
+      label1.SetTextSize(0.045)
     label1.SetTextFont(42)
     label1.SetTextAlign(11)
     if process == 'signal' or process == 'both':
-      label_text = 'mass {}GeV, ctau {}mm'.format(signal_mass, self.signal_file.ctau)
+      if not self.do_tdrstyle:
+        label_text = 'mass {}GeV, ctau {}mm'.format(signal_mass, self.signal_file.ctau)
+      else:
+        label_text_mass = 'mass {} GeV'.format(signal_mass)
+        label_text_ctau = 'ctau {} mm'.format(self.signal_file.ctau)
     else: 
       label_text = 'Mass window around {}GeV'.format(signal_mass)
-    label1.AddText(label_text)
+    if not self.do_tdrstyle:
+      label1.AddText(label_text)
+    else:
+      label1.AddText(label_text_mass)
+      label1.AddText(label_text_ctau)
     if process != 'both':
       qte = '#chi^{2}/ndof'
       label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
       print "chisquare = {}".format(chisquare)
 
-    label2 = ROOT.TPaveText(0.62,0.8,0.72,0.86,"brNDC")
+    if not self.do_tdrstyle:
+      label2 = ROOT.TPaveText(0.62,0.8,0.72,0.86,"brNDC")
+    else:
+      label2 = ROOT.TPaveText(0.58,0.65,0.68,0.8,"brNDC")
     label2.SetBorderSize(0)
     label2.SetFillColorAlpha(0, 0)
-    label2.SetTextSize(0.04)
+    if not self.do_tdrstyle:
+      label2.SetTextSize(0.04)
+    else:
+      label2.SetTextSize(0.05)
     label2.SetTextFont(22)
     label2.SetTextAlign(11)
-    label2.AddText(self.category_label)
+    if not self.do_tdrstyle:
+      label2.AddText(self.category_label)
+    else:
+      label2.AddText(self.category_title)
 
     # We define and plot the pull 		
     if process != 'both':
@@ -487,31 +522,33 @@ class Fitter(Tools):
       leg.Draw()
 
     # add the labels
-    if self.add_CMSlabel: self.tools.printCMSTag(pad1, self.CMStag, size=0.5)
-    if self.add_lumilabel: self.tools.printLumiTag(pad1, self.lumi_true, size=0.5, offset=0.55)
+    if self.add_CMSlabel: self.tools.printCMSTag(pad1, self.CMStag, size=0.5, offset=0.1 if process == 'both' else 0.08)
+    if self.add_lumilabel and not self.do_tdrstyle: self.tools.printLumiTag(pad1, self.lumi_true, size=0.5, offset=0.50 if process == 'both' else 0.55)
+    if self.add_lumilabel and self.do_tdrstyle: self.tools.printLumiTag(pad1, self.lumi_target, size=0.5, offset=0.48 if process == 'both' else 0.55)
 
     # plot of the residuals
-    pad2.cd()
-    ROOT.gPad.SetLeftMargin(0.15) 
-    ROOT.gPad.SetPad(0.01,0.01,0.99,0.2)
+    if process != 'both':
+      pad2.cd()
+      ROOT.gPad.SetLeftMargin(0.15) 
+      ROOT.gPad.SetPad(0.01,0.01,0.99,0.2)
 
-    frame2.GetYaxis().SetNdivisions(3)
-    frame2.GetYaxis().SetLabelSize(0.17)
-    frame2.GetYaxis().SetTitleSize(0.17)
-    frame2.GetYaxis().SetTitleOffset(0.24)
-    frame2.GetYaxis().SetRangeUser(-5,5)	
-    frame2.GetYaxis().SetTitle("Pulls")	
-    frame2.GetXaxis().SetTitle("")	
-    frame2.GetXaxis().SetLabelOffset(5)	
-    frame2.Draw()
+      frame2.GetYaxis().SetNdivisions(3)
+      frame2.GetYaxis().SetLabelSize(0.17)
+      frame2.GetYaxis().SetTitleSize(0.17)
+      frame2.GetYaxis().SetTitleOffset(0.24)
+      frame2.GetYaxis().SetRangeUser(-5,5)	
+      frame2.GetYaxis().SetTitle("Pulls")	
+      frame2.GetXaxis().SetTitle("")	
+      frame2.GetXaxis().SetLabelOffset(5)	
+      frame2.Draw()
 
-    bin_min = fit_window_min
-    bin_max = fit_window_max
-    line = ROOT.TLine()
-    line.DrawLine(bin_min,0,bin_max,0)
-    line.SetLineColor(2)
-    line.DrawLine(bin_min,-3,bin_max,-3)
-    line.DrawLine(bin_min,3,bin_max,3)
+      bin_min = fit_window_min
+      bin_max = fit_window_max
+      line = ROOT.TLine()
+      line.DrawLine(bin_min,0,bin_max,0)
+      line.SetLineColor(2)
+      line.DrawLine(bin_min,-3,bin_max,-3)
+      line.DrawLine(bin_min,3,bin_max,3)
 
     # save output
     canv.cd()
@@ -618,7 +655,7 @@ class Fitter(Tools):
 
     # define signal weights
     weight_ctau = self.tools.getCtauWeight(self.signal_file)
-    weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target, isBc=isBc)
+    weight_signal = self.tools.getSignalWeight(signal_file=self.signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target, lhe_efficiency=self.lhe_efficiency, isBc=isBc)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
     if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
     if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
@@ -637,9 +674,11 @@ class Fitter(Tools):
 
   def getSignalYields(self):
     n_sig = self.getSignalYieldsFromHist(filename=self.signal_file.filename, isBc=False)
+    print 'n_sig = {}'.format(n_sig)
 
     if self.add_Bc:
       n_sig += self.getSignalYieldsFromHist(filename=self.signal_file.filename_Bc, isBc=True)
+      print '+ {}'.format(n_sig)
 
     return n_sig
 
@@ -832,40 +871,41 @@ class Fitter(Tools):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  outdirlabel = 'V10_30Dec21_samples_sel'
-  plot_pulls = True
+  outdirlabel = 'V11_24Apr22_forSPS22'
+  plot_pulls = False
   #selection = 'sv_lxy>5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.3 && sv_lxysig>100 && abs(mu_dxysig)>15 && abs(pi_dxysig)>20 '
   selection = 'sv_lxy>1 && sv_lxy<=5 && trgmu_charge==mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.2 && sv_lxysig>100 && abs(mu_dxysig)>12 && abs(pi_dxysig)>25'
   signal_model_label = 'voigtian'
-  signal_files = signal_samples['V10_30Dec21_m3'] 
+  signal_files = signal_samples['V11_24Apr22_m2'] 
   background_model_label = 'chebychev'
-  data_files = data_samples['V10_30Dec21']
+  data_files = data_samples['V11_24Apr22_small']
   do_blind = True
   do_binned_fit = True
-  nbins = 30
-  lumi_target = 5.302
+  nbins = 100
+  lumi_target = 41.6 #5.302
   sigma_B = 472.8e9
   add_CMSlabel = True
   add_lumilabel = True
-  CMStag = 'Preliminary'
+  CMStag = 'Work in progress'
 
   mass_window_size = 3
-  fit_window_size = 6
+  fit_window_size = 10
 
   label = 'test'
   for signal_file in signal_files:
-    if signal_file.ctau != 0.1: continue
+    if signal_file.ctau != 10: continue
     category_label = 'lxy1to5_SS'
-    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, mass_window_size=mass_window_size, fit_window_size=fit_window_size, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag, mass=signal_file.mass, resolution=signal_file.resolution, category_label=category_label)
+    category_title = '(1<l_{xy}<=5)cm, SS'
+    fitter = Fitter(signal_file=signal_file, data_files=data_files, selection=selection, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, mass_window_size=mass_window_size, fit_window_size=fit_window_size, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag, mass=signal_file.mass, resolution=signal_file.resolution, category_label=category_label, category_title=category_title)
     #fitter.writeSignalModel(label='test')
     #fitter.writeBackgroundModel(label='test')
     #fitter.createFitWorkspace()
     #fitter.writeFitModels(label='test')
     #fitter.performFit(process='signal', label='test')
     #fitter.performFit(process='background', label='test')
-    fitter.process_signal()
+    #fitter.process_signal()
     #fitter.process_background()
-    #fitter.producePrefitPlot()
+    fitter.producePrefitPlot()
     #print fitter.getSignalYieldsFromHist()
 
   #fitter = Fitter(data_files=data_files, selection=selection, background_model=background_model, do_blind=do_blind, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls)
