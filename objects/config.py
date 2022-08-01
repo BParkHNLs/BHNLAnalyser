@@ -9,6 +9,7 @@ class Config(object):
                data_label=None, 
                qcd_label=None, 
                signal_labels=None, 
+               points_label=None,
                sample_type=None,
                tree_name=None, 
                categories_label=None, 
@@ -70,6 +71,7 @@ class Config(object):
     self.data_label = data_label
     self.qcd_label = qcd_label
     self.signal_labels = signal_labels
+    self.points_label = points_label
     self.sample_type = sample_type
     self.tree_name = tree_name
     self.categories_label = categories_label
@@ -164,6 +166,12 @@ class Config(object):
             if not ROOT.TFile.Open(sample.filename, 'READ').Get(self.tree_name):
               raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
     print '       ---> Signal samples OK'
+
+    from points import points
+    if self.points_label != None and self.points_label not in points.keys():
+      raise RuntimeError('The ctau points label (points_label) is not valid. Please choose amongst {}.'.format(points.keys()))
+    else: 
+      print '       ---> Lifetime points label OK'
 
     from qcd_white_list import white_list
     if self.qcd_white_list != None and self.qcd_white_list not in white_list.keys():
