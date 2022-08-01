@@ -12,6 +12,7 @@ class Config(object):
                points_label=None,
                sample_type=None,
                tree_name=None, 
+               reweighting_strategy=None,
                categories_label=None, 
                selection_label=None, 
                quantities_label=None, 
@@ -75,6 +76,7 @@ class Config(object):
     self.sample_type = sample_type
     self.tree_name = tree_name
     self.categories_label = categories_label
+    self.reweighting_strategy = reweighting_strategy
     self.selection_label = selection_label
     self.quantities_label = quantities_label
     self.weight_label = weight_label
@@ -178,6 +180,12 @@ class Config(object):
       raise RuntimeError('The qcd white list label (qcd_white_list) is not valid. Please choose amongst {}.'.format(white_list.keys()))
     else: 
       print '       ---> QCD pthat white list OK'
+
+    reweighting_strategies = ['inclusive', 'partial_inclusive', 'exclusive_fromlargerctau', 'exclusive_fromsmallerctau']
+    if self.reweighting_strategy not in reweighting_strategies:
+      raise RuntimeError('Unknown reweighting strategy "{}". Please choose amongst {}'.format(self.reweighting_strategy, reweighting_strategies))
+    else:
+      print '       ---> Reweighting strategy OK'
 
     from categories import categories
     if self.categories_label != None and self.categories_label not in categories.keys():
