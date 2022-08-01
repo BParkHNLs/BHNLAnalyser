@@ -373,7 +373,7 @@ class ComputeYields(Tools):
   # SIGNAL 
   ###
 
-  def getSignalEfficiency(self, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isBc=False):
+  def getSignalEfficiency(self, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isMixed=False, lhe_efficiency=0.08244, isBc=False):
     '''
       eff(bin) = N_flat(bin) / N_gen
       N_gen = N_reco / filter_efficiency
@@ -453,14 +453,14 @@ class ComputeYields(Tools):
         if str(self.signal_file.mass).replace('.', 'p') not in the_signal_sample.filename: continue
         if 'mN1p0' in the_signal_sample.filename and 'ctau1000p0mm' in the_signal_sample.filename: 
           samples_for_reweighting.append(the_signal_sample)
-        if 'mN3p0' in the_signal_sample.filename and 'ctau1000p0mm' in the_signal_sample.filename: 
+        if 'mN3p0' in the_signal_sample.filename and 'ctau1p0mm' in the_signal_sample.filename: 
           samples_for_reweighting.append(the_signal_sample)
         if 'mN4p5' in the_signal_sample.filename and 'ctau100p0mm' in the_signal_sample.filename: 
           samples_for_reweighting.append(the_signal_sample)
 
     #print '\n {}'.format(self.signal_file.ctau)
     #for the_signal_sample in samples_for_reweighting:
-      #print the_signal_sample.filename
+    #  print the_signal_sample.filename
 
     # get the trees
     filename = self.signal_file.filename if not isBc else self.signal_file.filename_Bc
@@ -494,7 +494,8 @@ class ComputeYields(Tools):
       filter_efficiency = filter_efficiency / n_miniaod_tot
 
     # get the number of generated events
-    n_generated = n_miniaod_tot / filter_efficiency #TODO make sure that the case where samples are produced with 50% electron is accounted for
+    n_generated = n_miniaod_tot / filter_efficiency
+    if isMixed: n_generated = n_generated * 0.5
 
     # get number of selected reco events
     mass = self.signal_file.mass
@@ -566,6 +567,8 @@ class ComputeYields(Tools):
 
     # compute the efficiency
     efficiency = n_selected_bin / n_generated
+    if isBc:
+      efficiency = efficiency * lhe_efficiency
     #err_efficiency = 0. #TODO
 
     err_filter_efficiency = 0. * filter_efficiency
@@ -576,17 +579,17 @@ class ComputeYields(Tools):
     return efficiency, err_efficiency
 
 
-  def computeSignalYields(self, lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isBc=False):
+  def computeSignalYieldsIni(self, isMixed='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isBc=False, lhe_efficiency=0.08244):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
     '''
 
     # we get the sigma_HNL
     ## measured sigma_B_tot from normalisation study
-    sigma_Bcharged = sigma_B
+    sigma_BBar = sigma_B
 
     frag_Bcharged = 0.4
-    sigma_Btot_approx = sigma_Bcharged / frag_Bcharged
+    sigma_Bcharged = sigma_BBar / frag_Bcharged
 
     v_square = self.tools.getVV(mass=self.signal_file.mass, ctau=self.signal_file.ctau, ismaj=True)
     #print 'v2: ',v_square
@@ -609,14 +612,14 @@ class ComputeYields(Tools):
     #print 'BR decay, ',BR_decay
 
     ## and finally sigma_HNL
-    sigma_HNL = sigma_Btot_approx * BR_prod * BR_decay * v_square
+    sigma_HNL = sigma_Bcharged * BR_prod * BR_decay * v_square
     #print 'sigma_hnl ',sigma_HNL
 
     # lumi
     lumi_A1 = lumi
 
     # efficiency in the mu-channel
-    efficiency, err_efficiency = self.getSignalEfficiency(add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, weight_hlt=weight_hlt, weight_pusig=weight_pusig, isBc=isBc)
+    efficiency, err_efficiency = self.getSignalEfficiency(add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, weight_hlt=weight_hlt, weight_pusig=weight_pusig, isBc=isBc, isMixed=isMixed, lhe_efficiency=lhe_efficiency)
     #print 'efficiency ',efficiency #efficiency/self.signal_file.filter_efficiency
 
     signal_yields = sigma_HNL * lumi_A1 * efficiency
@@ -633,6 +636,51 @@ class ComputeYields(Tools):
     #print 'yields ',signal_yields
 
     return signal_yields, err_signal_yields
+
+
+  def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isBc=False):
+    '''
+      signal yields computed as sigma_HNL * lumi * efficiency
+    '''
+
+    # define ranges and binning (full window)
+    fit_window_min = mass - 1.5
+    fit_window_max = mass + 1.5 
+
+    # get the signal files
+    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy='exclusive_fromlargerctau')
+
+    # get the tree
+    treename = 'signal_tree'
+    tree_sig = ROOT.TChain(treename)
+    for signal_file in signal_files:
+      filename = signal_file.filename if not isBc else signal_file.filename_Bc
+      tree_sig.Add(filename)
+
+    # define selection
+    cond_sig = 'ismatched==1'
+    selection_sig = cond_sig + ' && ' + self.selection
+
+    # define signal weights
+    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=ctau)
+    lhe_efficiency = 0.08244 #FIXME
+    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=mass, ctau=ctau, sigma_B=sigma_B, lumi=lumi, lhe_efficiency=lhe_efficiency)
+    weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
+    if add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
+    if add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
+    #print 'weight ',weight_sig
+
+    # create histogram
+    hist_name = 'hist_signal_{}'.format(isBc)
+    hist = ROOT.TH1D(hist_name, hist_name, 100, fit_window_min, fit_window_max)
+    branch_name = 'hnl_mass'
+    tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
+
+    # get the number of yields
+    n_sig = hist.Integral()
+
+    return n_sig
+
 
 
 if __name__ == '__main__':
