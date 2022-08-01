@@ -5,9 +5,10 @@ from ROOT import RooFit
 
 from tools import Tools
 from samples import signal_samples, data_samples
+from resolutions import resolutions as resolutions_list
 
 class Fitter(Tools):
-  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, reweighting_strategy=None, resolution=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, weight_hlt=None, weight_pusig=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, reweighting_strategy=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, weight_hlt=None, weight_pusig=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.signal_label = signal_label
     self.data_files = data_files
@@ -15,8 +16,7 @@ class Fitter(Tools):
     self.signal_mass = mass
     self.signal_ctau = ctau
     self.reweighting_strategy = reweighting_strategy
-    #self.resolution = resolution #TODO fetch this quantity directly from the fit? if not, what if there are multiple signal files?
-    self.resolution = 0.0126 #FIXME, just for checks
+    self.resolution = resolutions_list[self.signal_mass]
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
