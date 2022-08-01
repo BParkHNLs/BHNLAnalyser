@@ -7,7 +7,6 @@ import math
 from compute_yields import ComputeYields
 from tools import Tools
 from fitter import Fitter
-from quantity import Quantity
 
 import sys
 sys.path.append('../objects')
@@ -16,6 +15,8 @@ from categories import categories
 from baseline_selection import selection
 from ABCD_regions import ABCD_regions
 from qcd_white_list import white_list
+from quantity import Quantity
+from points import points
 
 
 def getOptions():
@@ -27,9 +28,11 @@ def getOptions():
   parser.add_argument('--data_label'            , type=str, dest='data_label'            , help='which data samples to consider?'                               , default='V07_18Aug21')
   parser.add_argument('--qcd_label'             , type=str, dest='qcd_label'             , help='which qcd samples to consider?'                                , default='V07_18Aug21')
   parser.add_argument('--signal_label'          , type=str, dest='signal_label'          , help='which signal samples to consider?'                             , default='private')
+  parser.add_argument('--points_label'          , type=str, dest='points_label'          , help='which ctau points to consider?'                                , default='generated')
   parser.add_argument('--selection_label'       , type=str, dest='selection_label'       , help='apply a baseline selection_label?'                             , default='standard')
   parser.add_argument('--categories_label '     , type=str, dest='categories_label'      , help='label of the list of categories'                               , default='standard')
   parser.add_argument('--category_label'        , type=str, dest='category_label'        , help='label of a given category within this list'                    , default=None)
+  parser.add_argument('--reweighting_strategy ' , type=str, dest='reweighting_strategy'  , help='lifetime reweighting strategy'                                 , default='inclusive')
   parser.add_argument('--ABCD_label'            , type=str, dest='ABCD_label'            , help='which ABCD regions?'                                           , default='cos2d_svprob')
   parser.add_argument('--signal_model_label'    , type=str, dest='signal_model_label'    , help='name of the signal pdf'                                        , default='voigtiant')
   parser.add_argument('--background_model_label', type=str, dest='background_model_label', help='name of the background pdf'                                    , default='chebychev')
@@ -94,15 +97,18 @@ def printInfo(opt):
   print '-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.-.'
   print '\n'
 
+
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', signal_label='', qcd_files='', white_list='', baseline_selection='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, weight_hlt=None, weight_pusig=None, add_weight_hlt=True, add_weight_pu=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, weight_hlt=None, weight_pusig=None, add_weight_hlt=True, add_weight_pu=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
     self.signal_label = signal_label
+    self.ctau_points = ctau_points
     self.qcd_files = qcd_files
     self.white_list = white_list
     self.baseline_selection = baseline_selection
+    self.reweighting_strategy = reweighting_strategy
     self.ABCD_regions = ABCD_regions
     self.do_ABCD = do_ABCD 
     self.do_ABCDHybrid = do_ABCDHybrid 
@@ -191,12 +197,12 @@ class DatacardsMaker(Tools):
     return background_yields
 
 
-  def getSignalYields(self, signal_file, category='', selection=''):
+  def getSignalYields(self, mass=None, ctau=None, category='', selection=''):
     signal_selection = 'ismatched==1 && ' + selection
 
-    signal_yields = ComputeYields(signal_file=signal_file, signal_label=self.signal_label, selection=signal_selection).computeSignalYields(lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, add_weight_pu=self.add_weight_pu, weight_pusig=self.weight_pusig, isBc=False)[0]
+    signal_yields = ComputeYields(signal_label=self.signal_label, selection=signal_selection).computeSignalYields(mass=mass, ctau=ctau, lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, add_weight_pu=self.add_weight_pu, weight_pusig=self.weight_pusig, isBc=False)[0]
     if self.add_Bc and signal_file.filename_Bc != '':
-      signal_yields += ComputeYields(signal_file=signal_file, signal_label=self.signal_label, selection=signal_selection).computeSignalYields(lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, add_weight_pu=self.add_weight_pu, weight_pusig=self.weight_pusig, isBc=True)[0]
+      signal_yields += ComputeYields(signal_label=self.signal_label, selection=signal_selection).computeSignalYields(mass=mass, ctau=ctau, lumi=self.lumi_target, sigma_B=self.sigma_B, add_weight_hlt=self.add_weight_hlt, weight_hlt=self.weight_hlt, add_weight_pu=self.add_weight_pu, weight_pusig=self.weight_pusig, isBc=True)[0]
 
       #print 'yields {} + {} = {}'.format(ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, isBc=False)[0], ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=41.6, isBc=True), signal_yields)[0]
 
@@ -210,6 +216,13 @@ class DatacardsMaker(Tools):
     signal_coupling = self.tools.getCouplingLabel(signal_v2)
 
     return signal_mass, signal_coupling
+
+
+  def getSignalCoupling(self, signal_mass, signal_ctau):
+    signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+    signal_coupling = self.tools.getCouplingLabel(signal_v2)
+
+    return signal_coupling
 
 
   def getCardLabel(self, signal_mass='', signal_coupling='', category=''):
@@ -230,7 +243,7 @@ class DatacardsMaker(Tools):
     return label
 
 
-  def runFitter(self, process='', signal_file=None, mass=None, resolution=None, category='', selection='', label=''):
+  def runFitter(self, process='', mass=None, ctau=None, resolution=None, category='', selection='', label=''): #TODO remove resolution?
     '''
       Run the parametric shapes and extract the yields
     '''
@@ -239,7 +252,7 @@ class DatacardsMaker(Tools):
 
     # initialise the fitter
     if process == 'signal':
-      fitter = Fitter(signal_file=signal_file, data_files=self.data_files, selection=selection, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, add_Bc=self.add_Bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(signal_label=self.signal_label, data_files=self.data_files, selection=selection, mass=mass, ctau=ctau, reweighting_strategy=self.reweighting_strategy, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, add_Bc=self.add_Bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_signal(label=label)
@@ -253,6 +266,7 @@ class DatacardsMaker(Tools):
 
     elif process == 'background':
       fitter = Fitter(data_files=self.data_files, mass=mass, resolution=resolution, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      #TODO remove resolution?
 
       # perform the fits and write the workspaces
       fitter.process_background(label=label)
@@ -300,8 +314,11 @@ class DatacardsMaker(Tools):
     return background_yields
 
 
-  def createSigHisto(self, category, signal_file, signal_yields, selection, label):
+  def createSigHisto(self, mass, ctau, category, signal_yields, selection, label):
     #TODO modify to account for Bc samples?
+    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy='exclusive_fromlargerctau') # take as default exclusive reweighting strategy
+    signal_file = signal_files[0]
+
     signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
 
     rootfile_name = 'shape_{}.root'.format(label)
@@ -315,8 +332,8 @@ class DatacardsMaker(Tools):
     f_signal = self.tools.getRootFile(signal_file.filename)
     tree_signal = self.getTree(f_signal, treename)
 
-    weight_ctau = self.tools.getCtauWeight(signal_file)
-    weight_signal = self.tools.getSignalWeight(signal_file=signal_file, sigma_B=self.sigma_B, lumi=self.lumi_target, lhe_efficiency=self.lhe_efficiency)
+    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=ctau)
+    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=mass, ctau=ctau, sigma_B=self.sigma_B, lumi=self.lumi_target, lhe_efficiency=self.lhe_efficiency)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
     if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
     if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
@@ -559,29 +576,28 @@ bkg {bkg_yields}
           data_obs = self.runFitter(process='data_obs', mass=window['mass'], resolution=window['resolution'], category=category, selection=selection, label=cat_label)
 
         # loop on the signal points
-        for signal_file in signal_files:
-          if signal_file.mass != window['mass']: continue
-
-          #if signal_file.ctau != 0.1: continue # and signal_file.ctau != 10.: continue
-          #if signal_file.ctau != 100.: continue # and signal_file.ctau != 10.: continue
-
+        for ctau_point in self.ctau_points:
           # get the signal mass/coupling
-          signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
+          signal_mass = window['mass']
+          signal_ctau = ctau_point
+          signal_coupling = self.getSignalCoupling(signal_mass=signal_mass, signal_ctau=signal_ctau)
+
+          #if signal_ctau != 0.1: continue
 
           # get the process label
           card_label = self.getCardLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
 
           # get the signal yields (if not shape analysis)
           if self.do_counting or self.do_shape_TH1:
-            signal_yields = self.getSignalYields(signal_file=signal_file, category=category, selection=selection)
+            signal_yields = self.getSignalYields(mass=signal_mass, ctau=signal_ctau, category=category, selection=selection)
       
           # get the model shape and yields for shape analysis
           if self.do_shape_analysis:
-            signal_yields = self.runFitter(process='signal', signal_file=signal_file, category=category, selection=selection, label=card_label)
+            signal_yields = self.runFitter(process='signal', mass=signal_mass, ctau=signal_ctau, category=category, selection=selection, label=card_label)
 
           # create histograme for non-parametric shape strategy
           if self.do_shape_TH1:
-            self.createSigHisto(category=category, signal_file=signal_file, signal_yields=signal_yields, selection=selection, label=card_label)
+            self.createSigHisto(mass=signal_mass, ctau=signal_ctau, category=category, signal_yields=signal_yields, selection=selection, label=card_label)
             self.createBkgHisto(category=category, mass=window['mass'], resolution=window['resolution'], background_yields=background_yields, selection=selection, label=cat_label)
             self.createDataObsHisto(category=category, mass=window['mass'], resolution=window['resolution'], selection=selection, label=cat_label)
 
@@ -606,6 +622,8 @@ if __name__ == '__main__':
     data_files = data_samples[opt.data_label]
     signal_label = opt.signal_label
     signal_files = signal_samples[signal_label]
+    points_label = opt.points_label
+    ctau_points = points[opt.points_label]
     qcd_files = qcd_samples[opt.qcd_label]
     
     white_list = white_list[opt.qcd_white_list]
@@ -660,6 +678,7 @@ if __name__ == '__main__':
         data_files = data_files, 
         signal_files = signal_files, 
         signal_label = signal_label,
+        ctau_points = ctau_points,
         qcd_files = qcd_files,
         white_list = white_list,
         baseline_selection = baseline_selection, 
@@ -670,6 +689,7 @@ if __name__ == '__main__':
         do_categories = do_categories, 
         categories = categories, 
         category_label = opt.category_label, 
+        reweighting_strategy = opt.reweighting_strategy,
         ABCD_regions = ABCD_regions,
         do_ABCD = do_ABCD,
         do_ABCDHybrid = do_ABCDHybrid,
