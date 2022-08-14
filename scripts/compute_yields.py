@@ -579,65 +579,6 @@ class ComputeYields(Tools):
     return efficiency, err_efficiency
 
 
-  def computeSignalYieldsIni(self, isMixed='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isBc=False, lhe_efficiency=0.08244):
-    '''
-      signal yields computed as sigma_HNL * lumi * efficiency
-    '''
-
-    # we get the sigma_HNL
-    ## measured sigma_B_tot from normalisation study
-    sigma_BBar = sigma_B
-
-    frag_Bcharged = 0.4
-    sigma_Bcharged = sigma_BBar / frag_Bcharged
-
-    v_square = self.tools.getVV(mass=self.signal_file.mass, ctau=self.signal_file.ctau, ismaj=True)
-    #print 'v2: ',v_square
-
-    ## total production branching ratio
-    from decays import Decays 
-    dec = Decays(mass=self.signal_file.mass, mixing_angle_square=1) # we factorise the mixing angle 
-    if not isBc:
-      BR_prod = dec.BR_tot_mu 
-    else:
-      BR_prod = dec.BR_Bc_mu 
-    #print 'BR_prod ',BR_prod
-
-    ## total decay branching ratio
-    BR_NToMuPi = self.tools.gamma_partial(mass=self.signal_file.mass, vv=v_square) / self.tools.gamma_total(mass=self.signal_file.mass, vv=v_square)
-    #print 'BR_NToMuPi ',BR_NToMuPi
-
-    NToMuPi_fraction = 1.
-    BR_decay = NToMuPi_fraction * BR_NToMuPi
-    #print 'BR decay, ',BR_decay
-
-    ## and finally sigma_HNL
-    sigma_HNL = sigma_Bcharged * BR_prod * BR_decay * v_square
-    #print 'sigma_hnl ',sigma_HNL
-
-    # lumi
-    lumi_A1 = lumi
-
-    # efficiency in the mu-channel
-    efficiency, err_efficiency = self.getSignalEfficiency(add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, weight_hlt=weight_hlt, weight_pusig=weight_pusig, isBc=isBc, isMixed=isMixed, lhe_efficiency=lhe_efficiency)
-    #print 'efficiency ',efficiency #efficiency/self.signal_file.filter_efficiency
-
-    signal_yields = sigma_HNL * lumi_A1 * efficiency
-
-    # uncertainty
-    err_sigma = 0.10
-    err_BR_prod = 0.05
-    err_BR_decay = 0.05
-    err_v_square = 0.05 
-    err_lumi = 0.025
-    
-    err_signal_yields = 0. #signal_yields * (err_sigma / sigma_Bcharged + err_BR_prod / BR_prod + err_BR_decay / BR_decay + err_v_square / v_square + err_lumi / lumi + err_efficiency / efficiency)
-    
-    #print 'yields ',signal_yields
-
-    return signal_yields, err_signal_yields
-
-
   def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isBc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
@@ -666,8 +607,8 @@ class ComputeYields(Tools):
     lhe_efficiency = 0.08244 #FIXME
     weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=mass, ctau=ctau, sigma_B=sigma_B, lumi=lumi, lhe_efficiency=lhe_efficiency)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
-    if add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
-    if add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
+    if add_weight_hlt: weight_sig += ' * ({})'.format(weight_hlt)
+    if add_weight_pu: weight_sig += ' * ({})'.format(weight_pusig)
     #print 'weight ',weight_sig
 
     # create histogram
