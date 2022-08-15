@@ -43,7 +43,7 @@ class Tools(object):
     return hist
 
 
-  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', hist_name='hist_qcd_tot', selection='', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd=''):
+  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', hist_name='hist_qcd_tot', selection='', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_mu0id='', weight_muid=''):
     hist_mc_tot = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
     hist_mc_tot.Sumw2()
 
@@ -62,6 +62,7 @@ class Tools(object):
       weight_qcd = '({})'.format(weight_mc)
       if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
       if add_weight_pu : weight_qcd += ' * ({})'.format(weight_puqcd)
+      if add_weight_muid : weight_qcd += ' * ({}) * ({})'.format(weight_mu0id, weight_muid)
       hist_name = 'hist_qcd_{}'.format(qcd_file_pthatrange)
       hist_mc = self.createHisto(tree_mc, quantity, hist_name=hist_name, branchname='flat', selection=selection, weight=weight_qcd) 
       hist_mc.Sumw2()
@@ -156,7 +157,7 @@ class Tools(object):
     return weight
 
 
-  def scaleToLumiWeight(self, data_files, qcd_files, white_list, selection, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd):
+  def scaleToLumiWeight(self, data_files, qcd_files, white_list, selection, add_weight_hlt, add_weight_pu, add_weight_muid, weight_hlt, weight_puqcd, weight_mu0id, weight_muid):
     '''
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
@@ -172,7 +173,7 @@ class Tools(object):
       n_obs_data += hist_data.Integral()
       n_err_data += hist_data.GetBinError(1)
 
-    hist_mc_tot = self.createWeightedHistoQCDMC(qcd_files=qcd_files, white_list=white_list, quantity=quantity_forweight, selection=selection, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, weight_hlt=weight_hlt, weight_puqcd=weight_puqcd)
+    hist_mc_tot = self.createWeightedHistoQCDMC(qcd_files=qcd_files, white_list=white_list, quantity=quantity_forweight, selection=selection, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, add_weight_muid=add_weight_muid, weight_hlt=weight_hlt, weight_puqcd=weight_puqcd, weight_mu0id=weight_mu0id, weight_muid=weight_muid)
     n_obs_mc = hist_mc_tot.Integral()
     n_err_mc = hist_mc_tot.GetBinError(1)
 

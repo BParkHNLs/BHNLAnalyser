@@ -14,7 +14,6 @@ from ABCD_regions import ABCD_regions
 from baseline_selection import selection
 from qcd_white_list import white_list 
 
-#TODO apply weights 
 
 class ComputeYields(Tools):
   def __init__(self, data_files='', qcd_files='', signal_file='', signal_label='', selection='', white_list=''):
@@ -375,6 +374,8 @@ class ComputeYields(Tools):
 
   def getSignalEfficiency(self, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isMixed=False, lhe_efficiency=0.08244, isBc=False):
     '''
+      Function not used anymore
+
       eff(bin) = N_flat(bin) / N_gen
       N_gen = N_reco / filter_efficiency
     '''
@@ -579,7 +580,7 @@ class ComputeYields(Tools):
     return efficiency, err_efficiency
 
 
-  def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isBc=False):
+  def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', isBc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
     '''
@@ -609,6 +610,7 @@ class ComputeYields(Tools):
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
     if add_weight_hlt: weight_sig += ' * ({})'.format(weight_hlt)
     if add_weight_pu: weight_sig += ' * ({})'.format(weight_pusig)
+    if add_weight_muid: weight_sig += ' * ({}) * ({})'.format(weight_mu0id, weight_muid)
     #print 'weight ',weight_sig
 
     # create histogram

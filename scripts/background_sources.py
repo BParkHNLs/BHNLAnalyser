@@ -20,7 +20,7 @@ class BackgroundSource(object):
 
 
 class BackgroundPlotter(object):
-  def __init__(self, quantity, qcd_files, white_list='', categories='', baseline_selection='', add_weight_hlt='', add_weight_pu='', weight_hlt='', weight_puqcd='', CMS_tag=''):
+  def __init__(self, quantity, qcd_files, white_list='', categories='', baseline_selection='', add_weight_hlt='', add_weight_muid='',  add_weight_pu='', weight_hlt='', weight_puqcd='', weight_mu0id='', weight_muid='', CMS_tag=''):
     self.tools = Tools()
     self.quantity = quantity
     self.qcd_files = qcd_files
@@ -29,8 +29,11 @@ class BackgroundPlotter(object):
     self.baseline_selection = baseline_selection
     self.add_weight_hlt = add_weight_hlt
     self.add_weight_pu = add_weight_pu
+    self.add_weight_muid = add_weight_muid
     self.weight_hlt = weight_hlt
     self.weight_puqcd = weight_puqcd
+    self.weight_mu0id = weight_mu0id
+    self.weight_muid = weight_muid
     self.CMS_tag = CMS_tag
 
 
@@ -71,6 +74,7 @@ class BackgroundPlotter(object):
           weight_qcd = '({})'.format(weight_qcd)
           if self.add_weight_hlt : weight_qcd += ' * ({})'.format(self.weight_hlt)
           if self.add_weight_pu : weight_qcd += ' * ({}) '.format(self.weight_puqcd)
+          if self.add_weight_muid : weight_qcd += ' * ({}) *({})'.format(self.weight_mu0id, self.weight_mu0id)
 
           hist_name = 'hist_{}_{}'.format(qcd_file_pthatrange, category.label)
           selection_qcd = self.baseline_selection + ' && ' + category.definition_flat + ' && ' + category.cutbased_selection + ' && ' + source.name
@@ -151,8 +155,11 @@ if __name__ == '__main__':
   
   add_weight_hlt = False
   add_weight_pu = False
+  add_weight_muid = False
   weight_hlt = ''
   weight_puqcd = ''
+  weight_mu0id = ''
+  weight_muid = ''
 
   mu0_nonmatched = BackgroundSource('mu0_ismatched!=1', 'non-genmatched', ROOT.kGray)
   mu0_matched = BackgroundSource('mu0_ismatched==1 && mu0_isfake==0', 'genmatched', ROOT.kMagenta-10)

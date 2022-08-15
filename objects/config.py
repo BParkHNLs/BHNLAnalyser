@@ -20,9 +20,12 @@ class Config(object):
                qcd_white_list=None,
                add_weight_hlt=None,
                add_weight_pu=None,
+               add_weight_muid=None,
                branch_weight_hlt=None,
                branch_weight_puqcd=None,
                branch_weight_pusig=None,
+               branch_weight_mu0id=None,
+               branch_weight_muid=None,
 
                # for plotter
                plot_CR=None, 
@@ -83,9 +86,12 @@ class Config(object):
     self.qcd_white_list = qcd_white_list
     self.add_weight_hlt = add_weight_hlt
     self.add_weight_pu = add_weight_pu
+    self.add_weight_muid = add_weight_muid
     self.branch_weight_hlt = branch_weight_hlt
     self.branch_weight_puqcd = branch_weight_puqcd
     self.branch_weight_pusig = branch_weight_pusig
+    self.branch_weight_mu0id = branch_weight_mu0id
+    self.branch_weight_muid = branch_weight_muid
     self.plot_CR = plot_CR
     self.plot_SR = plot_SR
     self.plot_dataSig = plot_dataSig
@@ -146,15 +152,16 @@ class Config(object):
       raise RuntimeError('The qcd sample label (qcd_label) is not valid. Please choose amongst {}.'.format(qcd_samples.keys()))
     else: 
       print '       ---> QCD sample label OK'
-      for sample in qcd_samples[self.qcd_label]:
-        if 'pt' not in sample.label or 'to' not in sample.label:
-          raise RuntimeError('Please make sure that the qcd sample label contains "ptXXtoYY" for the white list to work')
-        if not ROOT.TFile.Open(sample.filename, 'READ'):
-          raise RuntimeError('The sample "{}" does not exist. Please check the filename.'.format(sample.filename))
-        #else:
-        #  if not ROOT.TFile.Open(sample.filename, 'READ').Get(self.tree_name):
-        #    raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
-    print '       ---> QCD samples OK'
+      if self.qcd_label != None:
+        for sample in qcd_samples[self.qcd_label]:
+          if 'pt' not in sample.label or 'to' not in sample.label:
+            raise RuntimeError('Please make sure that the qcd sample label contains "ptXXtoYY" for the white list to work')
+          if not ROOT.TFile.Open(sample.filename, 'READ'):
+            raise RuntimeError('The sample "{}" does not exist. Please check the filename.'.format(sample.filename))
+          else:
+            if not ROOT.TFile.Open(sample.filename, 'READ').Get(self.tree_name):
+              raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
+      print '       ---> QCD samples OK'
 
     for signal_label in self.signal_labels:
       if signal_label != None and signal_label not in signal_samples.keys():
@@ -218,6 +225,11 @@ class Config(object):
     #  raise RuntimeError('Unrecognised branch "{}" for the pile-up weight. Please check.'.format(self.branch_weight_pu))
     #else:
     #  print '       ---> Pile-up weight OK'
+
+    if self.add_weight_muid and (self.branch_weight_muid == None or self.branch_weight_mu0id == None):
+      raise RuntimeError('Please indicate the name of the branch for the muid and mu0id weights (branch_weight_muid and branch_weight_mu0id)')
+    else:
+      print '       ---> Muon ID weight OK'
 
     if self.do_shape == self.do_luminorm:
       raise RuntimeError('Invalid arguments for --do_shape ({}) and --do_luminorm ({}) \nPlease only set exactly one option to True at a time'.format(self.do_shape, self.do_luminorm))
