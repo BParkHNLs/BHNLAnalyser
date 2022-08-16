@@ -69,6 +69,17 @@ selection['baseline_30Dec21'] = Selection(
     ])
 )
 
+selection['baseline_08Aug22'] = Selection(
+    flat = ' && '.join([
+      'mu0_softid == 1',
+      'mu_looseid == 1',
+      'pi_packedcandhashighpurity == 1',
+      '((mu0_charge!=mu_charge && abs(mu0_mu_mass-3.097)>0.15 && abs(mu0_mu_mass-3.686)>0.08 && abs(mu0_mu_mass-1.019)>0.01) || (mu0_charge==mu_charge))',
+      '((mu0_charge==mu_charge && abs(mu0_pi_mass-3.097)>0.05 && abs(mu0_pi_mass-1.76)>0.05) || (mu0_charge!=mu_charge))',
+      'sv_lxyz < 100',
+    ])
+)
+
 selection['baseline_sources'] = Selection(
     flat = ' && '.join([
       'hnl_charge == 0',
