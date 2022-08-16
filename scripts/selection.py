@@ -16,19 +16,20 @@ from quantity import Quantity as Qte
 
 def getOptions():
   from argparse import ArgumentParser
-  parser = ArgumentParser(description='Script to produce the main analysis plots', add_help=True)
-  parser.add_argument('--dirlabel' , type=str, dest='dirlabel' , help='name of the outdir', default=None)
-  parser.add_argument('--mass'     , type=str, dest='mass'     , help='mass'              , default=None)
-  parser.add_argument('--category' , type=str, dest='category' , help='category'          , default=None)
-  parser.add_argument('--quantity' , type=str, dest='quantity' , help='quantity'          , default=None)
-  parser.add_argument('--action'   , type=str, dest='action'   , help='action'            , default=None)
-  parser.add_argument('--cut_pi_pt'   , type=str, dest='cut_pi_pt'   , help='cut_pi_pt'            , default=None)
-  parser.add_argument('--cut_sv_lxysig'   , type=str, dest='cut_sv_lxysig'   , help='cut_sv_lxysig'            , default=None)
-  parser.add_argument('--cut_mu_dxysig'   , type=str, dest='cut_mu_dxysig'   , help='cut_mu_dxysig'            , default=None)
-  parser.add_argument('--cut_pi_dxysig'   , type=str, dest='cut_pi_dxysig'   , help='cut_pi_dxysig'            , default=None)
-  parser.add_argument('--cut_max_mu_pi_dxysig'   , type=str, dest='cut_max_mu_pi_dxysig'   , help='cut_max_mu_pi_dxysig'            , default=None)
-  parser.add_argument('--cut_min_mu_pi_dxysig'   , type=str, dest='cut_min_mu_pi_dxysig'   , help='cut_min_mu_pi_dxysig'            , default=None)
-  parser.add_argument('--cut_hnl_cos2d'   , type=str, dest='cut_hnl_cos2d'   , help='cut_hnl_cos2d'            , default=None)
+  parser = ArgumentParser(description='Script to study the selection', add_help=True)
+  parser.add_argument('--dirlabel'             , type=str, dest='dirlabel'            , help='name of the outdir'  , default=None)
+  parser.add_argument('--mass'                 , type=str, dest='mass'                , help='mass'                , default=None)
+  parser.add_argument('--category'             , type=str, dest='category'            , help='category'            , default=None)
+  parser.add_argument('--quantity'             , type=str, dest='quantity'            , help='quantity'            , default=None)
+  parser.add_argument('--action'               , type=str, dest='action'              , help='action'              , default=None)
+  parser.add_argument('--cut_b_mass'           , type=str, dest='cut_b_mass'          , help='cut_b_mass'          , default=None)
+  parser.add_argument('--cut_pi_pt'            , type=str, dest='cut_pi_pt'           , help='cut_pi_pt'           , default=None)
+  parser.add_argument('--cut_sv_lxysig'        , type=str, dest='cut_sv_lxysig'       , help='cut_sv_lxysig'       , default=None)
+  parser.add_argument('--cut_mu_dxysig'        , type=str, dest='cut_mu_dxysig'       , help='cut_mu_dxysig'       , default=None)
+  parser.add_argument('--cut_pi_dxysig'        , type=str, dest='cut_pi_dxysig'       , help='cut_pi_dxysig'       , default=None)
+  parser.add_argument('--cut_max_mu_pi_dxysig' , type=str, dest='cut_max_mu_pi_dxysig', help='cut_max_mu_pi_dxysig', default=None)
+  parser.add_argument('--cut_min_mu_pi_dxysig' , type=str, dest='cut_min_mu_pi_dxysig', help='cut_min_mu_pi_dxysig', default=None)
+  parser.add_argument('--cut_hnl_cos2d'        , type=str, dest='cut_hnl_cos2d'       , help='cut_hnl_cos2d'       , default=None)
   return parser.parse_args()
 
 
@@ -52,13 +53,16 @@ class SelectedQuantity(object):
     self.quantity   = quantity
     self.chosen_cut = chosen_cut
 
+#TODO apply weights on signal, move dxysig definition to BS (DCASig for pions), add selection on the b mass difference with mB
 
 class Selection(object):
-  def __init__(self, signal_files='', data_file='', qcd_files='', quantity='', category=None, use_data=True, dirlabel='', preexisting_selection=None, proposed_cut=None, white_list=''):
+  def __init__(self, signal_label='', signal_files='', data_file='', qcd_files='', baseline_selection='', quantity='', category=None, use_data=True, dirlabel='', preexisting_selection=None, proposed_cut=None, white_list=''):
     self.tools                 = Tools()
+    self.signal_label          = signal_label
     self.signal_files          = signal_files
     self.data_file             = data_file
     self.qcd_files             = qcd_files
+    self.baseline_selection    = baseline_selection
     self.quantity              = quantity
     self.category              = category
     self.use_data              = use_data
@@ -66,6 +70,12 @@ class Selection(object):
     self.preexisting_selection = preexisting_selection
     self.proposed_cut          = proposed_cut
     self.white_list            = white_list
+
+    self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysig_max5e6_v2_smalltable_v2' 
+    print 'weight_hlt: {}'.format(self.weight_hlt)
+    self.weight_pusig = 'weight_pu_sig_D'
+    self.weight_mu0id = 'weight_mu0_softid'
+    self.weight_muid = 'weight_mu_looseid'
 
 
 
@@ -122,7 +132,7 @@ class Selection(object):
       g_sig = ROOT.TGraph()
 
       #selection_sig_ini = 'ismatched == 1 && trgmu_softid==1 && mu_looseid==1 && {}'.format(self.category.definition_flat) 
-      selection_sig_ini = 'ismatched == 1 && {}'.format(self.category.definition_flat) 
+      selection_sig_ini = 'ismatched == 1 && {} &&  {}'.format(self.baseline_selection, self.category.definition_flat) 
       if self.preexisting_selection !=None: selection_sig_ini += ' && {}'.format(self.getSelectionString())
       #print 'selection_sig_ini ',selection_sig_ini
       f_sig = self.tools.getRootFile(signal_file.filename)
@@ -162,7 +172,7 @@ class Selection(object):
       # background rejection
       g_bkg = ROOT.TGraph()
       #selection_bkg_ini = 'trgmu_softid==1 && mu_looseid==1 && {}'.format(self.category.definition_flat)
-      selection_bkg_ini = '{}'.format(self.category.definition_flat)
+      selection_bkg_ini = '{} && {}'.format(self.baseline_selection, self.category.definition_flat)
       if self.preexisting_selection !=None: selection_bkg_ini += ' && {}'.format(self.getSelectionString())
       #print 'selection_bkg_ini ',selection_bkg_ini
       if not self.use_data:
@@ -246,12 +256,13 @@ class Selection(object):
 
       for idx, cut in enumerate(points):
         # compute signal yields
-        signal_selection = 'ismatched == 1 && {}'.format(self.category.definition_flat) 
+        signal_selection = 'ismatched == 1 && {} && {}'.format(self.baseline_selection, self.category.definition_flat) 
         if self.preexisting_selection !=None: signal_selection += ' && {}'.format(self.getSelectionString())
         signal_selection += ' && {}{}{}'.format(self.quantity.name_flat, self.quantity.logic, cut)
 
         lumi_D1 = 5.302 # restrict to this lumi, as background taken from unblinded D1 data
-        signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+        #signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, selection=signal_selection).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+        signal_yields = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mui0d=self.weight_mu0id, weight_muid=self.weight_muid) 
         #print '{} {} {}'.format(signal_file.mass, signal_file.ctau, int(signal_yields))
 
         # compute background yields
@@ -274,7 +285,7 @@ class Selection(object):
         # get background yields from unblinded data
         f_data = self.tools.getRootFile(self.data_file)
         tree_data = self.tools.getTree(f_data, 'signal_tree')
-        background_selection = self.category.definition_flat
+        background_selection = '{} && {}'.format(self.baseline_selection, self.category.definition_flat)
         if self.preexisting_selection !=None: background_selection += ' && {}'.format(self.getSelectionString())
         background_selection += ' && {}{}{}'.format(self.quantity.name_flat, self.quantity.logic, cut)
         hist_data_name = 'hist_data_{}'.format(self.quantity)
@@ -376,19 +387,23 @@ class Selection(object):
     significance_diff_min = -1
 
     for signal_file in self.signal_files:
+      signal_mass = signal_file.mass
+      signal_ctau = signal_file.ctau
+
       g_sig = ROOT.TGraph()
       self.hnl_mass = Qte(name_flat='hnl_mass', label='hnl_mass', nbins=80, bin_min=signal_file.mass-2*signal_file.resolution, bin_max=signal_file.mass+2*signal_file.resolution)
 
       lumi_D1 = 5.302 # when computing the relative difference in significance, this value does not matter
 
       # compute the initial significance
-      signal_selection_ini = 'ismatched == 1 && {}'.format(self.category.definition_flat) 
+      signal_selection_ini = 'ismatched == 1 && {} && {}'.format(self.baseline_selection, self.category.definition_flat) 
       if self.preexisting_selection !=None: signal_selection_ini += ' && {}'.format(self.getSelectionString())
-      signal_yields_ini, err_signal_yields_ini = ComputeYields(signal_file=signal_file, selection=signal_selection_ini).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+      #signal_yields_ini, err_signal_yields_ini = ComputeYields(signal_file=signal_file, selection=signal_selection_ini).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+      signal_yields_ini = ComputeYields(signal_label=signal_label, selection=signal_selection_ini).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
 
       f_data = self.tools.getRootFile(self.data_file)
       tree_data = self.tools.getTree(f_data, 'signal_tree')
-      background_selection_ini = self.category.definition_flat
+      background_selection_ini = '{} && {}'.format(self.baseline_selection, self.category.definition_flat)
       if self.preexisting_selection !=None: background_selection_ini += ' && {}'.format(self.getSelectionString())
       hist_data_name = 'hist_data_ini_{}'.format(self.quantity)
       hist_data = self.tools.createHisto(tree_data, self.hnl_mass, hist_name=hist_data_name, branchname='flat', selection=background_selection_ini)
@@ -404,16 +419,17 @@ class Selection(object):
       for idx, cut in enumerate(points):
         print cut
         # compute signal yields
-        signal_selection_sel = 'ismatched == 1 && {}'.format(self.category.definition_flat) 
+        signal_selection_sel = 'ismatched == 1 && {} && {}'.format(self.baseline_selection, self.category.definition_flat) 
         if self.preexisting_selection !=None: signal_selection_sel += ' && {}'.format(self.getSelectionString())
         signal_selection_sel += ' && {}{}{}'.format(self.quantity.name_flat, self.quantity.logic, cut)
 
-        signal_yields_sel, err_signal_yields_sel = ComputeYields(signal_file=signal_file, selection=signal_selection_sel).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+        #signal_yields_sel, err_signal_yields_sel = ComputeYields(signal_file=signal_file, selection=signal_selection_sel).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+        signal_yields_sel = ComputeYields(signal_label=signal_label, selection=signal_selection_sel).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
 
         # get background yields from unblinded data
         f_data = self.tools.getRootFile(self.data_file)
         tree_data = self.tools.getTree(f_data, 'signal_tree')
-        background_selection_sel = self.category.definition_flat
+        background_selection_sel = '{} && {}'.format(self.baseline_selection, self.category.definition_flat)
         if self.preexisting_selection !=None: background_selection_sel += ' && {}'.format(self.getSelectionString())
         background_selection_sel += ' && {}{}{}'.format(self.quantity.name_flat, self.quantity.logic, cut)
         hist_data_name = 'hist_data_sel_{}_{}'.format(self.quantity, cut)
@@ -423,7 +439,10 @@ class Selection(object):
         # compute significance
         if background_yields_sel != 0:
           #significance_sel_1 = signal_yields_sel / math.sqrt(background_yields_sel)
-          significance_sel = math.sqrt(2*((signal_yields_sel + background_yields_sel)*math.log(1 + signal_yields_sel/background_yields_sel) - signal_yields_sel))
+          if 2*((signal_yields_sel + background_yields_sel)*math.log(1 + signal_yields_sel/background_yields_sel) - signal_yields_sel) > 0:
+            significance_sel = math.sqrt(2*((signal_yields_sel + background_yields_sel)*math.log(1 + signal_yields_sel/background_yields_sel) - signal_yields_sel))
+          else:
+            significance_sel = signal_yields_sel / math.sqrt(background_yields_sel)
           #print 'sel {} {} {} {}'.format(signal_yields_sel, background_yields_sel, significance_sel_1, significance_sel)
         else:
           significance_sel = -99.
@@ -513,7 +532,7 @@ class Selection(object):
       tree_sig = self.tools.getTree(f_sig, 'signal_tree')
 
       #selection_sig_ini = 'ismatched == 1 && trgmu_softid==1 && mu_looseid==1 &&  {}'.format(self.category.definition_flat) 
-      selection_sig_ini = 'ismatched == 1 && {}'.format(self.category.definition_flat) 
+      selection_sig_ini = 'ismatched == 1 && {} && {}'.format(self.baseline_selection, self.category.definition_flat) 
       if self.preexisting_selection !=None: selection_sig_ini += ' && {}'.format(self.getSelectionString())
       initial_sig_entries = self.tools.createHisto(tree_sig, self.hnl_mass, selection=selection_sig_ini).Integral()
 
@@ -521,7 +540,7 @@ class Selection(object):
       selected_sig_entries = self.tools.createHisto(tree_sig, self.hnl_mass, selection=selection_sig_sel).Integral()
 
       #selection_bkg_ini = 'trgmu_softid==1 && mu_looseid==1 && {}'.format(self.category.definition_flat)
-      selection_bkg_ini = '{}'.format(self.category.definition_flat)
+      selection_bkg_ini = '{} && {}'.format(self.baseline_selection, self.category.definition_flat)
       if self.preexisting_selection !=None: selection_bkg_ini += ' && {}'.format(self.getSelectionString())
       if not self.use_data:
         initial_bkg_entries = self.tools.createWeightedHistoQCDMC(self.qcd_files, white_list=self.white_list, quantity=self.hnl_mass, selection=selection_bkg_ini).Integral() # no weight for the moment
@@ -579,13 +598,14 @@ class Selection(object):
       lumi_D1 = 5.302 # when computing the relative difference in significance, this value does not matter
 
       # compute significance before selection
-      signal_selection_ini = 'ismatched == 1 && {}'.format(self.category.definition_flat) 
+      signal_selection_ini = 'ismatched == 1 && {} && {}'.format(self.baseline_selection, self.category.definition_flat) 
       #print signal_selection_ini
-      signal_yields_ini, err_signal_yields_ini = ComputeYields(signal_file=signal_file, selection=signal_selection_ini).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+      #signal_yields_ini, err_signal_yields_ini = ComputeYields(signal_file=signal_file, selection=signal_selection_ini).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+      signal_yields_ini = ComputeYields(signal_label=signal_label, selection=signal_selection_ini).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
 
       f_data = self.tools.getRootFile(self.data_file)
       tree_data = self.tools.getTree(f_data, 'signal_tree')
-      background_selection_ini = self.category.definition_flat
+      background_selection_ini = '{} && {}'.format(self.baseline_selection, self.category.definition_flat)
       #print background_selection_ini
       hist_data_name = 'hist_data_ini_{}'.format(self.quantity)
       hist_data = self.tools.createHisto(tree_data, self.hnl_mass, hist_name=hist_data_name, branchname='flat', selection=background_selection_ini)
@@ -599,16 +619,17 @@ class Selection(object):
         significance_ini = -99.
 
       # compute significance after selection
-      signal_selection_sel = 'ismatched == 1 && {}'.format(self.category.definition_flat) 
+      signal_selection_sel = 'ismatched == 1 && {} && {}'.format(self.baseline_selection, self.category.definition_flat) 
       if self.preexisting_selection !=None: signal_selection_sel += ' && {}'.format(self.getSelectionString())
       #print signal_selection_sel
 
-      signal_yields_sel, err_signal_yields_sel = ComputeYields(signal_file=signal_file, selection=signal_selection_sel).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+      #signal_yields_sel, err_signal_yields_sel = ComputeYields(signal_file=signal_file, selection=signal_selection_sel).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
+      signal_yields_sel = ComputeYields(signal_label=signal_label, selection=signal_selection_sel).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
 
       # get background yields from unblinded data
       f_data = self.tools.getRootFile(self.data_file)
       tree_data = self.tools.getTree(f_data, 'signal_tree')
-      background_selection_sel = self.category.definition_flat
+      background_selection_sel = '{} && {}'.format(self.baseline_selection, self.category.definition_flat)
       if self.preexisting_selection !=None: background_selection_sel += ' && {}'.format(self.getSelectionString())
       #print background_selection_sel
       #background_selection_sel += ' && {}{}{}'.format(self.quantity.name_flat, self.quantity.logic, cut)
@@ -635,31 +656,35 @@ class Selection(object):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  signal_files = signal_samples['V10_30Dec21_benchmark']
-  #signal_files = signal_samples['central_V09_06Nov21_significance']
+  signal_label_m1 = 'V12_08Aug22_m1'
+  signal_label_m3 = 'V12_08Aug22_m3'
+  signal_label_m4p5 = 'V12_08Aug22_m4p5'
 
-  signal_m1_ctau1000 = signal_samples['central_V11_24Apr22_m1'][0]
-  signal_m1_ctau100 = signal_samples['V11_24Apr22_m1'][0]
-  signal_m1_ctau10 = signal_samples['V11_24Apr22_m1'][1]
+  signal_m1_ctau1000 = signal_samples[signal_label_m1][0]
+  signal_m1_ctau100 = signal_samples[signal_label_m1][1]
+  signal_m1_ctau10 = signal_samples[signal_label_m1][2]
 
   signal_m1p5_ctau1000 = signal_samples['V10_30Dec21_m1p5'][0]
   signal_m2_ctau1000 = signal_samples['V10_30Dec21_m2'][0]
 
-  signal_m3_ctau1000 = signal_samples['V10_30Dec21_m3'][0]
-  signal_m3_ctau100 = signal_samples['central_V11_24Apr22_m3'][1]
-  signal_m3_ctau10 = signal_samples['V11_24Apr22_m3'][1]
-  signal_m3_ctau1 = signal_samples['V10_30Dec21_m3'][3]
+  signal_m3_ctau1000 = signal_samples[signal_label_m3][0]
+  signal_m3_ctau100 = signal_samples[signal_label_m3][1]
+  #signal_m3_ctau10 = signal_samples[signal_label_m3][2]
+  signal_m3_ctau1 = signal_samples[signal_label_m3][2]
 
-  signal_m4p5_ctau100 = signal_samples['V11_24Apr22_m4p5'][0]
-  signal_m4p5_ctau10 = signal_samples['V10_30Dec21_m4p5'][1]
-  signal_m4p5_ctau1 = signal_samples['central_V11_24Apr22_m4p5'][2]
-  signal_m4p5_ctau0p1 = signal_samples['V10_30Dec21_m4p5'][3]
+  signal_m4p5_ctau100 = signal_samples[signal_label_m4p5][0]
+  signal_m4p5_ctau10 = signal_samples[signal_label_m4p5][1]
+  signal_m4p5_ctau1 = signal_samples[signal_label_m4p5][2]
+  signal_m4p5_ctau0p1 = signal_samples[signal_label_m4p5][3]
 
   #data_file = data_samples['V10_30Dec21'][0].filename # we only consider D1 which is unblinded
-  data_file = data_samples['V11_24Apr22_small'][0].filename # we only consider D1 which is unblinded
+  #data_file = data_samples['V11_24Apr22_small'][0].filename # we only consider D1 which is unblinded
+  #data_file = data_samples['V11_24Apr22'][0].filename # we only consider D1 which is unblinded
   #data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018D/merged/flat_bparknano_30Dec21_10Chunks.root'
   #data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_30Dec21.root'
-  #data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_24Apr22.root'
+  data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_10files.root'
+
+  baseline_selection = selection['baseline_08Aug22'].flat
 
   qcd_files = qcd_samples['V10_30Dec21']
 
@@ -671,7 +696,7 @@ if __name__ == '__main__':
   mu_dxy = Quantity('abs(mu_dxy)', 'mu_dxy', 'displaced muon |IP| on xy', '>', 'cm', 0, 0.3)
   pi_dxy = Quantity('abs(pi_dxy)', 'pi_dxy', 'displaced pion |IP| on xy', '>', 'cm', 0, 1)
   max_mu_pi_dxysig = Quantity('max(abs(pi_dxysig), abs(mu_dxysig))', 'max_mu_pi_dxysig', 'max(muon, pion) |IP| significance on xy', '>', 'cm', 0, 80)
-  min_mu_pi_dxysig = Quantity('min(abs(pi_dxysig), abs(mu_dxysig))', 'min_mu_pi_dxysig', 'min(muon, pion) |IP| significance on xy', '>', 'cm', 0, 80)
+  min_mu_pi_dxysig = Quantity('min(abs(pi_dxysig), abs(mu_dxysig))', 'min_mu_pi_dxysig', 'min(muon, pion) |IP| significance on xy', '>', 'cm', 0, 200)
   mu_dxysig = Quantity('abs(mu_dxysig)', 'mu_dxysig', 'displaced muon |IP| significance on xy', '>', 'cm', 0, 50)
   pi_dxysig = Quantity('abs(pi_dxysig)', 'pi_dxysig', 'displaced pion |IP| significance on xy', '>', 'cm', 0, 100)
   pi_dcasig = Quantity('abs(pi_dcasig)', 'pi_dcasig', 'pion DCA significance', '>', 'cm', 0, 50)
@@ -681,8 +706,8 @@ if __name__ == '__main__':
   #mu_customid = Quantity('mu_intimemuon==1 && mu_trackerhighpurityflag==1 && ((mu_isglobalmuon==1 && mu_numberofstations>0 && mu_numberoftrackerlayers<18) || (mu_isglobalmuon!=1 && mu_calocompatibility>0.05 && mu_numberoftrackerlayers>6 && mu_numberoftrackerlayers<16 && mu_numberofvalidpixelhits<6))', 'mu_customid', 'muon custom ID', '==', '', 0, 1)
   mu_customid = Quantity('mu_customisedid', 'mu_customisedid', 'muon custom ID', '==', '', 0, 1)
   mu_whnlid = Quantity('mu_whnlid', 'mu_whnlid', 'muon whnl ID', '==', '', 0, 1)
-  b_mass = Quantity('b_mass', 'b_mass', '#mu#mu#pi mass', '>', 'GeV', 1, 7) 
-  sv_lxy_sig = Quantity('sv_lxysig', 'sv_lxysig', 'significance of the SV displacement', '>', '', 0, 300)
+  b_mass = Quantity('abs(b_mass-5.3)', 'b_mass', '#mu#mu#pi mass', '<', 'GeV', 0, 1.5) 
+  sv_lxy_sig = Quantity('sv_lxysig', 'sv_lxysig', 'significance of the SV displacement', '>', '', 0, 500)
   mu_numberofpixellayers = Quantity('mu_numberofpixellayers', 'mu_numberofpixellayers', 'mu_numberofpixellayers', '<', '', 0, 6)
   mu_numberoftrackerlayers = Quantity('mu_numberoftrackerlayers', 'mu_numberoftrackerlayers', 'mu_numberoftrackerlayers', '<', '', 0, 18)
   deltar_trgmu_pi = Quantity('abs(deltar_trgmu_pi)', 'abs(deltar_trgmu_pi)', '|#DeltaR(trg#mu, #pi)|', '<', '', 0.3, 1.) 
@@ -693,20 +718,21 @@ if __name__ == '__main__':
 
   opt = getOptions()
 
-  #dirlabel = 'dataD1_m4p5_v2'
   dirlabel = opt.dirlabel
   mass = opt.mass
   category = opt.category
   quantity = opt.quantity
   action = opt.action
 
-  #if mass == '1': signal_files = [signal_m1_ctau1000, signal_m1_ctau100, signal_m1_ctau10]
-  if mass == '1': signal_files = [signal_m1_ctau1000]
-  #if mass == '3': signal_files = [signal_m3_ctau1000, signal_m3_ctau100, signal_m3_ctau10, signal_m3_ctau1]
-  #if mass == '3': signal_files = [signal_m3_ctau100, signal_m3_ctau10]
-  if mass == '3': signal_files = [signal_m3_ctau100]
-  #if mass == '4p5': signal_files = [signal_m4p5_ctau100, signal_m4p5_ctau10, signal_m4p5_ctau1]
-  if mass == '4p5': signal_files = [signal_m4p5_ctau1]
+  if mass == '1': 
+    signal_label = signal_label_m1
+    signal_files = [signal_m1_ctau1000, signal_m1_ctau100, signal_m1_ctau10]
+  if mass == '3': 
+    signal_label = signal_label_m3
+    signal_files = [signal_m3_ctau1000, signal_m3_ctau100, signal_m3_ctau1]
+  if mass == '4p5': 
+    signal_label = signal_label_m4p5
+    signal_files = [signal_m4p5_ctau100, signal_m4p5_ctau10, signal_m4p5_ctau1]
 
   do_lxy0to1_OS = False
   do_lxy0to1_SS = False
@@ -726,6 +752,7 @@ if __name__ == '__main__':
   if category == 'lxy1to5_OS' or category == 'lxy1to5_SS': hnl_cos2D = Quantity('1-hnl_cos2d', 'hnl_cos2D', '(1 - SV cos2D)', '<', '', 0, 3e-4) 
   if category == 'lxygt5_OS' or category == 'lxygt5_SS': hnl_cos2D = Quantity('1-hnl_cos2d', 'hnl_cos2D', '(1 - SV cos2D)', '<', '', 0, 3e-5) 
 
+  do_b_mass = False
   do_pi_pt = False
   do_sv_lxysig = False
   do_mu_dxysig = False
@@ -734,6 +761,7 @@ if __name__ == '__main__':
   do_min_mu_pi_dxysig = False
   do_hnl_cos2d = False
 
+  if quantity == 'b_mass': do_b_mass = True
   if quantity == 'pi_pt': do_pi_pt = True
   if quantity == 'sv_lxysig': do_sv_lxysig = True
   if quantity == 'mu_dxysig': do_mu_dxysig = True
@@ -754,8 +782,6 @@ if __name__ == '__main__':
   if action == 'print_cutflow': do_print_cutflow = True
   if action == 'print_significance': do_print_significance = True 
 
-  do_lxy0to1_OS = False #FIXME to be removed, just for a check
-
   ### CATEGORY inclusive ###
 
   category_incl = Category(
@@ -767,25 +793,25 @@ if __name__ == '__main__':
   selection_sequential_incl = [] 
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   if do_print_cutflow: selection.printCutflowLine(printNum=False)
   selection_sequential_incl.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_incl, dirlabel=dirlabel, preexisting_selection=selection_sequential_incl, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_incl, dirlabel=dirlabel, preexisting_selection=selection_sequential_incl, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   if do_print_cutflow: selection.printCutflowLine()
   #selection_sequential_incl.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_whnlid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_whnlid, category=category_incl, dirlabel=dirlabel, preexisting_selection=selection_sequential_incl, proposed_cut=cut_mu_whnlid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_whnlid, category=category_incl, dirlabel=dirlabel, preexisting_selection=selection_sequential_incl, proposed_cut=cut_mu_whnlid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_incl.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_incl, dirlabel=dirlabel, preexisting_selection=selection_sequential_incl, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_incl, dirlabel=dirlabel, preexisting_selection=selection_sequential_incl, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_incl.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
@@ -804,49 +830,49 @@ if __name__ == '__main__':
   print 'category lxygt20_OS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxygt20_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxygt20_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt20_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt20_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxygt20_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.999993 #0.99998
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt20_OS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 2. # 1.8
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt20_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.25
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt20_OS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.5
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxygt20_OS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   #cut_cos_theta_star_pion = 0.7
-  ##selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=cos_theta_star_pion, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_cos_theta_star_pion)
+  ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=cos_theta_star_pion, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_OS, proposed_cut=cut_cos_theta_star_pion)
   ##if do_scan_efficiency: selection.getScanGraph(npoints=30)
   ##if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxygt20_OS.append(SelectedQuantity(cos_theta_star_pion, cut_cos_theta_star_pion))
@@ -866,52 +892,52 @@ if __name__ == '__main__':
   print 'category lxygt20_SS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxygt20_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxygt20_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt20_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt20_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxygt20_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.999993 #0.99998
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   cos_theta_star_pion = Quantity('fabs(cos_theta_star_pion)', 'cos_theta_star_pion', '|cos(#theta_{#pi}*)|', '<', '', 0.5, 1) 
   selection_sequential_lxygt20_SS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 2 #1.8
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt20_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   ##mu_dxy = Quantity('abs(mu_dxy)', 'mu_dxy', 'displaced muon |IP| on xy', '>', 'cm', 0, 1)
   cut_mu_dxy = 0.25
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxygt20_SS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   ##cos_theta_star_pion = Quantity('fabs(cos_theta_star_pion)', 'cos_theta_star_pion', '|cos(#theta_{#pi}*)|', '<', '', 0.3, 1) 
   ##cut_cos_theta_star_pion = 0.7
-  ##selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=cos_theta_star_pion, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_cos_theta_star_pion)
+  ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=cos_theta_star_pion, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_cos_theta_star_pion)
   ##if do_scan_efficiency: selection.getScanGraph(npoints=30)
   ##if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxygt20_SS.append(SelectedQuantity(cos_theta_star_pion, cut_cos_theta_star_pion))
 
   cut_pi_dxy = 0.5
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt20_SS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxygt20_SS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
@@ -931,43 +957,43 @@ if __name__ == '__main__':
   print 'category lxygt10_OS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxygt10_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxygt10_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxygt10_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.99997
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_OS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 1.3
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_OS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.2
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxygt10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_OS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxygt10_OS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
@@ -987,43 +1013,43 @@ if __name__ == '__main__':
   print 'category lxygt10_SS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxygt10_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxygt10_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxygt10_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.99997
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_SS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 1.3
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxygt10_SS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.2
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxygt10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt10_SS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxygt10_SS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
@@ -1047,37 +1073,46 @@ if __name__ == '__main__':
     print 'category lxygt5_OS'
 
     cut_trgmu_softid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxygt5_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxygt5_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     selection_sequential_lxygt5_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
     cut_mu_looseid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_mu_looseid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_mu_looseid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     #selection_sequential_lxygt5_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
     cut_mu_whnlid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_whnlid, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_mu_whnlid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_whnlid, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_mu_whnlid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxygt5_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_mu_customid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_mu_customid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_mu_customid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxygt5_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_hnl_charge = 0
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_charge, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_hnl_charge)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_charge, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_hnl_charge)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine(printNum=False)
     selection_sequential_lxygt5_OS.append(SelectedQuantity(hnl_charge, cut_hnl_charge))
 
+    cut_b_mass = float(opt.cut_b_mass)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=b_mass, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_b_mass)
+    if do_b_mass:
+      if do_scan_efficiency: selection.getScanGraph(npoints=30)
+      if do_scan_significance: selection.getSignificanceScan(npoints=30)
+      if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+    if do_print_cutflow: selection.printCutflowLine()
+    selection_sequential_lxygt5_OS.append(SelectedQuantity(b_mass, cut_b_mass))
+
     cut_pi_pt = float(opt.cut_pi_pt)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_pi_pt)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_pi_pt)
     if do_pi_pt:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1086,7 +1121,7 @@ if __name__ == '__main__':
     selection_sequential_lxygt5_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
     cut_sv_lxy_sig = float(opt.cut_sv_lxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_sv_lxy_sig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_sv_lxy_sig)
     if do_sv_lxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1095,7 +1130,7 @@ if __name__ == '__main__':
     selection_sequential_lxygt5_OS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
 
     #cut_mu_dxysig = float(opt.cut_mu_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxysig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_mu_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxysig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_mu_dxysig)
     #if do_mu_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1104,7 +1139,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxygt5_OS.append(SelectedQuantity(mu_dxysig, cut_mu_dxysig))
 
     #cut_pi_dxysig = float(opt.cut_pi_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxysig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_pi_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxysig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_pi_dxysig)
     #if do_pi_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1113,7 +1148,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxygt5_OS.append(SelectedQuantity(pi_dxysig, cut_pi_dxysig))
 
     cut_min_mu_pi_dxysig = float(opt.cut_min_mu_pi_dxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_min_mu_pi_dxysig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_min_mu_pi_dxysig)
     if do_min_mu_pi_dxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1122,7 +1157,7 @@ if __name__ == '__main__':
     selection_sequential_lxygt5_OS.append(SelectedQuantity(min_mu_pi_dxysig, cut_min_mu_pi_dxysig))
 
     cut_hnl_cos2D = float(opt.cut_hnl_cos2d)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_hnl_cos2D)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_hnl_cos2D)
     if do_hnl_cos2d:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1131,13 +1166,13 @@ if __name__ == '__main__':
     selection_sequential_lxygt5_OS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
     ##cut_deltar_trgmu_pi = 1.5
-    ##selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=deltar_trgmu_pi, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_deltar_trgmu_pi)
+    ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=deltar_trgmu_pi, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_deltar_trgmu_pi)
     ##if do_scan_efficiency: selection.getScanGraph(npoints=30)
     ##selection.printCutflowLine(printNum=False)
     ##selection_sequential_lxygt5_OS.append(SelectedQuantity(deltar_trgmu_pi, cut_deltar_trgmu_pi))
 
     ##cut_pi_dcasig = 20
-    ##selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dcasig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_pi_dcasig)
+    ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dcasig, category=category_lxygt5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_OS, proposed_cut=cut_pi_dcasig)
     ##if do_scan_efficiency: selection.getScanGraph(npoints=30)
     ###selection.printCutflowLine(printNum=False)
     ##selection_sequential_lxygt5_OS.append(SelectedQuantity(pi_dcasig, cut_pi_dcasig))
@@ -1160,37 +1195,46 @@ if __name__ == '__main__':
     print 'category lxygt5_SS'
 
     cut_trgmu_softid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxygt5_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxygt5_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     selection_sequential_lxygt5_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
     cut_mu_looseid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_mu_looseid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_mu_looseid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     #selection_sequential_lxygt5_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
     cut_mu_whnlid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_whnlid, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_mu_whnlid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_whnlid, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_mu_whnlid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxygt5_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_mu_customid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_mu_customid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_mu_customid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     #if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxygt5_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_hnl_charge = 0
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_charge, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_hnl_charge)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_charge, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_hnl_charge)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine(printNum=False)
     selection_sequential_lxygt5_SS.append(SelectedQuantity(hnl_charge, cut_hnl_charge))
 
+    cut_b_mass = float(opt.cut_b_mass)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=b_mass, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_b_mass)
+    if do_b_mass:
+      if do_scan_efficiency: selection.getScanGraph(npoints=30)
+      if do_scan_significance: selection.getSignificanceScan(npoints=30)
+      if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+      if do_print_cutflow: selection.printCutflowLine()
+    selection_sequential_lxygt5_SS.append(SelectedQuantity(b_mass, cut_b_mass))
+
     cut_pi_pt = float(opt.cut_pi_pt)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_pi_pt)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_pi_pt)
     if do_pi_pt:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1199,7 +1243,7 @@ if __name__ == '__main__':
     selection_sequential_lxygt5_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
     cut_sv_lxy_sig = float(opt.cut_sv_lxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_sv_lxy_sig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_sv_lxy_sig)
     if do_sv_lxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1208,7 +1252,7 @@ if __name__ == '__main__':
     selection_sequential_lxygt5_SS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
 
     #cut_mu_dxysig = float(opt.cut_mu_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxysig, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_mu_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxysig, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_mu_dxysig)
     #if do_mu_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1217,7 +1261,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxygt5_SS.append(SelectedQuantity(mu_dxysig, cut_mu_dxysig))
 
     #cut_pi_dxysig = float(opt.cut_pi_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxysig, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_pi_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxysig, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_pi_dxysig)
     #if do_pi_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1226,7 +1270,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxygt5_SS.append(SelectedQuantity(pi_dxysig, cut_pi_dxysig))
 
     cut_min_mu_pi_dxysig = float(opt.cut_min_mu_pi_dxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_min_mu_pi_dxysig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_min_mu_pi_dxysig)
     if do_min_mu_pi_dxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1235,7 +1279,7 @@ if __name__ == '__main__':
     selection_sequential_lxygt5_SS.append(SelectedQuantity(min_mu_pi_dxysig, cut_min_mu_pi_dxysig))
 
     cut_hnl_cos2D = float(opt.cut_hnl_cos2d)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_hnl_cos2D)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxygt5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxygt5_SS, proposed_cut=cut_hnl_cos2D)
     if do_hnl_cos2d:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1262,49 +1306,49 @@ if __name__ == '__main__':
   print 'category lxy3to20_OS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to20_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to20_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy3to20_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.99994
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_OS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 1.0
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.07
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_OS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.2
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy3to20_OS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_OS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_OS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1324,49 +1368,49 @@ if __name__ == '__main__':
   print 'category lxy3to20_SS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to20_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to20_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy3to20_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.99994
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_SS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 1.0
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.07
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_SS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.2
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy3to20_SS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to20_SS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to20_SS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1386,49 +1430,49 @@ if __name__ == '__main__':
   print 'category lxy3to10_OS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to10_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to10_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy3to10_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.99991
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_OS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 0.9
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.06
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_OS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.17
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy3to10_OS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_OS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_OS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1448,49 +1492,49 @@ if __name__ == '__main__':
   print 'category lxy3to10_SS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to10_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to10_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy3to10_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.99991
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_SS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 0.9
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.06
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_SS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.17
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy3to10_SS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to10_SS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to10_SS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1510,50 +1554,50 @@ if __name__ == '__main__':
   print 'category lxy3to5_OS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to5_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to5_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy3to5_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   hnl_cos2D = Quantity('hnl_cos2d', 'hnl_cos2D', 'SV cos2D', '>', '', 0.9990, 1) 
   cut_hnl_cos2D = 0.9998
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_OS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 0.9
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.04
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_OS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy3to5_OS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_OS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_OS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1573,50 +1617,50 @@ if __name__ == '__main__':
   print 'category lxy3to5_SS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to5_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy3to5_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy3to5_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   hnl_cos2D = Quantity('hnl_cos2d', 'hnl_cos2D', 'SV cos2D', '>', '', 0.9990, 1) 
   cut_hnl_cos2D = 0.9998
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_SS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 0.9
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.04
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_SS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy3to5_SS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy3to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy3to5_SS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy3to5_SS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1636,49 +1680,49 @@ if __name__ == '__main__':
   print 'category lxy1to20_OS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to20_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to20_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy1to20_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.9999
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_OS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 1.1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.05
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_OS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.12
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy1to20_OS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 120
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_OS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_OS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1698,49 +1742,49 @@ if __name__ == '__main__':
   print 'category lxy1to20_SS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to20_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to20_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy1to20_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.9999
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_SS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 1.1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.05
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_SS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.12
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy1to20_SS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 120
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to20_SS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to20_SS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1760,49 +1804,49 @@ if __name__ == '__main__':
   print 'category lxy1to10_OS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to10_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to10_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy1to10_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.9998
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_OS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.03
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_OS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.04
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy1to10_OS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to10_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_OS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_OS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1822,49 +1866,49 @@ if __name__ == '__main__':
   print 'category lxy1to10_SS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to10_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to10_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy1to10_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.9998
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_SS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.03
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_SS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.04
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy1to10_SS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to10_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to10_SS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to10_SS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -1888,37 +1932,46 @@ if __name__ == '__main__':
     print 'category lxy1to5_OS'
 
     cut_trgmu_softid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to5_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to5_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     selection_sequential_lxy1to5_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
     cut_mu_looseid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_mu_looseid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_mu_looseid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     #selection_sequential_lxy1to5_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
     cut_mu_whnlid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_whnlid, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_mu_whnlid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_whnlid, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_mu_whnlid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxy1to5_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_mu_customid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_mu_customid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_mu_customid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxy1to5_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_hnl_charge = 0
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_charge, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_hnl_charge)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_charge, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_hnl_charge)
     #if do_scan_efficiency: selection.getScanGraph(npoints=30)
     if do_print_cutflow: selection.printCutflowLine(printNum=False)
     selection_sequential_lxy1to5_OS.append(SelectedQuantity(hnl_charge, cut_hnl_charge))
 
+    cut_b_mass = float(opt.cut_b_mass)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=b_mass, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_b_mass)
+    if do_b_mass:
+      if do_scan_efficiency: selection.getScanGraph(npoints=30)
+      if do_scan_significance: selection.getSignificanceScan(npoints=30)
+      if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+    if do_print_cutflow: selection.printCutflowLine()
+    selection_sequential_lxy1to5_OS.append(SelectedQuantity(b_mass, cut_b_mass))
+
     cut_pi_pt = float(opt.cut_pi_pt)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_pi_pt)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_pi_pt)
     if do_pi_pt:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1927,7 +1980,7 @@ if __name__ == '__main__':
     selection_sequential_lxy1to5_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
     cut_sv_lxy_sig = float(opt.cut_sv_lxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_sv_lxy_sig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_sv_lxy_sig)
     if do_sv_lxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1936,7 +1989,7 @@ if __name__ == '__main__':
     selection_sequential_lxy1to5_OS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
 
     #cut_mu_dxysig = float(opt.cut_mu_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxysig, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_mu_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxysig, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_mu_dxysig)
     #if do_mu_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1945,7 +1998,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxy1to5_OS.append(SelectedQuantity(mu_dxysig, cut_mu_dxysig))
 
     #cut_pi_dxysig = float(opt.cut_pi_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxysig, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_pi_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxysig, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_pi_dxysig)
     #if do_pi_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1954,7 +2007,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxy1to5_OS.append(SelectedQuantity(pi_dxysig, cut_pi_dxysig))
 
     cut_min_mu_pi_dxysig = float(opt.cut_min_mu_pi_dxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_min_mu_pi_dxysig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_min_mu_pi_dxysig)
     if do_min_mu_pi_dxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1963,7 +2016,7 @@ if __name__ == '__main__':
     selection_sequential_lxy1to5_OS.append(SelectedQuantity(min_mu_pi_dxysig, cut_min_mu_pi_dxysig))
 
     cut_hnl_cos2D = float(opt.cut_hnl_cos2d)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_hnl_cos2D)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to5_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_OS, proposed_cut=cut_hnl_cos2D)
     if do_hnl_cos2d:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -1989,37 +2042,46 @@ if __name__ == '__main__':
     print 'category lxy1to5_SS'
 
     cut_trgmu_softid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to5_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to5_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     selection_sequential_lxy1to5_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
     cut_mu_looseid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_mu_looseid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_mu_looseid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     #selection_sequential_lxy1to5_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
     cut_mu_whnlid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_whnlid, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_mu_whnlid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_whnlid, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_mu_whnlid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxy1to5_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_mu_customid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_mu_customid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_mu_customid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxy1to5_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_hnl_charge = 0
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_charge, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_hnl_charge)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_charge, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_hnl_charge)
     #if do_scan_efficiency: selection.getScanGraph(npoints=30)
     if do_print_cutflow: selection.printCutflowLine(printNum=False)
     selection_sequential_lxy1to5_SS.append(SelectedQuantity(hnl_charge, cut_hnl_charge))
 
+    cut_b_mass = float(opt.cut_b_mass)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=b_mass, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_b_mass)
+    if do_b_mass:
+      if do_scan_efficiency: selection.getScanGraph(npoints=30)
+      if do_scan_significance: selection.getSignificanceScan(npoints=30)
+      if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+    if do_print_cutflow: selection.printCutflowLine()
+    selection_sequential_lxy1to5_SS.append(SelectedQuantity(b_mass, cut_b_mass))
+
     cut_pi_pt = float(opt.cut_pi_pt)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_pi_pt)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_pi_pt)
     if do_pi_pt:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2028,7 +2090,7 @@ if __name__ == '__main__':
     selection_sequential_lxy1to5_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
     cut_sv_lxy_sig = float(opt.cut_sv_lxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_sv_lxy_sig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_sv_lxy_sig)
     if do_sv_lxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2037,7 +2099,7 @@ if __name__ == '__main__':
     selection_sequential_lxy1to5_SS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
 
     #cut_mu_dxysig = float(opt.cut_mu_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxysig, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_mu_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxysig, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_mu_dxysig)
     #if do_mu_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2046,7 +2108,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxy1to5_SS.append(SelectedQuantity(mu_dxysig, cut_mu_dxysig))
 
     #cut_pi_dxysig = float(opt.cut_pi_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxysig, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_pi_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxysig, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_pi_dxysig)
     #if do_pi_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2055,7 +2117,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxy1to5_SS.append(SelectedQuantity(pi_dxysig, cut_pi_dxysig))
 
     cut_min_mu_pi_dxysig = float(opt.cut_min_mu_pi_dxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_min_mu_pi_dxysig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_min_mu_pi_dxysig)
     if do_min_mu_pi_dxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2064,7 +2126,7 @@ if __name__ == '__main__':
     selection_sequential_lxy1to5_SS.append(SelectedQuantity(min_mu_pi_dxysig, cut_min_mu_pi_dxysig))
 
     cut_hnl_cos2D = float(opt.cut_hnl_cos2d)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_hnl_cos2D)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to5_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to5_SS, proposed_cut=cut_hnl_cos2D)
     if do_hnl_cos2d:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2090,49 +2152,49 @@ if __name__ == '__main__':
   print 'category lxy1to3_OS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to3_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to3_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy1to3_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.9994
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_OS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 0.9
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.02
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_OS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.03
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy1to3_OS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to3_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_OS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_OS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -2152,49 +2214,49 @@ if __name__ == '__main__':
   print 'category lxy1to3_SS'
 
   cut_trgmu_softid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to3_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy1to3_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
   cut_mu_looseid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_mu_looseid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_mu_looseid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
   cut_mu_customid = 1
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_mu_customid)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_mu_customid)
   #if do_scan_efficiency: selection.getScanGraph(npoints=2)
   #if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential_lxy1to3_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
   cut_hnl_cos2D = 0.9994
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_hnl_cos2D)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_hnl_cos2D)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_SS.append(SelectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
   cut_pi_pt = 0.9
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_pi_pt)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_pi_pt)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
   cut_mu_dxy = 0.02
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxy, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_mu_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxy, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_mu_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_SS.append(SelectedQuantity(mu_dxy, cut_mu_dxy))
 
   cut_pi_dxy = 0.03
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxy, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_pi_dxy)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxy, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_pi_dxy)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #selection.printCutflowLine(printNum=False)
   selection_sequential_lxy1to3_SS.append(SelectedQuantity(pi_dxy, cut_pi_dxy))
 
   cut_sv_lxy_sig = 70
-  selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_sv_lxy_sig)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy1to3_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy1to3_SS, proposed_cut=cut_sv_lxy_sig)
   #if do_scan_efficiency: selection.getScanGraph(npoints=30)
   #if do_print_cutflow: selection.printCutflowLine()
   selection_sequential_lxy1to3_SS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
@@ -2218,38 +2280,47 @@ if __name__ == '__main__':
     print 'category lxy0to1_OS'
 
     cut_trgmu_softid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy0to1_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy0to1_OS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     selection_sequential_lxy0to1_OS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
     cut_mu_looseid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_mu_looseid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_mu_looseid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     selection_sequential_lxy0to1_OS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
     cut_mu_whnlid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_whnlid, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_mu_whnlid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_whnlid, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_mu_whnlid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     #if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxy0to1_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_mu_customid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_mu_customid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_mu_customid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     #if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxy0to1_OS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_hnl_charge = 0
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_charge, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_hnl_charge)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_charge, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_hnl_charge)
     #if do_scan_efficiency: selection.getScanGraph(npoints=3)
     #if do_scan_significance: selection.getSignificanceScan(npoints=3)
     if do_print_cutflow: selection.printCutflowLine(printNum=False)
     selection_sequential_lxy0to1_OS.append(SelectedQuantity(hnl_charge, cut_hnl_charge))
 
+    cut_b_mass = float(opt.cut_b_mass)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=b_mass, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_b_mass)
+    if do_b_mass:
+      if do_scan_efficiency: selection.getScanGraph(npoints=30)
+      if do_scan_significance: selection.getSignificanceScan(npoints=30)
+      if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+    if do_print_cutflow: selection.printCutflowLine()
+    selection_sequential_lxy0to1_OS.append(SelectedQuantity(b_mass, cut_b_mass))
+
     cut_pi_pt = float(opt.cut_pi_pt)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_pi_pt)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_pi_pt)
     if do_pi_pt:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2258,7 +2329,7 @@ if __name__ == '__main__':
     selection_sequential_lxy0to1_OS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
     cut_sv_lxy_sig = float(opt.cut_sv_lxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_sv_lxy_sig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_sv_lxy_sig)
     if do_sv_lxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2267,7 +2338,7 @@ if __name__ == '__main__':
     selection_sequential_lxy0to1_OS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
 
     #cut_mu_dxysig = float(opt.cut_mu_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxysig, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_mu_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxysig, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_mu_dxysig)
     #if do_mu_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2276,7 +2347,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxy0to1_OS.append(SelectedQuantity(mu_dxysig, cut_mu_dxysig))
 
     #cut_pi_dxysig = float(opt.cut_pi_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxysig, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_pi_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxysig, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_pi_dxysig)
     #if do_pi_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2285,7 +2356,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxy0to1_OS.append(SelectedQuantity(pi_dxysig, cut_pi_dxysig))
 
     cut_min_mu_pi_dxysig = float(opt.cut_min_mu_pi_dxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_min_mu_pi_dxysig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_min_mu_pi_dxysig)
     if do_min_mu_pi_dxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2295,7 +2366,7 @@ if __name__ == '__main__':
 
     #hnl_cos2D = Quantity('hnl_cos2d', 'hnl_cos2D', 'SV cos2D', '>', '', 0.99, 1) 
     cut_hnl_cos2D = float(opt.cut_hnl_cos2d)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_hnl_cos2D)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy0to1_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_OS, proposed_cut=cut_hnl_cos2D)
     if do_hnl_cos2d:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2322,37 +2393,46 @@ if __name__ == '__main__':
     print 'category lxy0to1_SS'
 
     cut_trgmu_softid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=trgmu_softid, category=category_lxy0to1_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=trgmu_softid, category=category_lxy0to1_SS, dirlabel=dirlabel, proposed_cut=cut_trgmu_softid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     selection_sequential_lxy0to1_SS.append(SelectedQuantity(trgmu_softid, cut_trgmu_softid))
 
     cut_mu_looseid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_looseid, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_mu_looseid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_looseid, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_mu_looseid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     selection_sequential_lxy0to1_SS.append(SelectedQuantity(mu_looseid, cut_mu_looseid))
 
     cut_mu_whnlid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_whnlid, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_mu_whnlid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_whnlid, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_mu_whnlid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxy0to1_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_mu_customid = 1
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_customid, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_mu_customid)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_customid, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_mu_customid)
     #if do_scan_efficiency: selection.getScanGraph(npoints=2)
     if do_print_cutflow: selection.printCutflowLine()
     ##selection_sequential_lxy0to1_SS.append(SelectedQuantity(mu_customid, cut_mu_customid)) # for the moment we don't use it
 
     cut_hnl_charge = 0
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_charge, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_hnl_charge)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_charge, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_hnl_charge)
     #if do_scan_efficiency: selection.getScanGraph(npoints=30)
     if do_print_cutflow: selection.printCutflowLine(printNum=False)
     selection_sequential_lxy0to1_SS.append(SelectedQuantity(hnl_charge, cut_hnl_charge))
 
+    cut_b_mass = float(opt.cut_b_mass)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=b_mass, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_b_mass)
+    if do_b_mass:
+      if do_scan_efficiency: selection.getScanGraph(npoints=30)
+      if do_scan_significance: selection.getSignificanceScan(npoints=30)
+      if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+    if do_print_cutflow: selection.printCutflowLine()
+    selection_sequential_lxy0to1_SS.append(SelectedQuantity(b_mass, cut_b_mass))
+
     cut_pi_pt = float(opt.cut_pi_pt)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_pt, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_pi_pt)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_pt, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_pi_pt)
     if do_pi_pt:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2361,7 +2441,7 @@ if __name__ == '__main__':
     selection_sequential_lxy0to1_SS.append(SelectedQuantity(pi_pt, cut_pi_pt))
 
     cut_sv_lxy_sig = float(opt.cut_sv_lxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_sv_lxy_sig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_sv_lxy_sig)
     if do_sv_lxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2370,7 +2450,7 @@ if __name__ == '__main__':
     selection_sequential_lxy0to1_SS.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
 
     #cut_mu_dxysig = float(opt.cut_mu_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_dxysig, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_mu_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_dxysig, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_mu_dxysig)
     #if do_mu_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2379,7 +2459,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxy0to1_SS.append(SelectedQuantity(mu_dxysig, cut_mu_dxysig))
 
     #cut_pi_dxysig = float(opt.cut_pi_dxysig)
-    #selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=pi_dxysig, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_pi_dxysig)
+    #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=pi_dxysig, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_pi_dxysig)
     #if do_pi_dxysig:
     #  if do_scan_efficiency: selection.getScanGraph(npoints=30)
     #  if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2388,7 +2468,7 @@ if __name__ == '__main__':
     ##selection_sequential_lxy0to1_SS.append(SelectedQuantity(pi_dxysig, cut_pi_dxysig))
 
     cut_min_mu_pi_dxysig = float(opt.cut_min_mu_pi_dxysig)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_min_mu_pi_dxysig)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=min_mu_pi_dxysig, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_min_mu_pi_dxysig)
     if do_min_mu_pi_dxysig:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2398,7 +2478,7 @@ if __name__ == '__main__':
 
     #hnl_cos2D = Quantity('hnl_cos2d', 'hnl_cos2D', 'SV cos2D', '>', '', 0.99, 1) 
     cut_hnl_cos2D = float(opt.cut_hnl_cos2d)
-    selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=hnl_cos2D, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_hnl_cos2D)
+    selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=hnl_cos2D, category=category_lxy0to1_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential_lxy0to1_SS, proposed_cut=cut_hnl_cos2D)
     if do_hnl_cos2d:
       if do_scan_efficiency: selection.getScanGraph(npoints=30)
       if do_scan_significance: selection.getSignificanceScan(npoints=30)
@@ -2413,19 +2493,19 @@ if __name__ == '__main__':
 
 
   ##cut_mu_numberofpixellayers = 2 
-  ##selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_numberofpixellayers, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential, proposed_cut=cut_mu_numberofpixellayers)
+  ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_numberofpixellayers, category=category_lxygt20_SS, dirlabel=dirlabel, preexisting_selection=selection_sequential, proposed_cut=cut_mu_numberofpixellayers)
   ##if do_scan_efficiency: selection.getScanGraph(npoints=7)
   ##if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential.append(SelectedQuantity(mu_numberofpixellayers, cut_mu_numberofpixellayers))
 
   ##cut_mu_numberoftrackerlayers = 13 
-  ##selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=mu_numberoftrackerlayers, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential, proposed_cut=cut_mu_numberoftrackerlayers)
+  ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_numberoftrackerlayers, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential, proposed_cut=cut_mu_numberoftrackerlayers)
   ##if do_scan_efficiency: selection.getScanGraph(npoints=19)
   ##if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential.append(SelectedQuantity(mu_numberoftrackerlayers, cut_mu_numberoftrackerlayers))
 
   ##cut_sv_lxy_sig = 30
-  ##selection = Selection(signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, white_list=white_list, quantity=sv_lxy_sig, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential, proposed_cut=cut_sv_lxy_sig)
+  ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=sv_lxy_sig, category=category_lxygt20_OS, dirlabel=dirlabel, preexisting_selection=selection_sequential, proposed_cut=cut_sv_lxy_sig)
   ##if do_scan_efficiency: selection.getScanGraph(npoints=30)
   ##if do_print_cutflow: selection.printCutflowLine()
   ##selection_sequential.append(SelectedQuantity(sv_lxy_sig, cut_sv_lxy_sig))
