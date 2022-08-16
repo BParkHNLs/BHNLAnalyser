@@ -1,19 +1,26 @@
 #!/bin/bash
 
 #dirlabel='selection_significance_diff_dataD1_v3'
-dirlabel='study_newfilter_v3'
-quantity='min_mu_pi_dxysig'
-action='print_significance'
-submit_batch='0'
+dirlabel='study_central_V12_08Aug22_10files'
+quantity='b_mass'
+action='scan_significance_diff'
+submit_batch='1'
 
 # list of cuts
 # syntax (m1 m3 m4p5)
+cut_b_mass_lxy0to1_OS=("0.7" "0.7" "0.7")
+cut_b_mass_lxy0to1_SS=("0.7" "0.7" "0.7")
+cut_b_mass_lxy1to5_OS=("0.7" "0.7" "0.7")
+cut_b_mass_lxy1to5_SS=("0.7" "0.7" "0.7")
+cut_b_mass_lxygt5_OS=("0.7" "0.7" "0.7")
+cut_b_mass_lxygt5_SS=("0.7" "0.7" "0.7")
+
 cut_pi_pt_lxy0to1_OS=("0.7" "0.8" "2.")
 cut_pi_pt_lxy0to1_SS=("0.7" "0.8" "2.")
-cut_pi_pt_lxy1to5_OS=("0.7" "1.5" "4.")
-cut_pi_pt_lxy1to5_SS=("0.7" "1.5" "4.")
-cut_pi_pt_lxygt5_OS=("2." "3.5" "5.")
-cut_pi_pt_lxygt5_SS=("2." "3.5" "5.")
+cut_pi_pt_lxy1to5_OS=("0.7" "1.5" "3.")
+cut_pi_pt_lxy1to5_SS=("0.7" "1.5" "3.")
+cut_pi_pt_lxygt5_OS=("1.5" "2.5" "4.")
+cut_pi_pt_lxygt5_SS=("1.5" "2.5" "4.")
 
 cut_sv_lxysig_lxy0to1_OS=("30" "90" "100")
 cut_sv_lxysig_lxy0to1_SS=("50" "100" "70")
@@ -24,10 +31,10 @@ cut_sv_lxysig_lxygt5_SS=("150" "300" "200")
 
 cut_min_mu_pi_dxysig_lxy0to1_OS=("0" "5" "0")
 cut_min_mu_pi_dxysig_lxy0to1_SS=("0" "5" "0")
-cut_min_mu_pi_dxysig_lxy1to5_OS=("10" "40" "0")
-cut_min_mu_pi_dxysig_lxy1to5_SS=("10" "40" "0")
-cut_min_mu_pi_dxysig_lxygt5_OS=("40" "60" "0")
-cut_min_mu_pi_dxysig_lxygt5_SS=("40" "40" "0")
+cut_min_mu_pi_dxysig_lxy1to5_OS=("10" "60" "0")
+cut_min_mu_pi_dxysig_lxy1to5_SS=("10" "60" "0")
+cut_min_mu_pi_dxysig_lxygt5_OS=("30" "80" "0")
+cut_min_mu_pi_dxysig_lxygt5_SS=("30" "80" "0")
 
 cut_hnl_cos2d_lxy0to1_OS=("2e-3" "2e-3" "1")
 cut_hnl_cos2d_lxy0to1_SS=("2e-3" "2e-3" "1")
@@ -72,6 +79,7 @@ do
     fi
 
     if [ ${CAT} == "lxy0to1_OS" ] ; then
+      cut_b_mass=${cut_b_mass_lxy0to1_OS[$idx]}
       cut_pi_pt=${cut_pi_pt_lxy0to1_OS[$idx]}
       cut_sv_lxysig=${cut_sv_lxysig_lxy0to1_OS[$idx]}
       cut_mu_dxysig=${cut_mu_dxysig_lxy0to1_OS[$idx]}
@@ -80,6 +88,7 @@ do
       cut_min_mu_pi_dxysig=${cut_min_mu_pi_dxysig_lxy0to1_OS[$idx]}
       cut_hnl_cos2d=${cut_hnl_cos2d_lxy0to1_OS[$idx]}
     elif [ ${CAT} == "lxy0to1_SS" ] ; then
+      cut_b_mass=${cut_b_mass_lxy0to1_SS[$idx]}
       cut_pi_pt=${cut_pi_pt_lxy0to1_SS[$idx]}
       cut_sv_lxysig=${cut_sv_lxysig_lxy0to1_SS[$idx]}
       cut_mu_dxysig=${cut_mu_dxysig_lxy0to1_SS[$idx]}
@@ -88,6 +97,7 @@ do
       cut_min_mu_pi_dxysig=${cut_min_mu_pi_dxysig_lxy0to1_SS[$idx]}
       cut_hnl_cos2d=${cut_hnl_cos2d_lxy0to1_SS[$idx]}
     elif [ ${CAT} == "lxy1to5_OS" ] ; then
+      cut_b_mass=${cut_b_mass_lxy1to5_OS[$idx]}
       cut_pi_pt=${cut_pi_pt_lxy1to5_OS[$idx]}
       cut_sv_lxysig=${cut_sv_lxysig_lxy1to5_OS[$idx]}
       cut_mu_dxysig=${cut_mu_dxysig_lxy1to5_OS[$idx]}
@@ -96,6 +106,7 @@ do
       cut_min_mu_pi_dxysig=${cut_min_mu_pi_dxysig_lxy1to5_OS[$idx]}
       cut_hnl_cos2d=${cut_hnl_cos2d_lxy1to5_OS[$idx]}
     elif [ ${CAT} == "lxy1to5_SS" ] ; then
+      cut_b_mass=${cut_b_mass_lxy1to5_SS[$idx]}
       cut_pi_pt=${cut_pi_pt_lxy1to5_SS[$idx]}
       cut_sv_lxysig=${cut_sv_lxysig_lxy1to5_SS[$idx]}
       cut_mu_dxysig=${cut_mu_dxysig_lxy1to5_SS[$idx]}
@@ -104,6 +115,7 @@ do
       cut_min_mu_pi_dxysig=${cut_min_mu_pi_dxysig_lxy1to5_SS[$idx]}
       cut_hnl_cos2d=${cut_hnl_cos2d_lxy1to5_SS[$idx]}
     elif [ ${CAT} == "lxygt5_OS" ] ; then
+      cut_b_mass=${cut_b_mass_lxygt5_OS[$idx]}
       cut_pi_pt=${cut_pi_pt_lxygt5_OS[$idx]}
       cut_sv_lxysig=${cut_sv_lxysig_lxygt5_OS[$idx]}
       cut_mu_dxysig=${cut_mu_dxysig_lxygt5_OS[$idx]}
@@ -112,6 +124,7 @@ do
       cut_min_mu_pi_dxysig=${cut_min_mu_pi_dxysig_lxygt5_OS[$idx]}
       cut_hnl_cos2d=${cut_hnl_cos2d_lxygt5_OS[$idx]}
     elif [ ${CAT} == "lxygt5_SS" ] ; then
+      cut_b_mass=${cut_b_mass_lxygt5_SS[$idx]}
       cut_pi_pt=${cut_pi_pt_lxygt5_SS[$idx]}
       cut_sv_lxysig=${cut_sv_lxysig_lxygt5_SS[$idx]}
       cut_mu_dxysig=${cut_mu_dxysig_lxygt5_SS[$idx]}
@@ -122,9 +135,9 @@ do
     fi
 
     if [ $submit_batch == '1' ] ; then
-      sbatch -p standard --account t3 -o ./logs/log_${MASS}_${CAT}.txt -e ./logs/log_${MASS}_${CAT}.txt --job-name=selection_${MASS}_${CAT} --time 02:00:00 run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
+      sbatch -p standard --account t3 -o ./logs/log_${MASS}_${CAT}.txt -e ./logs/log_${MASS}_${CAT}.txt --job-name=selection_${MASS}_${CAT} --time 02:00:00 run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_b_mass $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
     elif [ $submit_batch == '0' ] ; then
-      sh run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
+      sh run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_b_mass $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
     fi
 
   done
