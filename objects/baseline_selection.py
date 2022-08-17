@@ -80,6 +80,16 @@ selection['baseline_08Aug22'] = Selection(
     ])
 )
 
+selection['tag_and_probe'] = Selection(
+    flat = ' && '.join([
+      'mass > 3.05 && mass < 3.15',
+      'pt > 12',
+      'abs(probe_dxy) > 0.01',
+      'probe_pt > 2.5',
+      'lxy_sig > 10',
+    ])
+)
+
 selection['baseline_sources'] = Selection(
     flat = ' && '.join([
       'hnl_charge == 0',
