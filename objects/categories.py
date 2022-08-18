@@ -33,6 +33,14 @@ categories['inclusive'] = [
           ),
 ]
 
+categories['tag_and_probe'] = [
+  Category(label = 'incl',
+           title = 'inclusive',
+           definition_flat = 'mass > 0',
+           cutbased_selection = 'mass>0',
+          ),
+]
+
 categories['standard'] = [
   Category(label = 'incl',
            title = 'inclusive',
@@ -689,6 +697,58 @@ categories['3cat_0_1_5_significance_permass'] = [
            cutbased_selection_highmass = 'hnl_charge==0 && pi_pt>4 && sv_lxysig>150',
           ),
 ]
+
+categories['V12_08Aug22_permass'] = [
+  Category(label = 'incl',
+           title = 'inclusive',
+           definition_flat = 'hnl_pt > 0',
+           definition_nano = 'BToMuMuPi_hnl_pt > 0',
+           cutbased_selection = 'hnl_pt > 0'
+          ),
+  Category(label = 'lxy0to1_OS',
+           title = 'l_{xy}<=1cm, OS',
+           definition_flat = 'sv_lxy<=1 && mu0_charge!=mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>0.7 && sv_lxysig>30 && (1-hnl_cos2d)<2e-3',
+           cutbased_selection_mediummass = 'hnl_charge==0 && abs(b_mass-5.3)<0.15 && pi_pt>0.8 && sv_lxysig>90 && (1-hnl_cos2d)<2e-3',
+           cutbased_selection_highmass = 'hnl_charge==0 && abs(b_mass-5.3)<0.15 && pi_pt>2. && sv_lxysig>30 && (1-hnl_cos2d)<2e-3',
+          ),
+  Category(label = 'lxy1to5_OS',
+           title = '(1<l_{xy}<=5)cm, OS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=5 && mu0_charge!=mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>0.7 && sv_lxysig>150 && (1-hnl_cos2d)<2e-4',
+           cutbased_selection_mediummass = 'hnl_charge==0 && abs(b_mass-5.3)<0.2 && pi_pt>1.5 && sv_lxysig>150 && (1-hnl_cos2d)<2e-4',
+           cutbased_selection_highmass = 'hnl_charge==0 && abs(b_mass-5.3)<0.2 && pi_pt>3. && sv_lxysig>50 && (1-hnl_cos2d)<2e-4',
+          ),
+  Category(label = 'lxygt5_OS',
+           title = 'l_{xy}>5cm, OS',
+           definition_flat = 'sv_lxy>5 && mu0_charge!=mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>1.5 && sv_lxysig>150 && min(abs(mu_dxysig), abs(pi_dxysig))>40 && (1-hnl_cos2d)<2e-5',
+           cutbased_selection_mediummass = 'hnl_charge==0 && abs(b_mass-5.3)<0.35 && pi_pt>2.5 && sv_lxysig>150 && (1-hnl_cos2d)<2e-5',
+           cutbased_selection_highmass = 'hnl_charge==0 && abs(b_mass-5.3)<0.35 && pi_pt>3.5 && sv_lxysig>50 && (1-hnl_cos2d)<2e-5',
+          ),
+  Category(label = 'lxy0to1_SS',
+           title = 'l_{xy}<=1cm, SS',
+           definition_flat = 'sv_lxy<=1 && mu0_charge==mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>0.7 && sv_lxysig>50 && (1-hnl_cos2d)<2e-3',
+           cutbased_selection_mediummass = 'hnl_charge==0 && abs(b_mass-5.3)<0.15 && pi_pt>0.8 && sv_lxysig>100 && (1-hnl_cos2d)<2e-3',
+           cutbased_selection_highmass = 'hnl_charge==0 && abs(b_mass-5.3)<0.15 && pi_pt>2. && sv_lxysig>30 && (1-hnl_cos2d)<2e-3',
+          ),
+  Category(label = 'lxy1to5_SS',
+           title = '(1<l_{xy}<=5)cm, SS',
+           definition_flat = 'sv_lxy>1 && sv_lxy<=5 && mu0_charge==mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>0.7 && sv_lxysig>150 && (1-hnl_cos2d)<2e-4',
+           cutbased_selection_mediummass = 'hnl_charge==0 && abs(b_mass-5.3)<0.2 && pi_pt>1.5 && sv_lxysig>150 && (1-hnl_cos2d)<2e-4',
+           cutbased_selection_highmass = 'hnl_charge==0 && abs(b_mass-5.3)<0.2 && pi_pt>3. && sv_lxysig>50 && (1-hnl_cos2d)<2e-4',
+          ),
+  Category(label = 'lxygt5_SS',
+           title = 'l_{xy}>5cm, SS',
+           definition_flat = 'sv_lxy>5 && mu0_charge==mu_charge',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>1.5 && sv_lxysig>150 && (1-hnl_cos2d)<2e-5',
+           cutbased_selection_mediummass = 'hnl_charge==0 && abs(b_mass-5.3)<0.35 && pi_pt>2.5 && sv_lxysig>150 && (1-hnl_cos2d)<2e-5',
+           cutbased_selection_highmass = 'hnl_charge==0 && abs(b_mass-5.3)<0.35 && pi_pt>3.5 && sv_lxysig>50 && (1-hnl_cos2d)<2e-5',
+          ),
+]
+
 
 categories['V11_24Apr22_permass'] = [
   Category(label = 'incl',
