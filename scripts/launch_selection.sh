@@ -1,33 +1,33 @@
 #!/bin/bash
 
 #dirlabel='selection_significance_diff_dataD1_v3'
-dirlabel='study_central_V12_08Aug22_10files'
-quantity='b_mass'
+dirlabel='study_central_V12_08Aug22'
+quantity='hnl_cos2d'
 action='scan_significance_diff'
 submit_batch='1'
 
 # list of cuts
 # syntax (m1 m3 m4p5)
-cut_b_mass_lxy0to1_OS=("0.7" "0.7" "0.7")
-cut_b_mass_lxy0to1_SS=("0.7" "0.7" "0.7")
-cut_b_mass_lxy1to5_OS=("0.7" "0.7" "0.7")
-cut_b_mass_lxy1to5_SS=("0.7" "0.7" "0.7")
-cut_b_mass_lxygt5_OS=("0.7" "0.7" "0.7")
-cut_b_mass_lxygt5_SS=("0.7" "0.7" "0.7")
+cut_b_mass_lxy0to1_OS=("99" "0.15" "0.15")
+cut_b_mass_lxy0to1_SS=("99" "0.15" "0.15")
+cut_b_mass_lxy1to5_OS=("99" "0.2" "0.2")
+cut_b_mass_lxy1to5_SS=("99" "0.2" "0.2")
+cut_b_mass_lxygt5_OS=("99" "0.35" "0.35")
+cut_b_mass_lxygt5_SS=("99" "0.35" "0.35")
 
 cut_pi_pt_lxy0to1_OS=("0.7" "0.8" "2.")
 cut_pi_pt_lxy0to1_SS=("0.7" "0.8" "2.")
 cut_pi_pt_lxy1to5_OS=("0.7" "1.5" "3.")
 cut_pi_pt_lxy1to5_SS=("0.7" "1.5" "3.")
-cut_pi_pt_lxygt5_OS=("1.5" "2.5" "4.")
-cut_pi_pt_lxygt5_SS=("1.5" "2.5" "4.")
+cut_pi_pt_lxygt5_OS=("1.5" "2.5" "3.5")
+cut_pi_pt_lxygt5_SS=("1.5" "2.5" "3.5")
 
-cut_sv_lxysig_lxy0to1_OS=("30" "90" "100")
-cut_sv_lxysig_lxy0to1_SS=("50" "100" "70")
-cut_sv_lxysig_lxy1to5_OS=("150" "300" "100")
-cut_sv_lxysig_lxy1to5_SS=("150" "300" "100")
-cut_sv_lxysig_lxygt5_OS=("150" "300" "200")
-cut_sv_lxysig_lxygt5_SS=("150" "300" "200")
+cut_sv_lxysig_lxy0to1_OS=("30" "90" "30")
+cut_sv_lxysig_lxy0to1_SS=("50" "100" "30")
+cut_sv_lxysig_lxy1to5_OS=("150" "150" "50")
+cut_sv_lxysig_lxy1to5_SS=("150" "150" "50")
+cut_sv_lxysig_lxygt5_OS=("150" "150" "50")
+cut_sv_lxysig_lxygt5_SS=("150" "150" "50")
 
 cut_min_mu_pi_dxysig_lxy0to1_OS=("0" "5" "0")
 cut_min_mu_pi_dxysig_lxy0to1_SS=("0" "5" "0")
@@ -135,7 +135,8 @@ do
     fi
 
     if [ $submit_batch == '1' ] ; then
-      sbatch -p standard --account t3 -o ./logs/log_${MASS}_${CAT}.txt -e ./logs/log_${MASS}_${CAT}.txt --job-name=selection_${MASS}_${CAT} --time 02:00:00 run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_b_mass $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
+      sbatch -p standard --account t3 -o ./logs/log_${MASS}_${CAT}.txt -e ./logs/log_${MASS}_${CAT}.txt --job-name=selection_${MASS}_${CAT} run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_b_mass $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
+      #sbatch -p standard --account t3 -o ./logs/log_${MASS}_${CAT}.txt -e ./logs/log_${MASS}_${CAT}.txt --job-name=selection_${MASS}_${CAT} --time 02:00:00 run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_b_mass $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
     elif [ $submit_batch == '0' ] ; then
       sh run_selection.sh $outdirlabel ${MASS} ${CAT} $quantity $action $cut_b_mass $cut_pi_pt $cut_sv_lxysig $cut_mu_dxysig $cut_pi_dxysig $cut_max_mu_pi_dxysig $cut_min_mu_pi_dxysig $cut_hnl_cos2d 
     fi

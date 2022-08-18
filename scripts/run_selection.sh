@@ -16,7 +16,7 @@
 
 homedir=$PWD
 
-workdir='/scratch/anlyon/selection/'${1}'/'${2}'_'${3}'_'${5}
+workdir='/scratch/anlyon/selection/'${1}'/'${2}'_'${3}'_'${4}'_'${5}
 echo $workdir
 
 mkdir -p $workdir
