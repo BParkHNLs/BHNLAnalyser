@@ -14,14 +14,14 @@ from ABCD_regions import ABCD_regions
 from baseline_selection import selection
 from qcd_white_list import white_list 
 
-#TODO apply weights 
 
 class ComputeYields(Tools):
-  def __init__(self, data_files='', qcd_files='', signal_file='', selection='', white_list=''):
+  def __init__(self, data_files='', qcd_files='', signal_file='', signal_label='', selection='', white_list=''):
     self.tools = Tools()
     self.data_files = data_files
     self.qcd_files = qcd_files
     self.signal_file = signal_file
+    self.signal_label = signal_label # this will be needed for the inclusive signal reweighting
     self.selection = selection
     self.white_list = white_list
 
@@ -372,109 +372,257 @@ class ComputeYields(Tools):
   # SIGNAL 
   ###
 
-  def getSignalEfficiency(self, add_weight_hlt=False, weight_hlt='weight_hlt_A1', isBc=False):
+  def getSignalEfficiency(self, add_weight_hlt=False, add_weight_pu=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', isMixed=False, lhe_efficiency=0.08244, isBc=False):
     '''
+      Function not used anymore
+
       eff(bin) = N_flat(bin) / N_gen
       N_gen = N_reco / filter_efficiency
     '''
+
+    # get the generated that will be used to do the reweighting (all ctau points at a given mass)
+    samples_for_reweighting = []
+    the_signal_samples = signal_samples[self.signal_label]
+    do_exclusive_reweighting_fromlargerctau = True
+    do_exclusive_reweighting_fromsmallerctau = False
+    do_full_inclusive_reweighting = False
+    do_partial_inclusive_reweighting = False
+    do_unique_reweighting = False
+
+    the_generated_samples = []
+    for the_signal_sample in the_signal_samples:
+      if str(self.signal_file.mass).replace('.', 'p') not in the_signal_sample.filename: continue
+      if '*' in the_signal_sample.filename: continue
+      the_generated_samples.append(the_signal_sample)
+
+    if do_full_inclusive_reweighting:
+      # perform the reweighting with a set of generated samples
+      for the_signal_sample in the_generated_samples:
+        if str(self.signal_file.mass).replace('.', 'p') not in the_signal_sample.filename: continue
+        if '*' in the_signal_sample.filename: continue
+        samples_for_reweighting.append(the_signal_sample)
+    elif do_partial_inclusive_reweighting:
+      # perform the reweighting with a set of generated samples
+      for the_signal_sample in the_generated_samples:
+        if str(self.signal_file.mass).replace('.', 'p') not in the_signal_sample.filename: continue
+        if '*' in the_signal_sample.filename: continue
+        if the_signal_sample.ctau < self.signal_file.ctau: 
+        #  if len(samples_for_reweighting) == 0: # for mass 1, we reweight to even larger ctaus than the ones generated
+        #    samples_for_reweighting.append(the_signal_sample)
+          samples_for_reweighting.append(the_signal_sample)
+          break
+        samples_for_reweighting.append(the_signal_sample)
+    elif do_exclusive_reweighting_fromlargerctau:
+      # only use the generated sample with the closest larger ctau
+      for the_signal_sample in the_generated_samples:
+        if str(self.signal_file.mass).replace('.', 'p') not in the_signal_sample.filename: continue
+        if '*' in the_signal_sample.filename: continue
+        if the_signal_sample.ctau >= self.signal_file.ctau:
+          samples_for_reweighting.append(the_signal_sample)
+        elif the_signal_sample.ctau < self.signal_file.ctau and len(samples_for_reweighting) == 0: 
+          # for mass 1, we reweight to even larger ctaus than the ones generated
+          samples_for_reweighting.append(the_signal_sample)
+
+      if len(samples_for_reweighting) > 1:
+        # only keep last element of the list
+        samples_for_reweighting_tmp = []
+        samples_for_reweighting_tmp.append(samples_for_reweighting.pop())
+        samples_for_reweighting = samples_for_reweighting_tmp
+
+    elif do_exclusive_reweighting_fromsmallerctau:
+      # only use the generated sample with the closest larger ctau
+      for the_signal_sample in the_generated_samples:
+        if str(self.signal_file.mass).replace('.', 'p') not in the_signal_sample.filename: continue
+        if '*' in the_signal_sample.filename: continue
+        if the_signal_sample.ctau <= self.signal_file.ctau:
+          samples_for_reweighting.append(the_signal_sample)
+        elif the_signal_sample.ctau < self.signal_file.ctau and len(samples_for_reweighting) == 0: 
+          # for mass 1, we reweight to even larger ctaus than the ones generated
+          samples_for_reweighting.append(the_signal_sample)
+
+      if len(samples_for_reweighting) > 1:
+        # only keep last element of the list
+        samples_for_reweighting_tmp = []
+        samples_for_reweighting_tmp.append(samples_for_reweighting[0])
+        samples_for_reweighting = samples_for_reweighting_tmp
+
+      if len(samples_for_reweighting) == 0:
+        samples_for_reweighting.append(the_generated_samples.pop())
+
+    elif do_unique_reweighting:
+      for the_signal_sample in the_generated_samples:
+        if str(self.signal_file.mass).replace('.', 'p') not in the_signal_sample.filename: continue
+        if 'mN1p0' in the_signal_sample.filename and 'ctau1000p0mm' in the_signal_sample.filename: 
+          samples_for_reweighting.append(the_signal_sample)
+        if 'mN3p0' in the_signal_sample.filename and 'ctau1p0mm' in the_signal_sample.filename: 
+          samples_for_reweighting.append(the_signal_sample)
+        if 'mN4p5' in the_signal_sample.filename and 'ctau100p0mm' in the_signal_sample.filename: 
+          samples_for_reweighting.append(the_signal_sample)
+
+    #print '\n {}'.format(self.signal_file.ctau)
+    #for the_signal_sample in samples_for_reweighting:
+    #  print the_signal_sample.filename
+
+    # get the trees
     filename = self.signal_file.filename if not isBc else self.signal_file.filename_Bc
-    f = self.tools.getRootFile(filename)
-    tree_sig = self.getTree(f, 'signal_tree')
-    tree_run = self.getTree(f, 'run_tree')
+    if '*' not in filename: 
+      # no ctau reweighting
+      f = self.tools.getRootFile(filename)
+      tree_sig = self.getTree(f, 'signal_tree')
+      tree_run = self.getTree(f, 'run_tree')
+    else: 
+      # use inclusive (in ctau) samples
+      tree_sig = ROOT.TChain('signal_tree')
+      tree_run = ROOT.TChain('run_tree')
+      for the_signal_sample in samples_for_reweighting:
+        tree_sig.Add(the_signal_sample.filename)
+        tree_run.Add(the_signal_sample.filename)
 
-    # get number of generated events
-    n_reco = self.tools.getNminiAODEvts(tree_run)
-    filter_efficiency = self.signal_file.filter_efficiency if not isBc else self.signal_file.filter_efficiency_Bc
-    n_gen = n_reco / filter_efficiency
+    # get number of gen events (= number of miniAOD events)
+    n_miniaod_tot = self.tools.getNminiAODEvts(tree_run)
 
-    # central samples are produced 50% muon and 50% electron
-    n_gen = 0.5*n_gen #TODO do not hardcode it?
+    # get the filter efficiency
+    if '*' not in filename:
+      filter_efficiency = self.signal_file.filter_efficiency if not isBc else self.signal_file.filter_efficiency_Bc
+    else:
+      # take the weighted average of the filter efficiencies of the generated samples
+      filter_efficiency = 0.
+      for the_signal_sample in samples_for_reweighting:
+        the_file = self.tools.getRootFile(the_signal_sample.filename)
+        the_tree_run = self.getTree(the_file, 'run_tree')
+        n_miniaod = self.tools.getNminiAODEvts(the_tree_run)
+        filter_efficiency += n_miniaod * the_signal_sample.filter_efficiency
+      filter_efficiency = filter_efficiency / n_miniaod_tot
+
+    # get the number of generated events
+    n_generated = n_miniaod_tot / filter_efficiency
+    if isMixed: n_generated = n_generated * 0.5
 
     # get number of selected reco events
     mass = self.signal_file.mass
     sigma = self.signal_file.resolution
-    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*sigma, bin_max=mass+2*sigma)
+    #quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-2*sigma, bin_max=mass+2*sigma)
+    quantity = Quantity(name_flat='hnl_mass', nbins=1, bin_min=mass-50*sigma, bin_max=mass+50*sigma)
 
-    weight = '({})'.format(self.tools.getCtauWeight(self.signal_file))
+    # question: is the Ni the miniaod or the generated ones?
+
+    if '*' not in filename:
+      weight = '(1)'
+    else:
+      deno_weight = ''
+      for ifile, the_signal_sample in enumerate(samples_for_reweighting):
+        the_file = self.tools.getRootFile(the_signal_sample.filename)
+        the_tree_run = self.getTree(the_file, 'run_tree')
+        n_miniaod = self.tools.getNminiAODEvts(the_tree_run)
+        #the_filter_efficiency = the_signal_sample.filter_efficiency
+        #the_n_generated = n_miniaod / the_filter_efficiency
+        #the_tree_sig = self.getTree(the_file, 'signal_tree')
+        #the_hist = self.tools.createHisto(the_tree_sig, quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight='(1.)')
+        #n_events = the_hist.Integral()
+        #hist_tot = self.tools.createHisto(tree_sig, quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight='(1.)')
+        #n_events_tot = hist_tot.Integral()
+        if ifile == 0:
+          deno_weight += ' {n0} / {ctau0} * exp(-gen_hnl_ct / {ctau0})'.format(
+                n0 = n_miniaod,
+                #n0 = n_generated,
+                #n0 = n_events,
+                ctau0 = the_signal_sample.ctau,
+                )
+        else:
+          deno_weight += ' + {n0} / {ctau0} * exp(-gen_hnl_ct / {ctau0})'.format(
+                n0 = n_miniaod,
+                #n0 = n_generated,
+                #n0 = n_events,
+                ctau0 = the_signal_sample.ctau,
+                )
+      weight = '({ntot} / {ctau1} * exp(-gen_hnl_ct / {ctau1}) * (1. / ({deno_weight})))'.format(
+          ntot = n_miniaod_tot,
+          #ntot = n_generated,
+          #ntot = n_events_tot,
+          ctau1 = self.signal_file.ctau,
+          deno_weight = deno_weight,
+          )
+
+    #((365329.0 / 1.5 * exp(-gen_hnl_ct / 1.5)) * (1. / ( 365329.0 / 10.0 * exp(-gen_hnl_ct / 10.0))))
+    #(365329.0 / 1.5 * exp(-gen_hnl_ct / 1.5) * (1. / ( 365329.0 / 10.0 * exp(-gen_hnl_ct / 10.0))))
+    #(3629644.0 / 1.5 * exp(-gen_hnl_ct / 1.5) * (1. / ( 2128601.0 / 1000.0 * exp(-gen_hnl_ct / 1000.0 + 808459.0 / 100.0 * exp(-gen_hnl_ct / 100.0 + 365329.0 / 10.0 * exp(-gen_hnl_ct / 10.0 + 327255.0 / 1.0 * exp(-gen_hnl_ct / 1.0))))
+
     if add_weight_hlt : weight += ' * ({})'.format(weight_hlt)
-    #TODO add pu weight
+    if add_weight_pu : weight += ' * ({})'.format(weight_pusig)
+
+    # plot the weight distribution
+    #canv_weight = ROOT.TCanvas('canv_weight', 'canv_weight', 800, 700)
+    #hist = ROOT.TH1D('hist_m{}_ctau{}'.format(self.signal_file.mass, self.signal_file.ctau), 'hist_m{}_ctau{}'.format(self.signal_file.mass, self.signal_file.ctau), 100, 0, 5)
+    #tree_sig.Draw('{}>>hist_m{}_ctau{}'.format(weight, self.signal_file.mass, self.signal_file.ctau))
+    #hist.Draw('hist')
+    #canv_weight.SaveAs('myPlots/lifetime_weights/weight_m{}_ctau{}mm.png'.format(str(self.signal_file.mass).replace('.', 'p'), str(self.signal_file.ctau).replace('.', 'p')))
+
+    # this was to check if a cut on the weight would impact the performance
+    #self.selection += ' && {}<30'.format(weight)
+    #print self.selection
 
     hist_flat_bin = self.tools.createHisto(tree_sig, quantity, branchname='flat', selection='ismatched==1' if self.selection=='' else 'ismatched==1 && '+self.selection, weight=weight)
-
     bin_err = ROOT.double(0.)
-    #n_selected_bin = hist_flat_bin.IntegralAndError(0, 13000, bin_err)
-    n_selected_bin = hist_flat_bin.Integral() #FIXME error, overflow?
-    
-    #print 'n_selected_bin',n_selected_bin
+    n_selected_bin = hist_flat_bin.IntegralAndError(0, 13000, bin_err)
+    #n_selected_bin = hist_flat_bin.Integral() #FIXME error, overflow?
 
-    efficiency = n_selected_bin / n_gen
+    # compute the efficiency
+    efficiency = n_selected_bin / n_generated
+    if isBc:
+      efficiency = efficiency * lhe_efficiency
+    #err_efficiency = 0. #TODO
 
-    # uncertainty
-    err_filter_efficiency = 0.15
-    err_n_selected_bin = bin_err
+    err_filter_efficiency = 0. * filter_efficiency
+    err_n_selected_bin = math.sqrt(n_selected_bin) #bin_err
     err_efficiency = efficiency * (err_filter_efficiency / filter_efficiency + err_n_selected_bin / n_selected_bin) if n_selected_bin!=0 else 0.
-    #print 'efficiency',efficiency
+    #print '{} {} {} {} {}%'.format(self.signal_file.mass, self.signal_file.ctau, efficiency, err_efficiency, err_efficiency/efficiency*100)
 
     return efficiency, err_efficiency
 
 
-  def computeSignalYields(self, lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, weight_hlt='weight_hlt_A1_6', isBc=False):
+  def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', isBc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
     '''
 
-    # we get the sigma_HNL
-    ## measured sigma_B_tot from normalisation study
-    sigma_Bcharged = sigma_B
+    # define ranges and binning (full window)
+    fit_window_min = mass - 1.5
+    fit_window_max = mass + 1.5 
 
-    frag_Bcharged = 0.4
-    sigma_Btot_approx = sigma_Bcharged / frag_Bcharged
+    # get the signal files
+    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy='exclusive_fromlargerctau')
 
-    v_square = self.tools.getVV(mass=self.signal_file.mass, ctau=self.signal_file.ctau, ismaj=True)
-    #print 'v2: ',v_square
+    # get the tree
+    treename = 'signal_tree'
+    tree_sig = ROOT.TChain(treename)
+    for signal_file in signal_files:
+      filename = signal_file.filename if not isBc else signal_file.filename_Bc
+      tree_sig.Add(filename)
 
-    ## total production branching ratio
-    from decays import Decays 
-    dec = Decays(mass=self.signal_file.mass, mixing_angle_square=1) # we factorise the mixing angle 
-    if not isBc:
-      BR_prod = dec.BR_tot_mu 
-    else:
-      BR_prod = dec.BR_Bc_mu 
-    #print 'BR_prod ',BR_prod
+    # define selection
+    cond_sig = 'ismatched==1'
+    selection_sig = cond_sig + ' && ' + self.selection
 
-    ## total decay branching ratio
-    BR_NToMuPi = self.tools.gamma_partial(mass=self.signal_file.mass, vv=v_square) / self.tools.gamma_total(mass=self.signal_file.mass, vv=v_square)
-    #print 'BR_NToMuPi ',BR_NToMuPi
+    # define signal weights
+    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=ctau)
+    lhe_efficiency = 0.08244 #FIXME
+    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=mass, ctau=ctau, sigma_B=sigma_B, lumi=lumi, lhe_efficiency=lhe_efficiency)
+    weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
+    if add_weight_hlt: weight_sig += ' * ({})'.format(weight_hlt)
+    if add_weight_pu: weight_sig += ' * ({})'.format(weight_pusig)
+    if add_weight_muid: weight_sig += ' * ({}) * ({})'.format(weight_mu0id, weight_muid)
+    #print 'weight ',weight_sig
 
-    NToMuPi_fraction = 1.
-    BR_decay = NToMuPi_fraction * BR_NToMuPi
-    #print 'BR decay, ',BR_decay
+    # create histogram
+    hist_name = 'hist_signal_{}'.format(isBc)
+    hist = ROOT.TH1D(hist_name, hist_name, 100, fit_window_min, fit_window_max)
+    branch_name = 'hnl_mass'
+    tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
 
-    ## and finally sigma_HNL
-    sigma_HNL = sigma_Btot_approx * BR_prod * BR_decay * v_square
-    #print 'sigma_hnl ',sigma_HNL
+    # get the number of yields
+    n_sig = hist.Integral()
 
-    # lumi
-    lumi_A1 = lumi
-
-    # efficiency in the mu-channel
-    efficiency, err_efficiency = self.getSignalEfficiency(add_weight_hlt=add_weight_hlt, weight_hlt=weight_hlt, isBc=isBc)
-    #print 'efficiency ',efficiency #efficiency/self.signal_file.filter_efficiency
-
-    signal_yields = sigma_HNL * lumi_A1 * efficiency
-
-    # uncertainty
-    err_sigma = 0.10
-    err_BR_prod = 0.05
-    err_BR_decay = 0.05
-    err_v_square = 0.05 
-    err_lumi = 0.025
-    
-    err_signal_yields = 0. #signal_yields * (err_sigma / sigma_Bcharged + err_BR_prod / BR_prod + err_BR_decay / BR_decay + err_v_square / v_square + err_lumi / lumi + err_efficiency / efficiency)
-    
-    #print 'yields ',signal_yields
-
-    return signal_yields, err_signal_yields
+    return n_sig
 
 
 

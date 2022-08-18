@@ -75,7 +75,7 @@ lifetime_D0      = 4.101e-13 * sToGeVconv
 fraction_B       = 0.4
 fraction_B0      = 0.4
 fraction_B_sub_s = 0.1
-fraction_B_sub_c = 0.001
+fraction_B_sub_c = 0.00261 # from https://cds.cern.ch/record/2697350/files/1910.13404.pdf
 
 # CKM matrix elements
 Vud_pdg = 0.97417 if not PESKIN else 1.

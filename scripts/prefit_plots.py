@@ -36,7 +36,7 @@ class PrefitPlotter(Tools):
     return max_range
 
 
-  def getBinnedPrefitMass(self, selection='', use_qcd=False, use_sigyield_fromdatacard=False, lumi_target=41.6, outdirlabel='', subdirlabel='', homedir='', treename='signal_tree', categories='', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd=''):
+  def getBinnedPrefitMass(self, selection='', use_qcd=False, use_sigyield_fromdatacard=False, lumi_target=41.6, outdirlabel='', subdirlabel='', homedir='', treename='signal_tree', categories='', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid'):
 
     # this will be to avoid memory issues with python
     signal_hists_all = []
@@ -67,7 +67,8 @@ class PrefitPlotter(Tools):
         weight_ctau = self.tools.getCtauWeight(signal_file)
         weight_signal = self.tools.getSignalWeight(signal_file=signal_file, sigma_B=472.8e9, lumi=lumi_target)
         if add_weight_hlt : weight_sig += ' * ({})'.format(weight_hlt)
-        #if add_weight_pu : weight_sig += ' * (weight_pu_qcd)' #TODO modify pileup weight
+        if add_weight_pu : weight_sig += ' * (weight_pu_sig)'
+        if add_weight_muid : weight_sig += ' * ({}) * ({})'.format(weight_mu0id, weight_muid)
     
         if use_sigyield_fromdatacard:
           weight_sig = '({})'.format(weight_ctau)
@@ -122,6 +123,7 @@ class PrefitPlotter(Tools):
           weight_qcd = '({})'.format(weight_qcd)
           if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
           if add_weight_pu : weight_qcd += ' * ({}) '.format(weight_puqcd)
+          if add_weight_muid : weight_qcd += ' * ({}) * ({})'.format(weight_mu0id, weight_muid)
 
           hist_qcd_name = 'hist_qcd_{}_{}'.format(quantity_yields.label, outdirlabel.replace('/', '_'))
           selection_qcd = selection + ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
@@ -210,9 +212,9 @@ class PrefitPlotter(Tools):
     return signal_hists_all, bkg_hists_all, bkg_stack_hists_all, bkg_err_hists_all
 
 
-  def plotBinnedPrefitMass(self, selection='', use_qcd=False, use_sigyield_fromdatacard=False, lumi_target=41.6, outdirloc='', outdirlabel='', subdirlabel='', homedir='', treename='signal_tree', categories='', add_weight_hlt=False, add_weight_pu=False, weight_hlt='', weight_puqcd='', do_stack=True, do_log=False, add_CMSlabel=True, CMS_tag='Preliminary'):
+  def plotBinnedPrefitMass(self, selection='', use_qcd=False, use_sigyield_fromdatacard=False, lumi_target=41.6, outdirloc='', outdirlabel='', subdirlabel='', homedir='', treename='signal_tree', categories='', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_mu0id='', weight_muid='' do_stack=True, do_log=False, add_CMSlabel=True, CMS_tag='Preliminary'):
 
-    signal_hists_all, bkg_hists_all, bkg_stack_hists_all, bkg_err_hists_all = self.getBinnedPrefitMass(selection, use_qcd, use_sigyield_fromdatacard, lumi_target, outdirlabel, subdirlabel, homedir, treename, categories, add_weight_hlt, add_weight_pu, weight_hlt, weight_puqcd) 
+    signal_hists_all, bkg_hists_all, bkg_stack_hists_all, bkg_err_hists_all = self.getBinnedPrefitMass(selection, use_qcd, use_sigyield_fromdatacard, lumi_target, outdirlabel, subdirlabel, homedir, treename, categories, add_weight_hlt, add_weight_pu, add_weight_muid, weight_hlt, weight_puqcd, weight_mu0id, weight_muid) 
 
     ## plot each category separately 
     for icat, category in enumerate(categories):
@@ -391,6 +393,10 @@ if __name__ == '__main__':
   add_weight_pu = True
   weight_puqcd = 'weight_pu_qcd_D'
 
+  add_weight_muid = False
+  weight_mu0id = ''
+  weight_muid = ''
+
   nbins = 30
   window_size = 4
   lumi_target = 5.302 
@@ -419,8 +425,11 @@ if __name__ == '__main__':
                categories = categories,
                add_weight_hlt = add_weight_hlt,
                add_weight_pu = add_weight_pu,
+               add_weight_muid = add_weight_muid,
                weight_hlt = weight_hlt, 
                weight_puqcd = weight_puqcd,
+               weight_mu0id = weight_mu0id, 
+               weight_muid = weight_muid, 
                do_stack = False, 
                do_log = do_log,
                add_CMSlabel = True,

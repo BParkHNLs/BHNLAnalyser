@@ -48,6 +48,11 @@ source env_standalone.sh
 cd BHNAnalyser
 ```
 
+Activate the proxy
+```
+voms-proxy-init --voms cms --valid 186:00
+```
+
 ## Run the analysis
 1. Configure the analyser. An example of a config file is given in cfgs/example_cfg.py
 2. Choose what to run in the User's decision board in BHNLLauncher.py

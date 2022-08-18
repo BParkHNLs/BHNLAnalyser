@@ -103,7 +103,7 @@ for idc_ref in the_set_datacards:
 
     for cat in categories_to_combine:
       #print 'cat ',cat
-      if cat in idc_ref:
+      if cat+'.txt' in idc_ref:
         #print '{} {} {}'.format(signal_mass, signal_coupling, idc_ref)
         digested_datacards[signal_mass][signal_coupling].append(idc_ref) 
     

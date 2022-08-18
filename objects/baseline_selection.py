@@ -15,6 +15,13 @@ selection['none'] = Selection(
     nano = 'BToMuMuPi_hnl_pt > 0',
 )
 
+selection['control_Bc'] = Selection(
+    #flat = 'b_pt > 0',
+    #flat = 'abs(dimu_mass-3.097)<0.07 && b_cos2d>0.997 && sv_prob>0.05 && abs(l1_dxy)<0.01 && abs(l2_dxy)<0.015 && mindr>0.3 && sv_lxy>0.02 && sv_lxy<0.075 && b_mass>5.5 && b_mass<7.5',
+    #flat = 'abs(dimu_mass-3.097)<0.07 && b_cos2d>0.998 && sv_prob>0.1 && abs(l1_dxy)<0.015 && abs(l2_dxy)<0.015 && mindr>0.3 && maxdr<1.5 && sv_lxy<0.075 && b_mass>5.5 && b_mass<7.5'
+    flat = 'abs(dimu_mass-3.097)<0.07 && l2_pt>3 && k_pt>1.5 && b_cos2d>0.999 && l1_mediumid==1 && l2_mediumid==1 && sv_prob>0.1 && abs(l1_dxy)<0.05 && abs(l2_dxy)<0.05 && mindr>0.1 && maxdr<1.5 && sv_lxysig>3 && b_mass>5.5 && b_mass<7.5'
+)
+
 selection['nodsa'] = Selection(
     flat = 'mu_isdsa!=1',
 )
@@ -58,6 +65,35 @@ selection['baseline_30Dec21'] = Selection(
       '((trgmu_charge==mu_charge && abs(trgmu_pi_mass-3.097)>0.05 && abs(trgmu_pi_mass-1.76)>0.05) || (trgmu_charge!=mu_charge))',
       #'deltar_trgmu_pi < 1.5',
       #'deltar_trgmu_mu < 1',
+      'sv_lxyz < 100',
+    ])
+)
+
+selection['baseline_08Aug22'] = Selection(
+    flat = ' && '.join([
+      'mu0_softid == 1',
+      'mu_looseid == 1',
+      'pi_packedcandhashighpurity == 1',
+      '((mu0_charge!=mu_charge && abs(mu0_mu_mass-3.097)>0.15 && abs(mu0_mu_mass-3.686)>0.08 && abs(mu0_mu_mass-1.019)>0.01) || (mu0_charge==mu_charge))',
+      '((mu0_charge==mu_charge && abs(mu0_pi_mass-3.097)>0.05 && abs(mu0_pi_mass-1.76)>0.05) || (mu0_charge!=mu_charge))',
+      'sv_lxyz < 100',
+    ])
+)
+
+selection['tag_and_probe'] = Selection(
+    flat = ' && '.join([
+      'mass > 3.05 && mass < 3.15',
+      'pt > 12',
+      'abs(probe_dxy) > 0.01',
+      'probe_pt > 2.5',
+      'lxy_sig > 10',
+    ])
+)
+
+selection['baseline_sources'] = Selection(
+    flat = ' && '.join([
+      'hnl_charge == 0',
+      'sv_lxyz < 100',
     ])
 )
 
