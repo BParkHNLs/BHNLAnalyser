@@ -11,9 +11,9 @@ sys.path.append('./cfgs')
 
 #"----------------User's decision board-----------------"
 
-output_label = 'V10_30Dec21'
-tag = 'shape_analysis_lumiD1_nbins100_window5_discrete_profiling_fullBPark_v2'
-cfg_filename = 'V10_30Dec21_cfg.py'
+output_label = 'V12_08Aug22'
+tag = 'study_bs_weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysig_bsrdst_newcat_max3e6_smalltable_v2'
+cfg_filename = 'V12_08Aug22_cfg.py'
 submit_batch = True
 do_plotter = False
 do_datacards = True
@@ -23,7 +23,6 @@ do_limits = True
 do_combine_datacards = True
 do_produce_limits = True
 do_plot_limits = True
-
 
 ### other
 do_check_config = True
@@ -174,9 +173,13 @@ class BHNLLauncher(object):
         '--qcd_white_list {}'.format(self.cfg.qcd_white_list),
         '--CMStag {}'.format(self.cfg.CMStag),
         '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
-        '--weight_pu {}'.format(self.cfg.branch_weight_pu),
+        '--weight_puqcd {}'.format(self.cfg.branch_weight_puqcd),
+        '--weight_pusig {}'.format(self.cfg.branch_weight_pusig),
+        '--weight_muid {}'.format(self.cfg.branch_weight_muid),
+        '--weight_mu0id {}'.format(self.cfg.branch_weight_mu0id),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
         '{}'.format('--add_weight_pu' if self.cfg.add_weight_pu else ''),
+        '{}'.format('--add_weight_muid' if self.cfg.add_weight_muid else ''),
         '{}'.format('--plot_CR' if self.cfg.plot_CR else ''),
         '{}'.format('--plot_SR' if self.cfg.plot_SR else ''),
         '{}'.format('--plot_dataSig' if self.cfg.plot_dataSig else ''),
@@ -187,6 +190,7 @@ class BHNLLauncher(object):
         '{}'.format('--do_log' if self.cfg.do_log else ''),
         '{}'.format('--add_overflow' if self.cfg.add_overflow else ''),
         '{}'.format('--add_CMSlabel' if self.cfg.add_CMSlabel else ''),
+        '{}'.format('--do_tdrstyle' if self.cfg.do_tdrstyle else ''),
         ])
 
     # write the submitter
@@ -227,9 +231,11 @@ class BHNLLauncher(object):
         '--data_label {}'.format(self.cfg.data_label),
         '--qcd_label {}'.format(self.cfg.qcd_label),
         '--signal_label {}'.format(signal_label),
+        '--points_label {}'.format(self.cfg.points_label),
         '--selection_label {}'.format(self.cfg.selection_label),
         '--categories_label {}'.format(self.cfg.categories_label),
         '--category_label {}'.format(category.label),
+        '--reweighting_strategy {}'.format(self.cfg.reweighting_strategy),
         '--ABCD_label {}'.format(self.cfg.ABCD_label),
         '--signal_model_label {}'.format(self.cfg.signal_model_label),
         '--background_model_label {}'.format(self.cfg.background_model_label),
@@ -238,11 +244,16 @@ class BHNLLauncher(object):
         '--nbins {}'.format(self.cfg.nbins),
         '--lumi_target {}'.format(self.cfg.lumi_target),
         '--sigma_B {}'.format(self.cfg.sigma_B),
+        '--lhe_efficiency {}'.format(self.cfg.lhe_efficiency),
         '--sigma_mult {}'.format(self.cfg.sigma_mult_window),
         '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
-        #'--weight_pu {}'.format(self.cfg.branch_weight_pu),
+        '--weight_pusig {}'.format(self.cfg.branch_weight_pusig),
+        '--weight_muid {}'.format(self.cfg.branch_weight_muid),
+        '--weight_mu0id {}'.format(self.cfg.branch_weight_mu0id),
         '--CMStag {}'.format(self.cfg.CMStag),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
+        '{}'.format('--add_weight_pu' if self.cfg.add_weight_pu else ''),
+        '{}'.format('--add_weight_muid' if self.cfg.add_weight_muid else ''),
         '{}'.format('--do_ABCD' if self.cfg.do_ABCD else ''),
         '{}'.format('--do_ABCDHybrid' if self.cfg.do_ABCDHybrid else ''),
         '{}'.format('--do_TF' if self.cfg.do_TF else ''),
@@ -259,6 +270,7 @@ class BHNLLauncher(object):
         '{}'.format('--plot_prefit' if self.cfg.plot_prefit else ''),
         '{}'.format('--add_CMSlabel' if self.cfg.add_CMSlabel else ''),
         '{}'.format('--add_lumilabel' if self.cfg.add_lumilabel else ''),
+        '{}'.format('--do_tdrstyle' if self.cfg.do_tdrstyle else ''),
         ])
 
     # write the submitter
@@ -303,7 +315,7 @@ class BHNLLauncher(object):
         '--subdirlabel {}'.format(self.tag),
         '--categories_label {}'.format(self.cfg.categories_label),
         #'--wildcard {}'.format(self.cfg.datacards_wildcard), #TODO add that in config
-        '--mass_whitelist {}'.format(mass), #TODO adapt
+        #'--mass_whitelist {}'.format(mass), #TODO adapt
         #'--mass_blacklist {}'.format(self.getParserString(self.cfg.mass_black_list)), #TODO adapt
         #'--coupling_whitelist {}'.format(self.getParserString(self.cfg.coupling_white_list)), #TODO adapt
         #'--coupling_blacklist {}'.format(self.getParserString(self.cfg.coupling_black_list)), #TODO adapt
@@ -373,7 +385,8 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} {dpd} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p {que} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} {dpd} submitter_{lbl}.sh'.format(
+          que = 'standard' if self.do_standard_queue else 'short',
           ld = logdir_name,
           lbl = label,
           dpd = '--dependency=afterany:{}'.format(job_id) if do_dependency else ''
@@ -398,10 +411,12 @@ class BHNLLauncher(object):
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
         #'--mass_whitelist {}'.format(self.getParserString(self.cfg.mass_white_list)), #FIXME 
+        #'--mass_whitelist 4.5',
+        #'--mass_blacklist 3,4.5',
         #'--mass_blacklist {}'.format(self.getParserString(self.cfg.mass_black_list)), #FIXME  
         #'--coupling_whitelist {}'.format(self.getParserString(self.cfg.coupling_white_list)), #FIXME 
         #'--coupling_blacklist {}'.format(self.getParserString(self.cfg.coupling_black_list)), #FIXME  
-        #'--coupling_blacklist 0.00022,0.00032,0.00044,0.0022',
+        #'--coupling_blacklist 5.8e-05',
         '{}'.format('--run_blind' if self.cfg.run_blind else ''),
         ])
 
