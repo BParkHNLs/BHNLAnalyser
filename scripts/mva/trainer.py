@@ -283,14 +283,10 @@ class Trainer(object):
     '''
 
     x_train, x_val, y_train, y_val = train_test_split(main_df, Y, test_size=0.2, shuffle=True)
-    
-    # the x should only contain the features and not all the branches of main_df
-    x_train = pd.DataFrame(x_train, columns=list(set(self.features))) # alternative to X_train[self.features[:]]
-    x_val = pd.DataFrame(x_val, columns=list(set(self.features)))
 
     # scale the features
-    x_train = qt.transform(x_train)
-    x_val = qt.transform(x_val)
+    x_train = qt.transform(x_train[self.features])
+    x_val = qt.transform(x_val[self.features])
 
     return x_train, x_val, y_train, y_val
 
