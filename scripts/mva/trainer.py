@@ -9,7 +9,9 @@ import matplotlib.pyplot as plt
 from itertools import product
 from time import time 
 from datetime import datetime
+import seaborn as sns
 
+import ROOT
 import root_pandas
 from root_numpy import root2array
 from root_pandas import read_root
@@ -61,6 +63,7 @@ class Trainer(object):
     outdir = './outputs/{}'.format(self.dirname)
     if not path.exists(outdir):
       os.system('mkdir -p {}'.format(outdir))
+
     return outdir
 
 
@@ -121,12 +124,12 @@ class Trainer(object):
     ]
 
     # used for testing
-    #filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_nj4.root'
-    #filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_nj5.root'
-    #filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_nj6.root'
-    filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_nj4.root'
-    filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_nj5.root'
-    filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_nj6.root'
+    filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_nj4.root'
+    filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_nj5.root'
+    filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_nj6.root'
+    #filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_nj4.root'
+    #filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_nj5.root'
+    #filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_nj6.root'
     mc_test_samples = [
       Sample(filename=filename_mc_4, selection=self.baseline_selection),
       Sample(filename=filename_mc_5, selection=self.baseline_selection),
@@ -154,6 +157,7 @@ class Trainer(object):
     '''
     pd.options.mode.chained_assignment = None
     df[branch] = target
+
     return df
 
 
@@ -189,12 +193,13 @@ class Trainer(object):
 
     # re-index
     main_df.index = np.array(range(len(main_df)))
+
     # shuffle
     main_df = main_df.sample(frac=1, replace=False, random_state=1986) # of course, keep R's seed ;)
 
     # X and Y
     X = pd.DataFrame(main_df, columns=list(set(self.features)))
-    Y = pd.DataFrame(main_df, columns=['is_signal'])
+    Y = pd.DataFrame(main_df, columns=[self.target_branch])
 
     # scale the features
     # this is an important step!
@@ -272,7 +277,6 @@ class Trainer(object):
     x_train = pd.DataFrame(x_train, columns=list(set(self.features))) # alternative to X_train[self.features[:]]
     x_val = pd.DataFrame(x_val, columns=list(set(self.features)))
 
-
     return x_train, x_val, y_train, y_val
 
 
@@ -296,6 +300,7 @@ class Trainer(object):
       Perform the training
     '''
     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)  
+
     return history
     
 
@@ -303,7 +308,6 @@ class Trainer(object):
     '''
       Plot the loss for training and validation sets
     '''
-    plt.clf()
     loss_train = history.history['loss']
     loss_val = history.history['val_loss']
     epochs_range = range(1, self.epochs+1)
@@ -315,13 +319,13 @@ class Trainer(object):
     plt.ylabel('Loss')
     plt.legend()
     self.saveFig(plt, 'loss')
+    plt.clf()
 
 
   def plotAccuracy(self, history):
     '''
       Plot the accuracy for training and validation sets
     '''
-    plt.clf()
     acc_train = history.history['acc']
     acc_val = history.history['val_acc']
     epochs_range = range(1, self.epochs+1)
@@ -333,6 +337,7 @@ class Trainer(object):
     plt.ylabel('Accuracy')
     plt.legend()
     self.saveFig(plt, 'accuracy')
+    plt.clf()
 
 
   def predictScore(self, model, df):
@@ -365,18 +370,129 @@ class Trainer(object):
     data_test_df['score'] = bkg_score
 
     # plot the score distributions
-    fig = plt.figure(figsize=(20,10))
+    fig = plt.figure()
     ax = fig.add_subplot(111)
     bkg_score = [data_test_df['score']]
     bkg_name=['data-driven background']
-    ax.hist(bkg_score, bins=np.arange(0,1.025,0.025), stacked=True, alpha=0.5, label=bkg_name)
-    ax.hist(mc_test_df['score'], bins=np.arange(0,1.025,0.025), alpha=1, label='signal', histtype='step', linewidth=2)
+    ax.hist(bkg_score, bins=np.arange(0,1.025,0.025), color='blue', alpha=0.8, label=bkg_name)
+    ax.hist(mc_test_df['score'], bins=np.arange(0,1.025,0.025), color='darkorange', alpha=1, label='signal', histtype='step', linewidth=2)
     ax.legend(loc='upper left',prop={'size': 12})
-    ax.set_title("Score distribution of signal and background for testing set", fontsize=20)
+    ax.set_title("Score distribution for testing set", fontsize=20)
     ax.set_xlabel('Score',fontsize=18)
     fig.savefig('outputs/score.pdf')
     fig.savefig('outputs/score.png')
     self.saveFig(fig, 'score')
+    plt.clf()
+
+
+  def plotROC(self, model, x_train, y_train, x_val, y_val):
+    '''
+      Plot the ROC curve
+      Note that the x inputs are already scaled
+    '''
+    score_train = model.predict(x_train)
+    fpr, tpr, wps = roc_curve(y_train, score_train) 
+
+    plt.clf()
+    plt.plot(fpr, tpr, label='train ROC')
+    #print("AUC train",sk.metrics.auc(fpr,tpr))
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+
+    score_val = model.predict(x_val)
+    fpr, tpr, wps = roc_curve(y_val, score_val) 
+    plt.plot(fpr, tpr, label='test ROC')
+    #print("AUC test",sk.metrics.auc(fpr,tpr))
+
+    xy = [i*j for i,j in product([10.**i for i in range(-8, 0)], [1,2,4,8])]+[1]
+    plt.plot(xy, xy, color='grey', linestyle='--')
+    plt.yscale('linear')
+    plt.legend()
+    self.saveFig(plt, 'ROC')
+    plt.clf()
+
+
+  def plotCorrelations(self, model, df, label):
+    '''
+      Plot the correlation matrix based on the training set
+    '''
+    if label not in ['data', 'mc']:
+      raise RuntimeError('Unknown label "{}". Aborting'.format(label))
+
+    # get the score for the test dataframe
+    score = self.predictScore(model, df)
+
+    # add the score to the dataframes
+    df['score'] = score
+
+    corr = df[self.features + ['score']].corr()
+    
+    # Set up the matplotlib figure
+    f, ax = plt.subplots(figsize=(11, 9))
+    
+    # Generate a custom diverging colormap
+    cmap = sns.diverging_palette(220, 10, as_cmap=True)
+
+    # Draw the heatmap with the mask and correct aspect ratio
+    g = sns.heatmap(corr, cmap=cmap, vmax=1., vmin=-1, center=0, annot=True, fmt='.2f',
+                    square=True, linewidths=.8, cbar_kws={"shrink": .8})
+
+    # rotate axis labels
+    g.set_xticklabels(self.features+['score'], rotation='vertical')
+    g.set_yticklabels(self.features+['score'], rotation='horizontal')
+
+    plt.title('Linear Correlation Matrix - {}'.format(label))
+    plt.tight_layout()
+    self.saveFig(plt, 'correlations_{}'.format(label))
+    plt.clf()
+
+
+  def plotKSTest(self, model, x_train, x_val, y_train, y_val, label):
+    '''
+      Plot the outcome of the Kolmogorov test
+      Used to test the overfitting
+    '''
+    if label not in ['data', 'mc']:
+      raise RuntimeError('Unknown label "{}". Aborting'.format(label))
+
+
+    # only keep the data or mc components of the features
+    # does it mess up with the normalisation?
+    if label == 'data':
+      x_train_part = x_train.drop(y_train.query('is_signal==1').index)
+      x_val_part = x_val.drop(y_val.query('is_signal==1').index)
+    else:
+      x_train_part = x_train.drop(y_train.query('is_signal==0').index)
+      x_val_part = x_val.drop(y_val.query('is_signal==0').index)
+
+    score_train = model.predict(x_train_part)
+    score_val = model.predict(x_val_part)
+
+    h1 = ROOT.TH1F('train', 'train', 30, -1, 1)
+    h2 = ROOT.TH1F('val', 'val', 30, -1, 1)
+    for t, b in zip(score_train, score_val):
+      h1.Fill(t)
+      h2.Fill(b)
+
+    c1=ROOT.TCanvas()
+    if h1.Integral()!=0: h1.Scale(1./h1.Integral())
+    if h2.Integral()!=0: h2.Scale(1./h2.Integral())
+    c1.Draw()
+    h1.Draw("hist")
+    h2.SetLineColor(ROOT.kRed)
+    h2.SetFillColor(ROOT.kWhite)
+    h1.SetFillColor(ROOT.kWhite)
+    h2.Draw("hist SAME")
+    c1.BuildLegend()
+    ks_score = h1.KolmogorovTest(h2)
+    ks_value = ROOT.TPaveText(0.7, 0.65, 0.88, 0.72, 'nbNDC')
+    ks_value.AddText('KS score {} = {}'.format(label, round(ks_score, 3)))
+    ks_value.SetFillColor(0)
+    ks_value.Draw('EP same')
+
+    c1.SaveAs(self.outdir + 'KS_test_{}.png'.format(label))
+    #print("KS score: ",ks_score, len(train_pred),len(test_pred))
+
 
 
   def process(self):
@@ -433,21 +549,25 @@ class Trainer(object):
     self.plotLoss(history)
     self.plotAccuracy(history)
     self.plotScore(model, mc_test_df, data_test_df)
-
-
+    self.plotROC(model, x_train, y_train, x_val, y_val)
+    self.plotCorrelations(model, data_df, 'data')
+    self.plotCorrelations(model, mc_df, 'mc')
+    self.plotKSTest(model, x_train, x_val, y_train, y_val, 'data')
+    self.plotKSTest(model, x_train, x_val, y_train, y_val, 'mc')
 
 
 
 
 if __name__ == '__main__':
+  ROOT.gROOT.SetBatch(True)
 
-  features = ['pi_pt', 'b_mass', 'pi_dcasig', 'hnl_cos2d', 'b_eta']
+  features = ['pi_pt', 'b_mass', 'pi_dcasig', 'hnl_cos2d']
   #features = ['pi_pt', 'pi_dcasig']
   epochs = 50
   batch_size = 32
   scaler_type = 'robust'
   do_early_stopping = False
-  do_reduce_lr = False
+  do_reduce_lr = True
   dirname = 'test'
   baseline_selection = 'hnl_charge==0'
   #NOTE add optimiser, learning rate etc? 
