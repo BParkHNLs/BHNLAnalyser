@@ -277,6 +277,11 @@ class Trainer(object):
     x_train = pd.DataFrame(x_train, columns=list(set(self.features))) # alternative to X_train[self.features[:]]
     x_val = pd.DataFrame(x_val, columns=list(set(self.features)))
 
+    x_train = x_train.reset_index(drop=True)
+    x_val = x_val.reset_index(drop=True)
+    y_train = y_train.reset_index(drop=True)
+    y_val = y_val.reset_index(drop=True)
+
     return x_train, x_val, y_train, y_val
 
 
