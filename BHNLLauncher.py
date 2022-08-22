@@ -5,6 +5,7 @@ import subprocess
 import sys
 sys.path.append('./objects')
 from categories import categories
+from points import points
 from samples import signal_samples
 sys.path.append('./cfgs')
 
@@ -12,7 +13,8 @@ sys.path.append('./cfgs')
 #"----------------User's decision board-----------------"
 
 output_label = 'V12_08Aug22'
-tag = 'study_bs_weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysig_bsrdst_newcat_max3e6_smalltable_v2'
+#tag = 'study_bs_weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysig_bsrdst_newcat_max3e6_smalltable_v2'
+tag = 'test_mva'
 cfg_filename = 'V12_08Aug22_cfg.py'
 submit_batch = True
 do_plotter = False
@@ -94,11 +96,8 @@ class BHNLLauncher(object):
     return masses
 
 
-  def getCtauList(self, signal_label=''):
-    ctaus = []
-    for signal_sample in signal_samples[signal_label]:
-      if signal_sample.ctau not in ctaus: ctaus.append(signal_sample.ctau)
-    return ctaus
+  def getCtauList(self):
+    return points[self.cfg.points_label] 
 
 
   def getJobId(self, job):
@@ -129,6 +128,7 @@ class BHNLLauncher(object):
         '{}'.format('cp -r ./outputs/{}/datacards/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
         '{}'.format('cp -r ./outputs/{}/datacards_combined/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
         '{}'.format('cp -r ./outputs/{}/limits/{}/results $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_plot_limits else ''),
+        #'cp -r ./scripts/mva/outputs/test_20Aug2022_13h40m03s', #FIXME
         'cd $workdir',
         'DATE_START=`date +%s`',
         command,
@@ -499,7 +499,7 @@ class BHNLLauncher(object):
         dependency_limits = []
         for signal_label in self.cfg.signal_labels:
           for mass in self.getMassList(signal_label):
-            for ctau in self.getCtauList(signal_label):
+            for ctau in self.getCtauList():
               print '\n -> Launching the limits production for mass {} and ctau {}'.format(mass, ctau)
               if self.submit_batch and self.do_combine_datacards:
                 job_id = self.launchLimitsProducer(mass=mass, ctau=ctau, do_dependency=True, job_id=self.getJobIdsList(dependency_combined_datacards[signal_label]))
