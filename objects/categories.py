@@ -722,7 +722,7 @@ categories['V12_08Aug22_permass'] = [
   Category(label = 'lxygt5_OS',
            title = 'l_{xy}>5cm, OS',
            definition_flat = 'sv_lxy>5 && mu0_charge!=mu_charge',
-           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>1.5 && sv_lxysig>150 && min(abs(mu_dxysig), abs(pi_dxysig))>40 && (1-hnl_cos2d)<2e-5',
+           cutbased_selection_lowmass = 'hnl_charge==0 && pi_pt>1.5 && sv_lxysig>150 && (1-hnl_cos2d)<2e-5',
            cutbased_selection_mediummass = 'hnl_charge==0 && abs(b_mass-5.3)<0.35 && pi_pt>2.5 && sv_lxysig>150 && (1-hnl_cos2d)<2e-5',
            cutbased_selection_highmass = 'hnl_charge==0 && abs(b_mass-5.3)<0.35 && pi_pt>3.5 && sv_lxysig>50 && (1-hnl_cos2d)<2e-5',
           ),
