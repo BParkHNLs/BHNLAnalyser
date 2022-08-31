@@ -11,7 +11,7 @@ cfg = Config(
     # ---     SAMPLES     --- #
     data_label = 'V12_08Aug22',
     qcd_label = 'V12_08Aug22',
-    signal_labels = ['central_V11_24Apr22_benchmark'],
+    signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5'],
     sample_type = 'flat',
     tree_name = 'signal_tree',
     qcd_white_list = '20to300',
@@ -26,18 +26,24 @@ cfg = Config(
     # ----------------------- #
 
     # ---    CATEGORIES   --- #
-    categories_label = 'inclusive',
+    categories_label = 'V12_08Aug22_permass',
     # ----------------------- #
 
     # ---    SELECTION    --- #
-    selection_label = 'baseline_08Aug22',
+    baseline_selection_label = 'baseline_08Aug22',
+    do_cutbased = False,
+    do_mva = True,
+
+    # if mva selection
+    training_label = 'test_20Aug2022_13h40m03s',
+    cut_score = 0.9,
     # ----------------------- #
 
     # ---     WEIGHTS     --- #
     add_weight_hlt = True,
     add_weight_pu = True,
     add_weight_muid = True,
-    branch_weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysig_bsrdst_newcat_max3e6_smalltable_v2',
+    branch_weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2',
     branch_weight_puqcd = 'weight_pu_qcd_D',
     branch_weight_pusig = 'weight_pu_sig_D',
     branch_weight_mu0id = 'weight_mu0_softid',
@@ -49,7 +55,7 @@ cfg = Config(
     ###   Plotting Info     ###
     #-#-#-#-#-#-#-#-#-#-#-#-#-#
     # quantities 
-    quantities_label = ['all', 'muonId_study_displacedmuon', 'trackId'],
+    quantities_label = ['all'],
     # what to plot
     plot_CR = True,
     plot_SR = False,
