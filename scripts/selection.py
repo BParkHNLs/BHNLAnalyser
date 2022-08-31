@@ -409,7 +409,7 @@ class Selection(object):
         if 2*((signal_yields_ini + background_yields_ini)*math.log(1 + signal_yields_ini/background_yields_ini) - signal_yields_ini) > 0:
           significance_ini = math.sqrt(2*((signal_yields_ini + background_yields_ini)*math.log(1 + signal_yields_ini/background_yields_ini) - signal_yields_ini))
         else:
-          significance_ini_1 = signal_yields_ini / math.sqrt(background_yields_ini)
+          significance_ini = signal_yields_ini / math.sqrt(background_yields_ini)
         #print 'ini {} {} {} {}'.format(signal_yields_ini, background_yields_ini, significance_ini_1, significance_ini)
       else:
         significance_ini = -99.
@@ -436,7 +436,7 @@ class Selection(object):
 
         # compute significance
         if background_yields_sel != 0:
-          #significance_sel_1 = signal_yields_sel / math.sqrt(background_yields_sel)
+          #significance_sel = signal_yields_sel / math.sqrt(background_yields_sel)
           if 2*((signal_yields_sel + background_yields_sel)*math.log(1 + signal_yields_sel/background_yields_sel) - signal_yields_sel) > 0:
             significance_sel = math.sqrt(2*((signal_yields_sel + background_yields_sel)*math.log(1 + signal_yields_sel/background_yields_sel) - signal_yields_sel))
           else:
