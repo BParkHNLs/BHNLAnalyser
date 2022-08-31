@@ -251,7 +251,7 @@ class MVAAnalyser(Tools, MVATools):
     canv.SaveAs(name)
 
 
-  def plotROCCurve(self, training_info, mc_samples, data_samples, category):
+  def plotROCCurve(self, training_info, mc_samples, data_samples, category, do_log=False):
     pd.options.mode.chained_assignment = None
     # create dataframe
     data_df = self.createDataframe(data_samples)
@@ -259,6 +259,12 @@ class MVAAnalyser(Tools, MVATools):
 
     plt.clf()
     for mc_sample in mc_samples:
+      mass = mc_sample.mass
+      ctau = mc_sample.ctau
+      v2 = self.tools.getVV(mass=mass, ctau=ctau, ismaj=True)
+      coupling = self.tools.getCouplingLabel(v2)
+
+
       mc_df = self.createDataframe([mc_sample])
       mc_df['is_signal'] = 1
 
@@ -270,7 +276,7 @@ class MVAAnalyser(Tools, MVATools):
       score = self.predictScore(training_info=training_info, df=main_df)
       fpr, tpr, wps = roc_curve(Y, score) 
 
-      plt.plot(fpr, tpr, linewidth=2, label='mva - ({} GeV, {} mm)'.format(mc_sample.mass, mc_sample.ctau))
+      plt.plot(fpr, tpr, linewidth=2, label='mva - ({}GeV, {}mm, {})'.format(mass, ctau, coupling))
       plt.xlabel('False Positive Rate')
       plt.ylabel('True Positive Rate')
 
@@ -298,20 +304,26 @@ class MVAAnalyser(Tools, MVATools):
 
       true_positive_rate = float(TP) / float(TP + FN)
       false_positive_rate = float(FP) / float(FP + TN)
-      plt.plot(false_positive_rate, true_positive_rate, 'o', markersize=10, label='cutbased - ({} GeV, {} mm)'.format(mc_sample.mass, mc_sample.ctau))
+      plt.plot(false_positive_rate, true_positive_rate, 'o', markersize=10, label='cutbased - ({}GeV, {}mm, {})'.format(mass, ctau, coupling))
 
       xy = [i*j for i,j in product([10.**i for i in range(-8, 0)], [1,2,4,8])]+[1]
       plt.plot(xy, xy, color='grey', linestyle='--')
-      plt.yscale('linear')
-      #plt.legend(loc='lower right')
-      plt.legend(loc='upper left')
 
       plt.title(category.title)
       plt.xlim(0, 1)
       plt.ylim(0, 1)
-      plt.xscale('log')
+
+      if do_log:
+        plt.xscale('log')
+      plt.yscale('linear')
+
+      if do_log:
+        plt.legend(loc='upper left', framealpha=0.1)
+      else:
+        plt.legend(loc='lower right', framealpha=0.1)
 
     name = 'ROC_m{}_{}'.format(str(mc_samples[0].mass).replace('.', 'p'), category.label)
+    if do_log: name += '_log'
     self.saveFig(plt, name)
 
 
@@ -604,7 +616,8 @@ class MVAAnalyser(Tools, MVATools):
 
       if self.do_plotROC:
         if category.label == 'incl': continue
-        self.plotROCCurve(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category)
+        self.plotROCCurve(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
+        self.plotROCCurve(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=True)
 
       if self.do_createFiles:
         print '\n -> create rootfiles'
@@ -624,9 +637,10 @@ class MVAAnalyser(Tools, MVATools):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  dirname = 'test_20Aug2022_13h40m03s' # large ntuples
+  #dirname = 'test_20Aug2022_13h40m03s' # large ntuples
   #dirname = 'test_22Aug2022_16h08m33s'  # re-indexed
   #dirname = 'test_22Aug2022_16h17m44s' # not re-indexed
+  dirname = 'test_29Aug2022_11h52m47s' # trained on m1 ctau100
 
   #baseline_selection = 'hnl_charge==0'
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
@@ -636,9 +650,9 @@ if __name__ == '__main__':
   do_plotSigScan = False
   do_plotROC = True
 
-  signal_labels = ['V12_08Aug22_m3']
+  signal_labels = ['V12_08Aug22_m4p5']
   #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-  plot_label = 'm3'
+  plot_label = 'm4p5'
 
   signal_files = []
   for signal_label in signal_labels:
@@ -648,8 +662,8 @@ if __name__ == '__main__':
   data_files = []
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj1.root')
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root')
 
   categories = categories['V12_08Aug22_permass']
   #categories = categories['inclusive']
