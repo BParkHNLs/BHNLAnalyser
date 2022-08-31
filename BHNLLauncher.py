@@ -13,8 +13,9 @@ sys.path.append('./cfgs')
 #"----------------User's decision board-----------------"
 
 output_label = 'V12_08Aug22'
-#tag = 'study_bs_weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysig_bsrdst_newcat_max3e6_smalltable_v2'
+#tag = 'study_bs_weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_looseid_max3e6_smalltable_v2'
 tag = 'test_mva'
+#tag = 'baseline_performance_v1'
 cfg_filename = 'V12_08Aug22_cfg.py'
 submit_batch = True
 do_plotter = False
@@ -128,7 +129,7 @@ class BHNLLauncher(object):
         '{}'.format('cp -r ./outputs/{}/datacards/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
         '{}'.format('cp -r ./outputs/{}/datacards_combined/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
         '{}'.format('cp -r ./outputs/{}/limits/{}/results $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_plot_limits else ''),
-        #'cp -r ./scripts/mva/outputs/test_20Aug2022_13h40m03s', #FIXME
+        'cp -r ./scripts/mva/outputs/{} $workdir'.format(self.cfg.training_label),
         'cd $workdir',
         'DATE_START=`date +%s`',
         command,
@@ -165,7 +166,7 @@ class BHNLLauncher(object):
         '--qcd_label {}'.format(self.cfg.qcd_label),
         '--signal_label {}'.format(self.cfg.signal_labels[0]), #FIXME
         '--quantities_label {}'.format(quantity_label),
-        '--selection_label {}'.format(self.cfg.selection_label),
+        '--selection_label {}'.format(self.cfg.baseline_selection_label),
         '--categories_label {}'.format(self.cfg.categories_label),
         '--category_label {}'.format(category.label),
         '--sample_type {}'.format(self.cfg.sample_type),
@@ -232,7 +233,9 @@ class BHNLLauncher(object):
         '--qcd_label {}'.format(self.cfg.qcd_label),
         '--signal_label {}'.format(signal_label),
         '--points_label {}'.format(self.cfg.points_label),
-        '--selection_label {}'.format(self.cfg.selection_label),
+        '--selection_label {}'.format(self.cfg.baseline_selection_label),
+        '--training_label {}'.format(self.cfg.training_label),
+        '--cut_score {}'.format(self.cfg.cut_score),
         '--categories_label {}'.format(self.cfg.categories_label),
         '--category_label {}'.format(category.label),
         '--reweighting_strategy {}'.format(self.cfg.reweighting_strategy),
@@ -251,6 +254,8 @@ class BHNLLauncher(object):
         '--weight_muid {}'.format(self.cfg.branch_weight_muid),
         '--weight_mu0id {}'.format(self.cfg.branch_weight_mu0id),
         '--CMStag {}'.format(self.cfg.CMStag),
+        '{}'.format('--do_cutbased' if self.cfg.do_cutbased else ''),
+        '{}'.format('--do_mva' if self.cfg.do_mva else ''),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
         '{}'.format('--add_weight_pu' if self.cfg.add_weight_pu else ''),
         '{}'.format('--add_weight_muid' if self.cfg.add_weight_muid else ''),
@@ -289,7 +294,7 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p {que} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p {que} --mem 4500 --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
           que = 'standard' if self.do_standard_queue else 'short',
           ld = logdir_name,
           lbl=label,
