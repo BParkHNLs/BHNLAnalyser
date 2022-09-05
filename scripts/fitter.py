@@ -96,6 +96,25 @@ class Fitter(Tools, MVATools):
     return label
 
 
+  def getMCWeight(self, signal_files):
+    weight_sig_list = ['gen_hnl_ct']
+    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=self.signal_ctau)
+    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=self.signal_mass, ctau=self.signal_ctau, sigma_B=self.sigma_B, lumi=self.lumi_true, lhe_efficiency=self.lhe_efficiency) #TODO what about isBc?
+    weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
+    if self.add_weight_hlt: 
+      weight_sig += ' * ({})'.format(self.weight_hlt)
+      weight_sig_list.append(self.weight_hlt)
+    if self.add_weight_pu: 
+      weight_sig += ' * ({})'.format(self.weight_pusig)
+      weight_sig_list.append(self.weight_pusig)
+    if self.add_weight_muid: 
+      weight_sig += ' * ({}) * ({})'.format(self.weight_mu0id, self.weight_muid)
+      weight_sig_list.append(self.weight_mu0id)
+      weight_sig_list.append(self.weight_muid)
+
+    return weight_sig, weight_sig_list
+
+
   def getQuantitySet(self):
     '''
       If performing unbinned fit, make sure that all variables used in the selection cuts
@@ -205,6 +224,20 @@ class Fitter(Tools, MVATools):
     if label == '' and process == 'background': label = self.getBackgroundLabel() 
     if label == '' and process == 'both': label = self.getSignalLabel() + '_' + self.getBackgroundLabel()
 
+    # define ranges and binning
+    mass_window_min, mass_window_max = self.getRegion(nsigma=self.mass_window_size)
+    fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
+
+    # define selection
+    cond_sig = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
+    selection_sig = cond_sig + ' && ' + self.selection
+    selection_bkg = self.selection
+    #TODO do we want to apply cut on the hnl fit window (10sigma)?
+    if self.do_blind:
+      selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
+    print 'sel bkg before: {}'.format(selection_bkg)
+    print 'sel sig before: {}'.format(selection_sig)
+
     # open the file and get the tree
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     if process == 'signal' or process == 'both':
@@ -216,13 +249,18 @@ class Fitter(Tools, MVATools):
       #  print signal_file.filename
       #print '\n\n'
 
+      # define signal weights
+      weight_sig, weight_sig_list = self.getMCWeight(signal_files)
+
       if self.do_cutbased:
         tree_sig = ROOT.TChain(treename)
         for signal_file in signal_files:
           tree_sig.Add(signal_file.filename)
       elif self.do_mva:
         score_label = self.getSignalLabel()
-        tree_sig = self.mva_tools.getTreeWithScore(files=signal_files, training_label=self.training_label, selection='hnl_charge>-99', label=score_label, signal_treename=treename, score_treename='score_tree') 
+        filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename) 
+        file_sig = self.tools.getRootFile(filename_sig)
+        tree_sig = self.tools.getTree(file_sig, treename)
 
     if process == 'background' or process == 'both':
       if self.do_cutbased:
@@ -231,27 +269,9 @@ class Fitter(Tools, MVATools):
           tree_data.Add(data_file.filename) 
       elif self.do_mva:
         score_label = self.getBackgroundLabel()
-        tree_data = self.mva_tools.getTreeWithScore(files=self.data_files, training_label=self.training_label, selection='hnl_charge>-99', label=score_label, signal_treename=treename, score_treename='score_tree') 
-
-    # define ranges and binning
-    mass_window_min, mass_window_max = self.getRegion(nsigma=self.mass_window_size)
-    fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
-
-    # define selection
-    cond_sig = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
-    selection_sig = cond_sig + ' && ' + self.selection
-    selection_bkg = self.selection
-    if self.do_blind:
-      selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
-
-    # define signal weights
-    if process == 'signal' or process == 'both':
-      weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=self.signal_ctau)
-      weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=self.signal_mass, ctau=self.signal_ctau, sigma_B=self.sigma_B, lumi=self.lumi_true, lhe_efficiency=self.lhe_efficiency) #TODO what about isBc?
-      weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
-      if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
-      if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
-      if self.add_weight_muid: weight_sig += ' * ({}) * ({})'.format(self.weight_mu0id, self.weight_muid)
+        filename_data = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, selection=selection_bkg, label=score_label, treename=treename) 
+        file_data = self.tools.getRootFile(filename_data)
+        tree_data = self.tools.getTree(file_data, treename)
 
     if self.do_binned_fit:
       # build the binned data
@@ -260,11 +280,13 @@ class Fitter(Tools, MVATools):
       branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
 
       if process == 'signal' or process == 'both':
-        tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
+        tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig if self.do_cutbased else self.mva_tools.getScoreSelection(selection_sig), wght=weight_sig))
+        print 'sel sig: ({sel}) * ({wght})'.format(sel=selection_sig if self.do_cutbased else self.mva_tools.getScoreSelection(selection_sig), wght=weight_sig)
         rdh_sig = ROOT.RooDataHist("rdh_sig", "rdh_sig", ROOT.RooArgList(self.hnl_mass), hist)
 
       if process == 'background' or process == 'both':
-        tree_data.Project(hist_name, branch_name , selection_bkg)
+        tree_data.Project(hist_name, branch_name , selection_bkg if self.do_cutbased else self.mva_tools.getScoreSelection(selection_bkg))
+        print 'sel bkg: {}'.format(selection_bkg if self.do_cutbased else self.mva_tools.getScoreSelection(selection_bkg))
         #hist.Scale(self.lumi_target/self.lumi_true) #FIXME added in the context of prefit plots for the sps, remove?
         rdh_bkg = ROOT.RooDataHist("rdh_bkg", "rdh_bkg", ROOT.RooArgList(self.hnl_mass), hist)
     else:
@@ -670,6 +692,14 @@ class Fitter(Tools, MVATools):
     signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=self.signal_mass, ctau=self.signal_ctau, strategy=self.reweighting_strategy)
     #TODO do we want to cancel the reweighting for generated points?
 
+    # define selection
+    cond_sig = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
+    selection_sig = cond_sig + ' && ' + self.selection
+    
+    # define signal weights
+    weight_sig, weight_sig_list = self.getMCWeight(signal_files)
+    print 'sel sig before: {}'.format(selection_sig)
+
     # get the tree
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     if self.do_cutbased:
@@ -679,25 +709,16 @@ class Fitter(Tools, MVATools):
         tree_sig.Add(filename)
     elif self.do_mva:
       score_label = self.getSignalLabel()
-      tree_sig = self.mva_tools.getTreeWithScore(files=signal_files, training_label=self.training_label, selection='hnl_charge>-99', label=score_label, signal_treename=treename, score_treename='score_tree') 
-
-    # define selection
-    cond_sig = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
-    selection_sig = cond_sig + ' && ' + self.selection
-
-    # define signal weights
-    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=self.signal_ctau)
-    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=self.signal_mass, ctau=self.signal_ctau, sigma_B=self.sigma_B, lumi=self.lumi_true, lhe_efficiency=self.lhe_efficiency) #TODO what about isBc?
-    weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
-    if self.add_weight_hlt: weight_sig += ' * ({})'.format(self.weight_hlt)
-    if self.add_weight_pu: weight_sig += ' * ({})'.format(self.weight_pusig)
-    if self.add_weight_muid: weight_sig += ' * ({}) * ({})'.format(self.weight_mu0id, self.weight_muid)
+      filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename) 
+      file_sig = self.tools.getRootFile(filename_sig)
+      tree_sig = self.tools.getTree(file_sig, treename)
 
     # create histogram
     hist_name = 'hist_signal_{}'.format(isBc)
     hist = ROOT.TH1D(hist_name, hist_name, self.nbins, fit_window_min, fit_window_max)
     branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
-    tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
+    tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig if self.do_cutbased else self.mva_tools.getScoreSelection(selection_sig), wght=weight_sig))
+    print 'sel sig: ({sel}) * ({wght})'.format(sel=selection_sig if self.do_cutbased else self.mva_tools.getScoreSelection(selection_sig), wght=weight_sig)
 
     # get the number of yields
     n_sig = hist.Integral()
@@ -791,10 +812,12 @@ class Fitter(Tools, MVATools):
   def createDataObsWorkspace(self, label=''):
     print ' --- Creating Data Obs Workspace --- '
     #NOTE if using mva as a selection, the tree is going to be the same as for the background. That is, the signal region
-    # is going to be blinded, if running blinded
+    # is going to be blinded, if running blinded. Reason for that is that the tree is going to be taken the same as for
+    # the background. To change that, modify the score_label below
 
     if label == '': label = self.getBackgroundLabel()
 
+    print 'sel data before: {}'.format(self.selection)
     # getting the observed data
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     if self.do_cutbased:
@@ -803,7 +826,9 @@ class Fitter(Tools, MVATools):
         tree.Add(data_file.filename) 
     elif self.do_mva:
       score_label = label
-      tree = self.mva_tools.getTreeWithScore(files=self.data_files, training_label=self.training_label, selection='hnl_charge>-99', label=score_label, signal_treename=treename, score_treename='score_tree') 
+      filename = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, selection=self.selection, label=score_label, treename=treename) 
+      file_data = self.tools.getRootFile(filename)
+      tree = self.tools.getTree(file_data, treename)
 
     # create binned dataset
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
@@ -811,7 +836,8 @@ class Fitter(Tools, MVATools):
     hist_name = 'hist'
     hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
     branch_name = 'hnl_mass'
-    tree.Project(hist_name, branch_name, self.selection)
+    tree.Project(hist_name, branch_name, self.selection if self.do_cutbased else self.mva_tools.getScoreSelection(self.selection))
+    print 'sel data: {}'.format(self.selection if self.do_cutbased else self.mva_tools.getScoreSelection(self.selection))
     # normalise to the target luminosity
     hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
     data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(hnl_mass), hist)
@@ -846,6 +872,12 @@ class Fitter(Tools, MVATools):
     treename = 'signal_tree'
     branch_name = 'hnl_mass'
     hist_name = 'hist'
+
+    # define selection
+    selection_bkg = self.selection
+    print 'sel bkg before: {}'.format(selection_bkg)
+    #if self.do_blind:
+    #  selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
     
     # get the tree
     if self.do_cutbased:
@@ -855,14 +887,16 @@ class Fitter(Tools, MVATools):
     elif self.do_mva:
       if label == '': label = self.getBackgroundLabel()
       score_label = label
-      tree = self.mva_tools.getTreeWithScore(files=self.data_files, training_label=self.training_label, selection='hnl_charge>-99', label=score_label, signal_treename='signal_tree', score_treename='score_tree') 
-      #FIXME do we already want to apply baseline and category definition here?
+      filename = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, selection=selection_bkg, label=score_label, treename=treename) 
+      file_data = self.tools.getRootFile(filename)
+      tree = self.tools.getTree(file_data, treename)
 
     # create the histogram
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
     hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
     #TODO modify the selection to enforce the blinding in the F-Test
-    tree.Project(hist_name, branch_name, self.selection)
+    tree.Project(hist_name, branch_name, selection_bkg if self.do_cutbased else self.mva_tools.getScoreSelection(selection_bkg))
+    print 'sel bkg: {}'.format(selection_bkg if self.do_cutbased else self.mva_tools.getScoreSelection(selection_bkg))
 
     # normalise to the target luminosity
     hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
@@ -919,7 +953,8 @@ if __name__ == '__main__':
   outdirlabel = 'test_code'
   plot_pulls = False
   #selection = 'sv_lxy>5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.3 && sv_lxysig>100 && abs(mu_dxysig)>15 && abs(pi_dxysig)>20 '
-  selection = 'sv_lxy>1 && sv_lxy<=5 && mu0_charge==mu_charge && mu0_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((mu0_charge!=mu_charge && (mu0_mu_mass < 2.9 || mu0_mu_mass > 3.3)) || (mu0_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.2 && sv_lxysig>100 && abs(mu_dxysig)>12 && abs(pi_dxysig)>25 && score>0.1'
+  #selection = 'sv_lxy>1 && sv_lxy<=5 && mu0_charge==mu_charge && mu0_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((mu0_charge!=mu_charge && (mu0_mu_mass < 2.9 || mu0_mu_mass > 3.3)) || (mu0_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.2 && sv_lxysig>100 && abs(mu_dxysig)>12 && abs(pi_dxysig)>25'
+  selection = 'sv_lxy>1 && sv_lxy<=5 && mu0_charge==mu_charge && mu0_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((mu0_charge!=mu_charge && (mu0_mu_mass < 2.9 || mu0_mu_mass > 3.3)) || (mu0_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.2 && sv_lxysig>100 && abs(mu_dxysig)>12 && abs(pi_dxysig)>25 && score>0.'
   signal_model_label = 'voigtian'
   signal_files = signal_samples['V10_30Dec21_m1p5'] 
   signal_label = 'V12_08Aug22_m3'
@@ -938,6 +973,10 @@ if __name__ == '__main__':
   fit_window_size = 10
 
   reweighting_strategy = 'exclusive_fromlargerctau'
+
+  do_cutbased = False
+  do_mva = True
+  training_label = 'mva/outputs/test_20Aug2022_13h40m03s'
 
   label = 'test'
   #for signal_file in signal_files:
@@ -960,7 +999,7 @@ if __name__ == '__main__':
   ctau = 100.
   category_label = 'lxy1to5_SS'
   category_title = '(1<l_{xy}<=5)cm, SS'
-  fitter = Fitter(signal_label=signal_label, data_files=data_files, selection=selection, mass=mass, ctau=ctau, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, mass_window_size=mass_window_size, fit_window_size=fit_window_size, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag, category_label=category_label, category_title=category_title, reweighting_strategy=reweighting_strategy)
+  fitter = Fitter(signal_label=signal_label, data_files=data_files, selection=selection, do_cutbased=do_cutbased, do_mva=do_mva, training_label=training_label, mass=mass, ctau=ctau, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, mass_window_size=mass_window_size, fit_window_size=fit_window_size, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag, category_label=category_label, category_title=category_title, reweighting_strategy=reweighting_strategy)
   fitter.process_signal()
   #fitter.getSignalYields()
 
