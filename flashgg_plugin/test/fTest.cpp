@@ -869,6 +869,8 @@ int main(int argc, char* argv[]){
       choices.insert(pair<string,int>(*funcType,cache_order));
       pdfs.insert(pair<string,RooAbsPdf*>(Form("%s%d",funcType->c_str(),cache_order),cache_pdf));
 
+      int truthOrder = cache_order;
+
       // Now run loop to determine functions inside envelope
       std::cout << "===> F-TEST and GOF for ENVELOPE determination" << std::endl;
       if (saveMultiPdf){
@@ -913,7 +915,7 @@ int main(int argc, char* argv[]){
 
             if ((prob < upperEnvThreshold) ) { // Looser requirements for the envelope
 
-              //if (gofProb > minGofThreshold || order == truthOrder ) {  // Good looking fit or one of our regular truth functions
+              if (gofProb > minGofThreshold || order == truthOrder ) {  // Good looking fit or one of our regular truth functions
               //if (gofProb == -1 || gofProb > minGofThreshold) { // minimal requirement on the goodness of fit (in the case where the statistics is enough)
 
                 std::cout << "[INFO] Adding to Envelope " << bkgPdf->GetName() << " "<< gofProb 
@@ -927,7 +929,7 @@ int main(int argc, char* argv[]){
                   simplebestFitPdfIndex = storedPdfs.getSize()-1;
                   MinimimNLLSoFar = myNll + bkgPdf->getVariables()->getSize();
                 }
-              //}
+              }
             }
             prev_order=order;
             prev_pdf=bkgPdf;
