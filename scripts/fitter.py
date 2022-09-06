@@ -876,9 +876,9 @@ class Fitter(Tools, MVATools):
 
     # define selection
     selection_bkg = self.selection
-    print 'sel bkg before: {}'.format(selection_bkg)
-    #if self.do_blind:
-    #  selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
+    if self.do_blind:
+      mass_window_min, mass_window_max = self.getRegion(nsigma=self.mass_window_size)
+      selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
     
     # get the tree
     if self.do_cutbased:

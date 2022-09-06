@@ -306,7 +306,7 @@ class DatacardsMaker(Tools):
 
   def runFTestRoutine(self, mass, window_size, category, selection, label):
     # produce input workspace 
-    fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, lumi_target=self.lumi_target)
+    fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_blind=self.do_blind, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, lumi_target=self.lumi_target)
     fitter.createFTestInputWorkspace(label=label)
 
     # run the F-test and save the output multipdf in a workspace

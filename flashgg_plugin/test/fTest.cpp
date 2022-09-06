@@ -75,7 +75,7 @@ RooAbsPdf* getPdf(PdfModelBuilder &pdfsModel, string type, int order, const char
   }
 }
 
-void runFit(RooAbsPdf *pdf, RooDataSet *data, double *NLL, int *stat_t, int MaxTries){
+void runFit(RooAbsPdf *pdf, RooDataSet *data, double *NLL, int *stat_t, int MaxTries, TString fit_range){
 /* Basic fitting routine, fit is not extended */
 
   int ntries=0;
@@ -85,7 +85,7 @@ void runFit(RooAbsPdf *pdf, RooDataSet *data, double *NLL, int *stat_t, int MaxT
   double minnll=10e8;
   while (stat!=0){
     if (ntries>=MaxTries) break;
-    RooFitResult *fitTest = pdf->fitTo(*data,RooFit::Save(1),RooFit::Minimizer("Minuit2","minimize")); 
+    RooFitResult *fitTest = pdf->fitTo(*data,RooFit::Range(fit_range),RooFit::Save(1),RooFit::Minimizer("Minuit2","minimize")); 
     stat = fitTest->status();
     minnll = fitTest->minNll();
     if (stat!=0) params_test->assignValueOnly(fitTest->randomizePars());
@@ -95,7 +95,7 @@ void runFit(RooAbsPdf *pdf, RooDataSet *data, double *NLL, int *stat_t, int MaxT
   *NLL = minnll;
 }
 
-double getProbabilityFtest(double chi2, int ndof,RooAbsPdf *pdfNull, RooAbsPdf *pdfTest, RooRealVar *mass, RooDataSet *data, std::string name, int nBinsForFit){
+double getProbabilityFtest(double chi2, int ndof,RooAbsPdf *pdfNull, RooAbsPdf *pdfTest, RooRealVar *mass, RooDataSet *data, std::string name, int nBinsForFit, TString fit_range){
 /* Get probability of the f-test. Currently toys are not used and only simple TMath::Prob is used. */
  
   double prob_asym = TMath::Prob(chi2,ndof);
@@ -104,8 +104,8 @@ double getProbabilityFtest(double chi2, int ndof,RooAbsPdf *pdfNull, RooAbsPdf *
   int ndata = data->sumEntries();
   
   // fit the pdfs to the data and keep this fit Result (for randomizing)
-  RooFitResult *fitNullData = pdfNull->fitTo(*data, RooFit::Save(1), RooFit::Strategy(1), RooFit::Minimizer("Minuit2","minimize"), RooFit::PrintLevel(-1)); //FIXME
-  RooFitResult *fitTestData = pdfTest->fitTo(*data, RooFit::Save(1), RooFit::Strategy(1), RooFit::Minimizer("Minuit2","minimize"), RooFit::PrintLevel(-1)); 
+  RooFitResult *fitNullData = pdfNull->fitTo(*data, RooFit::Range(fit_range), RooFit::Save(1), RooFit::Strategy(1), RooFit::Minimizer("Minuit2","minimize"), RooFit::PrintLevel(-1)); //FIXME
+  RooFitResult *fitTestData = pdfTest->fitTo(*data, RooFit::Range(fit_range), RooFit::Save(1), RooFit::Strategy(1), RooFit::Minimizer("Minuit2","minimize"), RooFit::PrintLevel(-1)); 
 
   // Ok we want to check the distribution in toys then 
   // Step 1, cache the parameters of each pdf so as not to upset anything 
@@ -152,7 +152,7 @@ double getProbabilityFtest(double chi2, int ndof,RooAbsPdf *pdfNull, RooAbsPdf *
     int MaxTries = 2;
     while (stat_n!=0){
       if (ntries>=MaxTries) break;
-      RooFitResult *fitNull = pdfNull->fitTo(*binnedtoy,RooFit::Save(1),RooFit::Strategy(1)
+      RooFitResult *fitNull = pdfNull->fitTo(*binnedtoy, RooFit::Range(fit_range), RooFit::Save(1),RooFit::Strategy(1)
                                               ,RooFit::Minimizer("Minuit2","minimize"),RooFit::Minos(0),RooFit::Hesse(0),RooFit::PrintLevel(-1));
       //,RooFit::Optimize(0));
 
@@ -165,7 +165,7 @@ double getProbabilityFtest(double chi2, int ndof,RooAbsPdf *pdfNull, RooAbsPdf *
     ntries = 0;
     while (stat_t!=0){
       if (ntries>=MaxTries) break;
-      RooFitResult *fitTest = pdfTest->fitTo(*binnedtoy,RooFit::Save(1),RooFit::Strategy(1)
+      RooFitResult *fitTest = pdfTest->fitTo(*binnedtoy, RooFit::Range(fit_range), RooFit::Save(1),RooFit::Strategy(1)
                                              ,RooFit::Minimizer("Minuit2","minimize"),RooFit::Minos(0),RooFit::Hesse(0),RooFit::PrintLevel(-1));
       nllTest = fitTest->minNll();
       stat_t = fitTest->status();
@@ -411,7 +411,7 @@ void plot(RooRealVar *mass, RooAbsPdf *pdf, RooDataSet *data, string name,vector
 }
 
 
-void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet *data, string name, vector<string> category_label, int cat, float fit_window_min, float fit_window_max, float mass_window_min, float mass_window_max, int nBinsForPlot, int bestFitPdf=-1){
+void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet *data, string name, vector<string> category_label, int cat, float fit_window_min, float fit_window_max, float mass_window_min, float mass_window_max, int nBinsForPlot, TString fit_range, int bestFitPdf=-1){
 /* Plot MultiPdf vs data */
   
   int color[7] = {kBlue,kRed,kMagenta,kGreen+1,kOrange+7,kAzure+10,kBlack};
@@ -446,7 +446,7 @@ void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet
     if (icat<=6) col=color[icat];
     else {col=kBlack; style++;}
     catIndex->setIndex(icat);
-    pdfs->getCurrentPdf()->fitTo(*data,RooFit::Minos(0),RooFit::Minimizer("Minuit2","minimize"));  
+    pdfs->getCurrentPdf()->fitTo(*data,RooFit::Range(fit_range),RooFit::Minos(0),RooFit::Minimizer("Minuit2","minimize"));  
     pdfs->getCurrentPdf()->plotOn(plot,LineColor(col),LineStyle(style));//,RooFit::NormRange("fitdata_1,fitdata_2"));
     TObject *pdfLeg = plot->getObject(int(plot->numItems()-1));
     std::string ext = "";
@@ -543,7 +543,7 @@ void transferMacros(TFile *inFile, TFile *outFile){
   }
 }
 
-int getBestFitFunction(RooMultiPdf *bkg, RooDataSet *data, RooCategory *cat, bool silent=false){
+int getBestFitFunction(RooMultiPdf *bkg, RooDataSet *data, RooCategory *cat, TString fit_range, bool silent=false){
 /* Get index of the best fit pdf (minimum NLL, including correction) among functions in the multipdf.
    All fits are performed again. */
 
@@ -583,7 +583,7 @@ int getBestFitFunction(RooMultiPdf *bkg, RooDataSet *data, RooCategory *cat, boo
     //minim.minimize("Minuit2","minimize");
     double minNll=0; //(nllm->getVal())+bkg->getCorrection();
     int fitStatus=1;    
-    runFit(bkg->getCurrentPdf(),data,&minNll,&fitStatus,/*max iterations*/7);
+    runFit(bkg->getCurrentPdf(),data,&minNll,&fitStatus,/*max iterations*/7, fit_range);
     // Add the penalty
 
     minNll=minNll+bkg->getCorrection();
@@ -759,6 +759,18 @@ int main(int argc, char* argv[]){
 
   std::string ext = "13TeV";
 
+  // define fit range
+  mass->setRange("full", fit_window_min, fit_window_max);
+  mass->setRange("sideband_left", fit_window_min, mass_window_min);
+  mass->setRange("sideband_right", mass_window_max, fit_window_max);
+  TString fit_range;
+  if(BLIND){
+    fit_range = "sideband_left,sideband_right";
+  }
+  else{
+    fit_range = "full";
+  }
+
   std::cout << "[INFO] Number of categories to process: " << ncats << std::endl;
   for (int cat=startingCategory; cat<ncats; cat++){
 
@@ -839,13 +851,13 @@ int main(int argc, char* argv[]){
 
           //bkgPdf->Print();
           int fitStatus = 0;
-          runFit(bkgPdf,data,&thisNll,&fitStatus,/*max iterations*/7);//bkgPdf->fitTo(*data,Save(true),RooFit::Minimizer("Minuit2","minimize"));
+          runFit(bkgPdf,data,&thisNll,&fitStatus,/*max iterations*/7, fit_range);//bkgPdf->fitTo(*data,Save(true),RooFit::Minimizer("Minuit2","minimize"));
           if (fitStatus!=0) std::cout << "[WARNING] Warning -- Fit status for " << bkgPdf->GetName() << " at " << fitStatus <<std::endl;
        
           chi2 = 2.*(prevNll-thisNll);
           if (chi2<0. && order>1) chi2=0.;
           if (prev_pdf!=NULL){
-            prob = getProbabilityFtest(chi2,order-prev_order,prev_pdf,bkgPdf,mass,data,Form("%s/Ftest_from_%s%d_cat%d.pdf",outDir.c_str(),funcType->c_str(),order,(cat+catOffset)),nBinsForFit);
+            prob = getProbabilityFtest(chi2,order-prev_order,prev_pdf,bkgPdf,mass,data,Form("%s/Ftest_from_%s%d_cat%d.pdf",outDir.c_str(),funcType->c_str(),order,(cat+catOffset)),nBinsForFit,fit_range);
             std::cout << "[INFO] F-test Prob == " << prob << std::endl;
           } else {
             prob = 0;
@@ -895,7 +907,7 @@ int main(int argc, char* argv[]){
             // Fit and chi-square calculation is repeated
             //RooFitResult *fitRes;
             int fitStatus=0;
-            runFit(bkgPdf,data,&thisNll,&fitStatus,/*max iterations*/7);//bkgPdf->fitTo(*data,Save(true),RooFit::Minimizer("Minuit2","minimize"));
+            runFit(bkgPdf,data,&thisNll,&fitStatus,/*max iterations*/7, fit_range);//bkgPdf->fitTo(*data,Save(true),RooFit::Minimizer("Minuit2","minimize"));
             //thisNll = fitRes->minNll();
             if (fitStatus!=0) std::cout << "[WARNING] Warning -- Fit status for " << bkgPdf->GetName() << " at " << fitStatus <<std::endl;
             double myNll = 2.*thisNll;
@@ -960,7 +972,7 @@ int main(int argc, char* argv[]){
       RooRealVar nBackground("qcd_multipdf_norm","nbkg",data->sumEntries(),0,3*data->sumEntries()); //TODO do we want to keep this strategy?, make sure normalisation is correct
       //nBackground.removeRange(); // bug in roofit will break combine until dev branch brought in
       //double check the best pdf!
-      int bestFitPdfIndex = getBestFitFunction(pdf,data,&catIndex,!verbose);
+      int bestFitPdfIndex = getBestFitFunction(pdf,data,&catIndex,fit_range,!verbose);
       catIndex.setIndex(bestFitPdfIndex);
       std::cout << "// ------------------------------------------------------------------------- //" <<std::endl; 
       std::cout << "[INFO] Created MultiPdf " << pdf->GetName() << ", in Category " << cat << " with a total of " << catIndex.numTypes() << " pdfs"<< std::endl;
@@ -978,7 +990,7 @@ int main(int argc, char* argv[]){
       outputws->import(catIndex);
       //outputws->import(dataBinned);
       outputws->import(*data);
-      plot(mass,pdf,&catIndex,data,Form("%s/multipdf_m_%s_cat_%s",outDir.c_str(),mN_label.c_str(),catname.c_str()),category_label,cat,fit_window_min,fit_window_max,mass_window_min,mass_window_max,nBinsForPlot,bestFitPdfIndex);
+      plot(mass,pdf,&catIndex,data,Form("%s/multipdf_m_%s_cat_%s",outDir.c_str(),mN_label.c_str(),catname.c_str()),category_label,cat,fit_window_min,fit_window_max,mass_window_min,mass_window_max,nBinsForPlot,fit_range,bestFitPdfIndex);
 
     } // end if saveMultiPdf
 
