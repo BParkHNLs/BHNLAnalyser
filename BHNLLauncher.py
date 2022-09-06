@@ -14,8 +14,7 @@ sys.path.append('./cfgs')
 
 output_label = 'V12_08Aug22'
 #tag = 'study_bs_weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_looseid_max3e6_smalltable_v2'
-tag = 'test_mva'
-#tag = 'baseline_performance_v1'
+tag = 'validation_llpapr22'
 cfg_filename = 'V12_08Aug22_cfg.py'
 submit_batch = True
 do_plotter = False
@@ -30,13 +29,14 @@ do_plot_limits = True
 ### other
 do_check_config = True
 do_standard_queue = True
+memory = 2000
 
 #'------------------------------------------------------'
 
 
 
 class BHNLLauncher(object):
-  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits, do_check_config, do_standard_queue):
+  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits, do_check_config, do_standard_queue, memory):
     self.cfg_name = cfg_name
     self.outlabel = outlabel
     self.tag = tag
@@ -49,6 +49,7 @@ class BHNLLauncher(object):
     self.do_plot_limits = do_plot_limits
     self.do_check_config = do_check_config
     self.do_standard_queue = do_standard_queue
+    self.memory = memory
 
 
   def printHeader(self):
@@ -294,8 +295,9 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p {que} --mem 4500 --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p {que} --mem {mem} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
           que = 'standard' if self.do_standard_queue else 'short',
+          mem = self.memory,
           ld = logdir_name,
           lbl=label,
           ) 
@@ -535,7 +537,8 @@ if __name__ == '__main__':
                           do_produce_limits=do_produce_limits, 
                           do_plot_limits=do_plot_limits,
                           do_check_config=do_check_config,
-                          do_standard_queue=do_standard_queue
+                          do_standard_queue=do_standard_queue,
+                          memory=memory,
                           )
   launcher.process()
 
