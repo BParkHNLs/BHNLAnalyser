@@ -96,10 +96,10 @@ class Fitter(Tools, MVATools):
     return label
 
 
-  def getMCWeight(self, signal_files):
+  def getMCWeight(self, signal_files, lumi):
     weight_sig_list = ['gen_hnl_ct']
     weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=self.signal_ctau)
-    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=self.signal_mass, ctau=self.signal_ctau, sigma_B=self.sigma_B, lumi=self.lumi_true, lhe_efficiency=self.lhe_efficiency) #TODO what about isBc?
+    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=self.signal_mass, ctau=self.signal_ctau, sigma_B=self.sigma_B, lumi=lumi, lhe_efficiency=self.lhe_efficiency) #TODO what about isBc?
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
     if self.add_weight_hlt: 
       weight_sig += ' * ({})'.format(self.weight_hlt)
@@ -250,7 +250,8 @@ class Fitter(Tools, MVATools):
       #print '\n\n'
 
       # define signal weights
-      weight_sig, weight_sig_list = self.getMCWeight(signal_files)
+      weight_sig, weight_sig_list = self.getMCWeight(signal_files, lumi=self.lumi_true) 
+      #TODO do we want to have the prefit plots scaled to the target lumi? In which case, also scale the background
 
       if self.do_cutbased:
         tree_sig = ROOT.TChain(treename)
@@ -697,7 +698,7 @@ class Fitter(Tools, MVATools):
     selection_sig = cond_sig + ' && ' + self.selection
     
     # define signal weights
-    weight_sig, weight_sig_list = self.getMCWeight(signal_files)
+    weight_sig, weight_sig_list = self.getMCWeight(signal_files, lumi=self.lumi_target)
     print 'sel sig before: {}'.format(selection_sig)
 
     # get the tree
