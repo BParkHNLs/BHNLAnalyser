@@ -77,16 +77,18 @@ selection['baseline_08Aug22'] = Selection(
       '((mu0_charge!=mu_charge && abs(mu0_mu_mass-3.097)>0.15 && abs(mu0_mu_mass-3.686)>0.08 && abs(mu0_mu_mass-1.019)>0.01) || (mu0_charge==mu_charge))',
       '((mu0_charge==mu_charge && abs(mu0_pi_mass-3.097)>0.05 && abs(mu0_pi_mass-1.76)>0.05) || (mu0_charge!=mu_charge))',
       'sv_lxyz < 100',
+      #'sv_lxysig>30',
     ])
 )
 
 selection['tag_and_probe'] = Selection(
     flat = ' && '.join([
-      'mass > 3.05 && mass < 3.15',
+      #'mass > 3.05 && mass < 3.15',
       'pt > 12',
-      'abs(probe_dxy) > 0.01',
       'probe_pt > 2.5',
       'lxy_sig > 10',
+      #'abs(probe_dxy_bs) > 0.015',
+      'probe_isloose == 1',
     ])
 )
 
