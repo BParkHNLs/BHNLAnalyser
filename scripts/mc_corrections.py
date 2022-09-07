@@ -62,15 +62,16 @@ class Plotter(Tools):
     return max_range
 
 
-  def createHisto(self, tree, quantity, hist_name='hist', branchname='flat', weight=-99, selection='', scale='', smear=''):
+  def createHisto(self, tree, quantity, hist_name='hist', branchname='flat', weight=-99, selection='', scale=None, smear=None):
     ROOT.TH1.SetDefaultSumw2()
     hist = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
 
-    if 'signal' in hist_name:
+    if scale != None and smear != None and 'signal' in hist_name:
       qte = '({})*({})*({})'.format(scale, smear, quantity.name_flat)
     else:
       qte = quantity.name_flat
-      if '_uncorrected' in qte: qte = qte.replace('_uncorrected', '')
+      if 'signal' not in hist_name and '_uncorrected' in qte: qte = qte.replace('_uncorrected', '')
+      if 'signal' not in hist_name and '_corrected_weight' in qte: qte = qte.replace('_corrected_weight', '')
     #print qte
 
     if quantity.name_flat != 'probe_dxy_bs_uncorrected':
@@ -87,6 +88,109 @@ class Plotter(Tools):
 
     hist.SetDirectory(0)
     return hist
+
+
+  def computeWeight(self):
+
+    # get the mc distribution
+    signal_hists = [] # in principle not needed, since only one mc sample, but keep it generic
+    for signal_file in self.signal_files:
+      # get the tree
+      f_sig = self.tools.getRootFile(signal_file.filename)
+      tree_sig = self.tools.getTree(f_sig, 'tree')
+    
+      # define selection and weight
+      matching_selection = 'ismatched==1'
+      selection_signal = matching_selection if self.selection == '' else matching_selection + ' && ' + self.selection
+      ## keep the mc non-weighted
+      weight_sig = '(1)'
+
+      # define the histogram
+      hist_signal_name = 'hist_signal_{}'.format(self.quantity.label)
+      hist_signal = self.createHisto(tree_sig, self.quantity, hist_name=hist_signal_name, branchname='flat', selection=selection_signal, weight=weight_sig)
+      hist_signal.Sumw2()
+    
+      # overflow
+      overflow_signal_tot = hist_signal.GetBinContent(hist_signal.GetNbinsX()) + hist_signal.GetBinContent(hist_signal.GetNbinsX()+1)
+      error_overflow_signal_tot = math.sqrt(math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()), 2) + math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()+1), 2)) 
+      hist_signal.SetBinContent(hist_signal.GetNbinsX(), overflow_signal_tot)
+      hist_signal.SetBinError(hist_signal.GetNbinsX(), error_overflow_signal_tot)
+      hist_signal.SetBinContent(hist_signal.GetNbinsX()+1, 0)
+      hist_signal.SetBinError(hist_signal.GetNbinsX()+1, 0)
+
+      # normalise to unity
+      int_signal = hist_signal.Integral()
+      if int_signal != 0: hist_signal.Scale(1/int_signal)
+      #hist_signal.SetFillColor(ROOT.kOrange+7)
+      #hist_signal.SetFillStyle(3005)
+      signal_hists.append(hist_signal)
+
+    # get the data distribution (with sweights on)
+    hist_data_tot = ROOT.TH1D('hist_data_tot', 'hist_data_tot', self.quantity.nbins, self.quantity.bin_min, self.quantity.bin_max)
+    hist_data_tot.Sumw2()
+
+    int_data_tot = 0.
+    overflow_data_tot = 0
+    error_overflow_data_tot = 0.
+
+    for idata, data_file in enumerate(self.data_files): # again, not needed here, but kept for generality
+      # get the tree
+      f_data = self.tools.getRootFile(data_file.filename)
+      tree_data = self.tools.getTree(f_data, 'tree')
+
+      # get the histogram
+      hist_data_name = 'hist_data_{}'.format(self.quantity.label)
+      ## apply sweight on data
+      hist_data = self.createHisto(tree_data, self.quantity, hist_name=hist_data_name, branchname='flat', selection=self.selection, weight='nbkg_sw')
+      hist_data.Sumw2()
+
+      # overflow
+      overflow_data_tot = (hist_data.GetBinContent(hist_data.GetNbinsX()) + hist_data.GetBinContent(hist_data.GetNbinsX()+1))
+      error_overflow_data_tot += math.sqrt(math.pow(hist_data.GetBinError(hist_data.GetNbinsX()), 2) + math.pow(hist_data.GetBinError(hist_data.GetNbinsX()+1), 2)) 
+      hist_data.SetBinContent(hist_data.GetNbinsX(), overflow_data_tot)
+      hist_data.SetBinError(hist_data.GetNbinsX(), error_overflow_data_tot)
+      hist_data.SetBinContent(hist_data.GetNbinsX()+1, 0)
+      hist_data.SetBinError(hist_data.GetNbinsX()+1, 0)
+      
+      # normalise to unity
+      int_data_tot += hist_data.Integral()
+      hist_data_tot.Add(hist_data)
+
+      if hist_data.Integral() != 0: 
+        hist_data.Scale(1./hist_data.Integral())
+
+    if int_data_tot != 0.: hist_data_tot.Scale(1./int_data_tot)
+
+    #hist_data_tot.SetMarkerStyle(20)
+
+    # get the ratio
+    hist_ratio = self.tools.getRatioHistogram(hist_data_tot, signal_hists[0])
+    hist_ratio.Sumw2()
+
+    # overflow (not needed)
+    overflow_ratio = (hist_ratio.GetBinContent(hist_ratio.GetNbinsX()) + hist_ratio.GetBinContent(hist_ratio.GetNbinsX()+1))
+    error_overflow_ratio = math.sqrt(math.pow(hist_ratio.GetBinError(hist_ratio.GetNbinsX()), 2) + math.pow(hist_ratio.GetBinError(hist_ratio.GetNbinsX()+1), 2)) 
+    hist_ratio.SetBinContent(hist_ratio.GetNbinsX(), overflow_ratio)
+    hist_ratio.SetBinError(hist_ratio.GetNbinsX(), error_overflow_ratio)
+    hist_ratio.SetBinContent(hist_ratio.GetNbinsX()+1, 0)
+    hist_ratio.SetBinError(hist_ratio.GetNbinsX()+1, 0)
+
+    hist_ratio.SetLineWidth(2)
+    hist_ratio.SetMarkerStyle(20)
+    hist_ratio.SetTitle('')
+    hist_ratio.GetXaxis().SetTitle(self.quantity.title)
+
+    hist_ratio.GetYaxis().SetTitle('Data/MC')
+    ROOT.gStyle.SetOptStat(0)
+
+    # store the weight in a rootfile
+    root_file = ROOT.TFile('mc_weight_{}.root'.format(self.quantity.label), 'RECREATE')
+    #hist_data_tot.Write()
+    #signal_hists[0].Write()
+    hist_ratio.Write()
+    root_file.Close()
+
+    print '-> mc_weight_{}.root created'.format(self.quantity.label)
 
 
   def plot(self, 
@@ -201,7 +305,7 @@ class Plotter(Tools):
         f_sig = self.tools.getRootFile(signal_file.filename)
         tree_sig = self.tools.getTree(f_sig, treename)
 
-        hist_signal_name = 'hist_signal_{}_{}_{}'.format(self.quantity, scale, smear)
+        hist_signal_name = 'hist_signal_{}_{}_{}'.format(self.quantity.label, scale, smear)
         matching_selection = 'ismatched==1' if branchname == 'flat' else 'BToMuMuPi_isMatched==1'
         selection_signal = matching_selection if self.selection == '' else matching_selection + ' && ' + self.selection
         weight_sig = '(1)'
@@ -314,8 +418,12 @@ class Plotter(Tools):
     else:
       outputdir = self.tools.getOutDir('/eos/home-a/anlyon/www/BHNL/mc_corrections', outdirlabel=quantity.label, do_log=do_log)
     
-    canv.SaveAs('{}/{}_scale{}_smear{}.png'.format(outputdir, self.quantity.label, str(round(scale, 3)).replace('.', 'p'), smear[smear.rfind('_')+1:]))
-    canv.SaveAs('{}/{}_scale{}_smear{}.pdf'.format(outputdir, self.quantity.label, str(round(scale, 3)).replace('.', 'p'), smear[smear.rfind('_')+1:]))
+    if scale != None and smear != None:
+      name = '{}_scale{}_smear{}.png'.format(self.quantity.label, str(round(scale, 3)).replace('.', 'p'), smear[smear.rfind('_')+1:])
+    else:
+      name = '{}.png'.format(self.quantity.label)
+    canv.SaveAs('{}/{}.png'.format(outputdir, name))
+    canv.SaveAs('{}/{}.pdf'.format(outputdir, name))
 
 
 
@@ -332,7 +440,7 @@ if __name__ == '__main__':
 
   baseline_selection = selection['tag_and_probe'].flat
 
-  save_eos = True
+  save_eos = False
 
   scales = np.arange(1., 1.3, 0.01)
   smears = [
@@ -354,16 +462,29 @@ if __name__ == '__main__':
             'smeared_corr_0p45',
             'smeared_corr_0p5',
            ]
-  #scales = [1.1, 1.15]
-  #smears = ['smeared_corr_0p05', 'smeared_corr_0p1', 'smeared_corr_0p5']
+  scales = [None]
+  smears = [None]
 
-  for quantity in quantities:
-    plotter = Plotter(quantity=quantity, data_files=data_files, signal_files=signal_files, selection=baseline_selection, save_eos=save_eos)
-    for scale in scales:
-      for smear in smears:
-        plotter.plot(scale=scale, smear=smear, do_log=True)
-        plotter.plot(scale=scale, smear=smear, do_log=False)
+  do_scanCorrections = True
+  do_createWeightFile = False
 
+  if do_scanCorrections:
+    for quantity in quantities:
+      plotter = Plotter(quantity=quantity, data_files=data_files, signal_files=signal_files, selection=baseline_selection, save_eos=save_eos)
+      for scale in scales:
+        for smear in smears:
+          plotter.plot(scale=scale, smear=smear, do_log=True)
+          plotter.plot(scale=scale, smear=smear, do_log=False)
+
+  if do_createWeightFile:
+    dxy = Quantity(name_flat='probe_dxy_bs_uncorrected', label='probe_dxy_bs', title='probe #mu |d_{xy}| (BS) [cm]', nbins=60, bin_min=0, bin_max=0.3)
+    dxy_sig = Quantity(name_flat='probe_dxy_sig_bs_uncorrected', label='probe_dxy_sig_bs', title='probe #mu |d_{xy}| significance (BS)', nbins=60, bin_min=0, bin_max=60)
+
+    plotter = Plotter(quantity=dxy, data_files=data_files, signal_files=signal_files, selection=baseline_selection)
+    plotter.computeWeight()
+
+    plotter = Plotter(quantity=dxy_sig, data_files=data_files, signal_files=signal_files, selection=baseline_selection)
+    plotter.computeWeight()
 
 
 
