@@ -5,6 +5,7 @@ import ROOT
 from ROOT import gROOT, gStyle
 import math
 import numpy as np
+from array import array
 
 from tools import Tools
 
@@ -68,6 +69,8 @@ class Plotter(Tools):
 
     if scale != None and smear != None and 'signal' in hist_name:
       qte = '({})*({})*({})'.format(scale, smear, quantity.name_flat)
+    elif scale != None and smear == None and 'signal' in hist_name:
+      qte = '({})*({})'.format(scale, quantity.name_flat)
     else:
       qte = quantity.name_flat
       if 'signal' not in hist_name and '_uncorrected' in qte: qte = qte.replace('_uncorrected', '')
@@ -91,7 +94,9 @@ class Plotter(Tools):
 
 
   def computeWeight(self):
-
+    '''
+      Function that creates weights as the data/MC ratio
+    '''
     # get the mc distribution
     signal_hists = [] # in principle not needed, since only one mc sample, but keep it generic
     for signal_file in self.signal_files:
@@ -191,6 +196,138 @@ class Plotter(Tools):
     root_file.Close()
 
     print '-> mc_weight_{}.root created'.format(self.quantity.label)
+
+
+  def createScaleDistribution(self):
+    '''
+      Function that, in each bin, fetches the scale that makes the
+      mc agree with data 
+
+      NB: please do not mind the sketchy syntax...
+    '''
+
+    bins = np.arange(1., 61., 1)
+    bin_min = 0.
+
+    canv = self.tools.createTCanvas(name='canv', dimx=1200, dimy=1000)
+    hist_scale = ROOT.TH1D('hist_scale', 'hist_scale', 30, 0.9, 1.5)
+
+    f_sig = self.tools.getRootFile(self.signal_files[0].filename)
+    tree_sig = self.tools.getTree(f_sig, 'tree')
+
+    f_data = self.tools.getRootFile(self.data_files[0].filename)
+    tree_data = self.tools.getTree(f_data, 'tree')
+
+    tree = ROOT.TTree('tree', 'tree')
+    the_scale = array('d', [0])
+    tree.Branch('scale', the_scale, 'scale/D')
+    
+    for bin_max in bins:
+      print '\n{} {}'.format(bin_min, bin_max)
+      quantity = Quantity(name_flat='probe_dxy_sig_bs_uncorrected', label='probe_dxy_sig_bs', title='probe #mu |d_{xy}| significance (BS)', nbins=1, bin_min=bin_min, bin_max=bin_max)
+      bin_min = bin_max
+      scale = 0.95
+      ratio = -1
+      #cond = (ratio > 0.985 and ratio < 1.015)
+      while (ratio < 0.985 or ratio > 1.015):
+        # get the mc distribution
+        signal_hists = [] # in principle not needed, since only one mc sample, but keep it generic
+        for signal_file in self.signal_files:
+          # get the tree
+          #f_sig = self.tools.getRootFile(signal_file.filename)
+          #tree_sig = self.tools.getTree(f_sig, 'tree')
+        
+          # define selection and weight
+          matching_selection = 'ismatched==1'
+          selection_signal = matching_selection if self.selection == '' else matching_selection + ' && ' + self.selection
+          ## keep the mc non-weighted
+          weight_sig = '(1)'
+
+          # define the histogram
+          hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(quantity.label, bin_min, bin_max, scale)
+          hist_signal = self.createHisto(tree_sig, quantity, hist_name=hist_signal_name, branchname='flat', selection=selection_signal, weight=weight_sig, scale=scale)
+          hist_signal.Sumw2()
+        
+          # overflow
+          if bin_max == 60.:
+            overflow_signal_tot = hist_signal.GetBinContent(hist_signal.GetNbinsX()) + hist_signal.GetBinContent(hist_signal.GetNbinsX()+1)
+            error_overflow_signal_tot = math.sqrt(math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()), 2) + math.pow(hist_signal.GetBinError(hist_signal.GetNbinsX()+1), 2)) 
+            hist_signal.SetBinContent(hist_signal.GetNbinsX(), overflow_signal_tot)
+            hist_signal.SetBinError(hist_signal.GetNbinsX(), error_overflow_signal_tot)
+            hist_signal.SetBinContent(hist_signal.GetNbinsX()+1, 0)
+            hist_signal.SetBinError(hist_signal.GetNbinsX()+1, 0)
+
+          # normalise to unity
+          int_signal = hist_signal.Integral()
+          if int_signal != 0: hist_signal.Scale(1/int_signal)
+          #hist_signal.SetFillColor(ROOT.kOrange+7)
+          #hist_signal.SetFillStyle(3005)
+          signal_hists.append(hist_signal)
+
+        # get the data distribution (with sweights on)
+        hist_data_tot_name = 'hist_data_tot_{}_{}_{}_{}'.format(quantity.label, bin_min, bin_max, scale)
+        hist_data_tot = ROOT.TH1D(hist_data_tot_name, hist_data_tot_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
+        hist_data_tot.Sumw2()
+
+        int_data_tot = 0.
+        overflow_data_tot = 0
+        error_overflow_data_tot = 0.
+
+        for idata, data_file in enumerate(self.data_files): # again, not needed here, but kept for generality
+          # get the tree
+          #f_data = self.tools.getRootFile(data_file.filename)
+          #tree_data = self.tools.getTree(f_data, 'tree')
+
+          # get the histogram
+          hist_data_name = 'hist_data_{}_{}_{}_{}'.format(quantity.label, bin_min, bin_max, scale)
+          ## apply sweight on data
+          hist_data = self.createHisto(tree_data, quantity, hist_name=hist_data_name, branchname='flat', selection=self.selection, weight='nbkg_sw')
+          hist_data.Sumw2()
+
+          # overflow
+          if bin_max == 60.:
+            overflow_data_tot = (hist_data.GetBinContent(hist_data.GetNbinsX()) + hist_data.GetBinContent(hist_data.GetNbinsX()+1))
+            error_overflow_data_tot += math.sqrt(math.pow(hist_data.GetBinError(hist_data.GetNbinsX()), 2) + math.pow(hist_data.GetBinError(hist_data.GetNbinsX()+1), 2)) 
+            hist_data.SetBinContent(hist_data.GetNbinsX(), overflow_data_tot)
+            hist_data.SetBinError(hist_data.GetNbinsX(), error_overflow_data_tot)
+            hist_data.SetBinContent(hist_data.GetNbinsX()+1, 0)
+            hist_data.SetBinError(hist_data.GetNbinsX()+1, 0)
+          
+          # normalise to unity
+          int_data_tot += hist_data.Integral()
+          hist_data_tot.Add(hist_data)
+
+          if hist_data.Integral() != 0: 
+            hist_data.Scale(1./hist_data.Integral())
+
+        if int_data_tot != 0.: hist_data_tot.Scale(1./int_data_tot)
+
+        # get the ratio
+        #hist_ratio = self.tools.getRatioHistogram(hist_data_tot, signal_hists[0])
+        #hist_ratio.Sumw2()
+        
+        if signal_hists[0].GetBinContent(0) != 0:
+          ratio = hist_data_tot.GetBinContent(0) / signal_hists[0].GetBinContent(0)
+        else: ratio = 0
+        print 'scale: {}'.format(scale)
+        print 'ratio: {}'.format(ratio)
+        scale = scale + 0.01
+        if ratio == 0: break
+        if scale > 1.5: break
+        if ratio > 0.985 and ratio < 1.015: 
+          print 'fill histo'
+          hist_scale.Fill(scale)
+          the_scale[0] = scale
+          tree.Fill()
+
+    hist_scale.Draw()
+    canv.SaveAs('myPlots/mc_corrections/scales.png')
+
+    # store the weight in a rootfile
+    root_file = ROOT.TFile('scales.root', 'RECREATE')
+    #hist_scale.Write()
+    tree.Write()
+    root_file.Close()
 
 
   def plot(self, 
@@ -333,7 +470,6 @@ class Plotter(Tools):
         hist_signal.SetFillColor(ROOT.kOrange+7)
         hist_signal.SetFillStyle(3005)
         signal_hists.append(hist_signal)
-
       
     frame = hist_data_tot.Clone('frame')
 
@@ -465,8 +601,9 @@ if __name__ == '__main__':
   scales = [None]
   smears = [None]
 
-  do_scanCorrections = True
+  do_scanCorrections = False
   do_createWeightFile = False
+  do_createScaleDistribution = True
 
   if do_scanCorrections:
     for quantity in quantities:
@@ -485,6 +622,10 @@ if __name__ == '__main__':
 
     plotter = Plotter(quantity=dxy_sig, data_files=data_files, signal_files=signal_files, selection=baseline_selection)
     plotter.computeWeight()
+
+  if do_createScaleDistribution:
+    plotter = Plotter(data_files=data_files, signal_files=signal_files, selection=baseline_selection)
+    plotter.createScaleDistribution()
 
 
 
