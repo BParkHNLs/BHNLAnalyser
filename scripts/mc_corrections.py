@@ -3,6 +3,7 @@ import os.path
 from os import path
 import ROOT
 from ROOT import gROOT, gStyle
+from ROOT import RooFit
 import math
 import numpy as np
 from array import array
@@ -73,6 +74,10 @@ class Plotter(Tools):
       qte = '({})*({})'.format(scale, quantity.name_flat)
     else:
       qte = quantity.name_flat
+      #if 'signal' not in hist_name:
+      #  qte = quantity.name_flat
+      #else:
+      #  qte = 'double_gauss_corr_1*{}'.format(quantity.name_flat)
       if 'signal' not in hist_name and '_uncorrected' in qte: qte = qte.replace('_uncorrected', '')
       if 'signal' not in hist_name and '_corrected_weight' in qte: qte = qte.replace('_corrected_weight', '')
     #print qte
@@ -330,6 +335,149 @@ class Plotter(Tools):
     root_file.Close()
 
 
+  def performScaleFit(self):
+
+    filename = 'scales_step1.root' 
+    f = ROOT.TFile.Open(filename)
+    tree = f.Get('tree')
+
+    binMin = 0.9
+    binMax = 1.3
+    nbins = 30
+
+    # define object to fit
+    hist = ROOT.TH1D("hist", "hist", nbins, binMin, binMax)
+    c1 = self.tools.createTCanvas(name='c1', dimx=700, dimy=600)
+    branch_name = 'scale'
+    tree.Draw("{}>>hist".format(branch_name))
+
+    scale = ROOT.RooRealVar("scale","scale", binMin, binMax)
+    scale.setBins(nbins)
+
+    rdh = ROOT.RooDataHist("rdh", "rdh", ROOT.RooArgList(scale), hist)
+
+    # Define the PDF to fit: 
+    mean_left = ROOT.RooRealVar("mean_left","mean_left", 1.04, 1., 1.1)
+    sigma_left = ROOT.RooRealVar("sigma_left","sigma_left", 0.03, 0.005, 0.1)
+
+    mean_right = ROOT.RooRealVar("mean_right","mean_right", 1.14, 1.1, 1.2)
+    sigma_right = ROOT.RooRealVar("sigma_right","sigma_right", 0.03, 0.005, 0.1)
+
+    gauss_left = ROOT.RooGaussian("gauss_left", "gauss_left", scale, mean_left, sigma_left)
+    gauss_right = ROOT.RooGaussian("gauss_right", "gauss_right", scale, mean_right, sigma_right)
+
+    # defines the relative importance of the two pdfs
+    frac = ROOT.RooRealVar("frac","frac", 0.5, 0.0 ,1.0)
+
+    # build the full model
+    model = ROOT.RooAddPdf('model', 'model', ROOT.RooArgList(gauss_left, gauss_right), ROOT.RooArgList(frac))
+
+    # we define the frame where to plot
+    canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
+
+    frame = scale.frame(ROOT.RooFit.Title(" "))
+
+    # plot the data
+    rdh.plotOn(frame, ROOT.RooFit.Name("data"))
+
+    # fit the PDF to the data
+    result = model.fitTo(rdh)
+
+    # plot the fit    
+    model.plotOn(frame, ROOT.RooFit.LineColor(2), ROOT.RooFit.Name('gauss_left'), ROOT.RooFit.Components('gauss_left'), ROOT.RooFit.LineStyle(ROOT.kDashed))
+    model.plotOn(frame, ROOT.RooFit.LineColor(8), ROOT.RooFit.Name('gauss_right'), ROOT.RooFit.Components('gauss_right'), ROOT.RooFit.LineStyle(ROOT.kDashed))
+    model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name("model"), ROOT.RooFit.Components("model"))
+
+    # and write the fit parameters
+    model.paramOn(frame,   
+         ROOT.RooFit.Layout(0.1, 0.4, 0.8),
+         ROOT.RooFit.Format("NEU",ROOT.RooFit.AutoPrecision(1))
+         )
+
+    frame.getAttText().SetTextSize(0.03)
+    frame.getAttLine().SetLineColorAlpha(0, 0)
+    frame.getAttFill().SetFillColorAlpha(0, 0)
+
+    # we compute the chisquare
+    chisquare = frame.chiSquare("model","data")
+
+    # and print it
+    label1 = ROOT.TPaveText(0.62,0.65,0.72,0.8,"brNDC")
+    label1.SetBorderSize(0)
+    label1.SetFillColor(ROOT.kWhite)
+    label1.SetTextSize(0.03)
+    label1.SetTextFont(42)
+    label1.SetTextAlign(11)
+    qte = '#chi^{2}/ndof'
+    label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
+    print "chisquare = {}".format(chisquare)
+
+    canv.cd()
+
+    frame.GetXaxis().SetTitleSize(0.04)
+    frame.GetXaxis().SetTitle("correction scale")
+    frame.GetYaxis().SetTitleSize(0.04)
+    frame.GetYaxis().SetTitleOffset(1.1)
+    frame.Draw()
+    label1.Draw()
+
+    # save output
+    canv.cd()
+    outputdir = self.tools.getOutDir('./myPlots/mc_corrections', 'fits')
+    canv.SaveAs("{}/fit.png".format(outputdir))
+    canv.SaveAs("{}/fit.pdf".format(outputdir))
+
+    # create workspace
+    root_file = ROOT.TFile('workspace_mc_corrections.root', 'RECREATE')
+    workspace = ROOT.RooWorkspace('workspace', 'workspace')
+    getattr(workspace, 'import')(model)
+    workspace.Write()
+    workspace.Print()
+    root_file.Close()
+
+
+  def generateToys(self):
+    f = ROOT.TFile.Open('workspace_mc_corrections.root')
+    workspace = f.Get('workspace')
+    workspace.Print()
+
+    pdf = workspace.pdf('model')
+
+    scale = ROOT.RooRealVar('scale', 'scale', 0.9, 1.5)
+    data = pdf.generate(ROOT.RooArgSet(scale), 100)
+
+    canv = self.tools.createTCanvas(name='canv', dimx=1200, dimy=1000)
+    frame = scale.frame()
+    data.plotOn(frame)
+    frame.Draw()
+    canv.SaveAs('myPlots/mc_corrections/toys.png')
+
+
+  def createCompositeFunction(self):
+
+    gauss_left = ROOT.TF1('gauss_left', 'gaus', 0.9, 1.3)
+    gauss_left.SetParameters(1, 1.042, 0.034)
+    gauss_left.SetLineColor(2)
+
+    gauss_right = ROOT.TF1('gauss_right', 'gaus', 0.9, 1.3)
+    gauss_right.SetParameters(1, 1.144, 0.026)
+    gauss_right.SetLineColor(8)
+    
+    double_gauss = ROOT.TF1("double_gauss","[0]/sqrt(2.*TMath::Pi())/[2]*exp(-(x-[1])*(x-[1])/2./[2]/[2])+(1-[0])/sqrt(2.*TMath::Pi())/[4]*exp(-(x-[3])*(x-[3])/2./[4]/[4])",0.9,1.3)
+    double_gauss.SetParameter(0, 0.62)
+    double_gauss.SetParameter(1, 1.042)
+    double_gauss.SetParameter(2, 0.034)
+    double_gauss.SetParameter(3, 1.144)
+    double_gauss.SetParameter(4, 0.026)
+    double_gauss.SetLineColor(4)
+
+    canv = self.tools.createTCanvas(name='canv', dimx=1200, dimy=1000)
+    #gauss_left.Draw()
+    #gauss_right.Draw('same')
+    double_gauss.Draw()
+    canv.SaveAs('myPlots/mc_corrections/function.png')
+
+
   def plot(self, 
       title='', 
       branchname='flat', 
@@ -446,6 +594,7 @@ class Plotter(Tools):
         matching_selection = 'ismatched==1' if branchname == 'flat' else 'BToMuMuPi_isMatched==1'
         selection_signal = matching_selection if self.selection == '' else matching_selection + ' && ' + self.selection
         weight_sig = '(1)'
+        #weight_sig = '(weight_dxy_sig_bs)'
         if add_weight_hlt : weight_sig += ' * ({})'.format(weight_hlt)
         if add_weight_pu : weight_sig += ' * ({})'.format(weight_pusig)
         if add_weight_muid : weight_sig += ' * ({}) *({})'.format(weight_mu0id, weight_muid)
@@ -601,9 +750,10 @@ if __name__ == '__main__':
   scales = [None]
   smears = [None]
 
-  do_scanCorrections = False
+  do_scanCorrections = True
   do_createWeightFile = False
-  do_createScaleDistribution = True
+  do_createScaleDistribution = False
+  do_performScaleFit = False
 
   if do_scanCorrections:
     for quantity in quantities:
@@ -627,5 +777,10 @@ if __name__ == '__main__':
     plotter = Plotter(data_files=data_files, signal_files=signal_files, selection=baseline_selection)
     plotter.createScaleDistribution()
 
+  if do_performScaleFit:
+    plotter = Plotter()
+    plotter.performScaleFit()
+    plotter.generateToys()
+    plotter.createCompositeFunction()
 
 
