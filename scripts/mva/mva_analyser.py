@@ -86,7 +86,7 @@ class Sample(object):
 
 
 class MVAAnalyser(Tools, MVATools):
-  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, plot_label=None, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False):
+  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, plot_label=None, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotDistributions=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_files = signal_files
@@ -99,6 +99,7 @@ class MVAAnalyser(Tools, MVATools):
     self.do_createFiles = do_createFiles
     self.do_plotSigScan = do_plotSigScan
     self.do_plotROC = do_plotROC
+    self.do_plotDistributions = do_plotDistributions
 
     self.outdir = self.createOutDir()
 
@@ -391,10 +392,10 @@ class MVAAnalyser(Tools, MVATools):
 
       # get signal tree, with score branch, without selection
       sig_label = 'sig_{}_{}_{}'.format(signal_mass, signal_ctau, category.label)
-      tree_sig = self.mva_tools.getTreeWithScore(files=[mc_sample], training_label=self.dirname, label=sig_label, signal_treename='signal_tree', score_treename='score_tree') 
+      tree_sig = self.mva_tools.getTreeWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, label=sig_label, treename='signal_tree', force_overwrite=True) 
 
       bkg_label = 'bkg_{}_{}'.format(signal_mass, category.label)
-      tree_data = self.mva_tools.getTreeWithScore(files=data_samples, training_label=self.dirname, label=bkg_label, signal_treename='signal_tree', score_treename='score_tree') 
+      tree_data = self.mva_tools.getTreeWithScore(files=data_samples, training_label='./outputs/'+self.dirname, label=bkg_label, treename='signal_tree', force_overwrite=True) 
 
       g_sig = ROOT.TGraph()
       quantity = Qte(name_flat='hnl_mass', label='hnl_mass', nbins=80, bin_min=signal_mass-2*signal_resolution, bin_max=signal_mass+2*signal_resolution)
@@ -507,6 +508,67 @@ class MVAAnalyser(Tools, MVATools):
 
     canv.cd()
     canv.SaveAs('{}/significance_diff_scan_{}_{}.png'.format(self.outdir, category.label, self.plot_label))
+
+
+  def plotDistributions(self, quantity, sample, category, cut_score, do_shape=False):
+    '''
+      Plot the distribution shapes with and without cut on score
+    '''
+
+    canv = self.tools.createTCanvas('canv', 800, 700) 
+    label = 'tree'
+
+    selection_noscore = self.baseline_selection + ' && ' + category.definition_flat
+    #selection_score = selection_noscore + ' && score > {}'.format(cut_score)
+
+    tree = self.mva_tools.getTreeWithScore(files=[sample], training_label='./outputs/'+self.dirname, selection=selection_noscore, label=label, treename='signal_tree', force_overwrite=True) 
+    #branches = tree.GetListOfBranches()
+    #for i in range(0, len(branches)):
+    #  print branches.At(i).GetName()
+
+    hist1 = self.tools.createHisto(tree, quantity, hist_name='hist1', branchname='flat', selection='score > -99.')
+    hist2 = self.tools.createHisto(tree, quantity, hist_name='hist2', branchname='flat', selection='score > {}'.format(cut_score))
+
+    if do_shape:
+      if hist1.Integral() != 0: hist1.Scale(1./hist1.Integral())
+      if hist2.Integral() != 0: hist2.Scale(1./hist2.Integral())
+
+    hist1.SetLineColor(ROOT.kBlue)
+    hist1.SetLineWidth(3)
+    hist2.SetLineColor(ROOT.kMagenta)
+    hist2.SetLineWidth(3)
+    
+    hist1.SetTitle(category.title)
+    hist1.GetXaxis().SetTitle(quantity.title)
+    hist1.GetXaxis().SetLabelSize(0.033)
+    hist1.GetXaxis().SetTitleSize(0.042)
+    hist1.GetXaxis().SetTitleOffset(1.1)
+    hist1.GetYaxis().SetTitle('Normalised to unity')
+    hist1.GetYaxis().SetLabelSize(0.033)
+    hist1.GetYaxis().SetTitleSize(0.042)
+    hist1.GetYaxis().SetTitleOffset(1.3)
+
+    hist1.Draw('histo')
+    hist2.Draw('histo same')
+  
+    leg = self.tools.getRootTLegend(xmin=0.65, ymin=0.7, xmax=0.85, ymax=0.9, size=0.03)
+    leg.AddEntry(hist1, 'No cut on score')
+    leg.AddEntry(hist2, 'Score > {}'.format(cut_score))
+    leg.Draw()
+
+    ROOT.gStyle.SetOptStat(0)
+
+    if sample.mass != None:
+      name = '{}_m{}_ctau{}_{}'.format(quantity.label, sample.mass, sample.ctau, category.label)
+    else:
+      name = '{}_{}'.format(quantity.label, category.label)
+
+    if not path.exists('{}/plots'.format(self.outdir)):
+      os.system('mkdir -p {}/plots'.format(self.outdir))
+    canv.SaveAs('{}/plots/{}.png'.format(self.outdir, name))
+
+    os.system('rm tree.root')
+
 
 
   def createRootFile(self, training_info, samples, name):
@@ -632,15 +694,22 @@ class MVAAnalyser(Tools, MVATools):
       if self.do_plotSigScan:
         self.plotSignificanceDiffScan(category=category, mc_samples=mc_samples, data_samples=data_samples, n_points=11)
 
+      hnl_mass = Qte(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=0., bin_max=5.4)
+
+      if self.do_plotDistributions:
+        self.plotDistributions(quantity=hnl_mass, sample=data_samples[0], category=category, cut_score=0.9, do_shape=True) 
+        #for mc_sample in mc_samples:
+        #  self.plotDistributions(quantity=hnl_mass, sample=mc_sample, category=category, cut_score=0.9, do_shape=True) 
+
 
 
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  #dirname = 'test_20Aug2022_13h40m03s' # large ntuples
+  dirname = 'test_20Aug2022_13h40m03s' # large ntuples
   #dirname = 'test_22Aug2022_16h08m33s'  # re-indexed
   #dirname = 'test_22Aug2022_16h17m44s' # not re-indexed
-  dirname = 'test_29Aug2022_11h52m47s' # trained on m1 ctau100
+  #dirname = 'test_29Aug2022_11h52m47s' # trained on m1 ctau100
 
   #baseline_selection = 'hnl_charge==0'
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
@@ -649,10 +718,11 @@ if __name__ == '__main__':
   do_createFiles = False
   do_plotSigScan = False
   do_plotROC = True
+  do_plotDistributions = False
 
-  signal_labels = ['V12_08Aug22_m4p5']
+  signal_labels = ['V12_08Aug22_m3']
   #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-  plot_label = 'm4p5'
+  plot_label = 'm1'
 
   signal_files = []
   for signal_label in signal_labels:
@@ -679,6 +749,7 @@ if __name__ == '__main__':
       do_createFiles = do_createFiles,
       do_plotSigScan = do_plotSigScan,
       do_plotROC = do_plotROC,
+      do_plotDistributions = do_plotDistributions,
       )
 
   analyser.process()
