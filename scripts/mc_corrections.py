@@ -77,9 +77,10 @@ class Plotter(Tools):
       #if 'signal' not in hist_name:
       #  qte = quantity.name_flat
       #else:
-      #  qte = 'double_gauss_corr_1*{}'.format(quantity.name_flat)
+      #  qte = 'double_gauss_corr_2*{}'.format(quantity.name_flat)
       if 'signal' not in hist_name and '_uncorrected' in qte: qte = qte.replace('_uncorrected', '')
       if 'signal' not in hist_name and '_corrected_weight' in qte: qte = qte.replace('_corrected_weight', '')
+      if 'signal' not in hist_name and '_corrected_linearscale' in qte: qte = qte.replace('_corrected_linearscale', '')
     #print qte
 
     if quantity.name_flat != 'probe_dxy_bs_uncorrected':
@@ -215,7 +216,10 @@ class Plotter(Tools):
     bin_min = 0.
 
     canv = self.tools.createTCanvas(name='canv', dimx=1200, dimy=1000)
+    canv_graph = self.tools.createTCanvas(name='canv_graph', dimx=1200, dimy=1000)
     hist_scale = ROOT.TH1D('hist_scale', 'hist_scale', 30, 0.9, 1.5)
+
+    hist_qte = ROOT.TH1D('hist_qte', 'hist_qte', 60, 0, 60)
 
     f_sig = self.tools.getRootFile(self.signal_files[0].filename)
     tree_sig = self.tools.getTree(f_sig, 'tree')
@@ -226,14 +230,17 @@ class Plotter(Tools):
     tree = ROOT.TTree('tree', 'tree')
     the_scale = array('d', [0])
     tree.Branch('scale', the_scale, 'scale/D')
+
+    graph_scale = ROOT.TGraph()
     
     for bin_max in bins:
       print '\n{} {}'.format(bin_min, bin_max)
       quantity = Quantity(name_flat='probe_dxy_sig_bs_uncorrected', label='probe_dxy_sig_bs', title='probe #mu |d_{xy}| significance (BS)', nbins=1, bin_min=bin_min, bin_max=bin_max)
+      bin_center = (bin_min + bin_max) / 2.
       bin_min = bin_max
-      scale = 0.95
+      #if bin_min == 5.: continue
+      scale = 0.99
       ratio = -1
-      #cond = (ratio > 0.985 and ratio < 1.015)
       while (ratio < 0.985 or ratio > 1.015):
         # get the mc distribution
         signal_hists = [] # in principle not needed, since only one mc sample, but keep it generic
@@ -318,21 +325,41 @@ class Plotter(Tools):
         print 'ratio: {}'.format(ratio)
         scale = scale + 0.01
         if ratio == 0: break
-        if scale > 1.5: break
+        if scale > 1.25: break
         if ratio > 0.985 and ratio < 1.015: 
           print 'fill histo'
           hist_scale.Fill(scale)
           the_scale[0] = scale
           tree.Fill()
+          point = graph_scale.GetN()
+          graph_scale.SetPoint(point, bin_center, scale)
+          graph_scale.GetXaxis().SetTitle('probe dxy significance')
+          graph_scale.GetYaxis().SetTitle('scale')
+          graph_scale.SetMarkerStyle(20)
+          graph_scale.SetMarkerSize(2)
+          hist_qte.SetBinContent(hist_qte.GetXaxis().FindBin(bin_center), scale)
 
+    canv.cd()
     hist_scale.Draw()
     canv.SaveAs('myPlots/mc_corrections/scales.png')
+
+    canv_graph.cd()
+    graph_scale.Fit('pol1')
+    ROOT.gStyle.SetOptFit() 
+    graph_scale.Draw('AP')
+    canv_graph.SaveAs('myPlots/mc_corrections/graph_scales.png')
 
     # store the weight in a rootfile
     root_file = ROOT.TFile('scales.root', 'RECREATE')
     #hist_scale.Write()
     tree.Write()
     root_file.Close()
+    print '-> scales.root created'
+
+    root_file_scale = ROOT.TFile('scale_graph.root', 'RECREATE')
+    hist_qte.Write()
+    root_file_scale.Close()
+    print '-> scale_graph.root created'
 
 
   def performScaleFit(self):
@@ -704,9 +731,9 @@ class Plotter(Tools):
       outputdir = self.tools.getOutDir('/eos/home-a/anlyon/www/BHNL/mc_corrections', outdirlabel=quantity.label, do_log=do_log)
     
     if scale != None and smear != None:
-      name = '{}_scale{}_smear{}.png'.format(self.quantity.label, str(round(scale, 3)).replace('.', 'p'), smear[smear.rfind('_')+1:])
+      name = '{}_scale{}_smear{}'.format(self.quantity.label, str(round(scale, 3)).replace('.', 'p'), smear[smear.rfind('_')+1:])
     else:
-      name = '{}.png'.format(self.quantity.label)
+      name = '{}'.format(self.quantity.label)
     canv.SaveAs('{}/{}.png'.format(outputdir, name))
     canv.SaveAs('{}/{}.pdf'.format(outputdir, name))
 
@@ -717,6 +744,7 @@ if __name__ == '__main__':
 
   dxy = Quantity(name_flat='probe_dxy_bs_uncorrected', label='probe_dxy_bs', title='probe #mu |d_{xy}| (BS) [cm]', nbins=90, bin_min=0, bin_max=0.5)
   dxy_sig = Quantity(name_flat='probe_dxy_sig_bs_uncorrected', label='probe_dxy_sig_bs', title='probe #mu |d_{xy}| significance (BS)', nbins=90, bin_min=0, bin_max=60)
+  #dxy_sig = Quantity(name_flat='probe_dxy_sig_bs_corrected_linearscale', label='probe_dxy_sig_bs', title='probe #mu |d_{xy}| significance (BS)', nbins=90, bin_min=0, bin_max=60)
   #quantities = [dxy, dxy_sig]
   quantities = [dxy_sig]
 
