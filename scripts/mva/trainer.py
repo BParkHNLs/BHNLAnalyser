@@ -28,6 +28,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve
 from sklearn.preprocessing import RobustScaler, StandardScaler
 
+sys.path.append('../../objects')
+from baseline_selection import selection
+
+
 class Sample(object):
   '''
     Class to convert the sample into dataframe while applying some selection
@@ -42,10 +46,11 @@ class Sample(object):
 
 
 class Trainer(object):
-  def __init__(self, features, epochs, batch_size, scaler_type, do_early_stopping, do_reduce_lr, dirname, baseline_selection):
+  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, dirname, baseline_selection):
     self.features = features
     self.epochs = epochs
     self.batch_size = batch_size
+    self.learning_rate = learning_rate
     self.scaler_type = scaler_type
     self.do_early_stopping = do_early_stopping
     self.do_reduce_lr = do_reduce_lr
@@ -87,25 +92,20 @@ class Trainer(object):
     now = time()
     ## data 
     # used for training
-    filename_data_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj1.root'
-    filename_data_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj2.root'
-    filename_data_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj3.root'
-    #filename_data_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj1.root'
-    #filename_data_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj2.root'
-    #filename_data_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj3.root'
+    filename_data_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root'
+    #filename_data_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj1.root'
+    #filename_data_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj2.root'
+    #filename_data_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj3.root'
     data_samples = [
       Sample(filename=filename_data_1, selection=self.baseline_selection),
-      Sample(filename=filename_data_2, selection=self.baseline_selection),
-      Sample(filename=filename_data_3, selection=self.baseline_selection),
+      #Sample(filename=filename_data_2, selection=self.baseline_selection),
+      #Sample(filename=filename_data_3, selection=self.baseline_selection),
     ]
 
     # used for testing
     filename_data_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj4.root'
     filename_data_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj5.root'
     filename_data_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj6.root'
-    #filename_data_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj4.root'
-    #filename_data_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj5.root'
-    #filename_data_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj6.root'
     data_test_samples = [
       Sample(filename=filename_data_4, selection=self.baseline_selection),
       Sample(filename=filename_data_5, selection=self.baseline_selection),
@@ -114,32 +114,49 @@ class Trainer(object):
 
     ## signal
     # used for training
-    filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj1.root'
-    filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj2.root'
-    filename_mc_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj3.root'
-    filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj4.root'
-    filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj5.root'
-    filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj6.root'
+    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr.root'
+    #filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_sr.root'
+    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
+    filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
+    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj1.root'
+    #filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj2.root'
+    #filename_mc_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj3.root'
+    #filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj4.root'
+    #filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj5.root'
+    #filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj6.root'
+    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj1.root'
+    #filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj2.root'
+    #filename_mc_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj3.root'
+    #filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj4.root'
+    #filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj5.root'
+    #filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj6.root'
+    #filename_mc_7 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj6.root'
+    #filename_mc_8 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj6.root'
+    #filename_mc_9 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj6.root'
+
     mc_samples = [
       Sample(filename=filename_mc_1, selection=self.baseline_selection),
-      Sample(filename=filename_mc_2, selection=self.baseline_selection),
-      Sample(filename=filename_mc_3, selection=self.baseline_selection),
-      Sample(filename=filename_mc_4, selection=self.baseline_selection),
-      Sample(filename=filename_mc_5, selection=self.baseline_selection),
-      Sample(filename=filename_mc_6, selection=self.baseline_selection),
+      #Sample(filename=filename_mc_2, selection=self.baseline_selection),
+      #Sample(filename=filename_mc_3, selection=self.baseline_selection),
+      #Sample(filename=filename_mc_4, selection=self.baseline_selection),
+      #Sample(filename=filename_mc_5, selection=self.baseline_selection),
+      #Sample(filename=filename_mc_6, selection=self.baseline_selection),
+      #Sample(filename=filename_mc_7, selection=self.baseline_selection),
+      #Sample(filename=filename_mc_8, selection=self.baseline_selection),
+      #Sample(filename=filename_mc_9, selection=self.baseline_selection),
     ]
 
     # used for testing
-    filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj4.root'
-    filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj5.root'
-    filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj6.root'
-    #filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_nj4.root'
-    #filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_nj5.root'
-    #filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_nj6.root'
+    #filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj4.root'
+    #filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj5.root'
+    #filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj6.root'
+    filename_mc_7 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj7.root'
+    filename_mc_8 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj8.root'
+    filename_mc_9 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj9.root'
     mc_test_samples = [
-      Sample(filename=filename_mc_4, selection=self.baseline_selection),
-      Sample(filename=filename_mc_5, selection=self.baseline_selection),
-      Sample(filename=filename_mc_6, selection=self.baseline_selection),
+      Sample(filename=filename_mc_7, selection=self.baseline_selection),
+      Sample(filename=filename_mc_8, selection=self.baseline_selection),
+      Sample(filename=filename_mc_9, selection=self.baseline_selection),
     ]
       
     print('========> it took %.2f seconds' %(time() - now))
@@ -239,6 +256,7 @@ class Trainer(object):
 
     # Define outputs of your model
     model = Model(input, output)
+    optimiser = Adam(lr=self.learning_rate)
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['mae', 'acc'])
     
     print(model.summary())
@@ -372,7 +390,7 @@ class Trainer(object):
     plt.title('Training and Validation Accuracy')
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
-    plt.legend()
+    plt.legend(loc='lower left')
     self.saveFig(plt, 'accuracy')
     plt.clf()
 
@@ -384,7 +402,6 @@ class Trainer(object):
     # get the score for the test dataframe
     sig_score = self.predictScore(model, mc_test_df)
     bkg_score = self.predictScore(model, data_test_df)
-
     # add the score to the dataframes
     mc_test_df['score'] = sig_score
     data_test_df['score'] = bkg_score
@@ -521,6 +538,9 @@ class Trainer(object):
     print '\n -> create output directory'
     self.outdir = self.createOutDir()
 
+    # copy script
+    os.system('cp trainer.py {}'.format(self.outdir))
+
     # get the samples
     print '\n -> get the samples'
     data_samples, data_test_samples, mc_samples, mc_test_samples = self.getSamples()
@@ -584,21 +604,25 @@ class Trainer(object):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  features = ['pi_pt', 'b_mass', 'pi_dcasig', 'hnl_cos2d']
+  #features = ['pi_pt', 'b_mass', 'pi_dcasig', 'hnl_cos2d', 'sv_prob']
+  #features = ['pi_pt', 'pi_eta', 'mu_pt', 'mu_eta', 'mu0_pt', 'mu0_eta', 'b_pt', 'b_eta', 'b_mass', 'mu0_mu_mass', 'mu0_mu_pt', 'mu0_pi_mass', 'mu0_pi_pt', 'deltar_mu_pi', 'deltar_mu0_hnl', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_chi2', 'sv_prob']
+  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu_pi', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_prob']
   #features = ['pi_pt', 'pi_dcasig']
   epochs = 50
   batch_size = 32
+  learning_rate = 0.005
   scaler_type = 'robust'
-  do_early_stopping = False
+  do_early_stopping = True
   do_reduce_lr = True
   dirname = 'test'
-  baseline_selection = 'hnl_charge==0'
+  baseline_selection = 'hnl_charge==0 && ' + selection['baseline_08Aug22'].flat 
   #NOTE add optimiser, learning rate etc? 
 
   trainer = Trainer(
       features = features, 
       epochs = epochs,
       batch_size = batch_size,
+      learning_rate = learning_rate,
       scaler_type = scaler_type,
       do_early_stopping = do_early_stopping,
       do_reduce_lr = do_reduce_lr,
