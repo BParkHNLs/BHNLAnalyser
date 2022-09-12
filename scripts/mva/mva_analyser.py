@@ -37,30 +37,31 @@ class TrainingInfo(object):
       - scaler
       - features
   '''
-  def __init__(self, dirname):
+  def __init__(self, dirname, label):
     self.dirname = dirname 
     self.indir = './outputs/{}'.format(self.dirname)
+    self.label = label
     self.model = self.loadModel()
     self.qt = self.loadScaler()
     self.features = self.loadFeatures()
 
   def loadModel(self):
     print '\n --> get the model'
-    model_filename = '{}/net_model_weighted.h5'.format(self.indir)
+    model_filename = '{}/net_model_weighted_{}.h5'.format(self.indir, self.label)
     model = load_model(model_filename)
     return model
 
 
   def loadScaler(self):
     print '\n --> get the scaler'
-    scaler_filename = '/'.join([self.indir, 'input_tranformation_weighted.pck'])
+    scaler_filename = '/'.join([self.indir, 'input_tranformation_weighted_{}.pck'.format(self.label)])
     qt = pickle.load(open(scaler_filename, 'rb'))
     return qt
 
 
   def loadFeatures(self):
     print '\n --> get the features'
-    features_filename = '/'.join([self.indir, 'input_features.pck'])
+    features_filename = '/'.join([self.indir, 'input_features_{}.pck'.format(self.label)])
     features = pickle.load(open(features_filename, 'rb'))
     return features
 
@@ -855,10 +856,10 @@ class MVAAnalyser(Tools, MVATools):
   def process(self):
     print '---- MVA Analyser ----'
 
-    print '\n -> get the training information'
-    training_info = TrainingInfo(self.dirname)
-
     for category in self.categories:
+      print '\n -> get the training information'
+      training_info = TrainingInfo(self.dirname, category.label)
+
       print '\n -> get the samples'
       data_samples, mc_samples = self.getSamples(training_info=training_info, category=category)
 
@@ -907,7 +908,9 @@ if __name__ == '__main__':
   #dirname = 'test_08Sep2022_21h56m30s' # larger learning rate
   #dirname = 'test_08Sep2022_23h11m59s' # trained on ctau100 and ctau1
   #dirname = 'test_08Sep2022_23h37m00s' # mass 1.5
-  dirname = 'test_09Sep2022_00h12m12s' # mass 4.5
+  #dirname = 'test_09Sep2022_00h12m12s' # mass 4.5
+  #dirname = 'test_12Sep2022_14h47m55s' # mass 4.5, whnl nn
+  dirname = 'test_12Sep2022_20h28m05s' # mass 3, categories
 
   #baseline_selection = 'hnl_charge==0'
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
@@ -918,7 +921,7 @@ if __name__ == '__main__':
   do_plotROC = True
   do_plotDistributions = False
 
-  signal_labels = ['V12_08Aug22_m1p5']
+  signal_labels = ['V12_08Aug22_m3']
   #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
   #plot_label = 'm4p5'
 

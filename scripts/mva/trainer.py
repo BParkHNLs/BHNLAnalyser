@@ -30,6 +30,7 @@ from sklearn.preprocessing import RobustScaler, StandardScaler
 
 sys.path.append('../../objects')
 from baseline_selection import selection
+from categories import categories
 
 
 class Sample(object):
@@ -46,7 +47,7 @@ class Sample(object):
 
 
 class Trainer(object):
-  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, dirname, baseline_selection):
+  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, dirname, baseline_selection, categories):
     self.features = features
     self.epochs = epochs
     self.batch_size = batch_size
@@ -57,6 +58,7 @@ class Trainer(object):
     self.dirname = dirname + '_' + datetime.now().strftime('%d%b%Y_%Hh%Mm%Ss')
 
     self.baseline_selection = baseline_selection
+    self.categories = categories
 
     self.target_branch = 'is_signal'
 
@@ -81,7 +83,7 @@ class Trainer(object):
     print ' --> {}/{}.png created'.format(self.outdir, name)
 
 
-  def getSamples(self):
+  def getSamples(self, extra_selection=None):
     '''
       Function that fetches the samples into lists
     '''
@@ -114,10 +116,10 @@ class Trainer(object):
 
     ## signal
     # used for training
-    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr.root'
+    filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr.root'
     #filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_sr.root'
     #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
-    filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
+    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
     #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj1.root'
     #filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj2.root'
     #filename_mc_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj3.root'
@@ -201,7 +203,7 @@ class Trainer(object):
       return xx, qt
 
 
-  def preprocessing(self, data_df, mc_df):
+  def preprocessing(self, data_df, mc_df, label):
     '''
       Preprocessing of data before training/testing the NN
       This includes:
@@ -229,12 +231,12 @@ class Trainer(object):
     xx, qt = self.doScaling(X)
 
     # and save the scaler, which will have to be used throughout the full process, even at evaluation time
-    scaler_filename = '/'.join([self.outdir, 'input_tranformation_weighted.pck'])
+    scaler_filename = '/'.join([self.outdir, 'input_tranformation_weighted_{}.pck'.format(label)])
     pickle.dump(qt,open(scaler_filename, 'wb'))
     print ' --> {} created'.format(scaler_filename)
 
     # save the exact list of features
-    features_filename = '/'.join([self.outdir, 'input_features.pck'])
+    features_filename = '/'.join([self.outdir, 'input_features_{}.pck'.format(label)])
     pickle.dump(self.features, open(features_filename, 'wb' ))
     print ' --> {} created'.format(features_filename)
 
@@ -264,18 +266,19 @@ class Trainer(object):
     return model
 
 
-  def defineCallbacks(self):
+  def defineCallbacks(self, label):
     '''
       Define the callbacks
     '''
     # early stopping
     monitor = 'val_loss'
-    es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=50)
+    es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=10)
     
     # reduce learning rate when at plateau, fine search the minimum
     reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=5, min_lr=0.00001, cooldown=10, verbose=True)
     
     # save the model every now and then
+    #filepath = '/'.join([self.outdir, 'saved-model-{epoch:04d}_val_loss_{val_loss:.4f}_val_acc_{val_acc:.4f}_{lbl}.h5'.format(lbl=label)])
     filepath = '/'.join([self.outdir, 'saved-model-{epoch:04d}_val_loss_{val_loss:.4f}_val_acc_{val_acc:.4f}.h5'])
     save_model = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
     
@@ -333,14 +336,14 @@ class Trainer(object):
     return history
     
 
-  def predictScore(self, model, df):
+  def predictScore(self, model, df, label):
     '''
       Return score with scaled input features
     '''
     x = pd.DataFrame(df, columns=self.features)
 
     # apply the scaler
-    scaler_filename = '/'.join([self.outdir, 'input_tranformation_weighted.pck'])
+    scaler_filename = '/'.join([self.outdir, 'input_tranformation_weighted_{}.pck'.format(label)])
     qt = pickle.load(open(scaler_filename, 'rb'))
     xx = qt.transform(x[self.features])
 
@@ -350,16 +353,16 @@ class Trainer(object):
     return score
 
 
-  def saveModel(self, model):
+  def saveModel(self, model, label):
     '''
       Save the model
     '''
-    model_filename = '{}/net_model_weighted.h5'.format(self.outdir)
+    model_filename = '{}/net_model_weighted_{}.h5'.format(self.outdir, label)
     model.save(model_filename)
     print ' --> {} created'.format(model_filename)
 
 
-  def plotLoss(self, history):
+  def plotLoss(self, history, label):
     '''
       Plot the loss for training and validation sets
     '''
@@ -369,15 +372,15 @@ class Trainer(object):
     epochs = epochs_range
     plt.plot(epochs, loss_train, 'g', label='Training loss')
     plt.plot(epochs, loss_val, 'b', label='Validation loss')
-    plt.title('Training and Validation Loss')
+    plt.title('Training and Validation Loss - {}'.format(label))
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    self.saveFig(plt, 'loss')
+    self.saveFig(plt, 'loss_{}'.format(label))
     plt.clf()
 
 
-  def plotAccuracy(self, history):
+  def plotAccuracy(self, history, label):
     '''
       Plot the accuracy for training and validation sets
     '''
@@ -387,21 +390,21 @@ class Trainer(object):
     epochs = epochs_range
     plt.plot(epochs, acc_train, 'g', label='Training accuracy')
     plt.plot(epochs, acc_val, 'b', label='Validation accuracy')
-    plt.title('Training and Validation Accuracy')
+    plt.title('Training and Validation Accuracy - {}'.format(label))
     plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
     plt.legend(loc='lower left')
-    self.saveFig(plt, 'accuracy')
+    self.saveFig(plt, 'accuracy_{}'.format(label))
     plt.clf()
 
 
-  def plotScore(self, model, mc_test_df, data_test_df):
+  def plotScore(self, model, mc_test_df, data_test_df, label):
     '''
       Plot the score distributions for signal and background
     '''
     # get the score for the test dataframe
-    sig_score = self.predictScore(model, mc_test_df)
-    bkg_score = self.predictScore(model, data_test_df)
+    sig_score = self.predictScore(model, mc_test_df, label)
+    bkg_score = self.predictScore(model, data_test_df, label)
     # add the score to the dataframes
     mc_test_df['score'] = sig_score
     data_test_df['score'] = bkg_score
@@ -414,15 +417,15 @@ class Trainer(object):
     ax.hist(bkg_score, bins=np.arange(0,1.025,0.025), color='blue', alpha=0.8, label=bkg_name)
     ax.hist(mc_test_df['score'], bins=np.arange(0,1.025,0.025), color='darkorange', alpha=1, label='signal', histtype='step', linewidth=2)
     ax.legend(loc='upper left',prop={'size': 12})
-    ax.set_title("Score distribution for testing set", fontsize=20)
+    ax.set_title("Score distribution for testing set - {}".format(label), fontsize=20)
     ax.set_xlabel('Score',fontsize=18)
     fig.savefig('outputs/score.pdf')
     fig.savefig('outputs/score.png')
-    self.saveFig(fig, 'score')
+    self.saveFig(fig, 'score_{}'.format(label))
     plt.clf()
 
 
-  def plotROC(self, model, x_train, y_train, x_val, y_val):
+  def plotROC(self, model, x_train, y_train, x_val, y_val, label):
     '''
       Plot the ROC curve
       Note that the x inputs are already scaled
@@ -430,7 +433,6 @@ class Trainer(object):
     score_train = model.predict(x_train)
     fpr, tpr, wps = roc_curve(y_train, score_train) 
 
-    plt.clf()
     plt.plot(fpr, tpr, label='train ROC')
     #print("AUC train",sk.metrics.auc(fpr,tpr))
     plt.xlabel('False Positive Rate')
@@ -439,25 +441,26 @@ class Trainer(object):
     score_val = model.predict(x_val)
     fpr, tpr, wps = roc_curve(y_val, score_val) 
     plt.plot(fpr, tpr, label='test ROC')
+    plt.title('ROC - {}'.format(label))
     #print("AUC test",sk.metrics.auc(fpr,tpr))
 
     xy = [i*j for i,j in product([10.**i for i in range(-8, 0)], [1,2,4,8])]+[1]
     plt.plot(xy, xy, color='grey', linestyle='--')
     plt.yscale('linear')
     plt.legend()
-    self.saveFig(plt, 'ROC')
+    self.saveFig(plt, 'ROC_{}'.format(label))
     plt.clf()
 
 
-  def plotCorrelations(self, model, df, label):
+  def plotCorrelations(self, model, df, data_type, label):
     '''
       Plot the correlation matrix based on the training set
     '''
-    if label not in ['data', 'mc']:
-      raise RuntimeError('Unknown label "{}". Aborting'.format(label))
+    if data_type not in ['data', 'mc']:
+      raise RuntimeError('Unknown data_type "{}". Aborting'.format(data_type))
 
     # get the score for the test dataframe
-    score = self.predictScore(model, df)
+    score = self.predictScore(model, df, label)
 
     # add the score to the dataframes
     df['score'] = score
@@ -478,24 +481,24 @@ class Trainer(object):
     g.set_xticklabels(self.features+['score'], rotation='vertical')
     g.set_yticklabels(self.features+['score'], rotation='horizontal')
 
-    plt.title('Linear Correlation Matrix - {}'.format(label))
+    plt.title('Linear Correlation Matrix - {}'.format(data_type))
     plt.tight_layout()
-    self.saveFig(plt, 'correlations_{}'.format(label))
+    self.saveFig(plt, 'correlations_{}_{}'.format(data_type, label))
     plt.clf()
 
 
-  def plotKSTest(self, model, x_train, x_val, y_train, y_val, label):
+  def plotKSTest(self, model, x_train, x_val, y_train, y_val, data_type, label):
     '''
       Plot the outcome of the Kolmogorov test
       Used to test the overfitting
     '''
-    if label not in ['data', 'mc']:
-      raise RuntimeError('Unknown label "{}". Aborting'.format(label))
+    if data_type not in ['data', 'mc']:
+      raise RuntimeError('Unknown data_type "{}". Aborting'.format(data_type))
 
 
     # only keep the data or mc components of the features
     # does it mess up with the normalisation?
-    if label == 'data':
+    if data_type == 'data':
       x_train_part = x_train.drop(y_train.query('is_signal==1').index)
       x_val_part = x_val.drop(y_val.query('is_signal==1').index)
     else:
@@ -515,7 +518,7 @@ class Trainer(object):
     if h1.Integral()!=0: h1.Scale(1./h1.Integral())
     if h2.Integral()!=0: h2.Scale(1./h2.Integral())
     c1.Draw()
-    h1.SetTitle('')
+    h1.SetTitle(label)
     h1.Draw("hist")
     h2.SetLineColor(ROOT.kRed)
     h2.SetFillColor(ROOT.kWhite)
@@ -524,11 +527,11 @@ class Trainer(object):
     c1.BuildLegend()
     ks_score = h1.KolmogorovTest(h2)
     ks_value = ROOT.TPaveText(0.7, 0.65, 0.88, 0.72, 'nbNDC')
-    ks_value.AddText('KS score {} = {}'.format(label, round(ks_score, 3)))
+    ks_value.AddText('KS score {} = {}'.format(data_type, round(ks_score, 3)))
     ks_value.SetFillColor(0)
     ks_value.Draw('EP same')
 
-    c1.SaveAs('{}/KS_test_{}.png'.format(self.outdir, label))
+    c1.SaveAs('{}/KS_test_{}_{}.png'.format(self.outdir, data_type, label))
 
 
   def process(self):
@@ -541,62 +544,67 @@ class Trainer(object):
     # copy script
     os.system('cp trainer.py {}'.format(self.outdir))
 
-    # get the samples
-    print '\n -> get the samples'
-    data_samples, data_test_samples, mc_samples, mc_test_samples = self.getSamples()
+    for category in self.categories:
+      print '\n-.-.-'
+      print 'category: {}'.format(category.label)
+      print '-.-.-'
 
-    # create dataframes
-    print '\n -> create the dataframes'
-    data_df, mc_df = self.createDataframe(data_samples, mc_samples)
-    data_test_df, mc_test_df = self.createDataframe(data_test_samples, mc_test_samples)
+      # get the samples
+      print '\n -> get the samples'
+      data_samples, data_test_samples, mc_samples, mc_test_samples = self.getSamples(extra_selection=category.definition_flat)
 
-    # assign the signal tag
-    data_df = self.assignTarget(data_df, self.target_branch, 0) 
-    mc_df = self.assignTarget(mc_df, self.target_branch, 1) 
+      # create dataframes
+      print '\n -> create the dataframes'
+      data_df, mc_df = self.createDataframe(data_samples, mc_samples)
+      data_test_df, mc_test_df = self.createDataframe(data_test_samples, mc_test_samples)
 
-    # here in the rjpsi, there would be some index engineering to isolate the testing
-    # set from the df. Instead, we want to test on different samples, which do not
-    # necessarily have the same signal signature, so we keep the full df and will
-    # use for testing the above defined *_test_df instead
+      # assign the signal tag
+      data_df = self.assignTarget(data_df, self.target_branch, 0) 
+      mc_df = self.assignTarget(mc_df, self.target_branch, 1) 
 
-    # preprocessing the dataframes
-    print '\n -> preprocessing the dataframes' 
-    main_df, qt, xx, Y = self.preprocessing(data_df, mc_df)
-    #TODO add the scatter plots?
+      # here in the rjpsi, there would be some index engineering to isolate the testing
+      # set from the df. Instead, we want to test on different samples, which do not
+      # necessarily have the same signal signature, so we keep the full df and will
+      # use for testing the above defined *_test_df instead
 
-    # define the NN
-    print '\n -> defining the model' 
-    model = self.defineModel()
+      # preprocessing the dataframes
+      print '\n -> preprocessing the dataframes' 
+      main_df, qt, xx, Y = self.preprocessing(data_df, mc_df, category.label)
+      #TODO add the scatter plots?
 
-    # define the callbacks
-    print '\n -> defining the callbacks' 
-    callbacks = self.defineCallbacks()
+      # define the NN
+      print '\n -> defining the model' 
+      model = self.defineModel()
 
-    # out of the main_df, define which data chunks to 
-    # train and test on. Make sure that the features
-    # are scaled
-    print '\n -> prepare the inputs' 
-    #x_train, x_val, y_train, y_val = self.prepareScaledInputs(main_df, Y, qt)
-    x_train, x_val, y_train, y_val = self.prepareInputs(xx, Y)
+      # define the callbacks
+      print '\n -> defining the callbacks' 
+      callbacks = self.defineCallbacks(category.label)
 
-    # do the training
-    print '\n -> training...' 
-    history = self.train(model, x_train, y_train, x_val, y_val, callbacks)
+      # out of the main_df, define which data chunks to 
+      # train and test on. Make sure that the features
+      # are scaled
+      print '\n -> prepare the inputs' 
+      #x_train, x_val, y_train, y_val = self.prepareScaledInputs(main_df, Y, qt)
+      x_train, x_val, y_train, y_val = self.prepareInputs(xx, Y)
 
-    # save the model
-    print '\n -> save the model' 
-    self.saveModel(model)
+      # do the training
+      print '\n -> training...' 
+      history = self.train(model, x_train, y_train, x_val, y_val, callbacks)
 
-    # plotting
-    print '\n -> plotting...' 
-    self.plotLoss(history)
-    self.plotAccuracy(history)
-    self.plotScore(model, mc_test_df, data_test_df)
-    self.plotROC(model, x_train, y_train, x_val, y_val)
-    self.plotCorrelations(model, data_df, 'data')
-    self.plotCorrelations(model, mc_df, 'mc')
-    self.plotKSTest(model, x_train, x_val, y_train, y_val, 'data')
-    self.plotKSTest(model, x_train, x_val, y_train, y_val, 'mc')
+      # save the model
+      print '\n -> save the model' 
+      self.saveModel(model, category.label)
+
+      # plotting
+      print '\n -> plotting...' 
+      self.plotLoss(history, category.label)
+      self.plotAccuracy(history, category.label)
+      self.plotScore(model, mc_test_df, data_test_df, category.label)
+      self.plotROC(model, x_train, y_train, x_val, y_val, category.label)
+      self.plotCorrelations(model, data_df, 'data', category.label)
+      self.plotCorrelations(model, mc_df, 'mc', category.label)
+      self.plotKSTest(model, x_train, x_val, y_train, y_val, 'data', category.label)
+      self.plotKSTest(model, x_train, x_val, y_train, y_val, 'mc', category.label)
 
 
 
@@ -610,12 +618,13 @@ if __name__ == '__main__':
   #features = ['pi_pt', 'pi_dcasig']
   epochs = 50
   batch_size = 32
-  learning_rate = 0.005
+  learning_rate = 0.01
   scaler_type = 'robust'
   do_early_stopping = True
   do_reduce_lr = True
   dirname = 'test'
   baseline_selection = 'hnl_charge==0 && ' + selection['baseline_08Aug22'].flat 
+  categories = categories['V12_08Aug22_permass']
   #NOTE add optimiser, learning rate etc? 
 
   trainer = Trainer(
@@ -628,6 +637,7 @@ if __name__ == '__main__':
       do_reduce_lr = do_reduce_lr,
       dirname = dirname,
       baseline_selection = baseline_selection,
+      categories = categories,
       )
 
   trainer.process()
