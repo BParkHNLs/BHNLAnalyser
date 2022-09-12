@@ -73,7 +73,7 @@ class Sample(object):
   def __init__(self, filename, selection, training_info, mass=None, ctau=None, colour=None, filter_efficiency=None, muon_rate=None):
     self.filename = filename
     self.selection = selection
-    cutbased_selection_qte = ['hnl_pt', 'hnl_charge', 'sv_lxysig'] 
+    cutbased_selection_qte = ['hnl_pt', 'hnl_charge', 'sv_lxysig', 'hnl_cos2d'] 
     self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True, columns=training_info.features+cutbased_selection_qte)
     self.mass = mass
     self.ctau = ctau
@@ -190,11 +190,13 @@ class MVAAnalyser(Tools, MVATools):
     return score
 
 
-  def plotScore(self, training_info, mc_samples, data_samples, category):
+  def plotScore(self, training_info, mc_samples, data_samples, category, do_log):
     '''
       Plot the score distributions for signal and background
     '''
     canv = self.tools.createTCanvas('canv'+category.label, 800, 700) 
+    if do_log:
+      canv.SetLogy()
     leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.65, xmax=0.65, ymax=0.83, size=0.04)
 
     # background
@@ -248,8 +250,9 @@ class MVAAnalyser(Tools, MVATools):
     leg.Draw('same')
 
     canv.cd()
-    name = '{}/score_{}_{}.png'.format(self.outdir, category.label, self.plot_label) if self.plot_label != None else '{}/score_{}.png'.format(self.outdir, category.label)
-    canv.SaveAs(name)
+    name = '{}/score_{}_{}'.format(self.outdir, category.label, self.plot_label) if self.plot_label != None else '{}/score_{}.png'.format(self.outdir, category.label)
+    if do_log: name += '_log'
+    canv.SaveAs(name + '.png')
 
 
   def plotROCCurve(self, training_info, mc_samples, data_samples, category, do_log=False):
@@ -275,7 +278,7 @@ class MVAAnalyser(Tools, MVATools):
 
       Y = pd.DataFrame(main_df, columns=['is_signal'])
       score = self.predictScore(training_info=training_info, df=main_df)
-      fpr, tpr, wps = roc_curve(Y, score) 
+      fpr, tpr, thresholds = roc_curve(Y, score) 
 
       plt.plot(fpr, tpr, linewidth=2, label='mva - ({}GeV, {}mm, {})'.format(mass, ctau, coupling))
       plt.xlabel('False Positive Rate')
@@ -310,7 +313,7 @@ class MVAAnalyser(Tools, MVATools):
       xy = [i*j for i,j in product([10.**i for i in range(-8, 0)], [1,2,4,8])]+[1]
       plt.plot(xy, xy, color='grey', linestyle='--')
 
-      plt.title(category.title)
+      plt.title(r'{}'.format(category.title))
       plt.xlim(0, 1)
       plt.ylim(0, 1)
 
@@ -324,6 +327,146 @@ class MVAAnalyser(Tools, MVATools):
         plt.legend(loc='lower right', framealpha=0.1)
 
     name = 'ROC_m{}_{}'.format(str(mc_samples[0].mass).replace('.', 'p'), category.label)
+    if do_log: name += '_log'
+    self.saveFig(plt, name)
+
+
+  def plotScoreCurve(self, training_info, mc_samples, data_samples, category, do_log=False):
+    pd.options.mode.chained_assignment = None
+    # create dataframe
+    data_df = self.createDataframe(data_samples)
+    data_df['is_signal'] = 0
+
+    plt.clf()
+    for mc_sample in mc_samples:
+      mass = mc_sample.mass
+      ctau = mc_sample.ctau
+      v2 = self.tools.getVV(mass=mass, ctau=ctau, ismaj=True)
+      coupling = self.tools.getCouplingLabel(v2)
+
+      mc_df = self.createDataframe([mc_sample])
+      mc_df['is_signal'] = 1
+
+      main_df = pd.concat([data_df, mc_df], sort=False)
+      main_df.index = np.array(range(len(main_df)))
+      main_df = main_df.sample(frac=1, replace=False, random_state=1986)
+
+      Y = pd.DataFrame(main_df, columns=['is_signal'])
+      score = self.predictScore(training_info=training_info, df=main_df)
+      fpr, tpr, thresholds = roc_curve(Y, score) 
+
+      plt.plot(thresholds, tpr-fpr, linewidth=2, label='mva - ({}GeV, {}mm, {})'.format(mass, ctau, coupling))
+      #plt.plot(thresholds, tpr / np.sqrt(fpr), linewidth=2, label='mva - ({}GeV, {}mm, {})'.format(mass, ctau, coupling))
+      plt.xlabel('Score')
+      plt.ylabel('True Positive Rate - False Positive Rate')
+
+      # get optimal score
+      optimal_idx = np.argmax(tpr - fpr)
+      optimal_score = thresholds[optimal_idx]
+      optimal_performance = tpr[optimal_idx] - fpr[optimal_idx]
+      plt.plot(optimal_score, optimal_performance, '*', markersize=10, label='Optimal - {}'.format(round(optimal_score, 2)))
+
+      plt.title(r'{}'.format(category.title))
+      plt.xlim(0, 1)
+      plt.ylim(0, 1)
+
+      if do_log:
+        plt.xscale('log')
+      plt.yscale('linear')
+
+      if do_log:
+        plt.legend(loc='upper left', framealpha=0.1)
+      else:
+        plt.legend(loc='lower right', framealpha=0.1)
+
+    name = 'score_curve_m{}_{}'.format(str(mc_samples[0].mass).replace('.', 'p'), category.label)
+    if do_log: name += '_log'
+    self.saveFig(plt, name)
+
+
+  def plotMVAPerformance(self, training_info, mc_samples, data_samples, category, do_log=False):
+    pd.options.mode.chained_assignment = None
+    # create dataframe
+    data_df = self.createDataframe(data_samples)
+    data_df['is_signal'] = 0
+
+    plt.clf()
+    for mc_sample in mc_samples:
+      mass = mc_sample.mass
+      ctau = mc_sample.ctau
+      v2 = self.tools.getVV(mass=mass, ctau=ctau, ismaj=True)
+      coupling = self.tools.getCouplingLabel(v2)
+
+      mc_df = self.createDataframe([mc_sample])
+      mc_df['is_signal'] = 1
+
+      main_df = pd.concat([data_df, mc_df], sort=False)
+      main_df.index = np.array(range(len(main_df)))
+      main_df = main_df.sample(frac=1, replace=False, random_state=1986)
+
+      # get mva performance
+      Y = pd.DataFrame(main_df, columns=['is_signal'])
+      score = self.predictScore(training_info=training_info, df=main_df)
+      false_positive_rate_mva, true_positive_rate_mva, thresholds = roc_curve(Y, score) 
+
+      # get cutbased performance
+      if mc_sample.mass < 3.: cutbased_selection = category.cutbased_selection_lowmass
+      elif mc_sample.mass >= 3. and mc_sample.mass < 4.5: cutbased_selection = category.cutbased_selection_mediummass
+      elif mc_sample.mass >= 4.5: cutbased_selection = category.cutbased_selection_highmass
+      if len(cutbased_selection) == 0:
+        cutbased_selection = category.cutbased_selection
+
+      main_df['cutbased_score'] = 0
+      
+      main_df_tmp1 = main_df.query(self.getPandasQuery(cutbased_selection))
+      main_df_tmp1['cutbased_score'] = 1
+
+      main_df_tmp2 = main_df.query(self.getPandasQuery('!({})'.format(cutbased_selection)))
+      main_df_tmp2['cutbased_score'] = 0
+
+      main_df_cutbased = pd.concat([main_df_tmp1, main_df_tmp2], sort=False)
+
+      TP = len(main_df_cutbased.query('cutbased_score==1 & is_signal==1'))
+      FN = len(main_df_cutbased.query('cutbased_score==0 & is_signal==1'))
+      FP = len(main_df_cutbased.query('cutbased_score==1 & is_signal==0'))
+      TN = len(main_df_cutbased.query('cutbased_score==0 & is_signal==0'))
+
+      true_positive_rate_cutbased_val = float(TP) / float(TP + FN)
+      false_positive_rate_cutbased_val = float(FP) / float(FP + TN)
+      #TODO fill object of same dimension as those returned by roc
+
+      true_positive_rate_cutbased = np.full(true_positive_rate_mva.shape, true_positive_rate_cutbased_val)
+      false_positive_rate_cutbased = np.full(false_positive_rate_mva.shape, false_positive_rate_cutbased_val)
+
+      relative_signal_efficiency = true_positive_rate_mva / true_positive_rate_cutbased
+      relative_background_efficiency = false_positive_rate_mva / false_positive_rate_cutbased
+      relative_significance = relative_signal_efficiency / np.sqrt(relative_background_efficiency)
+
+      plt.plot(thresholds, relative_significance, linewidth=2, label='({}GeV, {}mm, {})'.format(mass, ctau, coupling))
+      plt.xlabel('Score')
+      plt.ylabel('tpr(mva)/tpr(cut) / sqrt(fpr(mva)/fpr(cut))')
+
+      ## get optimal score
+      #optimal_idx = np.argmax(tpr - fpr)
+      #optimal_score = score[optimal_idx]
+      #optimal_performance = tpr[optimal_idx] - fpr[optimal_idx]
+      #plt.plot(optimal_score, optimal_performance, '*', markersize=10, label='Optimal - {}'.format(round(optimal_score, 2)))
+
+      plt.axhline(y = 1., color='black', linestyle = '--')
+      plt.title(r'{}'.format(category.title))
+      plt.xlim(0, 1)
+      #plt.ylim(0, 1)
+
+      if do_log:
+        plt.xscale('log')
+      plt.yscale('linear')
+
+      if do_log:
+        plt.legend(loc='upper left', framealpha=0.1)
+      else:
+        plt.legend(loc='lower right', framealpha=0.1)
+
+    name = 'mva_performance_m{}_{}'.format(str(mc_samples[0].mass).replace('.', 'p'), category.label)
     if do_log: name += '_log'
     self.saveFig(plt, name)
 
@@ -674,12 +817,15 @@ class MVAAnalyser(Tools, MVATools):
 
       if self.do_plotScore:
         print '\n -> plot the score'
-        self.plotScore(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category)
+        self.plotScore(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
+        self.plotScore(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=True)
 
       if self.do_plotROC:
         if category.label == 'incl': continue
         self.plotROCCurve(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
         self.plotROCCurve(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=True)
+        self.plotScoreCurve(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
+        self.plotMVAPerformance(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
 
       if self.do_createFiles:
         print '\n -> create rootfiles'
@@ -706,23 +852,28 @@ class MVAAnalyser(Tools, MVATools):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  dirname = 'test_20Aug2022_13h40m03s' # large ntuples
+  #dirname = 'test_20Aug2022_13h40m03s' # large ntuples
   #dirname = 'test_22Aug2022_16h08m33s'  # re-indexed
   #dirname = 'test_22Aug2022_16h17m44s' # not re-indexed
   #dirname = 'test_29Aug2022_11h52m47s' # trained on m1 ctau100
+  #dirname = 'test_08Sep2022_21h04m04s' # more features, more stat
+  #dirname = 'test_08Sep2022_21h56m30s' # larger learning rate
+  #dirname = 'test_08Sep2022_23h11m59s' # trained on ctau100 and ctau1
+  #dirname = 'test_08Sep2022_23h37m00s' # mass 1.5
+  dirname = 'test_09Sep2022_00h12m12s' # mass 4.5
 
   #baseline_selection = 'hnl_charge==0'
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
 
-  do_plotScore = False
+  do_plotScore = True
   do_createFiles = False
   do_plotSigScan = False
   do_plotROC = True
   do_plotDistributions = False
 
-  signal_labels = ['V12_08Aug22_m3']
+  signal_labels = ['V12_08Aug22_m4p5']
   #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-  plot_label = 'm1'
+  plot_label = 'm4p5'
 
   signal_files = []
   for signal_label in signal_labels:
@@ -733,7 +884,7 @@ if __name__ == '__main__':
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj1.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
 
   categories = categories['V12_08Aug22_permass']
   #categories = categories['inclusive']
