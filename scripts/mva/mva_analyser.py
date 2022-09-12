@@ -73,7 +73,7 @@ class Sample(object):
   def __init__(self, filename, selection, training_info, mass=None, ctau=None, colour=None, filter_efficiency=None, muon_rate=None):
     self.filename = filename
     self.selection = selection
-    cutbased_selection_qte = ['hnl_pt', 'hnl_charge', 'sv_lxysig', 'hnl_cos2d'] 
+    cutbased_selection_qte = ['hnl_pt', 'hnl_charge', 'sv_lxysig', 'hnl_cos2d', 'hnl_mass'] 
     self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True, columns=training_info.features+cutbased_selection_qte)
     self.mass = mass
     self.ctau = ctau
@@ -199,8 +199,19 @@ class MVAAnalyser(Tools, MVATools):
       canv.SetLogy()
     leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.65, xmax=0.65, ymax=0.83, size=0.04)
 
+    masses = []
+    for mc_sample in mc_samples:
+      if mc_sample.mass not in masses: masses.append(mc_sample.mass)
+    if len(masses) != 1:
+      raise RuntimeError('Please provide signal samples of the same mass')
+
+    mass = mc_samples[0].mass
+    resolution = resolutions[mass]
+
     # background
-    data_df = self.createDataframe(data_samples)
+    # consider the 10 sigma window around the signal mass
+    window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
+    data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
     bkg_score = self.predictScore(training_info, data_df)
 
     hist_bkg = ROOT.TH1F('bkg', 'bkg', 30, 0, 1)
@@ -250,15 +261,27 @@ class MVAAnalyser(Tools, MVATools):
     leg.Draw('same')
 
     canv.cd()
-    name = '{}/score_{}_{}'.format(self.outdir, category.label, self.plot_label) if self.plot_label != None else '{}/score_{}.png'.format(self.outdir, category.label)
+    name = '{}/score_m{}_{}'.format(self.outdir, str(mass).replace('.', 'p'), category.label)
     if do_log: name += '_log'
     canv.SaveAs(name + '.png')
 
 
   def plotROCCurve(self, training_info, mc_samples, data_samples, category, do_log=False):
     pd.options.mode.chained_assignment = None
+
+    masses = []
+    for mc_sample in mc_samples:
+      if mc_sample.mass not in masses: masses.append(mc_sample.mass)
+    if len(masses) != 1:
+      raise RuntimeError('Please provide signal samples of the same mass')
+
+    mass = mc_samples[0].mass
+    resolution = resolutions[mass]
+
+    # consider the 10 sigma window around the signal mass
+    window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
     # create dataframe
-    data_df = self.createDataframe(data_samples)
+    data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
     data_df['is_signal'] = 0
 
     plt.clf()
@@ -333,8 +356,20 @@ class MVAAnalyser(Tools, MVATools):
 
   def plotScoreCurve(self, training_info, mc_samples, data_samples, category, do_log=False):
     pd.options.mode.chained_assignment = None
+
+    masses = []
+    for mc_sample in mc_samples:
+      if mc_sample.mass not in masses: masses.append(mc_sample.mass)
+    if len(masses) != 1:
+      raise RuntimeError('Please provide signal samples of the same mass')
+
+    mass = mc_samples[0].mass
+    resolution = resolutions[mass]
+
+    # consider the 10 sigma window around the signal mass
+    window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
     # create dataframe
-    data_df = self.createDataframe(data_samples)
+    data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
     data_df['is_signal'] = 0
 
     plt.clf()
@@ -386,8 +421,20 @@ class MVAAnalyser(Tools, MVATools):
 
   def plotMVAPerformance(self, training_info, mc_samples, data_samples, category, do_log=False):
     pd.options.mode.chained_assignment = None
+
+    masses = []
+    for mc_sample in mc_samples:
+      if mc_sample.mass not in masses: masses.append(mc_sample.mass)
+    if len(masses) != 1:
+      raise RuntimeError('Please provide signal samples of the same mass')
+
+    mass = mc_samples[0].mass
+    resolution = resolutions[mass]
+
+    # consider the 10 sigma window around the signal mass
+    window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
     # create dataframe
-    data_df = self.createDataframe(data_samples)
+    data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
     data_df['is_signal'] = 0
 
     plt.clf()
@@ -871,9 +918,9 @@ if __name__ == '__main__':
   do_plotROC = True
   do_plotDistributions = False
 
-  signal_labels = ['V12_08Aug22_m4p5']
+  signal_labels = ['V12_08Aug22_m1p5']
   #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-  plot_label = 'm4p5'
+  #plot_label = 'm4p5'
 
   signal_files = []
   for signal_label in signal_labels:
@@ -893,7 +940,7 @@ if __name__ == '__main__':
       signal_files = signal_files,
       data_files = data_files,
       dirname = dirname,
-      plot_label = plot_label,
+      #plot_label = plot_label,
       baseline_selection = baseline_selection,
       categories = categories,
       do_plotScore = do_plotScore,
