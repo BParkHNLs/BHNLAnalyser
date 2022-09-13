@@ -88,20 +88,32 @@ class Trainer(object):
       Function that fetches the samples into lists
     '''
     #FIXME this should not be hardcoded!
-    #TODO in case of more complex baseline selection, convert it to a format that is digestable by pandas query
 
     print('========> starting reading the trees')
     now = time()
     ## data 
     # used for training
     filename_data_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root'
-    #filename_data_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj1.root'
-    #filename_data_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj2.root'
-    #filename_data_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj3.root'
+    filename_data_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk4_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk5_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_7 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk6_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_8 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk7_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_9 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_10 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_08Aug22_sr.root'
     data_samples = [
-      Sample(filename=filename_data_1, selection=self.baseline_selection),
-      #Sample(filename=filename_data_2, selection=self.baseline_selection),
-      #Sample(filename=filename_data_3, selection=self.baseline_selection),
+      Sample(filename=filename_data_1, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_2, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_3, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_4, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_5, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_6, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_7, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_8, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_9, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_10, selection=self.baseline_selection + ' && ' + extra_selection),
     ]
 
     # used for testing
@@ -116,36 +128,17 @@ class Trainer(object):
 
     ## signal
     # used for training
-    filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr.root'
+    filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
+    filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
+    filename_mc_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
     #filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_sr.root'
     #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
     #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
-    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj1.root'
-    #filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj2.root'
-    #filename_mc_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj3.root'
-    #filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj4.root'
-    #filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj5.root'
-    #filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj6.root'
-    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj1.root'
-    #filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj2.root'
-    #filename_mc_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj3.root'
-    #filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj4.root'
-    #filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj5.root'
-    #filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj6.root'
-    #filename_mc_7 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj6.root'
-    #filename_mc_8 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj6.root'
-    #filename_mc_9 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj6.root'
 
     mc_samples = [
-      Sample(filename=filename_mc_1, selection=self.baseline_selection),
-      #Sample(filename=filename_mc_2, selection=self.baseline_selection),
-      #Sample(filename=filename_mc_3, selection=self.baseline_selection),
-      #Sample(filename=filename_mc_4, selection=self.baseline_selection),
-      #Sample(filename=filename_mc_5, selection=self.baseline_selection),
-      #Sample(filename=filename_mc_6, selection=self.baseline_selection),
-      #Sample(filename=filename_mc_7, selection=self.baseline_selection),
-      #Sample(filename=filename_mc_8, selection=self.baseline_selection),
-      #Sample(filename=filename_mc_9, selection=self.baseline_selection),
+      Sample(filename=filename_mc_1, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_mc_2, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_mc_3, selection=self.baseline_selection + ' && ' + extra_selection),
     ]
 
     # used for testing
@@ -545,6 +538,7 @@ class Trainer(object):
     os.system('cp trainer.py {}'.format(self.outdir))
 
     for category in self.categories:
+      if category.label == 'incl': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
@@ -605,6 +599,12 @@ class Trainer(object):
       self.plotCorrelations(model, mc_df, 'mc', category.label)
       self.plotKSTest(model, x_train, x_val, y_train, y_val, 'data', category.label)
       self.plotKSTest(model, x_train, x_val, y_train, y_val, 'mc', category.label)
+
+      # cleaning
+      print '\n -> cleaning'
+      os.system('rm -r {}/saved-model*h5'.format(self.outdir))
+
+      print '\n --- Done ---'
 
 
 
