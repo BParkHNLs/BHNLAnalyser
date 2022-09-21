@@ -63,6 +63,7 @@ class TrainingInfo(object):
     print '\n --> get the features'
     features_filename = '/'.join([self.indir, 'input_features_{}.pck'.format(self.label)])
     features = pickle.load(open(features_filename, 'rb'))
+    if 'mass_key' in features: features.remove('mass_key')
     return features
 
 
@@ -71,7 +72,7 @@ class Sample(object):
   '''
     Class to convert the sample into dataframe while applying some selection
   '''
-  def __init__(self, filename, selection, training_info, mass=None, ctau=None, colour=None, filter_efficiency=None, muon_rate=None):
+  def __init__(self, filename, selection, training_info, do_parametric=False, mass=None, ctau=None, colour=None, filter_efficiency=None, muon_rate=None):
     self.filename = filename
     self.selection = selection
     cutbased_selection_qte = ['hnl_pt', 'hnl_charge', 'sv_lxysig', 'hnl_cos2d', 'hnl_mass'] 
@@ -87,15 +88,15 @@ class Sample(object):
 
 
 class MVAAnalyser(Tools, MVATools):
-  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, plot_label=None, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotDistributions=False):
+  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotDistributions=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_files = signal_files
     self.data_files = data_files
     self.dirname = dirname
-    self.plot_label = plot_label
     self.baseline_selection = baseline_selection
     self.categories = categories
+    self.do_parametric = do_parametric
     self.do_plotScore = do_plotScore
     self.do_createFiles = do_createFiles
     self.do_plotSigScan = do_plotSigScan
@@ -164,6 +165,9 @@ class MVAAnalyser(Tools, MVATools):
     '''
     df = pd.concat([idt.df for idt in samples], sort=False)
 
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df.dropna(inplace=True)
+
     return df
 
 
@@ -180,10 +184,10 @@ class MVAAnalyser(Tools, MVATools):
     '''
       Return score with scaled input features
     '''
-    x = pd.DataFrame(df, columns=training_info.features)
+    x = pd.DataFrame(df, columns=training_info.features + ['mass_key'])
 
     # apply the scaler
-    xx = training_info.qt.transform(x[training_info.features])
+    xx = training_info.qt.transform(x[training_info.features + ['mass_key']])
 
     # predict
     score = training_info.model.predict(xx)
@@ -195,6 +199,7 @@ class MVAAnalyser(Tools, MVATools):
     '''
       Plot the score distributions for signal and background
     '''
+    pd.options.mode.chained_assignment = None
     canv = self.tools.createTCanvas('canv'+category.label, 800, 700) 
     if do_log:
       canv.SetLogy()
@@ -213,6 +218,8 @@ class MVAAnalyser(Tools, MVATools):
     # consider the 10 sigma window around the signal mass
     window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
     data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
+    if self.do_parametric:
+      data_df['mass_key'] = mass
     bkg_score = self.predictScore(training_info, data_df)
 
     hist_bkg = ROOT.TH1F('bkg', 'bkg', 30, 0, 1)
@@ -240,6 +247,8 @@ class MVAAnalyser(Tools, MVATools):
     hist_sigs = []
     for mc_sample in mc_samples:
       mc_df = self.createDataframe([mc_sample])
+      if self.do_parametric:
+        mc_df['mass_key'] = mass
       sig_score = self.predictScore(training_info, mc_df)
 
       hist_name = 'sig_{}_{}'.format(mc_sample.mass, mc_sample.ctau)
@@ -283,6 +292,8 @@ class MVAAnalyser(Tools, MVATools):
     window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
     # create dataframe
     data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
+    if self.do_parametric:
+      data_df['mass_key'] = mass
     data_df['is_signal'] = 0
 
     plt.clf()
@@ -294,6 +305,8 @@ class MVAAnalyser(Tools, MVATools):
 
 
       mc_df = self.createDataframe([mc_sample])
+      if self.do_parametric:
+        mc_df['mass_key'] = mass
       mc_df['is_signal'] = 1
 
       main_df = pd.concat([data_df, mc_df], sort=False)
@@ -371,6 +384,8 @@ class MVAAnalyser(Tools, MVATools):
     window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
     # create dataframe
     data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
+    if self.do_parametric:
+      data_df['mass_key'] = mass
     data_df['is_signal'] = 0
 
     plt.clf()
@@ -381,6 +396,8 @@ class MVAAnalyser(Tools, MVATools):
       coupling = self.tools.getCouplingLabel(v2)
 
       mc_df = self.createDataframe([mc_sample])
+      if self.do_parametric:
+        mc_df['mass_key'] = mass
       mc_df['is_signal'] = 1
 
       main_df = pd.concat([data_df, mc_df], sort=False)
@@ -436,6 +453,8 @@ class MVAAnalyser(Tools, MVATools):
     window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
     # create dataframe
     data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
+    if self.do_parametric:
+      data_df['mass_key'] = mass
     data_df['is_signal'] = 0
 
     plt.clf()
@@ -446,6 +465,8 @@ class MVAAnalyser(Tools, MVATools):
       coupling = self.tools.getCouplingLabel(v2)
 
       mc_df = self.createDataframe([mc_sample])
+      if self.do_parametric:
+        mc_df['mass_key'] = mass
       mc_df['is_signal'] = 1
 
       main_df = pd.concat([data_df, mc_df], sort=False)
@@ -502,7 +523,8 @@ class MVAAnalyser(Tools, MVATools):
 
       plt.axhline(y = 1., color='black', linestyle = '--')
       plt.title(r'{}'.format(category.title))
-      plt.xlim(0, 1)
+      #plt.xlim(0, 1)
+      plt.xlim(0.8, 1)
       #plt.ylim(0, 1)
 
       if do_log:
@@ -698,7 +720,7 @@ class MVAAnalyser(Tools, MVATools):
     legend.Draw()
 
     canv.cd()
-    canv.SaveAs('{}/significance_diff_scan_{}_{}.png'.format(self.outdir, category.label, self.plot_label))
+    canv.SaveAs('{}/significance_diff_scan_{}.png'.format(self.outdir, category.label))
 
 
   def plotDistributions(self, quantity, sample, category, cut_score, do_shape=False):
@@ -857,6 +879,9 @@ class MVAAnalyser(Tools, MVATools):
     print '---- MVA Analyser ----'
 
     for category in self.categories:
+      if category.label == 'incl': continue
+      #if category.label != 'lxy1to5_OS': continue
+
       print '\n -> get the training information'
       training_info = TrainingInfo(self.dirname, category.label)
 
@@ -910,10 +935,25 @@ if __name__ == '__main__':
   #dirname = 'test_08Sep2022_23h37m00s' # mass 1.5
   #dirname = 'test_09Sep2022_00h12m12s' # mass 4.5
   #dirname = 'test_12Sep2022_14h47m55s' # mass 4.5, whnl nn
-  dirname = 'test_12Sep2022_20h28m05s' # mass 3, categories
+  #dirname = 'test_12Sep2022_22h23m42s' # mass 3, categories
+  #dirname = 'test_13Sep2022_10h23m24s' # mass 3, categories, mass window
+  #dirname = 'test_13Sep2022_21h38m47s'
+  #dirname = 'test_14Sep2022_10h06m37s' # mass 3, non parametric
+  #dirname = 'test_14Sep2022_10h08m03s' # mass 3, parametric extended to full spectrum
+  #dirname = 'test_14Sep2022_11h24m19s' # trained on masses 1.5, 3
+  #dirname = 'test_14Sep2022_11h40m11s' # trained on masses 1, 1.5, 2, 3, 4.5
+  #dirname = 'test_14Sep2022_14h26m36s' # as above, scaled key
+  #dirname = 'test_14Sep2022_14h56m50s' # 30 nsigma
+  #dirname = 'test_14Sep2022_20h33m22s' # 10 nsigma, different features with ctau and mass dependency, more balanced training
+  #dirname = 'test_15Sep2022_00h37m43s' # balanced
+  #dirname = 'test_15Sep2022_01h01m18s' # mixed ctau signal
+  #dirname = 'test_19Sep2022_16h33m33s' # mixed ctau signal, all samples
+  dirname = 'test_19Sep2022_17h05m13s' # all masses apart from mass 3
 
   #baseline_selection = 'hnl_charge==0'
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
+
+  do_parametric = True
 
   do_plotScore = True
   do_createFiles = False
@@ -923,7 +963,6 @@ if __name__ == '__main__':
 
   signal_labels = ['V12_08Aug22_m3']
   #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-  #plot_label = 'm4p5'
 
   signal_files = []
   for signal_label in signal_labels:
@@ -933,8 +972,8 @@ if __name__ == '__main__':
   data_files = []
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj1.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
 
   categories = categories['V12_08Aug22_permass']
   #categories = categories['inclusive']
@@ -943,9 +982,9 @@ if __name__ == '__main__':
       signal_files = signal_files,
       data_files = data_files,
       dirname = dirname,
-      #plot_label = plot_label,
       baseline_selection = baseline_selection,
       categories = categories,
+      do_parametric = do_parametric,
       do_plotScore = do_plotScore,
       do_createFiles = do_createFiles,
       do_plotSigScan = do_plotSigScan,
