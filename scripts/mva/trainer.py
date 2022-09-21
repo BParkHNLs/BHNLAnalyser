@@ -28,9 +28,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve
 from sklearn.preprocessing import RobustScaler, StandardScaler
 
+sys.path.append('../')
 sys.path.append('../../objects')
+from tools import Tools
+from samples import signal_samples
 from baseline_selection import selection
 from categories import categories
+from resolutions import resolutions
 
 
 class Sample(object):
@@ -47,7 +51,7 @@ class Sample(object):
 
 
 class Trainer(object):
-  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, dirname, baseline_selection, categories):
+  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, nsigma, dirname, baseline_selection, categories):
     self.features = features
     self.epochs = epochs
     self.batch_size = batch_size
@@ -59,8 +63,14 @@ class Trainer(object):
 
     self.baseline_selection = baseline_selection
     self.categories = categories
+    self.signal_label = signal_label
+    self.signal_files = signal_samples[self.signal_label]
+
+    self.do_parametric = do_parametric
+    self.nsigma = nsigma
 
     self.target_branch = 'is_signal'
+    self.do_scale_key = True
 
 
   def createOutDir(self):
@@ -87,12 +97,11 @@ class Trainer(object):
     '''
       Function that fetches the samples into lists
     '''
-    #FIXME this should not be hardcoded!
-
     print('========> starting reading the trees')
     now = time()
     ## data 
     # used for training
+    filename_data = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root'
     filename_data_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root'
     filename_data_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root'
     filename_data_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_08Aug22_sr.root'
@@ -104,6 +113,7 @@ class Trainer(object):
     filename_data_9 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_08Aug22_sr.root'
     filename_data_10 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_08Aug22_sr.root'
     data_samples = [
+      #Sample(filename=filename_data, selection=self.baseline_selection + ' && ' + extra_selection),
       Sample(filename=filename_data_1, selection=self.baseline_selection + ' && ' + extra_selection),
       Sample(filename=filename_data_2, selection=self.baseline_selection + ' && ' + extra_selection),
       Sample(filename=filename_data_3, selection=self.baseline_selection + ' && ' + extra_selection),
@@ -116,47 +126,54 @@ class Trainer(object):
       Sample(filename=filename_data_10, selection=self.baseline_selection + ' && ' + extra_selection),
     ]
 
-    # used for testing
-    filename_data_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj4.root'
-    filename_data_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj5.root'
-    filename_data_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr_nj6.root'
-    data_test_samples = [
-      Sample(filename=filename_data_4, selection=self.baseline_selection),
-      Sample(filename=filename_data_5, selection=self.baseline_selection),
-      Sample(filename=filename_data_6, selection=self.baseline_selection),
-    ]
-
     ## signal
-    # used for training
     filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
     filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
     filename_mc_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
-    #filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/flat/flat_bparknano_08Aug22_sr.root'
-    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p5_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
-    #filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau10p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
 
     mc_samples = [
       Sample(filename=filename_mc_1, selection=self.baseline_selection + ' && ' + extra_selection),
       Sample(filename=filename_mc_2, selection=self.baseline_selection + ' && ' + extra_selection),
       Sample(filename=filename_mc_3, selection=self.baseline_selection + ' && ' + extra_selection),
     ]
-
-    # used for testing
-    #filename_mc_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj4.root'
-    #filename_mc_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj5.root'
-    #filename_mc_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/flat/flat_bparknano_08Aug22_sr_nj6.root'
-    filename_mc_7 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj7.root'
-    filename_mc_8 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj8.root'
-    filename_mc_9 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n128/flat/flat_bparknano_08Aug22_sr_nj9.root'
-    mc_test_samples = [
-      Sample(filename=filename_mc_7, selection=self.baseline_selection),
-      Sample(filename=filename_mc_8, selection=self.baseline_selection),
-      Sample(filename=filename_mc_9, selection=self.baseline_selection),
-    ]
       
     print('========> it took %.2f seconds' %(time() - now))
 
-    return data_samples, data_test_samples, mc_samples, mc_test_samples
+    return data_samples, mc_samples
+
+
+  def getPandasQuery(self, selection):
+    '''
+      Converts selection to pandas query syntax
+    '''
+    query = selection.replace('&&', ' and ').replace('||', ' or ').replace('!=', ' not ').replace('!', ' not ')
+    
+    return query
+
+
+  def getMassList(self):
+    '''
+      Get the list of signal masses used in the training
+    '''
+    masses = []
+    for signal_file in self.signal_files:
+      mass = signal_file.mass
+      if mass not in masses:
+        masses.append(mass)
+
+    masses.sort()
+
+    return masses
+
+
+  def removeInfs(self, df):
+    '''
+      Remove rows with infs/nan in at least one of the features
+    '''
+    df = df.replace([np.inf, -np.inf], np.nan)
+    df = df.dropna(subset=self.features)
+
+    return df
 
 
   def createDataframe(self, data_samples, mc_samples):
@@ -166,7 +183,117 @@ class Trainer(object):
     data_df = pd.concat([idt.df for idt in data_samples], sort=False)
     mc_df   = pd.concat([imc.df for imc in mc_samples]  , sort=False)
 
+    data_df = self.removeInfs(data_df)
+    mc_df = self.removeInfs(mc_df)
+
     return data_df, mc_df
+
+
+  def createParametrisedDataframe(self, extra_selection, data_type, statistics=None):
+    '''
+      Function to create the dataframe with the training features and parameter
+      The statistics is balanced between the signal and background, among the signal
+      hypotheses and the background windows
+    '''
+    if data_type not in ['data', 'mc']:
+      raise RuntimeError('Unknown data type "{}". Please check'.format(data_type))
+
+    if data_type == 'data' and statistics == None:
+      raise RuntimeError('Please first create mc dataframe in order to get the available statistics')
+
+    pd.options.mode.chained_assignment = None
+
+    masses = self.getMassList()
+    
+    if data_type == 'mc':
+      stats = dict.fromkeys(masses, 0)
+      n_ctaus = dict.fromkeys(masses, 0)
+      dfs = dict.fromkeys(masses, []) 
+
+      for signal_file in self.signal_files: 
+        # get sample
+        sample = Sample(filename=signal_file.filename, selection=self.baseline_selection + ' && ' + extra_selection)
+
+        # get dataframe
+        the_df = sample.df
+
+        # get the statistics per mass point
+        stats[signal_file.mass] += len(the_df)
+
+        # get number of ctau samples per mass point
+        n_ctaus[signal_file.mass] += 1
+
+        # set the mass parameter to the exact value
+        the_df['mass_key'] = signal_file.mass
+
+        # compute the signal weight (unused for the time being)
+        # lumi set to one as the normalisation does not matter
+        the_df['weight'] = Tools().getSignalWeight(signal_files=[signal_file], mass=signal_file.mass, ctau=signal_file.ctau, sigma_B=472.8e9, lumi=1, lhe_efficiency=0.08244) #TODO what about isBc?
+
+        dfs[signal_file.mass] = dfs[signal_file.mass] + [the_df]
+
+      # get the minimum statistics 
+      statistics = stats[min(stats, key=stats.get)]
+      
+      df = pd.DataFrame()
+      for mass in masses:
+        df_tmp = pd.concat([(idt.sample(statistics/n_ctaus[mass]) if statistics/n_ctaus[mass]<len(idt) else idt) for idt in dfs[mass]], sort=False)
+        df = pd.concat([df, df_tmp], sort=False) 
+        
+    elif data_type == 'data':
+      # get the sample
+      samples, n = self.getSamples(extra_selection) #TODO this is probably something that we would like to fix. E.g go with data_files? 
+
+      df_full = [] # will be used for plotting purposes later on
+      dfs = dict.fromkeys(masses, []) 
+
+      for sample in samples:
+        # get the dataframe
+        the_df = sample.df
+        df_full.append(the_df)
+
+        # first set an invalid parameter for the full spectrum. Ranges with this parameter will be removed from the training
+        the_df['mass_key'] = -1 
+        
+        # and define the windows of nsigma around the mass hypothesis
+        # set the mass parameter for a nsigma window range
+        window_check = -1
+        for mass in masses:
+          window_min = mass - self.nsigma * resolutions[mass]
+          window_max = mass + self.nsigma * resolutions[mass]
+          # prevent windows to overlap
+          #if window_check != -1 and window_min <= window_check:
+          #  raise RuntimeError('There is an overlap of window around mass {} GeV with the previous window. Please adapt the window size.'.format(mass))
+
+          window = 'hnl_mass > {} && hnl_mass < {}'.format(window_min, window_max)
+          df_window = the_df.query(self.getPandasQuery(window))
+          df_window['mass_key'] = mass
+
+          # set the weight
+          df_window['weight'] = 1
+          dfs[mass] = dfs[mass] + [df_window]
+
+          window_check = window_max
+
+      df_full = pd.concat([idt for idt in df_full], sort=False)
+
+      df = pd.DataFrame()
+      for mass in masses:
+        stat_permass = 0
+        for the_df in dfs[mass]:
+          stat_permass += len(the_df)
+        if stat_permass < statistics/len(masses):
+          raise RuntimeError('Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics/len(masses), stat_permass))
+        df_tmp = pd.concat([idt for idt in dfs[mass]], sort=False)
+        df_tmp = df_tmp.sample(statistics/len(masses))
+        df = pd.concat([df, df_tmp], sort=False) 
+    
+    df = self.removeInfs(df)
+
+    if data_type == 'mc':
+      return df, statistics * len(masses)
+    else:
+      return df, df_full
 
 
   def assignTarget(self, df, branch, target):
@@ -190,8 +317,17 @@ class Trainer(object):
       else:
         raise RuntimeError('Unknown scaler "{}" - Aborting...'.format(self.scaler_type))
 
-      qt.fit(X[features])
-      xx = qt.transform(X[features])
+      if not self.do_parametric:
+        qt.fit(X[self.features])
+        xx = qt.transform(X[self.features])
+      else:
+        if self.do_scale_key:
+          qt.fit(X[self.features + ['mass_key']])
+          xx = qt.transform(X[self.features + ['mass_key']])
+        else:
+          qt.fit(X[self.features])
+          xx = qt.transform(X[self.features])
+          xx = np.insert(xx, (len(self.features)), X['mass_key'], axis=1)
 
       return xx, qt
 
@@ -216,7 +352,10 @@ class Trainer(object):
     main_df = main_df.sample(frac=1, replace=False, random_state=1986) # of course, keep R's seed ;)
 
     # X and Y
-    X = pd.DataFrame(main_df, columns=list(set(self.features)))
+    if not self.do_parametric:
+      X = pd.DataFrame(main_df, columns=list(set(self.features)))
+    else:
+      X = pd.DataFrame(main_df, columns=list(set(self.features)) + ['mass_key'])
     Y = pd.DataFrame(main_df, columns=[self.target_branch])
 
     # scale the features
@@ -230,7 +369,10 @@ class Trainer(object):
 
     # save the exact list of features
     features_filename = '/'.join([self.outdir, 'input_features_{}.pck'.format(label)])
-    pickle.dump(self.features, open(features_filename, 'wb' ))
+    if not self.do_parametric:
+      pickle.dump(self.features, open(features_filename, 'wb' ))
+    else:
+      pickle.dump(self.features + ['mass_key'], open(features_filename, 'wb' ))
     print ' --> {} created'.format(features_filename)
 
     return main_df, qt, xx, Y
@@ -245,7 +387,8 @@ class Trainer(object):
     activation = 'relu'
     
     # define the net
-    input  = Input((len(features),))
+    n_input = len(self.features) if not self.do_parametric else len(self.features) + 1 
+    input  = Input((n_input,))
     layer  = Dense(64, activation=activation, name='dense1', kernel_constraint=unit_norm())(input)
     output = Dense(1 , activation='sigmoid' , name='output', )(layer)
 
@@ -271,7 +414,7 @@ class Trainer(object):
     reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=5, min_lr=0.00001, cooldown=10, verbose=True)
     
     # save the model every now and then
-    #filepath = '/'.join([self.outdir, 'saved-model-{epoch:04d}_val_loss_{val_loss:.4f}_val_acc_{val_acc:.4f}_{lbl}.h5'.format(lbl=label)])
+    # kept only during excecution time and removed afterwards
     filepath = '/'.join([self.outdir, 'saved-model-{epoch:04d}_val_loss_{val_loss:.4f}_val_acc_{val_acc:.4f}.h5'])
     save_model = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
     
@@ -294,8 +437,12 @@ class Trainer(object):
     x_train, x_val, y_train, y_val = train_test_split(xx, Y, test_size=0.2, shuffle=True)
     
     # the x should only contain the features and not all the branches of main_df
-    x_train = pd.DataFrame(x_train, columns=list(set(self.features))) # alternative to X_train[self.features[:]]
-    x_val = pd.DataFrame(x_val, columns=list(set(self.features)))
+    if not self.do_parametric:
+      x_train = pd.DataFrame(x_train, columns=list(set(self.features))) # alternative to X_train[self.features[:]]
+      x_val = pd.DataFrame(x_val, columns=list(set(self.features)))
+    else:
+      x_train = pd.DataFrame(x_train, columns=list(set(self.features)) + ['mass_key'])
+      x_val = pd.DataFrame(x_val, columns=list(set(self.features)) + ['mass_key'])
 
     x_train = x_train.reset_index(drop=True)
     x_val = x_val.reset_index(drop=True)
@@ -309,6 +456,8 @@ class Trainer(object):
     '''
       Separate the main dataframe into training and validation sets
       The features are normalised according to the scaler qt
+
+      NB: function not adapted to the parametric case
     '''
 
     x_train, x_val, y_train, y_val = train_test_split(main_df, Y, test_size=0.2, shuffle=True)
@@ -325,6 +474,7 @@ class Trainer(object):
       Perform the training
     '''
     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)  
+    #TODO apply weight if any
 
     return history
     
@@ -333,12 +483,20 @@ class Trainer(object):
     '''
       Return score with scaled input features
     '''
-    x = pd.DataFrame(df, columns=self.features)
+    if not self.do_scale_key:
+      x = pd.DataFrame(df, columns=self.features)
+    else:
+      x = pd.DataFrame(df, columns=self.features + ['mass_key'])
 
     # apply the scaler
     scaler_filename = '/'.join([self.outdir, 'input_tranformation_weighted_{}.pck'.format(label)])
     qt = pickle.load(open(scaler_filename, 'rb'))
-    xx = qt.transform(x[self.features])
+
+    # if not scaling key
+    if not self.do_scale_key:
+      xx = qt.transform(x[self.features])
+    else:
+      xx = qt.transform(x[self.features + ['mass_key']])
 
     # predict
     score = model.predict(xx)
@@ -353,6 +511,37 @@ class Trainer(object):
     model_filename = '{}/net_model_weighted_{}.h5'.format(self.outdir, label)
     model.save(model_filename)
     print ' --> {} created'.format(model_filename)
+
+
+  def plotParametrisedMass(self, df, df_full=None, data_type='', label=''):
+    '''
+    '''
+    if data_type not in ['data', 'mc']:
+      raise RuntimeError('Unknown data type "{}". Please check'.format(data_type))
+
+    masses = self.getMassList()
+    bin_min = 0
+    bin_max = 6.5
+    nbins = 80.
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    #if not df_full.empty:
+    if isinstance(df_full, pd.DataFrame):
+      ax.hist(df_full['hnl_mass'], bins=np.arange(bin_min, bin_max, (bin_max-bin_min)/nbins), color='whitesmoke', label='unused')
+
+    for mass in masses:
+      window_min = mass - self.nsigma * resolutions[mass]
+      window_max = mass + self.nsigma * resolutions[mass]
+      window = 'hnl_mass > {} && hnl_mass < {}'.format(window_min, window_max)
+      df_window = df.query(self.getPandasQuery(window))
+      ax.hist(df_window['hnl_mass'], bins=np.arange(bin_min, bin_max, (bin_max-bin_min)/nbins), label='mass key = {}'.format(mass))
+
+    ax.legend(loc='upper right',prop={'size': 12})
+    ax.set_title(label, fontsize=20)
+    ax.set_xlabel('Mass spectrum',fontsize=18)
+    self.saveFig(fig, 'mass_{}_{}'.format(data_type, label))
+    plt.clf()
 
 
   def plotLoss(self, history, label):
@@ -412,8 +601,6 @@ class Trainer(object):
     ax.legend(loc='upper left',prop={'size': 12})
     ax.set_title("Score distribution for testing set - {}".format(label), fontsize=20)
     ax.set_xlabel('Score',fontsize=18)
-    fig.savefig('outputs/score.pdf')
-    fig.savefig('outputs/score.png')
     self.saveFig(fig, 'score_{}'.format(label))
     plt.clf()
 
@@ -539,27 +726,32 @@ class Trainer(object):
 
     for category in self.categories:
       if category.label == 'incl': continue
+      #if category.label != 'lxy1to5_OS': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
 
       # get the samples
-      print '\n -> get the samples'
-      data_samples, data_test_samples, mc_samples, mc_test_samples = self.getSamples(extra_selection=category.definition_flat)
+      if not self.do_parametric:
+        print '\n -> get the samples'
+        data_samples, mc_samples = self.getSamples(extra_selection=category.definition_flat)
 
-      # create dataframes
-      print '\n -> create the dataframes'
-      data_df, mc_df = self.createDataframe(data_samples, mc_samples)
-      data_test_df, mc_test_df = self.createDataframe(data_test_samples, mc_test_samples)
+        # create dataframes
+        print '\n -> create the dataframes'
+        data_df, mc_df = self.createDataframe(data_samples, mc_samples)
+
+      else:
+        print '\n -> create the dataframes'
+        mc_df, statistics = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='mc')
+        data_df, data_df_full = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='data', statistics=statistics)
 
       # assign the signal tag
       data_df = self.assignTarget(data_df, self.target_branch, 0) 
       mc_df = self.assignTarget(mc_df, self.target_branch, 1) 
 
-      # here in the rjpsi, there would be some index engineering to isolate the testing
-      # set from the df. Instead, we want to test on different samples, which do not
-      # necessarily have the same signal signature, so we keep the full df and will
-      # use for testing the above defined *_test_df instead
+      if self.do_parametric:
+        self.plotParametrisedMass(df=data_df, df_full=data_df_full, data_type='data', label=category.label)
+        self.plotParametrisedMass(df=mc_df, data_type='mc', label=category.label)
 
       # preprocessing the dataframes
       print '\n -> preprocessing the dataframes' 
@@ -591,9 +783,13 @@ class Trainer(object):
 
       # plotting
       print '\n -> plotting...' 
+      if self.do_parametric:
+        self.plotParametrisedMass(df=data_df, df_full=data_df_full, data_type='data', label=category.label)
+        self.plotParametrisedMass(df=mc_df, data_type='mc', label=category.label)
       self.plotLoss(history, category.label)
       self.plotAccuracy(history, category.label)
-      self.plotScore(model, mc_test_df, data_test_df, category.label)
+      #self.plotScore(model, mc_test_df, data_test_df, category.label)
+      #self.plotScore(model, mc_df, data_df, category.label)
       self.plotROC(model, x_train, y_train, x_val, y_val, category.label)
       self.plotCorrelations(model, data_df, 'data', category.label)
       self.plotCorrelations(model, mc_df, 'mc', category.label)
@@ -614,7 +810,9 @@ if __name__ == '__main__':
 
   #features = ['pi_pt', 'b_mass', 'pi_dcasig', 'hnl_cos2d', 'sv_prob']
   #features = ['pi_pt', 'pi_eta', 'mu_pt', 'mu_eta', 'mu0_pt', 'mu0_eta', 'b_pt', 'b_eta', 'b_mass', 'mu0_mu_mass', 'mu0_mu_pt', 'mu0_pi_mass', 'mu0_pi_pt', 'deltar_mu_pi', 'deltar_mu0_hnl', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_chi2', 'sv_prob']
-  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu_pi', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_prob']
+  #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu_pi', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_prob']
+  #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'sv_prob'] # remove the deltaRs but keep masses as they can learn about possible sm resonances?
+  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'pi_dcasig', 'sv_lxysig', 'sv_prob']
   #features = ['pi_pt', 'pi_dcasig']
   epochs = 50
   batch_size = 32
@@ -627,6 +825,10 @@ if __name__ == '__main__':
   categories = categories['V12_08Aug22_permass']
   #NOTE add optimiser, learning rate etc? 
 
+  do_parametric = True
+  nsigma = 10
+  signal_label = 'V12_08Aug22_training_large'
+
   trainer = Trainer(
       features = features, 
       epochs = epochs,
@@ -635,6 +837,9 @@ if __name__ == '__main__':
       scaler_type = scaler_type,
       do_early_stopping = do_early_stopping,
       do_reduce_lr = do_reduce_lr,
+      do_parametric = do_parametric,
+      signal_label = signal_label, 
+      nsigma = nsigma,
       dirname = dirname,
       baseline_selection = baseline_selection,
       categories = categories,
