@@ -17,6 +17,7 @@ from array import array
 
 from keras.models import load_model
 from sklearn.metrics import roc_curve
+from sklearn.metrics import auc as sklearn_auc
 
 sys.path.append('../')
 sys.path.append('../../objects')
@@ -26,7 +27,7 @@ from mva_tools import MVATools
 from samples import signal_samples, data_samples
 from categories import categories
 from baseline_selection import selection
-from resolutions import resolutions
+#from resolutions import resolutions
 from quantity import Quantity as Qte
 
 
@@ -88,7 +89,7 @@ class Sample(object):
 
 
 class MVAAnalyser(Tools, MVATools):
-  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotDistributions=False):
+  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotAUC=False, do_plotDistributions=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_files = signal_files
@@ -101,9 +102,13 @@ class MVAAnalyser(Tools, MVATools):
     self.do_createFiles = do_createFiles
     self.do_plotSigScan = do_plotSigScan
     self.do_plotROC = do_plotROC
+    self.do_plotAUC = do_plotAUC
     self.do_plotDistributions = do_plotDistributions
 
     self.outdir = self.createOutDir()
+
+    self.resolution_p0 = 0.0002747
+    self.resolution_p1 = 0.008302
 
     self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2'
     self.weight_pusig = 'weight_pu_sig_D'
@@ -184,10 +189,16 @@ class MVAAnalyser(Tools, MVATools):
     '''
       Return score with scaled input features
     '''
-    x = pd.DataFrame(df, columns=training_info.features + ['mass_key'])
+    if self.do_parametric:
+      x = pd.DataFrame(df, columns=training_info.features + ['mass_key'])
+    else:
+      x = pd.DataFrame(df, columns=training_info.features)
 
     # apply the scaler
-    xx = training_info.qt.transform(x[training_info.features + ['mass_key']])
+    if self.do_parametric:
+      xx = training_info.qt.transform(x[training_info.features + ['mass_key']])
+    else:
+      xx = training_info.qt.transform(x[training_info.features])
 
     # predict
     score = training_info.model.predict(xx)
@@ -212,7 +223,7 @@ class MVAAnalyser(Tools, MVATools):
       raise RuntimeError('Please provide signal samples of the same mass')
 
     mass = mc_samples[0].mass
-    resolution = resolutions[mass]
+    resolution = self.resolution_p0 + self.resolution_p1 * mass
 
     # background
     # consider the 10 sigma window around the signal mass
@@ -286,7 +297,7 @@ class MVAAnalyser(Tools, MVATools):
       raise RuntimeError('Please provide signal samples of the same mass')
 
     mass = mc_samples[0].mass
-    resolution = resolutions[mass]
+    resolution = self.resolution_p0 + self.resolution_p1 * mass
 
     # consider the 10 sigma window around the signal mass
     window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
@@ -351,7 +362,10 @@ class MVAAnalyser(Tools, MVATools):
       plt.plot(xy, xy, color='grey', linestyle='--')
 
       plt.title(r'{}'.format(category.title))
-      plt.xlim(0, 1)
+      if do_log:
+        plt.xlim(1e-5, 1)
+      else:
+        plt.xlim(0, 1)
       plt.ylim(0, 1)
 
       if do_log:
@@ -368,6 +382,63 @@ class MVAAnalyser(Tools, MVATools):
     self.saveFig(plt, name)
 
 
+  def plotAUCGraph(self, training_info, mc_samples, data_samples, category):
+    pd.options.mode.chained_assignment = None
+
+    masses = []
+    for mc_sample in mc_samples:
+      if mc_sample.mass not in masses: masses.append(mc_sample.mass)
+
+    graph = ROOT.TGraph()
+
+    for mc_sample in mc_samples:
+      mass = mc_sample.mass
+      ctau = mc_sample.ctau
+      resolution = self.resolution_p0 + self.resolution_p1 * mass
+
+      # consider the 10 sigma window around the signal mass
+      window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
+      # create dataframe
+      data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
+      if self.do_parametric:
+        data_df['mass_key'] = mass
+      data_df['is_signal'] = 0
+
+      mc_df = self.createDataframe([mc_sample])
+      if self.do_parametric:
+        mc_df['mass_key'] = mass
+      mc_df['is_signal'] = 1
+
+      main_df = pd.concat([data_df, mc_df], sort=False)
+      main_df.index = np.array(range(len(main_df)))
+      main_df = main_df.sample(frac=1, replace=False, random_state=1986)
+
+      Y = pd.DataFrame(main_df, columns=['is_signal'])
+      score = self.predictScore(training_info=training_info, df=main_df)
+      fpr, tpr, thresholds = roc_curve(Y, score) 
+      auc = sklearn_auc(fpr, tpr)
+
+      point = graph.GetN() 
+      graph.SetPoint(point, mass, auc)
+      graph.SetMarkerColor(ROOT.kRed)
+      graph.SetMarkerStyle(20)
+      graph.GetXaxis().SetTitle('Signal mass [GeV]')
+      graph.GetXaxis().SetLabelSize(0.037)
+      graph.GetXaxis().SetTitleSize(0.042)
+      graph.GetXaxis().SetTitleOffset(1.1)
+      graph.GetYaxis().SetTitle('AUC')
+      graph.GetYaxis().SetLabelSize(0.037)
+      graph.GetYaxis().SetTitleSize(0.042)
+      graph.GetYaxis().SetTitleOffset(1.1)
+      graph.GetYaxis().SetRangeUser(0.7, 1)
+
+    canv = self.tools.createTCanvas('canv', 800, 700) 
+    graph.Draw('AP')
+
+    name = 'AUC'.format(str(mc_samples[0].mass).replace('.', 'p'), category.label)
+    canv.SaveAs('{}/{}.png'.format(self.outdir, name))
+
+
   def plotScoreCurve(self, training_info, mc_samples, data_samples, category, do_log=False):
     pd.options.mode.chained_assignment = None
 
@@ -378,7 +449,7 @@ class MVAAnalyser(Tools, MVATools):
       raise RuntimeError('Please provide signal samples of the same mass')
 
     mass = mc_samples[0].mass
-    resolution = resolutions[mass]
+    resolution = self.resolution_p0 + self.resolution_p1 * mass
 
     # consider the 10 sigma window around the signal mass
     window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
@@ -447,7 +518,7 @@ class MVAAnalyser(Tools, MVATools):
       raise RuntimeError('Please provide signal samples of the same mass')
 
     mass = mc_samples[0].mass
-    resolution = resolutions[mass]
+    resolution = self.resolution_p0 + self.resolution_p1 * mass
 
     # consider the 10 sigma window around the signal mass
     window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
@@ -599,7 +670,7 @@ class MVAAnalyser(Tools, MVATools):
 
       # get signal features
       signal_mass = mc_sample.mass
-      signal_resolution = resolutions[signal_mass]
+      signal_resolution = self.resolution_p0 + self.resolution_p1 * signal_mass
       signal_ctau = mc_sample.ctau
       #if signal_ctau != 1000.: continue
 
@@ -900,6 +971,9 @@ class MVAAnalyser(Tools, MVATools):
         self.plotScoreCurve(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
         self.plotMVAPerformance(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
 
+      if self.do_plotAUC:
+        self.plotAUCGraph(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category)
+
       if self.do_createFiles:
         print '\n -> create rootfiles'
         self.createRootFile(training_info, mc_samples, 'sample_mc')
@@ -947,8 +1021,9 @@ if __name__ == '__main__':
   #dirname = 'test_14Sep2022_20h33m22s' # 10 nsigma, different features with ctau and mass dependency, more balanced training
   #dirname = 'test_15Sep2022_00h37m43s' # balanced
   #dirname = 'test_15Sep2022_01h01m18s' # mixed ctau signal
-  #dirname = 'test_19Sep2022_16h33m33s' # mixed ctau signal, all samples
-  dirname = 'test_19Sep2022_17h05m13s' # all masses apart from mass 3
+  dirname = 'test_19Sep2022_16h33m33s' # mixed ctau signal, all samples
+  #dirname = 'test_19Sep2022_17h05m13s' # all masses apart from mass 3
+  #dirname = 'test_21Sep2022_13h36m30s' # parametric as above trained on mass 3 only
 
   #baseline_selection = 'hnl_charge==0'
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
@@ -959,10 +1034,109 @@ if __name__ == '__main__':
   do_createFiles = False
   do_plotSigScan = False
   do_plotROC = True
+  do_plotAUC = False
   do_plotDistributions = False
 
-  signal_labels = ['V12_08Aug22_m3']
+  #signal_labels = ['V12_08Aug22_m3']
   #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
+  signal_labels = [
+    'V42_08Aug22_m0p5',
+    'V42_08Aug22_m0p6',
+    'V42_08Aug22_m0p7',
+    'V42_08Aug22_m0p8',
+    'V42_08Aug22_m0p9',
+    'V42_08Aug22_m1p02',
+    'V42_08Aug22_m1p04',
+    'V42_08Aug22_m1p06',
+    'V42_08Aug22_m1p08',
+    'V42_08Aug22_m1p1',
+    'V42_08Aug22_m1p12',
+    #'V42_08Aug22_m1p14',
+    'V42_08Aug22_m1p16',
+    'V42_08Aug22_m1p18',
+    'V42_08Aug22_m1p2',
+    'V42_08Aug22_m1p22',
+    'V42_08Aug22_m1p24',
+    'V42_08Aug22_m1p26',
+    #'V42_08Aug22_m1p28',
+    'V42_08Aug22_m1p3',
+    'V42_08Aug22_m1p32',
+    'V42_08Aug22_m1p34',
+    'V42_08Aug22_m1p36',
+    'V42_08Aug22_m1p38',
+    'V42_08Aug22_m1p4',
+    'V42_08Aug22_m1p42',
+    'V42_08Aug22_m1p44',
+    'V42_08Aug22_m1p46',
+    'V42_08Aug22_m1p48',
+    'V42_08Aug22_m1p5',
+    'V42_08Aug22_m1p53',
+    'V42_08Aug22_m1p56',
+    'V42_08Aug22_m1p59',
+    #'V42_08Aug22_m1p62',
+    'V42_08Aug22_m1p65',
+    #'V42_08Aug22_m1p68',
+    'V42_08Aug22_m1p71',
+    'V42_08Aug22_m1p74',
+    'V42_08Aug22_m1p77',
+    'V42_08Aug22_m1p8',
+    'V42_08Aug22_m1p83',
+    #'V42_08Aug22_m1p86',
+    #'V42_08Aug22_m1p89',
+    'V42_08Aug22_m1p92',
+    'V42_08Aug22_m1p95',
+    #'V42_08Aug22_m1p98',
+    #'V42_08Aug22_m2p05',
+    'V42_08Aug22_m2p0',
+    'V42_08Aug22_m2p1',
+    'V42_08Aug22_m2p15',
+    #'V42_08Aug22_m2p2',
+    'V42_08Aug22_m2p25',
+    'V42_08Aug22_m2p3',
+    'V42_08Aug22_m2p35',
+    #'V42_08Aug22_m2p4',
+    'V42_08Aug22_m2p45',
+    'V42_08Aug22_m2p5',
+    'V42_08Aug22_m2p55',
+    'V42_08Aug22_m2p6',
+    'V42_08Aug22_m2p65',
+    'V42_08Aug22_m2p7',
+    #'V42_08Aug22_m2p75',
+    'V42_08Aug22_m2p8',
+    'V42_08Aug22_m2p85',
+    'V42_08Aug22_m2p9',
+    'V42_08Aug22_m2p95',
+    'V42_08Aug22_m3p0',
+    'V42_08Aug22_m3p05',
+    'V42_08Aug22_m3p1',
+    'V42_08Aug22_m3p15',
+    'V42_08Aug22_m3p2',
+    'V42_08Aug22_m3p25',
+    'V42_08Aug22_m3p3',
+    'V42_08Aug22_m3p35',
+    'V42_08Aug22_m3p4',
+    'V42_08Aug22_m3p45',
+    'V42_08Aug22_m3p5',
+    'V42_08Aug22_m3p55',
+    'V42_08Aug22_m3p6',
+    'V42_08Aug22_m3p65',
+    'V42_08Aug22_m3p7',
+    'V42_08Aug22_m3p75',
+    'V42_08Aug22_m3p8',
+    'V42_08Aug22_m3p85',
+    'V42_08Aug22_m3p9',
+    'V42_08Aug22_m3p95',
+    'V42_08Aug22_m4p0',
+    'V42_08Aug22_m4p1',
+    'V42_08Aug22_m4p2',
+    #'V42_08Aug22_m4p3',
+    #'V42_08Aug22_m4p4',
+    'V42_08Aug22_m4p5',
+    'V42_08Aug22_m4p6',
+    #'V42_08Aug22_m4p7',
+    #'V42_08Aug22_m4p8',
+  ]
+  #signal_labels = ['V12_08Aug22_m3']
 
   signal_files = []
   for signal_label in signal_labels:
@@ -989,6 +1163,7 @@ if __name__ == '__main__':
       do_createFiles = do_createFiles,
       do_plotSigScan = do_plotSigScan,
       do_plotROC = do_plotROC,
+      do_plotAUC = do_plotAUC,
       do_plotDistributions = do_plotDistributions,
       )
 
