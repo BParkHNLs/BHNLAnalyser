@@ -7,11 +7,10 @@ import matplotlib.pyplot as plt # this library is used to load the correct versi
 from tools import Tools
 from mva_tools import MVATools
 from samples import signal_samples, data_samples
-from resolutions import resolutions as resolutions_list
 
 
 class Fitter(Tools, MVATools):
-  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, do_cutbased=False, do_mva=False, training_label=None, do_parametric=False, reweighting_strategy=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, resolution_p0=None, resolution_p1=None, do_cutbased=False, do_mva=False, training_label=None, do_parametric=False, reweighting_strategy=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_label = signal_label
@@ -24,7 +23,7 @@ class Fitter(Tools, MVATools):
     self.training_label = training_label
     self.do_parametric = do_parametric
     self.reweighting_strategy = reweighting_strategy
-    self.resolution = resolutions_list[self.signal_mass]
+    self.resolution = resolution_p0 + resolution_p1 * self.signal_mass
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit

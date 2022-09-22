@@ -72,6 +72,8 @@ class Config(object):
                sigma_B=None,
                lhe_efficiency=None,
                sigma_mult_window=None,
+               resolution_p0=None,
+               resolution_p1=None,
 
                # for limits
                run_blind=None,
@@ -139,6 +141,8 @@ class Config(object):
     self.sigma_B = sigma_B
     self.lhe_efficiency = lhe_efficiency
     self.sigma_mult_window = sigma_mult_window
+    self.resolution_p0 = resolution_p0
+    self.resolution_p1 = resolution_p1
     self.run_blind = run_blind
 
 
