@@ -54,6 +54,7 @@ def getOptions():
   parser.add_argument('--CMStag '               , type=str, dest='CMStag'                , help='CMS tag to be added if --add_CMSlabel'                         , default='Preliminary')
   parser.add_argument('--do_cutbased'           ,           dest='do_cutbased'           , help='use cutbased selection method'            , action='store_true', default=False)
   parser.add_argument('--do_mva'                ,           dest='do_mva'                , help='use mva selection method'                 , action='store_true', default=False)
+  parser.add_argument('--do_parametric'         ,           dest='do_parametric'         , help='use parametric neural network'            , action='store_true', default=False)
   parser.add_argument('--add_weight_hlt'        ,           dest='add_weight_hlt'        , help='add hlt weight'                           , action='store_true', default=False)
   parser.add_argument('--add_weight_pu'         ,           dest='add_weight_pu'         , help='add pu weight'                            , action='store_true', default=False)
   parser.add_argument('--add_weight_muid'       ,           dest='add_weight_muid'       , help='add muid weight'                          , action='store_true', default=False)
@@ -107,7 +108,7 @@ def printInfo(opt):
 
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', do_cutbased=False, do_mva=False, training_label='', cut_score='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', do_cutbased=False, do_mva=False, training_label='', do_parametric=False, cut_score='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -119,6 +120,7 @@ class DatacardsMaker(Tools):
     self.do_cutbased = do_cutbased
     self.do_mva = do_mva
     self.training_label = training_label
+    self.do_parametric = do_parametric
     self.cut_score = cut_score
     self.reweighting_strategy = reweighting_strategy
     self.ABCD_regions = ABCD_regions
@@ -270,7 +272,7 @@ class DatacardsMaker(Tools):
 
     # initialise the fitter
     if process == 'signal':
-      fitter = Fitter(signal_label=self.signal_label, data_files=self.data_files, selection=selection, mass=mass, ctau=ctau, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, reweighting_strategy=self.reweighting_strategy, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, add_Bc=self.add_Bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, add_weight_muid=self.add_weight_muid, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(signal_label=self.signal_label, data_files=self.data_files, selection=selection, mass=mass, ctau=ctau, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, reweighting_strategy=self.reweighting_strategy, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, add_Bc=self.add_Bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, add_weight_muid=self.add_weight_muid, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_signal(label=label)
@@ -283,7 +285,7 @@ class DatacardsMaker(Tools):
         fitter.producePrefitPlot(label=label)
 
     elif process == 'background':
-      fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_background(label=label)
@@ -294,7 +296,7 @@ class DatacardsMaker(Tools):
       yields = background_yields * self.lumi_target/lumi_true #NOTE this is needed as the background on which the fit is performed is not normalised to lumi
 
     elif process == 'data_obs':
-      fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_data_obs(label=label)
@@ -306,7 +308,7 @@ class DatacardsMaker(Tools):
 
   def runFTestRoutine(self, mass, window_size, category, selection, label):
     # produce input workspace 
-    fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, lumi_target=self.lumi_target)
+    fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, lumi_target=self.lumi_target)
     fitter.createFTestInputWorkspace(label=label)
 
     # run the F-test and save the output multipdf in a workspace
@@ -664,6 +666,7 @@ if __name__ == '__main__':
     do_cutbased = opt.do_cutbased
     do_mva = opt.do_mva
     training_label = opt.training_label
+    do_parametric = opt.do_parametric
     cut_score = opt.cut_score
 
     do_ABCD = opt.do_ABCD
@@ -721,6 +724,7 @@ if __name__ == '__main__':
         do_cutbased = do_cutbased,
         do_mva = do_mva,
         training_label = training_label,
+        do_parametric = do_parametric,
         cut_score = cut_score,
         do_counting = do_counting,
         do_shape_analysis = do_shape_analysis,

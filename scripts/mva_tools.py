@@ -21,8 +21,9 @@ class TrainingInfo(object):
       - scaler
       - features
   '''
-  def __init__(self, training_label):
+  def __init__(self, training_label, category_label=None):
     self.training_label = training_label
+    self.category_label = category_label
     self.indir = './{}'.format(self.training_label)
     self.model = self.loadModel()
     self.qt = self.loadScaler()
@@ -34,22 +35,32 @@ class TrainingInfo(object):
 
   def loadModel(self):
     print '\n --> get the model'
-    model_filename = '{}/net_model_weighted.h5'.format(self.indir)
+    if self.category_label != None:
+      model_filename = '{}/net_model_weighted_{}.h5'.format(self.indir, self.category_label)
+    else:
+      model_filename = '{}/net_model_weighted.h5'.format(self.indir)
     model = load_model(model_filename)
     return model
 
 
   def loadScaler(self):
     print '\n --> get the scaler'
-    scaler_filename = '/'.join([self.indir, 'input_tranformation_weighted.pck'])
+    if self.category_label != None:
+      scaler_filename = '/'.join([self.indir, 'input_tranformation_weighted_{}.pck'.format(self.category_label)])
+    else:
+      scaler_filename = '/'.join([self.indir, 'input_tranformation_weighted.pck'])
     qt = pickle.load(open(scaler_filename, 'rb'))
     return qt
 
 
   def loadFeatures(self):
     print '\n --> get the features'
-    features_filename = '/'.join([self.indir, 'input_features.pck'])
+    if self.category_label != None:
+      features_filename = '/'.join([self.indir, 'input_features_{}.pck'.format(self.category_label)])
+    else:
+      features_filename = '/'.join([self.indir, 'input_features.pck'])
     features = pickle.load(open(features_filename, 'rb'))
+    if 'mass_key' in features: features.remove('mass_key')
     return features
 
 
@@ -108,32 +119,49 @@ class MVATools(object):
     return df
 
 
-  def createDataframe(self, training_info, samples_filename, selection, weights, signal_treename):
+  def createDataframe(self, training_info, do_parametric, mass, samples_filename, selection, weights, signal_treename):
     '''
       Function that returns a dataframe out of a list of samples
     '''
     df = pd.concat([self.convertRootToDF(idt, training_info, signal_treename, selection, weights) for idt in samples_filename], sort=False)
 
+    # remove inf and nan
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    df.dropna(inplace=True)
+
+    # re-index
+    df = df.reset_index(drop=True)
+    
+    # add parameters
+    if do_parametric:
+      df['mass_key'] = mass
+
     return df
 
 
-  def getTrainingInfo(self, training_label):
+  def getTrainingInfo(self, training_label, category_label=None):
     '''
       Get training information
     '''
-    training_info = TrainingInfo(training_label=training_label)
+    training_info = TrainingInfo(training_label=training_label, category_label=category_label)
 
     return training_info
 
 
-  def predictScore(self, training_info, df):
+  def predictScore(self, training_info, df, do_parametric):
     '''
       Return score with scaled input features
     '''
-    x = pd.DataFrame(df, columns=training_info.features)
+    if do_parametric:
+      x = pd.DataFrame(df, columns=training_info.features + ['mass_key'])
+    else:
+      x = pd.DataFrame(df, columns=training_info.features)
 
     # apply the scaler
-    xx = training_info.qt.transform(x[training_info.features])
+    if do_parametric:
+      xx = training_info.qt.transform(x[training_info.features + ['mass_key']])
+    else:
+      xx = training_info.qt.transform(x[training_info.features])
 
     # predict
     score = training_info.model.predict(xx)
@@ -141,22 +169,22 @@ class MVATools(object):
     return score
 
 
-  def createFileWithAnalysisTree(self, training_label, samples_filename, selection, weights, label, treename):
+  def createFileWithAnalysisTree(self, training_label, do_parametric, mass, category_label, samples_filename, selection, weights, label, treename):
     '''
       Create tree that contains the hnl mass and the score and store it in a root file
       This tree is going to be used for the rest of the analysis (see fitter)
       Note that both the baseline selection and category definition have to be applied
     '''
     # get the training information
-    training_info = self.getTrainingInfo(training_label)
+    training_info = self.getTrainingInfo(training_label, category_label)
 
     # create dataframe
     print '\n --> create dataframe'
-    df = self.createDataframe(training_info=training_info, samples_filename=samples_filename, selection=selection, weights=weights, signal_treename=treename)
+    df = self.createDataframe(training_info=training_info, do_parametric=do_parametric, mass=mass, samples_filename=samples_filename, selection=selection, weights=weights, signal_treename=treename)
 
     # get the score
     print '\n --> predict the score'
-    score = self.predictScore(training_info=training_info, df=df) 
+    score = self.predictScore(training_info=training_info, df=df, do_parametric=do_parametric) 
 
     # get other quantities to fill the branches with
     hnl_mass = df['hnl_mass']
@@ -203,7 +231,7 @@ class MVATools(object):
     print ' --> {} created'.format(root_filename)
 
     
-  def getFileWithScore(self, files=None, training_label='', selection='hnl_charge>-99', weights=None, label='', treename='signal_tree', force_overwrite=False): 
+  def getFileWithScore(self, files=None, training_label='', do_parametric=False, mass=None, category_label=None, selection='hnl_charge>-99', weights=None, label='', treename='signal_tree', force_overwrite=False): 
     '''
       This function returns the file with the analysis tree that contains the hnl mass, the score and other quantities used for signal reweighting
       The argument 'weights' is the list of branches that will need to be added to the tree for the reweighting at analysis level
@@ -216,7 +244,7 @@ class MVATools(object):
       
     root_filename = './{}.root'.format(label.replace('.', 'p'))
     if force_overwrite or not path.exists(root_filename):
-      self.createFileWithAnalysisTree(training_label=training_label, samples_filename=samples_filename, selection=selection, weights=weights, label=label, treename=treename)
+      self.createFileWithAnalysisTree(training_label=training_label, do_parametric=do_parametric, mass=mass, category_label=category_label, samples_filename=samples_filename, selection=selection, weights=weights, label=label, treename=treename)
 
     return root_filename
 

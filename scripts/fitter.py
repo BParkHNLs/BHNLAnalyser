@@ -11,7 +11,7 @@ from resolutions import resolutions as resolutions_list
 
 
 class Fitter(Tools, MVATools):
-  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, do_cutbased=False, do_mva=False, training_label=None, reweighting_strategy=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, do_cutbased=False, do_mva=False, training_label=None, do_parametric=False, reweighting_strategy=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_label = signal_label
@@ -22,6 +22,7 @@ class Fitter(Tools, MVATools):
     self.do_cutbased = do_cutbased
     self.do_mva = do_mva
     self.training_label = training_label
+    self.do_parametric = do_parametric
     self.reweighting_strategy = reweighting_strategy
     self.resolution = resolutions_list[self.signal_mass]
     self.signal_model_label = signal_model_label
@@ -259,7 +260,7 @@ class Fitter(Tools, MVATools):
           tree_sig.Add(signal_file.filename)
       elif self.do_mva:
         score_label = self.getSignalLabel()
-        filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename) 
+        filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename) 
         file_sig = self.tools.getRootFile(filename_sig)
         tree_sig = self.tools.getTree(file_sig, treename)
 
@@ -270,7 +271,7 @@ class Fitter(Tools, MVATools):
           tree_data.Add(data_file.filename) 
       elif self.do_mva:
         score_label = self.getBackgroundLabel()
-        filename_data = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, selection=selection_bkg, label=score_label, treename=treename) 
+        filename_data = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_bkg, label=score_label, treename=treename) 
         file_data = self.tools.getRootFile(filename_data)
         tree_data = self.tools.getTree(file_data, treename)
 
@@ -603,8 +604,10 @@ class Fitter(Tools, MVATools):
       plot_label = self.getBackgroundLabel()
     else:
       plot_label = self.getBackgroundLabel() + '_' + self.getSignalLabel()
-    canv.SaveAs("{}/{}_fit_{}.png".format(self.outputdir, process, plot_label))
-    canv.SaveAs("{}/{}_fit_{}.pdf".format(self.outputdir, process, plot_label))
+    if process == 'both': process_label = 'prefit'
+    else: process_label = process
+    canv.SaveAs("{}/{}_fit_{}.png".format(self.outputdir, process_label, plot_label))
+    canv.SaveAs("{}/{}_fit_{}.pdf".format(self.outputdir, process_label, plot_label))
 
     # additionally, get the pull histogram
     if self.plot_pulls and process != 'both':
@@ -656,8 +659,10 @@ class Fitter(Tools, MVATools):
     fgauss.Draw("same")
     ROOT.gStyle.SetOptFit(0011)
    
-    canv_pull.SaveAs("{}/{}_pulls_{}.png".format(self.outputdir, process, label))
-    canv_pull.SaveAs("{}/{}_pulls_{}.pdf".format(self.outputdir, process, label))
+    if process == 'both': process_label = 'prefit'
+    else: process_label = process
+    canv_pull.SaveAs("{}/{}_pulls_{}.png".format(self.outputdir, process_label, label))
+    canv_pull.SaveAs("{}/{}_pulls_{}.pdf".format(self.outputdir, process_label, label))
 
 
   def getBackgroundYieldsFromFit(self):
@@ -710,7 +715,7 @@ class Fitter(Tools, MVATools):
         tree_sig.Add(filename)
     elif self.do_mva:
       score_label = self.getSignalLabel()
-      filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename) 
+      filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename) 
       file_sig = self.tools.getRootFile(filename_sig)
       tree_sig = self.tools.getTree(file_sig, treename)
 
@@ -827,7 +832,7 @@ class Fitter(Tools, MVATools):
         tree.Add(data_file.filename) 
     elif self.do_mva:
       score_label = label
-      filename = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, selection=self.selection, label=score_label, treename=treename) 
+      filename = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=self.selection, label=score_label, treename=treename) 
       file_data = self.tools.getRootFile(filename)
       tree = self.tools.getTree(file_data, treename)
 
@@ -888,7 +893,7 @@ class Fitter(Tools, MVATools):
     elif self.do_mva:
       if label == '': label = self.getBackgroundLabel()
       score_label = label
-      filename = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, selection=selection_bkg, label=score_label, treename=treename) 
+      filename = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_bkg, label=score_label, treename=treename) 
       file_data = self.tools.getRootFile(filename)
       tree = self.tools.getTree(file_data, treename)
 

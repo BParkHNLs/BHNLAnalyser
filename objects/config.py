@@ -18,6 +18,7 @@ class Config(object):
                do_cutbased=None,
                do_mva=None,
                training_label=None,
+               do_parametric=None,
                cut_score=None,
                quantities_label=None, 
                weight_label=None,
@@ -88,6 +89,7 @@ class Config(object):
     self.do_cutbased = do_cutbased
     self.do_mva = do_mva
     self.training_label = training_label
+    self.do_parametric = do_parametric
     self.cut_score = cut_score
     self.quantities_label = quantities_label
     self.weight_label = weight_label
