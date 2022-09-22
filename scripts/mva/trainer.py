@@ -34,7 +34,6 @@ from tools import Tools
 from samples import signal_samples
 from baseline_selection import selection
 from categories import categories
-from resolutions import resolutions
 
 
 class Sample(object):
@@ -44,7 +43,11 @@ class Sample(object):
   def __init__(self, filename, selection):
     self.filename = filename
     self.selection = selection
-    self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True)
+    try:
+      self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True)
+    except:
+      print 'No entry was found with the requested selection'
+      self.df = pd.DataFrame()
     print '\t selected events: {}'.format(len(self.df))
 
 
@@ -59,7 +62,7 @@ class Trainer(object):
     self.scaler_type = scaler_type
     self.do_early_stopping = do_early_stopping
     self.do_reduce_lr = do_reduce_lr
-    self.dirname = dirname + '_' + datetime.now().strftime('%d%b%Y_%Hh%Mm%Ss')
+    self.dirname = dirname + '_' + datetime.now().strftime('%Y%b%d_%Hh%Mm%Ss')
 
     self.baseline_selection = baseline_selection
     self.categories = categories
@@ -71,6 +74,9 @@ class Trainer(object):
 
     self.target_branch = 'is_signal'
     self.do_scale_key = True
+
+    self.resolution_p0 = 0.0002747
+    self.resolution_p1 = 0.008302
 
 
   def createOutDir(self):
@@ -112,6 +118,11 @@ class Trainer(object):
     filename_data_8 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk7_n500/flat/flat_bparknano_08Aug22_sr.root'
     filename_data_9 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_08Aug22_sr.root'
     filename_data_10 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_11 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk10_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_12 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk11_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_13 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk12_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_14 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk13_n500/flat/flat_bparknano_08Aug22_sr.root'
+    filename_data_15 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk14_n500/flat/flat_bparknano_08Aug22_sr.root'
     data_samples = [
       #Sample(filename=filename_data, selection=self.baseline_selection + ' && ' + extra_selection),
       Sample(filename=filename_data_1, selection=self.baseline_selection + ' && ' + extra_selection),
@@ -124,6 +135,11 @@ class Trainer(object):
       Sample(filename=filename_data_8, selection=self.baseline_selection + ' && ' + extra_selection),
       Sample(filename=filename_data_9, selection=self.baseline_selection + ' && ' + extra_selection),
       Sample(filename=filename_data_10, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_11, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_12, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_13, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_14, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data_15, selection=self.baseline_selection + ' && ' + extra_selection),
     ]
 
     ## signal
@@ -259,8 +275,9 @@ class Trainer(object):
         # set the mass parameter for a nsigma window range
         window_check = -1
         for mass in masses:
-          window_min = mass - self.nsigma * resolutions[mass]
-          window_max = mass + self.nsigma * resolutions[mass]
+          resolution = self.resolution_p0 + self.resolution_p1 * mass
+          window_min = mass - self.nsigma * resolution
+          window_max = mass + self.nsigma * resolution
           # prevent windows to overlap
           #if window_check != -1 and window_min <= window_check:
           #  raise RuntimeError('There is an overlap of window around mass {} GeV with the previous window. Please adapt the window size.'.format(mass))
@@ -483,7 +500,7 @@ class Trainer(object):
     '''
       Return score with scaled input features
     '''
-    if not self.do_scale_key:
+    if not self.do_parametric or not self.do_scale_key:
       x = pd.DataFrame(df, columns=self.features)
     else:
       x = pd.DataFrame(df, columns=self.features + ['mass_key'])
@@ -493,7 +510,7 @@ class Trainer(object):
     qt = pickle.load(open(scaler_filename, 'rb'))
 
     # if not scaling key
-    if not self.do_scale_key:
+    if not self.do_parametric or not self.do_scale_key:
       xx = qt.transform(x[self.features])
     else:
       xx = qt.transform(x[self.features + ['mass_key']])
@@ -531,8 +548,9 @@ class Trainer(object):
       ax.hist(df_full['hnl_mass'], bins=np.arange(bin_min, bin_max, (bin_max-bin_min)/nbins), color='whitesmoke', label='unused')
 
     for mass in masses:
-      window_min = mass - self.nsigma * resolutions[mass]
-      window_max = mass + self.nsigma * resolutions[mass]
+      resolution = self.resolution_p0 + self.resolution_p1 * mass
+      window_min = mass - self.nsigma * resolution
+      window_max = mass + self.nsigma * resolution
       window = 'hnl_mass > {} && hnl_mass < {}'.format(window_min, window_max)
       df_window = df.query(self.getPandasQuery(window))
       ax.hist(df_window['hnl_mass'], bins=np.arange(bin_min, bin_max, (bin_max-bin_min)/nbins), label='mass key = {}'.format(mass))
