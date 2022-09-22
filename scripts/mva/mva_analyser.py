@@ -77,7 +77,30 @@ class Sample(object):
     self.filename = filename
     self.selection = selection
     cutbased_selection_qte = ['hnl_pt', 'hnl_charge', 'sv_lxysig', 'hnl_cos2d', 'hnl_mass'] 
-    self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True, columns=training_info.features+cutbased_selection_qte)
+    self.extra_branches = [
+      'ismatched',
+      'mu0_softid',
+      'mu_looseid', 
+      'pi_packedcandhashighpurity',
+      'mu0_charge',
+      'mu_charge',
+      'mu0_mu_mass',
+      'mu0_pi_mass',
+      'sv_lxyz',
+      'hnl_charge',
+      'sv_lxy',
+      ]
+    if mass != None and ctau != None: 
+      self.extra_branches.append('gen_hnl_ct')
+      self.extra_branches.append('weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2')
+      self.extra_branches.append('weight_pu_sig_D')
+      self.extra_branches.append('weight_mu0_softid')
+      self.extra_branches.append('weight_mu_looseid')
+    try:
+      #self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True, columns=training_info.features+cutbased_selection_qte)
+      self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True, columns=training_info.features+cutbased_selection_qte+self.extra_branches)
+    except:
+      self.df = pd.DataFrame()
     self.mass = mass
     self.ctau = ctau
     self.colour = colour
@@ -152,12 +175,16 @@ class MVAAnalyser(Tools, MVATools):
     data_samples = []
     for data_file in self.data_files:
       #data_samples.append(Sample(filename=data_file.filename, selection=selection))
-      data_samples.append(Sample(filename=data_file, selection=selection, training_info=training_info))
+      data_sample = Sample(filename=data_file, selection=selection, training_info=training_info)
+      if len(data_sample.df) != 0:
+        data_samples.append(data_sample)
 
     ## signal
     mc_samples = []
     for signal_file in self.signal_files:
-      mc_samples.append(Sample(filename=signal_file.filename, selection=selection, training_info=training_info, mass=signal_file.mass, ctau=signal_file.ctau, colour=signal_file.colour, filter_efficiency=signal_file.filter_efficiency, muon_rate=signal_file.muon_rate))
+      mc_sample = Sample(filename=signal_file.filename, selection=selection, training_info=training_info, mass=signal_file.mass, ctau=signal_file.ctau, colour=signal_file.colour, filter_efficiency=signal_file.filter_efficiency, muon_rate=signal_file.muon_rate)
+      if len(mc_sample.df) != 0:
+        mc_samples.append(mc_sample)
       
     print('========> it took %.2f seconds' %(time() - now))
 
@@ -612,6 +639,85 @@ class MVAAnalyser(Tools, MVATools):
     self.saveFig(plt, name)
 
 
+  def plotWPScan(self, training_info, mc_samples, data_samples, category, do_log=False):
+    pd.options.mode.chained_assignment = None
+
+    masses = []
+    for mc_sample in mc_samples:
+      if mc_sample.mass not in masses: masses.append(mc_sample.mass)
+    if len(masses) != 1:
+      raise RuntimeError('Please provide signal samples of the same mass')
+
+    mass = mc_samples[0].mass
+    resolution = self.resolution_p0 + self.resolution_p1 * mass
+
+    # consider the 10 sigma window around the signal mass
+    window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
+    # create dataframe
+    data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
+    if self.do_parametric:
+      data_df['mass_key'] = mass
+    data_df['is_signal'] = 0
+
+    plt.clf()
+    for mc_sample in mc_samples:
+      mass = mc_sample.mass
+      ctau = mc_sample.ctau
+      v2 = self.tools.getVV(mass=mass, ctau=ctau, ismaj=True)
+      coupling = self.tools.getCouplingLabel(v2)
+
+      mc_df = self.createDataframe([mc_sample])
+      if self.do_parametric:
+        mc_df['mass_key'] = mass
+      mc_df['is_signal'] = 1
+
+      main_df = pd.concat([data_df, mc_df], sort=False)
+      main_df.index = np.array(range(len(main_df)))
+      main_df = main_df.sample(frac=1, replace=False, random_state=1986)
+
+      # get mva performance
+      Y = pd.DataFrame(main_df, columns=['is_signal'])
+      score = self.predictScore(training_info=training_info, df=main_df)
+      false_positive_rate_mva, true_positive_rate_mva, thresholds = roc_curve(Y, score) 
+
+      # get performance without cut on score
+      true_positive_rate_ini = 1.#true_positive_rate_mva[len(true_positive_rate_mva)]
+      false_positive_rate_ini = 1.#false_positive_rate_mva[len(false_positive_rate_ini)]
+      #print thresholds
+      #print true_positive_rate_ini 
+      #print '\n\n\n'
+      #print false_positive_rate_ini
+
+      relative_signal_efficiency = true_positive_rate_mva / true_positive_rate_ini
+      relative_background_efficiency = false_positive_rate_mva / false_positive_rate_ini
+      relative_significance = relative_signal_efficiency / np.sqrt(relative_background_efficiency)
+
+      plt.plot(thresholds, relative_significance, linewidth=2, label='({}GeV, {}mm, {})'.format(mass, ctau, coupling))
+      #plt.plot(thresholds, false_positive_rate_mva, linewidth=2, label='({}GeV, {}mm, {})'.format(mass, ctau, coupling))
+      #plt.plot(thresholds, true_positive_rate_mva, linewidth=2, label='({}GeV, {}mm, {})'.format(mass, ctau, coupling))
+      plt.xlabel('Score')
+      plt.ylabel('tpr(mva)/tpr(0) / sqrt(fpr(mva)/fpr(0))')
+
+      plt.axhline(y = 1., color='black', linestyle = '--')
+      plt.title(r'{}'.format(category.title))
+      #plt.xlim(0, 1)
+      plt.xlim(0.8, 1)
+      #plt.ylim(0, 1)
+
+      if do_log:
+        plt.xscale('log')
+      plt.yscale('linear')
+
+      if do_log:
+        plt.legend(loc='upper left', framealpha=0.1)
+      else:
+        plt.legend(loc='lower right', framealpha=0.1)
+
+    name = 'working_point_m{}_{}'.format(str(mc_samples[0].mass).replace('.', 'p'), category.label)
+    if do_log: name += '_log'
+    self.saveFig(plt, name)
+
+
   def computeSignalYields(self, tree_sig, mc_sample, selection, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', isBc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
@@ -653,7 +759,7 @@ class MVAAnalyser(Tools, MVATools):
       Indicates the performance of the cutbased method
     '''
     # compute signal yields
-    scan_points = np.linspace(0, 1, n_points) 
+    scan_points = np.linspace(0.9, 1, n_points) 
       
     canv = self.tools.createTCanvas('canv', 900, 800)
 
@@ -675,11 +781,29 @@ class MVAAnalyser(Tools, MVATools):
       #if signal_ctau != 1000.: continue
 
       # get signal tree, with score branch, without selection
+      extra_branches = [
+        'ismatched',
+        'mu0_softid',
+        'mu_looseid', 
+        'pi_packedcandhashighpurity',
+        'mu0_charge',
+        'mu_charge',
+        'mu0_mu_mass',
+        'mu0_pi_mass',
+        'sv_lxyz',
+        'hnl_charge',
+        'sv_lxy',
+        ]
+
       sig_label = 'sig_{}_{}_{}'.format(signal_mass, signal_ctau, category.label)
-      tree_sig = self.mva_tools.getTreeWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, label=sig_label, treename='signal_tree', force_overwrite=True) 
+      filename_sig = self.mva_tools.getFileWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=signal_mass, selection=self.baseline_selection, weights=extra_branches+['gen_hnl_ct', self.weight_hlt, self.weight_pusig, self.weight_mu0id, self.weight_muid], label=sig_label, treename='signal_tree', force_overwrite=False) 
+      file_sig = self.tools.getRootFile(filename_sig)
+      tree_sig = self.tools.getTree(file_sig, 'signal_tree')
 
       bkg_label = 'bkg_{}_{}'.format(signal_mass, category.label)
-      tree_data = self.mva_tools.getTreeWithScore(files=data_samples, training_label='./outputs/'+self.dirname, label=bkg_label, treename='signal_tree', force_overwrite=True) 
+      filename_data = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=signal_mass, selection=self.baseline_selection, weights=extra_branches, label=bkg_label, treename='signal_tree', force_overwrite=False) 
+      file_data = self.tools.getRootFile(filename_data)
+      tree_data = self.tools.getTree(file_data, 'signal_tree')
 
       g_sig = ROOT.TGraph()
       quantity = Qte(name_flat='hnl_mass', label='hnl_mass', nbins=80, bin_min=signal_mass-2*signal_resolution, bin_max=signal_mass+2*signal_resolution)
@@ -757,31 +881,31 @@ class MVAAnalyser(Tools, MVATools):
         else:
           g_sig.Draw('PL')
 
-      # get cutbased performance
-      if signal_mass < 3: cutbased_selection = category.cutbased_selection_lowmass
-      elif signal_mass >= 3 and signal_mass < 4.5: cutbased_selection = category.cutbased_selection_mediummass
-      elif signal_mass >= 4.5: cutbased_selection = category.cutbased_selection_highmass
-      if len(cutbased_selection) == 0:
-        cutbased_selection = category.cutbased_selection
+      ## get cutbased performance
+      #if signal_mass < 3: cutbased_selection = category.cutbased_selection_lowmass
+      #elif signal_mass >= 3 and signal_mass < 4.5: cutbased_selection = category.cutbased_selection_mediummass
+      #elif signal_mass >= 4.5: cutbased_selection = category.cutbased_selection_highmass
+      #if len(cutbased_selection) == 0:
+      #  cutbased_selection = category.cutbased_selection
 
-      signal_selection_cutbased = 'ismatched == 1 && {} && {} && {}'.format(self.baseline_selection, category.definition_flat, cutbased_selection) 
-      signal_yields_cutbased = self.computeSignalYields(tree_sig=tree_sig, mc_sample=mc_sample, selection=signal_selection_cutbased, mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
+      #signal_selection_cutbased = 'ismatched == 1 && {} && {} && {}'.format(self.baseline_selection, category.definition_flat, cutbased_selection) 
+      #signal_yields_cutbased = self.computeSignalYields(tree_sig=tree_sig, mc_sample=mc_sample, selection=signal_selection_cutbased, mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
 
-      background_selection_cutbased = '{} && {} && {}'.format(self.baseline_selection, category.definition_flat, cutbased_selection)
-      hist_data_name = 'hist_data_cutbased_{}_{}'.format(signal_mass, category.label)
-      hist_data = self.tools.createHisto(tree_data, quantity, hist_name=hist_data_name, branchname='flat', selection=background_selection_cutbased)
-      background_yields_cutbased = hist_data.Integral()
+      #background_selection_cutbased = '{} && {} && {}'.format(self.baseline_selection, category.definition_flat, cutbased_selection)
+      #hist_data_name = 'hist_data_cutbased_{}_{}'.format(signal_mass, category.label)
+      #hist_data = self.tools.createHisto(tree_data, quantity, hist_name=hist_data_name, branchname='flat', selection=background_selection_cutbased)
+      #background_yields_cutbased = hist_data.Integral()
 
-      if background_yields_cutbased != 0:
-        significance_cutbased = signal_yields_cutbased / math.sqrt(background_yields_cutbased) 
-        significance_cutbased_diff = ((significance_cutbased / significance_ini) - 1) * 100
+      #if background_yields_cutbased != 0:
+      #  significance_cutbased = signal_yields_cutbased / math.sqrt(background_yields_cutbased) 
+      #  significance_cutbased_diff = ((significance_cutbased / significance_ini) - 1) * 100
 
-      if background_yields_cutbased != 0:
-        line = ROOT.TLine(0, significance_cutbased_diff, 1, significance_cutbased_diff)
-        line.SetLineColor(mc_sample.colour)
-        line.SetLineStyle(9)
-        line.SetLineWidth(3)
-        line.Draw('same')
+      #if background_yields_cutbased != 0:
+      #  line = ROOT.TLine(0, significance_cutbased_diff, 1, significance_cutbased_diff)
+      #  line.SetLineColor(mc_sample.colour)
+      #  line.SetLineStyle(9)
+      #  line.SetLineWidth(3)
+      #  line.Draw('same')
 
     self.tools.printLatexBox(0.67, 0.25, category.title, size=0.041)
           
@@ -790,8 +914,10 @@ class MVAAnalyser(Tools, MVATools):
       legend.AddEntry(gs_sig[ifile], '{}GeV, {}mm'.format(mc_sample.mass, mc_sample.ctau))
     legend.Draw()
 
+    #os.system('rm *m{}*{}.root'.format(signal_mass, category.label))
+
     canv.cd()
-    canv.SaveAs('{}/significance_diff_scan_{}.png'.format(self.outdir, category.label))
+    canv.SaveAs('{}/significance_diff_scan_m{}_{}.png'.format(self.outdir, str(signal_mass).replace('.', 'p'), category.label))
 
 
   def plotDistributions(self, quantity, sample, category, cut_score, do_shape=False):
@@ -970,6 +1096,7 @@ class MVAAnalyser(Tools, MVATools):
         self.plotROCCurve(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=True)
         self.plotScoreCurve(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
         self.plotMVAPerformance(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
+        self.plotWPScan(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
 
       if self.do_plotAUC:
         self.plotAUCGraph(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category)
@@ -985,7 +1112,7 @@ class MVAAnalyser(Tools, MVATools):
         #self.compareTrees()
   
       if self.do_plotSigScan:
-        self.plotSignificanceDiffScan(category=category, mc_samples=mc_samples, data_samples=data_samples, n_points=11)
+        self.plotSignificanceDiffScan(category=category, mc_samples=mc_samples, data_samples=data_samples, n_points=30)
 
       hnl_mass = Qte(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=0., bin_max=5.4)
 
@@ -1021,19 +1148,22 @@ if __name__ == '__main__':
   #dirname = 'test_14Sep2022_20h33m22s' # 10 nsigma, different features with ctau and mass dependency, more balanced training
   #dirname = 'test_15Sep2022_00h37m43s' # balanced
   #dirname = 'test_15Sep2022_01h01m18s' # mixed ctau signal
-  dirname = 'test_19Sep2022_16h33m33s' # mixed ctau signal, all samples
+  #dirname = 'test_19Sep2022_16h33m33s' # mixed ctau signal, all samples
   #dirname = 'test_19Sep2022_17h05m13s' # all masses apart from mass 3
   #dirname = 'test_21Sep2022_13h36m30s' # parametric as above trained on mass 3 only
+  #dirname = 'test_2022Sep21_15h58m10s' # all categories, but lxygt5_SS
+  #dirname = 'test_2022Sep21_17h43m05s' # category lxygt5_SS
+  dirname = 'test_2022Sep21_17h54m44s' # all categories
 
   #baseline_selection = 'hnl_charge==0'
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
 
   do_parametric = True
 
-  do_plotScore = True
+  do_plotScore = False
   do_createFiles = False
-  do_plotSigScan = False
-  do_plotROC = True
+  do_plotSigScan = True
+  do_plotROC = False
   do_plotAUC = False
   do_plotDistributions = False
 
@@ -1136,7 +1266,7 @@ if __name__ == '__main__':
     #'V42_08Aug22_m4p7',
     #'V42_08Aug22_m4p8',
   ]
-  #signal_labels = ['V12_08Aug22_m3']
+  signal_labels = ['V12_08Aug22_m4p5']
 
   signal_files = []
   for signal_label in signal_labels:
@@ -1146,8 +1276,24 @@ if __name__ == '__main__':
   data_files = []
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_nj1.root')
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
+
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk4_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk5_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk6_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk7_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk10_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk11_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk12_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk13_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk14_n500/flat/flat_bparknano_08Aug22_sr.root')
 
   categories = categories['V12_08Aug22_permass']
   #categories = categories['inclusive']
