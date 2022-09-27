@@ -148,7 +148,7 @@ if __name__ == '__main__':
 
   qcd_files = qcd_samples['V11_24Apr22_sources']
   white_list = white_list['20to300']
-  baseline_selection = selection['baseline_sources'].flat
+  baseline_selection = selection['baseline_sources'].flat + ' && hnl_charge == 0'
   categories = categories['inclusive']
 
   CMS_tag = 'Preliminary'
@@ -281,6 +281,13 @@ if __name__ == '__main__':
     mu0_nonBdecay_fullmatched,
     ]
 
+  mu0_sources_cascade = [
+    mu0_directBdecay,
+    mu0_BtoDdecay,
+    mu0_cascade,
+    mu0_nonBdecay,
+    ]
+
   mu_sources = [
     mu_directBdecay,
     mu_BtoDdecay,
@@ -298,6 +305,13 @@ if __name__ == '__main__':
     mu_BtoDdecay_fullmatched,
     mu_cascade_fullmatched,
     mu_nonBdecay_fullmatched,
+    ]
+
+  mu_sources_cascade = [
+    mu_directBdecay,
+    mu_BtoDdecay,
+    mu_cascade,
+    mu_nonBdecay,
     ]
 
   pi_sources = [
@@ -367,7 +381,7 @@ if __name__ == '__main__':
     #cand_unmatched,
     ]
 
-  hnl_mass = Quantity(name_flat='hnl_mass', label='hnl_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0, bin_max=5.4)
+  hnl_mass = Quantity(name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=0, bin_max=5.4)
   sv_lxy = Quantity(name_flat='sv_lxy', label='sv_lxy', title='SV l_{xy} [cm]', nbins=80, bin_min=0, bin_max=5)
   mu0_pt = Quantity(name_flat='mu0_pt', label='mu0_pt', title='primary #mu p_{T} [GeV]', nbins=80, bin_min=0, bin_max=30)
   mu0_eta = Quantity(name_flat='mu0_eta', label='mu0_eta', title='primary #mu #eta', nbins=80, bin_min=-2.1, bin_max=2.1)
@@ -414,8 +428,10 @@ if __name__ == '__main__':
 
     plotter.plotStackHistogram(sources=mu0_sources, title='Primary muon', plot_label='sources_{}_mu0'.format(quantity.label))
     plotter.plotStackHistogram(sources=mu0_sources_cascade_fullmatched, title='Primary muon', plot_label='sources_{}_mu0_cascade_fullmatched'.format(quantity.label))
+    plotter.plotStackHistogram(sources=mu0_sources_cascade, title='Primary muon', plot_label='sources_{}_mu0_cascade'.format(quantity.label))
     plotter.plotStackHistogram(sources=mu_sources, title='Displaced muon', plot_label='sources_{}_mu'.format(quantity.label))
     plotter.plotStackHistogram(sources=mu_sources_cascade_fullmatched, title='Displaced muon', plot_label='sources_{}_mu_cascade_fullmatched'.format(quantity.label))
+    plotter.plotStackHistogram(sources=mu_sources_cascade, title='Displaced muon', plot_label='sources_{}_mu_cascade'.format(quantity.label))
     plotter.plotStackHistogram(sources=pi_sources, title='Displaced pion', plot_label='sources_{}_pi'.format(quantity.label))
     plotter.plotStackHistogram(sources=pi_sources_cascade_fullmatched, title='Displaced pion', plot_label='sources_{}_pi_cascade_fullmatched'.format(quantity.label))
     plotter.plotStackHistogram(sources=pi_sources_cascade, title='Displaced pion', plot_label='sources_{}_pi_cascade'.format(quantity.label))
