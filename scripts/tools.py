@@ -76,6 +76,7 @@ class Tools(object):
     # add bc option?
     file_list = []
     generated_samples = signal_samples[signal_label] 
+
     if strategy == 'inclusive':
       for signal_sample in generated_samples:
         if signal_sample.mass != mass: continue
@@ -233,7 +234,7 @@ class Tools(object):
     return weight
 
 
-  def getCtauWeight(self, signal_files, ctau, strategy='new'):
+  def getCtauWeight(self, signal_files, ctau, strategy='new', isBc=False):
     #TODO add treatment for bc?
     if strategy == 'new':
       # get the total number of gen (=miniaod) events
@@ -242,6 +243,15 @@ class Tools(object):
         tree_run_tot.Add(signal_file.filename)
       n_miniaod_tot = self.getNminiAODEvts(tree_run_tot)
 
+      filter_efficiency_avg = 0.
+      for signal_file in signal_files:
+        the_filter_efficiency = signal_file.filter_efficiency if not isBc else signal_file.filter_efficiency_Bc
+        the_file = self.getRootFile(signal_file.filename)
+        the_tree_run = self.getTree(the_file, 'run_tree')
+        n_gen = self.getNminiAODEvts(the_tree_run)
+        filter_efficiency_avg += n_gen * the_filter_efficiency
+      filter_efficiency_avg = filter_efficiency_avg / n_miniaod_tot
+
       deno_weight = ''
       for ifile, signal_file in enumerate(signal_files):
         the_file = self.getRootFile(signal_file.filename)
@@ -249,16 +259,16 @@ class Tools(object):
         n_miniaod = self.getNminiAODEvts(tree_run)
         if ifile == 0:
           deno_weight += ' {n0} / {ctau0} * exp(-gen_hnl_ct / {ctau0})'.format(
-                n0 = n_miniaod,
+                n0 = n_miniaod / signal_file.filter_efficiency,
                 ctau0 = signal_file.ctau,
                 )
         else:
           deno_weight += ' + {n0} / {ctau0} * exp(-gen_hnl_ct / {ctau0})'.format(
-                n0 = n_miniaod,
+                n0 = n_miniaod / signal_file.filter_efficiency,
                 ctau0 = signal_file.ctau,
                 )
       weight_ctau = '({ntot} / {ctau1} * exp(-gen_hnl_ct / {ctau1}) * (1. / ({deno_weight})))'.format(
-          ntot = n_miniaod_tot,
+          ntot = n_miniaod_tot / filter_efficiency_avg,
           ctau1 = ctau,
           deno_weight = deno_weight,
           )
