@@ -110,6 +110,13 @@ class YieldsChecks(Tools):
     ctau_points = points['baseline']
     strategy = 'inclusive'
 
+    ctau_points_m1 = [10., 15., 20., 30., 40., 50., 70., 100., 150., 200., 300., 400., 500., 700., 1000., 1500., 2000., 3000., 4000., 5000., 7000., 10000., 15000., 20000., 30000., 40000., 50000., 70000.] 
+    #ctau_points_m1 = [10., 100., 1000.] 
+    ctau_points_m3 = [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 1., 1.5, 2., 3., 4., 5., 7., 10., 15., 20., 30., 40., 50., 70., 100., 150., 200., 300., 400., 500., 700., 1000.] 
+    #ctau_points_m3 = [1., 10., 100., 1000.] 
+    ctau_points_m4p5 = [0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 1., 1.5, 2., 3., 4., 5., 7., 10., 15., 20., 30., 40., 50., 70., 100.] 
+    #ctau_points_m4p5 = [0.1, 1., 10., 100.] 
+
     addBc = False
 
     graph_dummy = ROOT.TGraph()
@@ -117,7 +124,7 @@ class YieldsChecks(Tools):
     graph_m3 = ROOT.TGraphAsymmErrors()
     graph_m4p5 = ROOT.TGraphAsymmErrors()
 
-    graph_dummy.SetPoint(0, 1e-6, 1e-7)
+    graph_dummy.SetPoint(0, 1e-6, 1e-4)
     graph_dummy.SetPoint(1, 1e-1, 1e10)
     graph_dummy.SetMarkerStyle(0)
     graph_dummy.SetMarkerSize(0)
@@ -133,16 +140,7 @@ class YieldsChecks(Tools):
     graph_dummy.GetYaxis().SetTitleOffset(1.1)
 
     print '\n mass 1'
-    #for signal_file in samples_m1:
-    #  # get signal coupling
-    #  signal_mass = signal_file.mass
-    #  signal_ctau = signal_file.ctau
-    #  signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
-
-    #  # compute the signal yields
-    #  signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
-    #  signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, signal_label=signal_label_m1, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9) 
-    for ctau_point in ctau_points:
+    for ctau_point in ctau_points_m1:
       # get signal coupling
       signal_mass = 1.
       signal_ctau = ctau_point
@@ -166,37 +164,13 @@ class YieldsChecks(Tools):
     graph_m1.SetMarkerStyle(20)
     graph_m1.SetMarkerSize(2)
     graph_m1.SetMarkerColor(ROOT.kOrange+0)
+    #graph_m1.SetMarkerColor(ROOT.kBlue)
     graph_m1.SetLineStyle(1)
     graph_m1.SetLineWidth(2)
     graph_m1.SetLineColor(ROOT.kOrange+0)
 
     print '\n mass 3'
-    #print 'initial strategy'
-    #for signal_file in samples_m3:
-    #  # get signal coupling
-    #  signal_mass = signal_file.mass
-    #  signal_ctau = signal_file.ctau
-    #  print '\n',signal_ctau
-    #  signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
-
-    #  # compute the signal yields
-    #  signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
-    #  #signal_selection = 'ismatched==1 && sv_lxyz<1' if selection=='' else 'ismatched==1 && sv_lxyz<1 && {}'.format(selection)
-    #  signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, signal_label=signal_label_m3, selection=signal_selection).computeSignalYieldsIni(isMixed=isMixed, lumi=lumi, sigma_B=472.8e9, isBc=False) 
-    #  print signal_yields
-    #  if addBc:
-    #    signal_yields += ComputeYields(signal_file=signal_file, signal_label=signal_label_m3, selection=signal_selection).computeSignalYieldsIni(isMixed=isMixed, lumi=lumi, sigma_B=472.8e9, isBc=True, lhe_efficiency=0.08244)[0]
-    #    print signal_yields
-
-    ##  # fill graph
-    ##  point = graph_m3.GetN()
-    ##  graph_m3.SetPoint(point, signal_v2, signal_yields)
-    ##  #graph_m3.SetPointError(point, 0, 0, err_signal_yields, err_signal_yields)
-    ##  graph_m3.SetPointError(point, 0, 0, 0, 0)
-
-    # new strategy
-    #print '\nupdated strategy'
-    for ctau_point in ctau_points:
+    for ctau_point in ctau_points_m3:
       # get signal coupling
       signal_mass = 3.
       signal_ctau = ctau_point
@@ -220,25 +194,13 @@ class YieldsChecks(Tools):
     graph_m3.SetMarkerStyle(20)
     graph_m3.SetMarkerSize(2)
     graph_m3.SetMarkerColor(ROOT.kRed+1)
+    #graph_m3.SetMarkerColor(ROOT.kBlue)
     graph_m3.SetLineStyle(1)
     graph_m3.SetLineWidth(2)
     graph_m3.SetLineColor(ROOT.kRed+1)
 
     print '\n mass 4.5'
-    #for signal_file in samples_m4p5:
-    #  # get signal coupling
-    #  signal_mass = signal_file.mass
-    #  signal_ctau = signal_file.ctau
-    #  signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
-
-    #  # compute the signal yields
-    #  signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
-    #  signal_yields, err_signal_yields = ComputeYields(signal_file=signal_file, signal_label=signal_label_m4p5, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9, isBc=False) 
-    #  print signal_yields
-    #  if addBc:
-    #    signal_yields += ComputeYields(signal_file=signal_file, signal_label=signal_label_m4p5, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9, isBc=False)[0]
-    #    print signal_yields
-    for ctau_point in ctau_points:
+    for ctau_point in ctau_points_m4p5:
       # get signal coupling
       signal_mass = 4.5
       signal_ctau = ctau_point
@@ -260,6 +222,7 @@ class YieldsChecks(Tools):
     graph_m4p5.SetMarkerStyle(20)
     graph_m4p5.SetMarkerSize(2)
     graph_m4p5.SetMarkerColor(ROOT.kRed+4)
+    #graph_m4p5.SetMarkerColor(ROOT.kBlue)
     graph_m4p5.SetLineStyle(1)
     graph_m4p5.SetLineWidth(2)
     graph_m4p5.SetLineColor(ROOT.kRed+4)
@@ -272,7 +235,8 @@ class YieldsChecks(Tools):
     #graph_gen_m3.Draw('PL same')
     #graph_gen_m4p5.Draw('PL same')
       
-    legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.027)
+    legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.55, xmax=0.45, ymax=0.9, size=0.033)
+    #legend = self.tools.getRootTLegend(xmin=0.15, ymin=0.35, xmax=0.45, ymax=0.55, size=0.033)
     #legend.AddEntry(graph_m1, 'm=1GeV, reco')
     legend.AddEntry(graph_m1, 'm=1GeV')
     #legend.AddEntry(graph_gen_m1, 'm=1GeV, gen')
@@ -281,6 +245,7 @@ class YieldsChecks(Tools):
     #legend.AddEntry(graph_gen_m3, 'm=3GeV, gen')
     #legend.AddEntry(graph_m4p5, 'm=4p5GeV, reco')
     legend.AddEntry(graph_m4p5, 'm=4p5GeV')
+    #legend.AddEntry(graph_m4p5, 'generated')
     #legend.AddEntry(graph_gen_m4p5, 'm=4p5GeV, gen')
     legend.Draw()
 
