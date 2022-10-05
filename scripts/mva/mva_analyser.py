@@ -1161,7 +1161,8 @@ if __name__ == '__main__':
   #dirname = 'test_2022Sep21_17h43m05s' # category lxygt5_SS
   #dirname = 'test_2022Sep21_17h54m44s' # all categories
   #dirname = 'test_2022Sep27_10h58m03s' # 0_150_300
-  dirname = 'test_2022Sep27_16h35m02s' # 0 50 150
+  #dirname = 'test_2022Sep27_16h35m02s' # 0 50 150
+  dirname = 'test_2022Sep29_09h11m21s' # without pi dcasig
 
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
   #categories = categories['V12_08Aug22_permass']
@@ -1170,16 +1171,16 @@ if __name__ == '__main__':
   do_parametric = True
 
   data_files = []
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
 
   do_analyseMVA = True    # assess performance of mva
   do_compareMVA = False   # compare mva performance to that of the cutbased method
 
   if do_analyseMVA:
     signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-    #masses = ['m1', 'm1p5', 'm2', 'm3', 'm4p5']
-    masses = ['m4p5']
+    masses = ['m1', 'm1p5', 'm2', 'm3', 'm4p5']
+    #masses = ['m4p5']
 
     for mass in masses:
       signal_files = []

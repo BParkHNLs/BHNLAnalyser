@@ -124,22 +124,22 @@ class Trainer(object):
     filename_data_14 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk13_n500/flat/flat_bparknano_08Aug22_sr.root'
     filename_data_15 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk14_n500/flat/flat_bparknano_08Aug22_sr.root'
     data_samples = [
-      #Sample(filename=filename_data, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_1, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_2, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_3, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_4, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_5, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_6, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_7, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_8, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_9, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_10, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_11, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_12, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_13, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_14, selection=self.baseline_selection + ' && ' + extra_selection),
-      Sample(filename=filename_data_15, selection=self.baseline_selection + ' && ' + extra_selection),
+      Sample(filename=filename_data, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_1, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_2, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_3, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_4, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_5, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_6, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_7, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_8, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_9, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_10, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_11, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_12, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_13, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_14, selection=self.baseline_selection + ' && ' + extra_selection),
+      #Sample(filename=filename_data_15, selection=self.baseline_selection + ' && ' + extra_selection),
     ]
 
     ## signal
@@ -296,13 +296,16 @@ class Trainer(object):
 
       df = pd.DataFrame()
       for mass in masses:
+        requested_stat = statistics/len(masses)
         stat_permass = 0
         for the_df in dfs[mass]:
           stat_permass += len(the_df)
         if stat_permass < statistics/len(masses):
-          raise RuntimeError('Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics/len(masses), stat_permass))
+          #raise RuntimeError('Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics/len(masses), stat_permass))
+          print 'Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics/len(masses), stat_permass)
+          requested_stat = stat_permass
         df_tmp = pd.concat([idt for idt in dfs[mass]], sort=False)
-        df_tmp = df_tmp.sample(statistics/len(masses))
+        df_tmp = df_tmp.sample(requested_stat)
         df = pd.concat([df, df_tmp], sort=False) 
     
     df = self.removeInfs(df)
@@ -830,7 +833,8 @@ if __name__ == '__main__':
   #features = ['pi_pt', 'pi_eta', 'mu_pt', 'mu_eta', 'mu0_pt', 'mu0_eta', 'b_pt', 'b_eta', 'b_mass', 'mu0_mu_mass', 'mu0_mu_pt', 'mu0_pi_mass', 'mu0_pi_pt', 'deltar_mu_pi', 'deltar_mu0_hnl', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_chi2', 'sv_prob']
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu_pi', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_prob']
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'sv_prob'] # remove the deltaRs but keep masses as they can learn about possible sm resonances?
-  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'pi_dcasig', 'sv_lxysig', 'sv_prob']
+  #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'pi_dcasig', 'sv_lxysig', 'sv_prob']
+  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob']
   #features = ['pi_pt', 'pi_dcasig']
   epochs = 50
   batch_size = 32
@@ -840,7 +844,7 @@ if __name__ == '__main__':
   do_reduce_lr = True
   dirname = 'test'
   baseline_selection = 'hnl_charge==0 && ' + selection['baseline_08Aug22'].flat 
-  categories = categories['V12_08Aug22_permass']
+  categories = categories['categories_0_50_150']
   #NOTE add optimiser, learning rate etc? 
 
   do_parametric = True
