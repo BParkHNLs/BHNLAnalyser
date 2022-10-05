@@ -77,7 +77,7 @@ selection['baseline_08Aug22'] = Selection(
       '((mu0_charge!=mu_charge && abs(mu0_mu_mass-3.097)>0.15 && abs(mu0_mu_mass-3.686)>0.08 && abs(mu0_mu_mass-1.019)>0.01) || (mu0_charge==mu_charge))',
       '((mu0_charge==mu_charge && abs(mu0_pi_mass-3.097)>0.05 && abs(mu0_pi_mass-1.76)>0.05) || (mu0_charge!=mu_charge))',
       'sv_lxyz < 100',
-      #'sv_lxysig>30',
+      'sv_lxy/sv_lxysig>0',
     ])
 )
 
