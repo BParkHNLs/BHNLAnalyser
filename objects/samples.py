@@ -184,6 +184,41 @@ signal_samples['central_V11_24Apr22_benchmark_loose'] = [
       ),
   ]
 
+signal_samples['V12_08Aug22_benchmark'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22.root',
+      label = '1 GeV, 1000 mm',
+      mass = 1.0,
+      ctau = 1000.0,
+      resolution = 0.00888,
+      filter_efficiency = 1.59e-03,
+      muon_rate = 0.47,
+      is_private = False,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root',
+      label = '3 GeV, 100 mm',
+      mass = 3.0,
+      ctau = 100.0,
+      resolution = 0.0248,
+      filter_efficiency = 1.40e-02,
+      muon_rate = 0.47,
+      is_private = False,
+      colour = ROOT.kRed+1
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root',
+      label = '4.5 GeV, 1 mm',
+      mass = 4.5,
+      ctau = 1.0,
+      resolution = 0.0391,
+      filter_efficiency = 2.38e-02,
+      muon_rate = 0.49,
+      is_private = False,
+      colour = ROOT.kRed+4
+      ),
+  ]
 
 signal_samples['V12_08Aug22_training'] = [
   SignalSample(
@@ -612,6 +647,1364 @@ signal_samples['V12_08Aug22_m4p5'] = [
       muon_rate = 0.49,
       is_private = False,
       colour = ROOT.kRed-1
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m0p5'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass0p5_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '0.5 GeV, 10 mm',
+      mass = 0.5,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m0p6'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass0p6_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '0.6 GeV, 10 mm',
+      mass = 0.6,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m0p7'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass0p7_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '0.7 GeV, 10 mm',
+      mass = 0.7,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m0p8'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass0p8_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '0.8 GeV, 10 mm',
+      mass = 0.8,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m0p9'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass0p9_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '0.9 GeV, 10 mm',
+      mass = 0.9,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p0'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p0_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.0 GeV, 10 mm',
+      mass = 1.0,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p02'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p02_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.02 GeV, 10 mm',
+      mass = 1.02,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p04'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p04_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.04 GeV, 10 mm',
+      mass = 1.04,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p04'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p04_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.04 GeV, 10 mm',
+      mass = 1.04,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p06'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p06_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.06 GeV, 10 mm',
+      mass = 1.06,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p08'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p08_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.08 GeV, 10 mm',
+      mass = 1.08,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p1'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p1_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.1 GeV, 10 mm',
+      mass = 1.1,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p12'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p12_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.12 GeV, 10 mm',
+      mass = 1.12,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+#signal_samples['V42_08Aug22_m1p14'] = [
+#  SignalSample(
+#      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p14_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+#      label = '1.14 GeV, 10 mm',
+#      mass = 1.14,
+#      ctau = 10.0,
+#      resolution = None,
+#      filter_efficiency = None,
+#      muon_rate = 0.47, #FIXME
+#      is_private = True,
+#      colour = ROOT.kOrange+0
+#      ),
+#  ]
+
+signal_samples['V42_08Aug22_m1p16'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p16_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.16 GeV, 10 mm',
+      mass = 1.16,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p18'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p18_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.18 GeV, 10 mm',
+      mass = 1.18,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p2'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p2_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.2 GeV, 10 mm',
+      mass = 1.2,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p22'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p22_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.22 GeV, 10 mm',
+      mass = 1.22,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p24'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p24_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.24 GeV, 10 mm',
+      mass = 1.24,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p26'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p26_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.26 GeV, 10 mm',
+      mass = 1.26,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+#signal_samples['V42_08Aug22_m1p28'] = [
+#  SignalSample(
+#      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p28_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+#      label = '1.28 GeV, 10 mm',
+#      mass = 1.28,
+#      ctau = 10.0,
+#      resolution = None,
+#      filter_efficiency = None,
+#      muon_rate = 0.47, #FIXME
+#      is_private = True,
+#      colour = ROOT.kOrange+0
+#      ),
+#  ]
+
+signal_samples['V42_08Aug22_m1p3'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p3_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.3 GeV, 10 mm',
+      mass = 1.3,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p32'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p32_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.32 GeV, 10 mm',
+      mass = 1.32,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p34'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p34_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.34 GeV, 10 mm',
+      mass = 1.34,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p36'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p36_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.36 GeV, 10 mm',
+      mass = 1.36,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p38'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p38_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.38 GeV, 10 mm',
+      mass = 1.38,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p4'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p4_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.4 GeV, 10 mm',
+      mass = 1.4,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p42'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p42_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.42 GeV, 10 mm',
+      mass = 1.42,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p44'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p44_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.44 GeV, 10 mm',
+      mass = 1.44,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p46'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p46_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.46 GeV, 10 mm',
+      mass = 1.46,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p48'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p48_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.48 GeV, 10 mm',
+      mass = 1.48,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p5'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p5_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.5 GeV, 10 mm',
+      mass = 1.5,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p53'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p53_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.53 GeV, 10 mm',
+      mass = 1.53,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p56'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p56_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.56 GeV, 10 mm',
+      mass = 1.56,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p59'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p59_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.59 GeV, 10 mm',
+      mass = 1.59,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+#signal_samples['V42_08Aug22_m1p62'] = [
+#  SignalSample(
+#      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p62_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+#      label = '1.62 GeV, 10 mm',
+#      mass = 1.62,
+#      ctau = 10.0,
+#      resolution = None,
+#      filter_efficiency = None,
+#      muon_rate = 0.47, #FIXME
+#      is_private = True,
+#      colour = ROOT.kOrange+0
+#      ),
+#  ]
+
+signal_samples['V42_08Aug22_m1p65'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p65_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.65 GeV, 10 mm',
+      mass = 1.65,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+#signal_samples['V42_08Aug22_m1p68'] = [
+#  SignalSample(
+#      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p68_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+#      label = '1.68 GeV, 10 mm',
+#      mass = 1.68,
+#      ctau = 10.0,
+#      resolution = None,
+#      filter_efficiency = None,
+#      muon_rate = 0.47, #FIXME
+#      is_private = True,
+#      colour = ROOT.kOrange+0
+#      ),
+#  ]
+
+signal_samples['V42_08Aug22_m1p71'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p71_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.71 GeV, 10 mm',
+      mass = 1.71,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p74'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p74_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.74 GeV, 10 mm',
+      mass = 1.74,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p77'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p77_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.77 GeV, 10 mm',
+      mass = 1.77,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p8'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p8_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.8 GeV, 10 mm',
+      mass = 1.8,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p83'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p83_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.83 GeV, 10 mm',
+      mass = 1.83,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p86'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p86_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.86 GeV, 10 mm',
+      mass = 1.86,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p89'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p89_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.89 GeV, 10 mm',
+      mass = 1.89,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p92'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p92_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.92 GeV, 10 mm',
+      mass = 1.92,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p95'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p95_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.95 GeV, 10 mm',
+      mass = 1.95,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m1p98'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass1p98_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '1.98 GeV, 10 mm',
+      mass = 1.98,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p0'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p0_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.0 GeV, 10 mm',
+      mass = 2.0,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p05'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p05_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.05 GeV, 10 mm',
+      mass = 2.05,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p1'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p1_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.1 GeV, 10 mm',
+      mass = 2.1,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p15'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p15_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.15 GeV, 10 mm',
+      mass = 2.15,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p2'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p2_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.2 GeV, 10 mm',
+      mass = 2.2,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p25'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p25_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.25 GeV, 10 mm',
+      mass = 2.25,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p3'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p3_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.3 GeV, 10 mm',
+      mass = 2.3,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p35'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p35_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.35 GeV, 10 mm',
+      mass = 2.35,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p4'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p4_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.4 GeV, 10 mm',
+      mass = 2.4,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p45'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p45_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.45 GeV, 10 mm',
+      mass = 2.45,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p5'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p5_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.5 GeV, 10 mm',
+      mass = 2.5,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p55'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p55_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.55 GeV, 10 mm',
+      mass = 2.55,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p6'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p6_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.6 GeV, 10 mm',
+      mass = 2.6,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p65'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p65_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.65 GeV, 10 mm',
+      mass = 2.65,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p7'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p7_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.7 GeV, 10 mm',
+      mass = 2.7,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p75'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p75_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.75 GeV, 10 mm',
+      mass = 2.75,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p8'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p8_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.8 GeV, 10 mm',
+      mass = 2.8,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p85'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p85_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.85 GeV, 10 mm',
+      mass = 2.85,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p9'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p9_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.9 GeV, 10 mm',
+      mass = 2.9,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m2p95'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass2p95_ctau10p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '2.95 GeV, 10 mm',
+      mass = 2.95,
+      ctau = 10.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p0'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p0_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.0 GeV, 1 mm',
+      mass = 3.0,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p05'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p05_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.05 GeV, 1 mm',
+      mass = 3.05,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p1'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p1_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.1 GeV, 1 mm',
+      mass = 3.1,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p15'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p15_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.15 GeV, 1 mm',
+      mass = 3.15,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p2'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p2_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.2 GeV, 1 mm',
+      mass = 3.2,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p25'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p25_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.25 GeV, 1 mm',
+      mass = 3.25,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p3'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p3_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.3 GeV, 1 mm',
+      mass = 3.3,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p35'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p35_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.35 GeV, 1 mm',
+      mass = 3.35,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p4'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p4_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.4 GeV, 1 mm',
+      mass = 3.4,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p45'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p45_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.45 GeV, 1 mm',
+      mass = 3.45,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p5'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p5_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.5 GeV, 1 mm',
+      mass = 3.5,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p55'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p55_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.55 GeV, 1 mm',
+      mass = 3.55,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p6'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p6_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.6 GeV, 1 mm',
+      mass = 3.6,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p65'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p65_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.65 GeV, 1 mm',
+      mass = 3.65,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p7'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p7_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.7 GeV, 1 mm',
+      mass = 3.7,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p75'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p75_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.75 GeV, 1 mm',
+      mass = 3.75,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p8'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p8_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.8 GeV, 1 mm',
+      mass = 3.8,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p85'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p85_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.85 GeV, 1 mm',
+      mass = 3.85,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p9'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p9_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.9 GeV, 1 mm',
+      mass = 3.9,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m3p95'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass3p95_ctau1p0/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '3.95 GeV, 1 mm',
+      mass = 3.95,
+      ctau = 1.0,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m4p0'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass4p0_ctau0p1/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '4.0 GeV, 0.1 mm',
+      mass = 4.0,
+      ctau = 0.1,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m4p1'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass4p1_ctau0p1/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '4.1 GeV, 0.1 mm',
+      mass = 4.1,
+      ctau = 0.1,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m4p2'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass4p2_ctau0p1/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '4.2 GeV, 0.1 mm',
+      mass = 4.2,
+      ctau = 0.1,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+#signal_samples['V42_08Aug22_m4p3'] = [
+#  SignalSample(
+#      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass4p3_ctau0p1/nanoFiles/merged/flat_bparknano_08Aug22.root',
+#      label = '4.3 GeV, 0.1 mm',
+#      mass = 4.3,
+#      ctau = 0.1,
+#      resolution = None,
+#      filter_efficiency = None,
+#      muon_rate = 0.47, #FIXME
+#      is_private = True,
+#      colour = ROOT.kOrange+0
+#      ),
+#  ]
+
+signal_samples['V42_08Aug22_m4p4'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass4p4_ctau0p1/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '4.4 GeV, 0.1 mm',
+      mass = 4.4,
+      ctau = 0.1,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m4p5'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass4p5_ctau0p1/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '4.5 GeV, 0.1 mm',
+      mass = 4.5,
+      ctau = 0.1,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m4p6'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass4p6_ctau0p1/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '4.6 GeV, 0.1 mm',
+      mass = 4.6,
+      ctau = 0.1,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m4p7'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass4p7_ctau0p1/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '4.7 GeV, 0.1 mm',
+      mass = 4.7,
+      ctau = 0.1,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
+      ),
+  ]
+
+signal_samples['V42_08Aug22_m4p8'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V42/mass4p8_ctau0p1/nanoFiles/merged/flat_bparknano_08Aug22.root',
+      label = '4.8 GeV, 0.1 mm',
+      mass = 4.8,
+      ctau = 0.1,
+      resolution = None,
+      filter_efficiency = None,
+      muon_rate = 0.47, #FIXME
+      is_private = True,
+      colour = ROOT.kOrange+0
       ),
   ]
 
@@ -5579,8 +6972,8 @@ data_samples['V11_24Apr22_fullBPark'] = [
 
 data_samples['V12_08Aug22'] = [
   DataSample(
-      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root',
-      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22.root',
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root',
+      #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22.root',
       label = 'ParkingBPH1_Run2018D (V12_08Aug22)',
       lumi = 5.302,
       ),
