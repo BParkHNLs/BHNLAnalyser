@@ -5,6 +5,7 @@ import subprocess
 import sys
 sys.path.append('./objects')
 from categories import categories
+from points import points
 from samples import signal_samples
 sys.path.append('./cfgs')
 
@@ -12,7 +13,7 @@ sys.path.append('./cfgs')
 #"----------------User's decision board-----------------"
 
 output_label = 'V12_08Aug22'
-tag = 'study_bs_weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysig_bsrdst_newcat_max3e6_smalltable_v2'
+tag = 'study_categorisation_0_50_150_syst'
 cfg_filename = 'V12_08Aug22_cfg.py'
 submit_batch = True
 do_plotter = False
@@ -27,13 +28,14 @@ do_plot_limits = True
 ### other
 do_check_config = True
 do_standard_queue = True
+memory = 2000
 
 #'------------------------------------------------------'
 
 
 
 class BHNLLauncher(object):
-  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits, do_check_config, do_standard_queue):
+  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits, do_check_config, do_standard_queue, memory):
     self.cfg_name = cfg_name
     self.outlabel = outlabel
     self.tag = tag
@@ -46,6 +48,7 @@ class BHNLLauncher(object):
     self.do_plot_limits = do_plot_limits
     self.do_check_config = do_check_config
     self.do_standard_queue = do_standard_queue
+    self.memory = memory
 
 
   def printHeader(self):
@@ -94,11 +97,8 @@ class BHNLLauncher(object):
     return masses
 
 
-  def getCtauList(self, signal_label=''):
-    ctaus = []
-    for signal_sample in signal_samples[signal_label]:
-      if signal_sample.ctau not in ctaus: ctaus.append(signal_sample.ctau)
-    return ctaus
+  def getCtauList(self):
+    return points[self.cfg.points_label] 
 
 
   def getJobId(self, job):
@@ -129,6 +129,7 @@ class BHNLLauncher(object):
         '{}'.format('cp -r ./outputs/{}/datacards/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
         '{}'.format('cp -r ./outputs/{}/datacards_combined/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
         '{}'.format('cp -r ./outputs/{}/limits/{}/results $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_plot_limits else ''),
+        'cp -r ./scripts/mva/outputs/{} $workdir'.format(self.cfg.training_label),
         'cd $workdir',
         'DATE_START=`date +%s`',
         command,
@@ -165,7 +166,7 @@ class BHNLLauncher(object):
         '--qcd_label {}'.format(self.cfg.qcd_label),
         '--signal_label {}'.format(self.cfg.signal_labels[0]), #FIXME
         '--quantities_label {}'.format(quantity_label),
-        '--selection_label {}'.format(self.cfg.selection_label),
+        '--selection_label {}'.format(self.cfg.baseline_selection_label),
         '--categories_label {}'.format(self.cfg.categories_label),
         '--category_label {}'.format(category.label),
         '--sample_type {}'.format(self.cfg.sample_type),
@@ -232,7 +233,9 @@ class BHNLLauncher(object):
         '--qcd_label {}'.format(self.cfg.qcd_label),
         '--signal_label {}'.format(signal_label),
         '--points_label {}'.format(self.cfg.points_label),
-        '--selection_label {}'.format(self.cfg.selection_label),
+        '--selection_label {}'.format(self.cfg.baseline_selection_label),
+        '--training_label {}'.format(self.cfg.training_label),
+        '--cut_score {}'.format(self.cfg.cut_score),
         '--categories_label {}'.format(self.cfg.categories_label),
         '--category_label {}'.format(category.label),
         '--reweighting_strategy {}'.format(self.cfg.reweighting_strategy),
@@ -246,11 +249,16 @@ class BHNLLauncher(object):
         '--sigma_B {}'.format(self.cfg.sigma_B),
         '--lhe_efficiency {}'.format(self.cfg.lhe_efficiency),
         '--sigma_mult {}'.format(self.cfg.sigma_mult_window),
+        '--resolution_p0 {}'.format(self.cfg.resolution_p0),
+        '--resolution_p1 {}'.format(self.cfg.resolution_p1),
         '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
         '--weight_pusig {}'.format(self.cfg.branch_weight_pusig),
         '--weight_muid {}'.format(self.cfg.branch_weight_muid),
         '--weight_mu0id {}'.format(self.cfg.branch_weight_mu0id),
         '--CMStag {}'.format(self.cfg.CMStag),
+        '{}'.format('--do_cutbased' if self.cfg.do_cutbased else ''),
+        '{}'.format('--do_mva' if self.cfg.do_mva else ''),
+        '{}'.format('--do_parametric' if self.cfg.do_parametric else ''),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
         '{}'.format('--add_weight_pu' if self.cfg.add_weight_pu else ''),
         '{}'.format('--add_weight_muid' if self.cfg.add_weight_muid else ''),
@@ -289,8 +297,9 @@ class BHNLLauncher(object):
         print 'creating directory'
         os.system('mkdir -p {}'.format(logdir_name))
 
-      command_submit = 'sbatch -p {que} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
+      command_submit = 'sbatch -p {que} --mem {mem} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
           que = 'standard' if self.do_standard_queue else 'short',
+          mem = self.memory,
           ld = logdir_name,
           lbl=label,
           ) 
@@ -412,11 +421,11 @@ class BHNLLauncher(object):
         '--subdirlabel {}'.format(self.tag),
         #'--mass_whitelist {}'.format(self.getParserString(self.cfg.mass_white_list)), #FIXME 
         #'--mass_whitelist 4.5',
-        #'--mass_blacklist 3,4.5',
+        #'--mass_blacklist 3.0',
         #'--mass_blacklist {}'.format(self.getParserString(self.cfg.mass_black_list)), #FIXME  
         #'--coupling_whitelist {}'.format(self.getParserString(self.cfg.coupling_white_list)), #FIXME 
         #'--coupling_blacklist {}'.format(self.getParserString(self.cfg.coupling_black_list)), #FIXME  
-        #'--coupling_blacklist 5.8e-05',
+        #'--coupling_blacklist 0.0011,0.0013,0.0018,0.0036,0.001,0.0024,0.0042,0.0056,0.0084,0.024,0.034,0.042,0.056,0.084,0.0015,0.0022,0.0032,0.0044,0.0055,0.0074,0.011,0.015,0.022,0.032,0.044,0.055,0.074,1.5e-05,1.9e-05,2.9e-05,4.2e-05,5.8e-05,7.3e-05,9.7e-05,0.00015,0.00019,0.00029,0.00042,0.00058,0.00073',
         '{}'.format('--run_blind' if self.cfg.run_blind else ''),
         ])
 
@@ -499,7 +508,7 @@ class BHNLLauncher(object):
         dependency_limits = []
         for signal_label in self.cfg.signal_labels:
           for mass in self.getMassList(signal_label):
-            for ctau in self.getCtauList(signal_label):
+            for ctau in self.getCtauList():
               print '\n -> Launching the limits production for mass {} and ctau {}'.format(mass, ctau)
               if self.submit_batch and self.do_combine_datacards:
                 job_id = self.launchLimitsProducer(mass=mass, ctau=ctau, do_dependency=True, job_id=self.getJobIdsList(dependency_combined_datacards[signal_label]))
@@ -530,7 +539,8 @@ if __name__ == '__main__':
                           do_produce_limits=do_produce_limits, 
                           do_plot_limits=do_plot_limits,
                           do_check_config=do_check_config,
-                          do_standard_queue=do_standard_queue
+                          do_standard_queue=do_standard_queue,
+                          memory=memory,
                           )
   launcher.process()
 

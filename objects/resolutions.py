@@ -1,5 +1,7 @@
 '''
   List of the resolution for each mass
+
+  ## Not used anymore ##
 '''
 
 resolutions = {}

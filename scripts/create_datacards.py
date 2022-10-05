@@ -17,7 +17,6 @@ from ABCD_regions import ABCD_regions
 from qcd_white_list import white_list
 from quantity import Quantity
 from points import points
-from resolutions import resolutions as resolutions_list
 
 
 def getOptions():
@@ -33,6 +32,8 @@ def getOptions():
   parser.add_argument('--selection_label'       , type=str, dest='selection_label'       , help='apply a baseline selection_label?'                             , default='standard')
   parser.add_argument('--categories_label '     , type=str, dest='categories_label'      , help='label of the list of categories'                               , default='standard')
   parser.add_argument('--category_label'        , type=str, dest='category_label'        , help='label of a given category within this list'                    , default=None)
+  parser.add_argument('--training_label'        , type=str, dest='training_label'        , help='label of the mva training'                                     , default=None)
+  parser.add_argument('--cut_score'             , type=str, dest='cut_score'             , help='value of the cut on the mva score'                             , default=None)
   parser.add_argument('--reweighting_strategy ' , type=str, dest='reweighting_strategy'  , help='lifetime reweighting strategy'                                 , default='inclusive')
   parser.add_argument('--ABCD_label'            , type=str, dest='ABCD_label'            , help='which ABCD regions?'                                           , default='cos2d_svprob')
   parser.add_argument('--signal_model_label'    , type=str, dest='signal_model_label'    , help='name of the signal pdf'                                        , default='voigtiant')
@@ -44,12 +45,17 @@ def getOptions():
   parser.add_argument('--sigma_B'               , type=str, dest='sigma_B'               , help='which value of the B cross section?'                           , default='472.8e9')
   parser.add_argument('--lhe_efficiency'        , type=str, dest='lhe_efficiency'        , help='LHE efficiency'                                                , default='0.08244')
   parser.add_argument('--sigma_mult'            , type=str, dest='sigma_mult'            , help='size n*sigma of the window around a given mass'                , default='20')
+  parser.add_argument('--resolution_p0'         , type=str, dest='resolution_p0'         , help='p0 of the resolution(mass) linear function'                    , default='0.0002747')
+  parser.add_argument('--resolution_p1'         , type=str, dest='resolution_p1'         , help='p1 of the resolution(mass) linear function'                    , default='0.008302')
   parser.add_argument('--weight_hlt'            , type=str, dest='weight_hlt'            , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
   parser.add_argument('--weight_pusig'          , type=str, dest='weight_pusig'          , help='name of the branch of pu sig weight'                           , default='weight_pusig_D')
   parser.add_argument('--weight_mu0id'          , type=str, dest='weight_mu0id'          , help='name of the branch of mu0id weight'                            , default='weight_mu0_softid')
   parser.add_argument('--weight_muid'           , type=str, dest='weight_muid'           , help='name of the branch of muid weight'                             , default='weight_mu_looseid')
   parser.add_argument('--qcd_white_list '       , type=str, dest='qcd_white_list'        , help='pthat range to consider for qcd samples'                       , default='20to300')
   parser.add_argument('--CMStag '               , type=str, dest='CMStag'                , help='CMS tag to be added if --add_CMSlabel'                         , default='Preliminary')
+  parser.add_argument('--do_cutbased'           ,           dest='do_cutbased'           , help='use cutbased selection method'            , action='store_true', default=False)
+  parser.add_argument('--do_mva'                ,           dest='do_mva'                , help='use mva selection method'                 , action='store_true', default=False)
+  parser.add_argument('--do_parametric'         ,           dest='do_parametric'         , help='use parametric neural network'            , action='store_true', default=False)
   parser.add_argument('--add_weight_hlt'        ,           dest='add_weight_hlt'        , help='add hlt weight'                           , action='store_true', default=False)
   parser.add_argument('--add_weight_pu'         ,           dest='add_weight_pu'         , help='add pu weight'                            , action='store_true', default=False)
   parser.add_argument('--add_weight_muid'       ,           dest='add_weight_muid'       , help='add muid weight'                          , action='store_true', default=False)
@@ -103,7 +109,7 @@ def printInfo(opt):
 
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', do_cutbased=False, do_mva=False, training_label='', do_parametric=False, cut_score='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, resolution_p0=None, resolution_p1=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -112,6 +118,11 @@ class DatacardsMaker(Tools):
     self.qcd_files = qcd_files
     self.white_list = white_list
     self.baseline_selection = baseline_selection
+    self.do_cutbased = do_cutbased
+    self.do_mva = do_mva
+    self.training_label = training_label
+    self.do_parametric = do_parametric
+    self.cut_score = cut_score
     self.reweighting_strategy = reweighting_strategy
     self.ABCD_regions = ABCD_regions
     self.do_ABCD = do_ABCD 
@@ -139,6 +150,8 @@ class DatacardsMaker(Tools):
     self.sigma_B = float(sigma_B)
     self.lhe_efficiency = float(lhe_efficiency)
     self.sigma_mult = float(sigma_mult)
+    self.resolution_p0 = float(resolution_p0)
+    self.resolution_p1 = float(resolution_p1)
     self.weight_hlt = weight_hlt
     self.weight_pusig = weight_pusig
     self.weight_mu0id = weight_mu0id
@@ -166,7 +179,7 @@ class DatacardsMaker(Tools):
     for signal_file in signal_files:
       window = {}
       mass = signal_file.mass
-      resolution = resolutions_list[mass]
+      resolution = self.resolution_p0 + self.resolution_p1 * mass
       if mass not in masses and resolution not in resolutions: 
         window['mass'] = mass
         window['resolution'] = resolution
@@ -178,7 +191,7 @@ class DatacardsMaker(Tools):
 
   def getBackgroundYields(self, mass, category='', selection=''):
     background_selection = selection
-    resolution = resolutions_list[mass]
+    resolution = self.resolution_p0 + self.resolution_p1 * mass
 
     if self.do_ABCD:
       background_yields = ComputeYields(data_files=self.data_files, selection=background_selection).computeBkgYieldsFromABCDData(mass=mass, resolution=resolution, ABCD_regions=self.ABCD_regions, sigma_mult_window=self.sigma_mult)[0] 
@@ -262,7 +275,7 @@ class DatacardsMaker(Tools):
 
     # initialise the fitter
     if process == 'signal':
-      fitter = Fitter(signal_label=self.signal_label, data_files=self.data_files, selection=selection, mass=mass, ctau=ctau, reweighting_strategy=self.reweighting_strategy, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, add_Bc=self.add_Bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, add_weight_muid=self.add_weight_muid, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(signal_label=self.signal_label, data_files=self.data_files, selection=selection, mass=mass, ctau=ctau, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, reweighting_strategy=self.reweighting_strategy, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, add_Bc=self.add_Bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, add_weight_muid=self.add_weight_muid, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_signal(label=label)
@@ -275,7 +288,7 @@ class DatacardsMaker(Tools):
         fitter.producePrefitPlot(label=label)
 
     elif process == 'background':
-      fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_background(label=label)
@@ -286,7 +299,7 @@ class DatacardsMaker(Tools):
       yields = background_yields * self.lumi_target/lumi_true #NOTE this is needed as the background on which the fit is performed is not normalised to lumi
 
     elif process == 'data_obs':
-      fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_data_obs(label=label)
@@ -296,10 +309,10 @@ class DatacardsMaker(Tools):
     return yields
 
 
-  def runFTestRoutine(self, mass, window_size, category, selection):
+  def runFTestRoutine(self, mass, window_size, category, selection, label):
     # produce input workspace 
-    fitter = Fitter(data_files=self.data_files, mass=mass, selection=selection, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, lumi_target=self.lumi_target)
-    fitter.createFTestInputWorkspace()
+    fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, lumi_target=self.lumi_target)
+    fitter.createFTestInputWorkspace(label=label)
 
     # run the F-test and save the output multipdf in a workspace
     command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins}'.format(
@@ -309,7 +322,7 @@ class DatacardsMaker(Tools):
         cat = category.label,
         m = mass,
         ml = str(mass).replace('.', 'p'),
-        rsl = resolutions_list[mass], 
+        rsl = self.resolution_p0 + self.resolution_p1 * mass,
         fws = self.fit_window_size, 
         mws = self.mass_window_size,
         nbins = self.nbins,
@@ -334,7 +347,7 @@ class DatacardsMaker(Tools):
     root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'RECREATE')  
     root_file.cd()
 
-    sigma = resolutionsi_list[mass]
+    sigma = self.resolution_p0 + self.resolution_p1 * mass
     quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=signal_mass-2*sigma, bin_max=signal_mass+2*sigma)
 
     treename = 'signal_tree'
@@ -361,7 +374,7 @@ class DatacardsMaker(Tools):
     root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'UPDATE')  
     root_file.cd()
 
-    resolution = resolutions_list[mass]
+    resolution = self.resolution_p0 + self.resolution_p1 * mass
     quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
 
     use_data=True
@@ -415,7 +428,7 @@ class DatacardsMaker(Tools):
     root_file = ROOT.TFile.Open('{}/{}'.format(self.outputdir, rootfile_name), 'UPDATE')  
     root_file.cd()
 
-    resolution = resolutions_list[mass]
+    resolution = self.resolution_p0 + self.resolution_p1 * mass
     quantity = Quantity(name_flat='hnl_mass', nbins=self.nbins, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
 
     treename = 'signal_tree'
@@ -507,7 +520,12 @@ process                                                  -1                     
 rate                                                     {sig_yields}                   {bkg_yields}    
 --------------------------------------------------------------------------------------------------------------------------------------------
 lumi                                       lnN           1.025                          -   
-syst_sig_{lbl}                             lnN           1.3                            -    
+syst_sig_trigger_sf                        lnN           1.05                           -
+syst_sig_muid_sf                           lnN           1.01                           -
+syst_sig_norm_{lbl}                        lnN           1.15                           -
+syst_sig_track_eff                         lnN           1.05                           -
+syst_sig_sel_{lbl}                         lnN           1.2                            -    
+syst_sig_pheno                             lnN           1.15                           -
 {bkg_syst_line}   
 --------------------------------------------------------------------------------------------------------------------------------------------
 {norm_line}
@@ -562,22 +580,28 @@ bkg {bkg_yields}
         cat_label = self.getCategoryLabel(signal_mass=window['mass'], category=category)
 
         # for the moment, remove low displacement category for mass 3 GeV
-        if float(window['mass']) == 3 and category.label in ['lxy0to1_OS', 'lxy0to1_SS', 'lxy0to1_OS_Bc', 'lxy0to1_SS_Bc']: continue
+        if float(window['mass']) == 3 and category.label in ['lxysig0to50_OS', 'lxysig0to50_SS', 'lxysig50to150_OS', 'lxysig50to150_SS', 'lxy0to1_OS', 'lxy0to1_SS', 'lxy0to1_OS_Bc', 'lxy0to1_SS_Bc']: continue
 
         # define the selection
         selection = self.baseline_selection
         if self.do_categories:
-          #selection += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
+          if self.do_cutbased:
+            #selection += ' && ' + category.definition_flat + ' && ' + category.cutbased_selection
 
-          # selection in the different mass regimes
-          selection += ' && ' + category.definition_flat
-          this_mass = window['mass']
-          if this_mass < 3: selection += ' && ' + category.cutbased_selection_lowmass
-          elif this_mass >= 3 and this_mass < 4.5: selection += ' && ' + category.cutbased_selection_mediummass 
-          elif this_mass >= 4.5: selection += ' && ' + category.cutbased_selection_highmass
+            # selection in the different mass regimes
+            selection += ' && ' + category.definition_flat
+            this_mass = window['mass']
+            if this_mass < 3: selection += ' && ' + category.cutbased_selection_lowmass
+            elif this_mass >= 3 and this_mass < 4.5: selection += ' && ' + category.cutbased_selection_mediummass 
+            elif this_mass >= 4.5: selection += ' && ' + category.cutbased_selection_highmass
+
+          if self.do_mva:
+            selection += ' && ' + category.definition_flat
+            selection += ' && hnl_charge == 0 && score > {}'.format(self.cut_score)
 
         # get the background yields
         if self.do_counting or self.do_shape_TH1:
+          #NOTE this method is not adapted to run with the mva selection
           background_yields = self.getBackgroundYields(mass=window['mass'], category=category, selection=selection)
 
         elif self.do_shape_analysis and not self.use_discrete_profiling:
@@ -585,7 +609,7 @@ bkg {bkg_yields}
           data_obs = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, label=cat_label)
 
         elif self.do_shape_analysis and self.use_discrete_profiling:
-          background_yields = self.runFTestRoutine(mass=window['mass'], window_size=self.fit_window_size, category=category, selection=selection)
+          background_yields = self.runFTestRoutine(mass=window['mass'], window_size=self.fit_window_size, category=category, selection=selection, label=cat_label)
           data_obs = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, label=cat_label)
 
         # loop on the signal points
@@ -594,6 +618,8 @@ bkg {bkg_yields}
           signal_mass = window['mass']
           signal_ctau = ctau_point
           signal_coupling = self.getSignalCoupling(signal_mass=signal_mass, signal_ctau=signal_ctau)
+
+          if float(signal_coupling) < 1e-5 or float(signal_coupling) > 1e-1: continue
 
           #if signal_ctau != 0.1: continue
 
@@ -618,7 +644,7 @@ bkg {bkg_yields}
           self.writeCard(card_label=card_label, cat_label=cat_label, signal_yields=signal_yields, background_yields=background_yields)
 
           # save yields summary
-          self.writeYieldsForPlots(label=card_label, signal_yields=signal_yields, background_yields=background_yields)
+          #self.writeYieldsForPlots(label=card_label, signal_yields=signal_yields, background_yields=background_yields)
 
 
 
@@ -647,6 +673,12 @@ if __name__ == '__main__':
     categories = categories[opt.categories_label]
     baseline_selection = selection[opt.selection_label].flat
 
+    do_cutbased = opt.do_cutbased
+    do_mva = opt.do_mva
+    training_label = opt.training_label
+    do_parametric = opt.do_parametric
+    cut_score = opt.cut_score
+
     do_ABCD = opt.do_ABCD
     do_ABCDHybrid = opt.do_ABCDHybrid
     do_TF = opt.do_TF
@@ -667,6 +699,8 @@ if __name__ == '__main__':
     lhe_efficiency = opt.lhe_efficiency
 
     sigma_mult = opt.sigma_mult
+    resolution_p0 = opt.resolution_p0
+    resolution_p1 = opt.resolution_p1
 
     add_weight_hlt = opt.add_weight_hlt
     weight_hlt = opt.weight_hlt
@@ -699,6 +733,11 @@ if __name__ == '__main__':
         qcd_files = qcd_files,
         white_list = white_list,
         baseline_selection = baseline_selection, 
+        do_cutbased = do_cutbased,
+        do_mva = do_mva,
+        training_label = training_label,
+        do_parametric = do_parametric,
+        cut_score = cut_score,
         do_counting = do_counting,
         do_shape_analysis = do_shape_analysis,
         do_shape_TH1 = do_shape_TH1,
@@ -724,6 +763,8 @@ if __name__ == '__main__':
         sigma_B = sigma_B,
         lhe_efficiency = lhe_efficiency,
         sigma_mult = sigma_mult,
+        resolution_p0 = resolution_p0,
+        resolution_p1 = resolution_p1,
         weight_hlt = weight_hlt,
         weight_pusig = weight_pusig,
         weight_mu0id = weight_mu0id,

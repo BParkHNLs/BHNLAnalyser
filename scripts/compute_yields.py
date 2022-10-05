@@ -580,7 +580,7 @@ class ComputeYields(Tools):
     return efficiency, err_efficiency
 
 
-  def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', isBc=False):
+  def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', strategy='exclusive_fromlargerctau', isBc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
     '''
@@ -590,7 +590,7 @@ class ComputeYields(Tools):
     fit_window_max = mass + 1.5 
 
     # get the signal files
-    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy='exclusive_fromlargerctau')
+    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy=strategy)
 
     # get the tree
     treename = 'signal_tree'

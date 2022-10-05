@@ -14,7 +14,12 @@ class Config(object):
                tree_name=None, 
                reweighting_strategy=None,
                categories_label=None, 
-               selection_label=None, 
+               baseline_selection_label=None, 
+               do_cutbased=None,
+               do_mva=None,
+               training_label=None,
+               do_parametric=None,
+               cut_score=None,
                quantities_label=None, 
                weight_label=None,
                qcd_white_list=None,
@@ -67,6 +72,8 @@ class Config(object):
                sigma_B=None,
                lhe_efficiency=None,
                sigma_mult_window=None,
+               resolution_p0=None,
+               resolution_p1=None,
 
                # for limits
                run_blind=None,
@@ -80,7 +87,12 @@ class Config(object):
     self.tree_name = tree_name
     self.categories_label = categories_label
     self.reweighting_strategy = reweighting_strategy
-    self.selection_label = selection_label
+    self.baseline_selection_label = baseline_selection_label
+    self.do_cutbased = do_cutbased
+    self.do_mva = do_mva
+    self.training_label = training_label
+    self.do_parametric = do_parametric
+    self.cut_score = cut_score
     self.quantities_label = quantities_label
     self.weight_label = weight_label
     self.qcd_white_list = qcd_white_list
@@ -129,6 +141,8 @@ class Config(object):
     self.sigma_B = sigma_B
     self.lhe_efficiency = lhe_efficiency
     self.sigma_mult_window = sigma_mult_window
+    self.resolution_p0 = resolution_p0
+    self.resolution_p1 = resolution_p1
     self.run_blind = run_blind
 
 
@@ -201,10 +215,22 @@ class Config(object):
       print '       ---> Categories label OK'
 
     from baseline_selection import selection
-    if self.selection_label != None and self.selection_label not in selection.keys():
-      raise RuntimeError('The selection label (selection_label) is not valid. Please choose amongst {}.'.format(selection.keys()))
+    if self.baseline_selection_label != None and self.baseline_selection_label not in selection.keys():
+      raise RuntimeError('The selection label (baseline_selection_label) is not valid. Please choose amongst {}.'.format(selection.keys()))
     else: 
-      print '       ---> Selection label OK'
+      print '       ---> Baseline selection label OK'
+
+    if self.do_cutbased + self.do_mva != 1:
+      raise RuntimeError('Choose either the cutbased or mva selection methods (do_cutbased or do_mva)')
+    else:
+      print '       ---> Selection method OK'
+
+    from os import path
+    if self.do_mva:
+      if not path.exists('./scripts/mva/outputs/{}'.format(self.training_label)):
+        raise RuntimeError('The training "{}" was not found. Please check'.format(self.training_label))
+      else:
+        print '       ---> Training label OK'
 
     from quantity import quantities
     for quantity_label in self.quantities_label:
