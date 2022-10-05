@@ -520,7 +520,12 @@ process                                                  -1                     
 rate                                                     {sig_yields}                   {bkg_yields}    
 --------------------------------------------------------------------------------------------------------------------------------------------
 lumi                                       lnN           1.025                          -   
-syst_sig_{lbl}                             lnN           1.3                            -    
+syst_sig_trigger_sf                        lnN           1.05                           -
+syst_sig_muid_sf                           lnN           1.01                           -
+syst_sig_norm_{lbl}                        lnN           1.15                           -
+syst_sig_track_eff                         lnN           1.05                           -
+syst_sig_sel_{lbl}                         lnN           1.2                            -    
+syst_sig_pheno                             lnN           1.15                           -
 {bkg_syst_line}   
 --------------------------------------------------------------------------------------------------------------------------------------------
 {norm_line}
@@ -575,7 +580,7 @@ bkg {bkg_yields}
         cat_label = self.getCategoryLabel(signal_mass=window['mass'], category=category)
 
         # for the moment, remove low displacement category for mass 3 GeV
-        if float(window['mass']) == 3 and category.label in ['lxy0to1_OS', 'lxy0to1_SS', 'lxy0to1_OS_Bc', 'lxy0to1_SS_Bc']: continue
+        if float(window['mass']) == 3 and category.label in ['lxysig0to50_OS', 'lxysig0to50_SS', 'lxysig50to150_OS', 'lxysig50to150_SS', 'lxy0to1_OS', 'lxy0to1_SS', 'lxy0to1_OS_Bc', 'lxy0to1_SS_Bc']: continue
 
         # define the selection
         selection = self.baseline_selection
@@ -614,6 +619,8 @@ bkg {bkg_yields}
           signal_ctau = ctau_point
           signal_coupling = self.getSignalCoupling(signal_mass=signal_mass, signal_ctau=signal_ctau)
 
+          if float(signal_coupling) < 1e-5 or float(signal_coupling) > 1e-1: continue
+
           #if signal_ctau != 0.1: continue
 
           # get the process label
@@ -637,7 +644,7 @@ bkg {bkg_yields}
           self.writeCard(card_label=card_label, cat_label=cat_label, signal_yields=signal_yields, background_yields=background_yields)
 
           # save yields summary
-          self.writeYieldsForPlots(label=card_label, signal_yields=signal_yields, background_yields=background_yields)
+          #self.writeYieldsForPlots(label=card_label, signal_yields=signal_yields, background_yields=background_yields)
 
 
 
