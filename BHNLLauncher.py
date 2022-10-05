@@ -13,8 +13,7 @@ sys.path.append('./cfgs')
 #"----------------User's decision board-----------------"
 
 output_label = 'V12_08Aug22'
-#tag = 'study_bs_weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_looseid_max3e6_smalltable_v2'
-tag = 'validation_llpapr22'
+tag = 'study_categorisation_0_50_150_syst'
 cfg_filename = 'V12_08Aug22_cfg.py'
 submit_batch = True
 do_plotter = False
@@ -250,6 +249,8 @@ class BHNLLauncher(object):
         '--sigma_B {}'.format(self.cfg.sigma_B),
         '--lhe_efficiency {}'.format(self.cfg.lhe_efficiency),
         '--sigma_mult {}'.format(self.cfg.sigma_mult_window),
+        '--resolution_p0 {}'.format(self.cfg.resolution_p0),
+        '--resolution_p1 {}'.format(self.cfg.resolution_p1),
         '--weight_hlt {}'.format(self.cfg.branch_weight_hlt),
         '--weight_pusig {}'.format(self.cfg.branch_weight_pusig),
         '--weight_muid {}'.format(self.cfg.branch_weight_muid),
@@ -257,6 +258,7 @@ class BHNLLauncher(object):
         '--CMStag {}'.format(self.cfg.CMStag),
         '{}'.format('--do_cutbased' if self.cfg.do_cutbased else ''),
         '{}'.format('--do_mva' if self.cfg.do_mva else ''),
+        '{}'.format('--do_parametric' if self.cfg.do_parametric else ''),
         '{}'.format('--add_weight_hlt' if self.cfg.add_weight_hlt else ''),
         '{}'.format('--add_weight_pu' if self.cfg.add_weight_pu else ''),
         '{}'.format('--add_weight_muid' if self.cfg.add_weight_muid else ''),
@@ -419,11 +421,11 @@ class BHNLLauncher(object):
         '--subdirlabel {}'.format(self.tag),
         #'--mass_whitelist {}'.format(self.getParserString(self.cfg.mass_white_list)), #FIXME 
         #'--mass_whitelist 4.5',
-        #'--mass_blacklist 3,4.5',
+        #'--mass_blacklist 3.0',
         #'--mass_blacklist {}'.format(self.getParserString(self.cfg.mass_black_list)), #FIXME  
         #'--coupling_whitelist {}'.format(self.getParserString(self.cfg.coupling_white_list)), #FIXME 
         #'--coupling_blacklist {}'.format(self.getParserString(self.cfg.coupling_black_list)), #FIXME  
-        #'--coupling_blacklist 5.8e-05',
+        #'--coupling_blacklist 0.0011,0.0013,0.0018,0.0036,0.001,0.0024,0.0042,0.0056,0.0084,0.024,0.034,0.042,0.056,0.084,0.0015,0.0022,0.0032,0.0044,0.0055,0.0074,0.011,0.015,0.022,0.032,0.044,0.055,0.074,1.5e-05,1.9e-05,2.9e-05,4.2e-05,5.8e-05,7.3e-05,9.7e-05,0.00015,0.00019,0.00029,0.00042,0.00058,0.00073',
         '{}'.format('--run_blind' if self.cfg.run_blind else ''),
         ])
 
