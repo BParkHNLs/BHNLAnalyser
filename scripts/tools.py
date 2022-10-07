@@ -202,7 +202,7 @@ class Tools(object):
     else: BR_prod = dec.BR_Bc_mu 
 
     # decay branching ratio
-    BR_NToMuPi = self.gamma_partial(mass=mass, vv=v_square) / self.gamma_total(mass=mass, vv=v_square)
+    BR_NToMuPi = self.gamma_partial(mass=mass, vv=1.) / self.gamma_total(mass=mass, vv=1.) # the coupling cancels in the ratio
 
     # number of generated events (= n_gen / filter_efficiency = n_miniaod / filter_efficiency)
     tree_run = ROOT.TChain('run_tree') 
