@@ -10,6 +10,7 @@ from itertools import product
 from time import time 
 from datetime import datetime
 import seaborn as sns
+import glob
 
 import ROOT
 import root_pandas
@@ -43,6 +44,7 @@ class Sample(object):
   def __init__(self, filename, selection):
     self.filename = filename
     self.selection = selection
+    self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True)
     try:
       self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True)
     except:
@@ -54,7 +56,7 @@ class Sample(object):
 
 
 class Trainer(object):
-  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, nsigma, dirname, baseline_selection, categories):
+  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, data_pl, data_tagnano, data_tagflat, nsigma, dirname, baseline_selection, categories):
     self.features = features
     self.epochs = epochs
     self.batch_size = batch_size
@@ -68,6 +70,11 @@ class Trainer(object):
     self.categories = categories
     self.signal_label = signal_label
     self.signal_files = signal_samples[self.signal_label]
+
+    self.username = 'anlyon'
+    self.data_pl = data_pl
+    self.data_tagnano = data_tagnano
+    self.data_tagflat = data_tagflat
 
     self.do_parametric = do_parametric
     self.nsigma = nsigma
@@ -103,44 +110,21 @@ class Trainer(object):
     '''
       Function that fetches the samples into lists
     '''
+
+
     print('========> starting reading the trees')
     now = time()
     ## data 
-    # used for training
-    filename_data = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root'
-    filename_data_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk4_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk5_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_7 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk6_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_8 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk7_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_9 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_10 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_11 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk10_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_12 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk11_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_13 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk12_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_14 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk13_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_15 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk14_n500/flat/flat_bparknano_08Aug22_sr.root'
-    data_samples = [
-      Sample(filename=filename_data, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_1, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_2, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_3, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_4, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_5, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_6, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_7, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_8, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_9, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_10, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_11, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_12, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_13, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_14, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_15, selection=self.baseline_selection + ' && ' + extra_selection),
-    ]
+    path = '/pnfs/psi.ch/cms/trivcat/store/user/{}/BHNLsGen/data'.format(self.username)
+    if self.data_tagflat != None:
+      filename = '{path}/{pl}/ParkingBPH1_Run2018D/Chunk*/flat/flat_bparknano_{tagnano}_{tagflat}.root'.format(path=path, pl=self.data_pl, tagnano=self.data_tagnano, tagflat=self.data_tagflat)
+    else:
+      filename = '{path}/{pl}/ParkingBPH1_Run2018D/Chunk*/flat/flat_bparknano_{tagnano}.root'.format(path=path, pl=self.data_pl, tagnano=self.data_tagnano)
+    data_filenames =  [f for f in glob.glob(filename)] 
+
+    data_samples = []
+    for ifile, data_filename in enumerate(data_filenames):
+      data_samples.append(Sample(filename=data_filename, selection=self.baseline_selection + ' && ' + extra_selection))
 
     ## signal
     filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
@@ -244,7 +228,7 @@ class Trainer(object):
 
         # compute the signal weight (unused for the time being)
         # lumi set to one as the normalisation does not matter
-        the_df['weight'] = Tools().getSignalWeight(signal_files=[signal_file], mass=signal_file.mass, ctau=signal_file.ctau, sigma_B=472.8e9, lumi=1, lhe_efficiency=0.08244) #TODO what about isBc?
+        #the_df['weight'] = Tools().getSignalWeight(signal_files=[signal_file], mass=signal_file.mass, ctau=signal_file.ctau, sigma_B=472.8e9, lumi=1, lhe_efficiency=0.08244) #TODO what about isBc?
 
         dfs[signal_file.mass] = dfs[signal_file.mass] + [the_df]
 
@@ -744,7 +728,7 @@ class Trainer(object):
 
     # copy script
     os.system('cp trainer.py {}'.format(self.outdir))
-
+        
     for category in self.categories:
       if category.label == 'incl': continue
       #if category.label != 'lxy1to5_OS': continue
@@ -769,10 +753,6 @@ class Trainer(object):
       # assign the signal tag
       data_df = self.assignTarget(data_df, self.target_branch, 0) 
       mc_df = self.assignTarget(mc_df, self.target_branch, 1) 
-
-      if self.do_parametric:
-        self.plotParametrisedMass(df=data_df, df_full=data_df_full, data_type='data', label=category.label)
-        self.plotParametrisedMass(df=mc_df, data_type='mc', label=category.label)
 
       # preprocessing the dataframes
       print '\n -> preprocessing the dataframes' 
@@ -834,7 +814,7 @@ if __name__ == '__main__':
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu_pi', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_prob']
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'sv_prob'] # remove the deltaRs but keep masses as they can learn about possible sm resonances?
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'pi_dcasig', 'sv_lxysig', 'sv_prob']
-  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob']
+  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob', 'sv_chi2', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi']
   #features = ['pi_pt', 'pi_dcasig']
   epochs = 50
   batch_size = 32
@@ -850,6 +830,9 @@ if __name__ == '__main__':
   do_parametric = True
   nsigma = 10
   signal_label = 'V12_08Aug22_training_large'
+  data_pl = 'V12_08Aug22'
+  data_tagnano = '08Aug22'
+  data_tagflat = 'sr'
 
   trainer = Trainer(
       features = features, 
@@ -861,6 +844,9 @@ if __name__ == '__main__':
       do_reduce_lr = do_reduce_lr,
       do_parametric = do_parametric,
       signal_label = signal_label, 
+      data_pl = data_pl,
+      data_tagnano = data_tagnano,
+      data_tagflat = data_tagflat,
       nsigma = nsigma,
       dirname = dirname,
       baseline_selection = baseline_selection,
