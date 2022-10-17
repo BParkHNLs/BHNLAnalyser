@@ -519,7 +519,6 @@ process                                                  sig                    
 process                                                  -1                             1                   
 rate                                                     {sig_yields}                   {bkg_yields}    
 --------------------------------------------------------------------------------------------------------------------------------------------
-lumi                                       lnN           1.025                          -   
 syst_sig_trigger_sf                        lnN           1.05                           -
 syst_sig_muid_sf                           lnN           1.01                           -
 syst_sig_norm_{lbl}                        lnN           1.15                           -
@@ -597,7 +596,12 @@ bkg {bkg_yields}
 
           if self.do_mva:
             selection += ' && ' + category.definition_flat
-            selection += ' && hnl_charge == 0 && score > {}'.format(self.cut_score)
+            if 'scoreplus' in category.label:
+              selection += ' && hnl_charge == 0 && score > {}'.format(self.cut_score)
+            elif 'scoreminus' in category.label:
+              selection += ' && hnl_charge == 0 && score > 0.95 && score < {}'.format(self.cut_score)
+            else:
+              selection += ' && hnl_charge == 0 && score > {}'.format(self.cut_score)
 
         # get the background yields
         if self.do_counting or self.do_shape_TH1:
@@ -619,7 +623,10 @@ bkg {bkg_yields}
           signal_ctau = ctau_point
           signal_coupling = self.getSignalCoupling(signal_mass=signal_mass, signal_ctau=signal_ctau)
 
-          if float(signal_coupling) < 1e-5 or float(signal_coupling) > 1e-1: continue
+          #if signal_mass <= 2 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-4): continue
+          #if signal_mass> 2 and signal_mass <= 3 and (float(signal_coupling) < 7e-5 or float(signal_coupling) > 7e-4): continue
+          #if signal_mass> 3 and (float(signal_coupling) < 7e-4 or float(signal_coupling) > 7e-2): continue
+          #if float(signal_coupling) < 1e-5 or float(signal_coupling) > 1e-1: continue
 
           #if signal_ctau != 0.1: continue
 
