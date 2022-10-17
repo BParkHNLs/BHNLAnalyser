@@ -502,6 +502,14 @@ class Tools(object):
     return k/(np.power(mass, 5) * ctau)
 
 
+  def getCtau(self, mass=-99, vv=-99, ismaj=True):
+    '''
+    Helper function to go from vv,m(GeV) -> ctau (mm)
+    '''
+    mult = 2. if ismaj else 1.
+    return self.ctau_from_gamma(mult*self.gamma_total(mass=mass,vv=vv))
+
+
   def getCouplingLabel(self, v2):
     coupling = "{:e}".format(v2)
     part1 = coupling[:coupling.find('e')]
@@ -509,3 +517,7 @@ class Tools(object):
     part2 = coupling[coupling.find('e'):]
     return (part1+part2)
 
+
+if __name__ == '__main__':
+  tools = Tools()
+  print tools.getCtau(4.5, 2.3e-2)
