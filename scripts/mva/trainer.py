@@ -5,6 +5,8 @@ from os import path
 import pickle
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 from itertools import product
 from time import time 
@@ -37,6 +39,15 @@ from baseline_selection import selection
 from categories import categories
 
 
+def getOptions():
+  from argparse import ArgumentParser
+  parser = ArgumentParser(description='Script to perform the NN training', add_help=True)
+  parser.add_argument('--category_batch', type=str, dest='category_batch', help='category label'                               , default=None)
+  parser.add_argument('--outdir'        , type=str, dest='outdir'        , help='output directory'                             , default=None)
+  parser.add_argument('--process'       , dest='process'                 , help='run the process function', action='store_true', default=False)
+  return parser.parse_args()
+
+
 class Sample(object):
   '''
     Class to convert the sample into dataframe while applying some selection
@@ -56,7 +67,7 @@ class Sample(object):
 
 
 class Trainer(object):
-  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, data_pl, data_tagnano, data_tagflat, nsigma, dirname, baseline_selection, categories):
+  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, data_pl, data_tagnano, data_tagflat, nsigma, dirname, baseline_selection, categories, category_batch, outdir):
     self.features = features
     self.epochs = epochs
     self.batch_size = batch_size
@@ -68,8 +79,11 @@ class Trainer(object):
 
     self.baseline_selection = baseline_selection
     self.categories = categories
+    self.category_batch = category_batch
     self.signal_label = signal_label
     self.signal_files = signal_samples[self.signal_label]
+
+    self.outdir = outdir
 
     self.username = 'anlyon'
     self.data_pl = data_pl
@@ -97,6 +111,51 @@ class Trainer(object):
     return outdir
 
 
+  def writeSubmitter(self, category):
+    '''
+      Write bash submitter
+    '''
+    content = '\n'.join([
+        '#!/bin/bash',
+        'homedir="$PWD"',
+        'workdir=/scratch/{}/training_{}'.format(self.username, category.label),
+        'mkdir -p $workdir',
+        'cp -r ../*py $workdir', #TODO adapt if changing directory
+        'cp -r ./*py $workdir',
+        'cp -r ../../objects/*py $workdir',
+        'cd $workdir',
+        'DATE_START=`date +%s`',
+        'python trainer.py --category_batch {cat} --outdir {out} --process'.format(cat=category.label, out=self.outdir),
+        'DATE_END=`date +%s`',
+        'runtime=$((DATE_END-DATE_START))',
+        'echo " --> Wallclock running time: $runtime s"',
+        'cp -r *h5 $homedir/{out}'.format(out=self.outdir),
+        'cp -r *pck $homedir/{out}'.format(out=self.outdir),
+        'cp -r *png $homedir/{out}'.format(out=self.outdir),
+        'cp -r *pdf $homedir/{out}'.format(out=self.outdir),
+        'cp trainer.py $homedir/{out}'.format(out=self.outdir),
+        'cd $homedir',
+        'rm -r $workdir',
+        ])
+    submitter_name = '{}/submitter_{}.sh'.format(self.outdir, category.label)
+    submitter = open(submitter_name, 'w+')
+    submitter.write(content)
+    submitter.close()
+    '\n -> {} created'.format(submitter_name)
+
+
+  def submit(self, category):
+    '''
+      Submit bash script on slurm
+    '''
+    command = 'sbatch -p standard --account t3 -o {out}/log_{cat}.txt -e {out}/log_{cat}.txt --job-name=trainer_{cat} {out}/submitter_{cat}.sh'.format(
+        out = self.outdir,
+        cat = category.label,
+        )
+    print '\n --> submitting category {}'.format(category.label)
+    os.system(command)
+
+
   def saveFig(self, plt, name):
     '''
       Save python figure
@@ -110,8 +169,6 @@ class Trainer(object):
     '''
       Function that fetches the samples into lists
     '''
-
-
     print('========> starting reading the trees')
     now = time()
     ## data 
@@ -124,6 +181,7 @@ class Trainer(object):
 
     data_samples = []
     for ifile, data_filename in enumerate(data_filenames):
+      #if ifile > 1: continue
       data_samples.append(Sample(filename=data_filename, selection=self.baseline_selection + ' && ' + extra_selection))
 
     ## signal
@@ -723,8 +781,11 @@ class Trainer(object):
     print '---- MVA Trainer ----'
     
     # create output directory
-    print '\n -> create output directory'
-    self.outdir = self.createOutDir()
+    if self.outdir == None:
+      print '\n -> create output directory'
+      self.outdir = self.createOutDir()
+    else:
+      self.outdir = '.'
 
     # copy script
     os.system('cp trainer.py {}'.format(self.outdir))
@@ -735,6 +796,8 @@ class Trainer(object):
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
+
+      if self.category_batch != None and category.label != category_batch: continue 
 
       # get the samples
       if not self.do_parametric:
@@ -758,6 +821,10 @@ class Trainer(object):
       print '\n -> preprocessing the dataframes' 
       main_df, qt, xx, Y = self.preprocessing(data_df, mc_df, category.label)
       #TODO add the scatter plots?
+
+      if self.do_parametric:
+        self.plotParametrisedMass(df=data_df, df_full=data_df_full, data_type='data', label=category.label)
+        self.plotParametrisedMass(df=mc_df, data_type='mc', label=category.label)
 
       # define the NN
       print '\n -> defining the model' 
@@ -804,6 +871,23 @@ class Trainer(object):
       print '\n --- Done ---'
 
 
+  def process_batch(self):
+    print '---- MVA Trainer ----'
+
+    # create output directory
+    print '\n -> create output directory'
+    self.outdir = self.createOutDir()
+
+    for category in self.categories:
+      if category.label == 'incl': continue
+      print '\n-.-.-'
+      print 'category: {}'.format(category.label)
+      print '-.-.-'
+      self.writeSubmitter(category=category)
+      self.submit(category=category)
+      
+    print '\n --- Done ---'
+
 
 
 if __name__ == '__main__':
@@ -825,11 +909,16 @@ if __name__ == '__main__':
   dirname = 'test'
   baseline_selection = 'hnl_charge==0 && ' + selection['baseline_08Aug22'].flat 
   categories = categories['categories_0_50_150']
+  category_batch = getOptions().category_batch
+  outdir = getOptions().outdir
   #NOTE add optimiser, learning rate etc? 
+
+  submit_batch = True
 
   do_parametric = True
   nsigma = 10
-  signal_label = 'V12_08Aug22_training_large'
+  #signal_label = 'V12_08Aug22_training_large'
+  signal_label = 'V12_08Aug22_m3'
   data_pl = 'V12_08Aug22'
   data_tagnano = '08Aug22'
   data_tagflat = 'sr'
@@ -851,9 +940,14 @@ if __name__ == '__main__':
       dirname = dirname,
       baseline_selection = baseline_selection,
       categories = categories,
+      category_batch = category_batch,
+      outdir = outdir,
       )
 
-  trainer.process()
+  if submit_batch and not getOptions().process:
+    trainer.process_batch()
+  else:
+    trainer.process()
 
 
 
