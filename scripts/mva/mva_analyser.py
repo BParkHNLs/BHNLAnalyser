@@ -12,6 +12,8 @@ from root_pandas import read_root
 import pickle
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 from array import array
 
@@ -451,7 +453,7 @@ class MVAAnalyser(Tools, MVATools):
 
       point = graph.GetN() 
       graph.SetPoint(point, mass, auc)
-      graph.SetMarkerColor(ROOT.kRed)
+      graph.SetMarkerColor(ROOT.kBlue)
       graph.SetMarkerStyle(20)
       graph.GetXaxis().SetTitle('Signal mass [GeV]')
       graph.GetXaxis().SetLabelSize(0.037)
@@ -466,7 +468,7 @@ class MVAAnalyser(Tools, MVATools):
     canv = self.tools.createTCanvas('canv', 800, 700) 
     graph.Draw('AP')
 
-    name = 'AUC'.format(str(mc_samples[0].mass).replace('.', 'p'), category.label)
+    name = 'AUC_{}'.format(category.label)
     canv.SaveAs('{}/{}.png'.format(self.outdir, name))
 
 
@@ -1162,7 +1164,10 @@ if __name__ == '__main__':
   #dirname = 'test_2022Sep21_17h54m44s' # all categories
   #dirname = 'test_2022Sep27_10h58m03s' # 0_150_300
   #dirname = 'test_2022Sep27_16h35m02s' # 0 50 150
-  dirname = 'test_2022Sep29_09h11m21s' # without pi dcasig
+  #dirname = 'test_2022Sep29_09h11m21s' # without pi dcasig
+  #dirname = 'test_2022Oct06_17h34m15s' # new feature set
+  #dirname = 'test_2022Oct10_16h40m58s' # invmass and deltaR added
+  dirname = 'test_2022Oct12_15h12m37s' # mass 3 only
 
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
   #categories = categories['V12_08Aug22_permass']
@@ -1251,11 +1256,11 @@ if __name__ == '__main__':
     do_plotMVAPerformance = False
     do_plotWPScan = False
     do_plotROC = False
-    do_plotAUC = False
-    do_plotMass = True
+    do_plotAUC = True
+    do_plotMass = False
 
     signal_labels = [
-      'V42_08Aug22_m0p5',
+      #'V42_08Aug22_m0p5',
       'V42_08Aug22_m0p6',
       'V42_08Aug22_m0p7',
       'V42_08Aug22_m0p8',
