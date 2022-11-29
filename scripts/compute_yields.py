@@ -597,6 +597,7 @@ class ComputeYields(Tools):
     tree_sig = ROOT.TChain(treename)
     for signal_file in signal_files:
       filename = signal_file.filename if not isBc else signal_file.filename_Bc
+      #print filename
       tree_sig.Add(filename)
 
     # define selection
@@ -612,6 +613,7 @@ class ComputeYields(Tools):
     if add_weight_pu: weight_sig += ' * ({})'.format(weight_pusig)
     if add_weight_muid: weight_sig += ' * ({}) * ({})'.format(weight_mu0id, weight_muid)
     #print 'weight ',weight_sig
+    #print '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig)
 
     # create histogram
     hist_name = 'hist_signal_{}'.format(isBc)
@@ -620,9 +622,10 @@ class ComputeYields(Tools):
     tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
 
     # get the number of yields
-    n_sig = hist.Integral()
+    err = ROOT.double(0.)
+    n_sig = hist.IntegralAndError(0, 1000, err)
 
-    return n_sig
+    return n_sig, err
 
 
 
