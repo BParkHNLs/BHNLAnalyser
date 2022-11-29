@@ -401,8 +401,8 @@ void plot(RooRealVar *mass, RooAbsPdf *pdf, RooDataSet *data, string name,vector
   plot2->addPlotable(hpull,"P"); 
   plot2->Draw();
 
-  canv->SaveAs(Form("%s.pdf",name.c_str()));
-  canv->SaveAs(Form("%s.png",name.c_str()));
+  //canv->SaveAs(Form("%s.pdf",name.c_str()));
+  //canv->SaveAs(Form("%s.png",name.c_str()));
   //plot_chi2->Draw();
   //canv->SaveAs((name+"debug").c_str());
 
