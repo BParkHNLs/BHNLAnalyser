@@ -71,12 +71,15 @@ class Selection(object):
     self.proposed_cut          = proposed_cut
     self.white_list            = white_list
 
-    self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysig_max5e6_v2_smalltable_v2' 
+    #self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysig_max5e6_v2_smalltable_v2' 
+    self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2'
     print 'weight_hlt: {}'.format(self.weight_hlt)
     self.weight_pusig = 'weight_pu_sig_D'
     self.weight_mu0id = 'weight_mu0_softid'
     self.weight_muid = 'weight_mu_looseid'
 
+    self.resolution_p0 = 0.0002747
+    self.resolution_p1 = 0.008302
 
 
   def createOutDir(self, outputdir):
@@ -388,6 +391,7 @@ class Selection(object):
 
       g_sig = ROOT.TGraph()
       self.hnl_mass = Qte(name_flat='hnl_mass', label='hnl_mass', nbins=80, bin_min=signal_file.mass-2*signal_file.resolution, bin_max=signal_file.mass+2*signal_file.resolution)
+      #print '{} {} {} {}'.format(signal_mass, signal_ctau, signal_file.mass-2*signal_file.resolution, signal_file.mass+2*signal_file.resolution)
 
       lumi_D1 = 5.302 # when computing the relative difference in significance, this value does not matter
 
@@ -395,7 +399,8 @@ class Selection(object):
       signal_selection_ini = 'ismatched == 1 && {} && {}'.format(self.baseline_selection, self.category.definition_flat) 
       if self.preexisting_selection !=None: signal_selection_ini += ' && {}'.format(self.getSelectionString())
       #signal_yields_ini, err_signal_yields_ini = ComputeYields(signal_file=signal_file, selection=signal_selection_ini).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
-      signal_yields_ini = ComputeYields(signal_label=signal_label, selection=signal_selection_ini).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
+      signal_yields_ini = ComputeYields(signal_label=signal_label, selection=signal_selection_ini).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid)[0] 
+      #print 'signal_yields_ini ',signal_yields_ini
 
       f_data = self.tools.getRootFile(self.data_file)
       tree_data = self.tools.getTree(f_data, 'signal_tree')
@@ -404,15 +409,18 @@ class Selection(object):
       hist_data_name = 'hist_data_ini_{}'.format(self.quantity)
       hist_data = self.tools.createHisto(tree_data, self.hnl_mass, hist_name=hist_data_name, branchname='flat', selection=background_selection_ini)
       background_yields_ini = hist_data.Integral()
+      #print 'background_yields_ini ',background_yields_ini
 
       if background_yields_ini != 0:
-        if 2*((signal_yields_ini + background_yields_ini)*math.log(1 + signal_yields_ini/background_yields_ini) - signal_yields_ini) > 0:
-          significance_ini = math.sqrt(2*((signal_yields_ini + background_yields_ini)*math.log(1 + signal_yields_ini/background_yields_ini) - signal_yields_ini))
-        else:
-          significance_ini = signal_yields_ini / math.sqrt(background_yields_ini)
+        #if 2*((signal_yields_ini + background_yields_ini)*math.log(1 + signal_yields_ini/background_yields_ini) - signal_yields_ini) > 0:
+        #  significance_ini = math.sqrt(2*((signal_yields_ini + background_yields_ini)*math.log(1 + signal_yields_ini/background_yields_ini) - signal_yields_ini))
+        #else:
+        #  significance_ini = signal_yields_ini / math.sqrt(background_yields_ini)
+        significance_ini = signal_yields_ini / math.sqrt(background_yields_ini)
         #print 'ini {} {} {} {}'.format(signal_yields_ini, background_yields_ini, significance_ini_1, significance_ini)
       else:
         significance_ini = -99.
+      #print 'ini {} / sqrt({}) = {}'.format(signal_yields_ini, background_yields_ini, significance_ini)
 
       for idx, cut in enumerate(points):
         print cut
@@ -420,9 +428,11 @@ class Selection(object):
         signal_selection_sel = 'ismatched == 1 && {} && {}'.format(self.baseline_selection, self.category.definition_flat) 
         if self.preexisting_selection !=None: signal_selection_sel += ' && {}'.format(self.getSelectionString())
         signal_selection_sel += ' && {}{}{}'.format(self.quantity.name_flat, self.quantity.logic, cut)
+        #print signal_selection_sel
 
         #signal_yields_sel, err_signal_yields_sel = ComputeYields(signal_file=signal_file, selection=signal_selection_sel).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
-        signal_yields_sel = ComputeYields(signal_label=signal_label, selection=signal_selection_sel).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
+        signal_yields_sel = ComputeYields(signal_label=signal_label, selection=signal_selection_sel).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid)[0]
+        #print 'signal_yields_sel ',signal_yields_sel
 
         # get background yields from unblinded data
         f_data = self.tools.getRootFile(self.data_file)
@@ -430,20 +440,23 @@ class Selection(object):
         background_selection_sel = '{} && {}'.format(self.baseline_selection, self.category.definition_flat)
         if self.preexisting_selection !=None: background_selection_sel += ' && {}'.format(self.getSelectionString())
         background_selection_sel += ' && {}{}{}'.format(self.quantity.name_flat, self.quantity.logic, cut)
+        #print background_selection_sel
         hist_data_name = 'hist_data_sel_{}_{}'.format(self.quantity, cut)
         hist_data = self.tools.createHisto(tree_data, self.hnl_mass, hist_name=hist_data_name, branchname='flat', selection=background_selection_sel)
         background_yields_sel = hist_data.Integral()
+        #print 'background_yields_sel ',background_yields_sel
 
         # compute significance
         if background_yields_sel != 0:
-          #significance_sel = signal_yields_sel / math.sqrt(background_yields_sel)
-          if 2*((signal_yields_sel + background_yields_sel)*math.log(1 + signal_yields_sel/background_yields_sel) - signal_yields_sel) > 0:
-            significance_sel = math.sqrt(2*((signal_yields_sel + background_yields_sel)*math.log(1 + signal_yields_sel/background_yields_sel) - signal_yields_sel))
-          else:
-            significance_sel = signal_yields_sel / math.sqrt(background_yields_sel)
+          significance_sel = signal_yields_sel / math.sqrt(background_yields_sel)
+          #if 2*((signal_yields_sel + background_yields_sel)*math.log(1 + signal_yields_sel/background_yields_sel) - signal_yields_sel) > 0:
+          #  significance_sel = math.sqrt(2*((signal_yields_sel + background_yields_sel)*math.log(1 + signal_yields_sel/background_yields_sel) - signal_yields_sel))
+          #else:
+          #  significance_sel = signal_yields_sel / math.sqrt(background_yields_sel)
           #print 'sel {} {} {} {}'.format(signal_yields_sel, background_yields_sel, significance_sel_1, significance_sel)
         else:
           significance_sel = -99.
+        #print '{} / sqrt({}) = {}'.format(signal_yields_sel, background_yields_sel, significance_sel)
 
         # compute relative difference in significance
         significance_diff = ((significance_sel / significance_ini) - 1) * 100
@@ -588,8 +601,12 @@ class Selection(object):
     '''
 
     for signal_file in self.signal_files:
+      signal_mass = signal_file.mass
+      signal_ctau = signal_file.ctau
+      resolution = self.resolution_p0 + self.resolution_p1 * signal_mass
+
       g_sig = ROOT.TGraph()
-      self.hnl_mass = Qte(name_flat='hnl_mass', label='hnl_mass', nbins=80, bin_min=signal_file.mass-2*signal_file.resolution, bin_max=signal_file.mass+2*signal_file.resolution)
+      self.hnl_mass = Qte(name_flat='hnl_mass', label='hnl_mass', nbins=80, bin_min=signal_mass-2*resolution, bin_max=signal_mass+2*resolution)
 
       lumi_D1 = 5.302 # when computing the relative difference in significance, this value does not matter
 
@@ -597,7 +614,7 @@ class Selection(object):
       signal_selection_ini = 'ismatched == 1 && {} && {}'.format(self.baseline_selection, self.category.definition_flat) 
       #print signal_selection_ini
       #signal_yields_ini, err_signal_yields_ini = ComputeYields(signal_file=signal_file, selection=signal_selection_ini).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
-      signal_yields_ini = ComputeYields(signal_label=signal_label, selection=signal_selection_ini).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
+      signal_yields_ini = ComputeYields(signal_label=signal_label, selection=signal_selection_ini).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid)[0] 
 
       f_data = self.tools.getRootFile(self.data_file)
       tree_data = self.tools.getTree(f_data, 'signal_tree')
@@ -620,7 +637,7 @@ class Selection(object):
       #print signal_selection_sel
 
       #signal_yields_sel, err_signal_yields_sel = ComputeYields(signal_file=signal_file, selection=signal_selection_sel).computeSignalYields(lumi=lumi_D1, sigma_B=472.8e9) 
-      signal_yields_sel = ComputeYields(signal_label=signal_label, selection=signal_selection_sel).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid) 
+      signal_yields_sel = ComputeYields(signal_label=signal_label, selection=signal_selection_sel).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi_D1, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=self.weight_hlt, weight_pusig=self.weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid)[0] 
 
       # get background yields from unblinded data
       f_data = self.tools.getRootFile(self.data_file)
@@ -645,7 +662,7 @@ class Selection(object):
       # compute relative difference in significance
       significance_diff = ((significance_sel / significance_ini) - 1) * 100
 
-      print '{} & {} & {} & {} & +{}\% \\\ '.format(signal_file.mass, signal_file.ctau, '{:.2e}'.format(significance_ini), '{:.2e}'.format(significance_sel), round(significance_diff))
+      print '{} & {} & {} & {} & {}\% \\\ '.format(signal_file.mass, signal_file.ctau, '{:.2e}'.format(significance_ini), '{:.2e}'.format(significance_sel), round(significance_diff))
 
 
 
@@ -653,6 +670,7 @@ if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
   signal_label_m1 = 'V12_08Aug22_m1'
+  #signal_label_m1 = 'V12_08Aug22_benchmark'
   signal_label_m3 = 'V12_08Aug22_m3'
   signal_label_m4p5 = 'V12_08Aug22_m4p5'
 
@@ -676,6 +694,7 @@ if __name__ == '__main__':
   #data_file = data_samples['V10_30Dec21'][0].filename # we only consider D1 which is unblinded
   #data_file = data_samples['V11_24Apr22_small'][0].filename # we only consider D1 which is unblinded
   data_file = data_samples['V12_08Aug22'][0].filename # we only consider D1 which is unblinded
+  #data_file = data_samples['V12_08Aug22_small'][0].filename # we only consider D1 which is unblinded
   #data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018D/merged/flat_bparknano_30Dec21_10Chunks.root'
   #data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V10_30Dec21/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_30Dec21.root'
   #data_file = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_5files.root'
@@ -709,7 +728,17 @@ if __name__ == '__main__':
   mu_numberoftrackerlayers = Quantity('mu_numberoftrackerlayers', 'mu_numberoftrackerlayers', 'mu_numberoftrackerlayers', '<', '', 0, 18)
   deltar_trgmu_pi = Quantity('abs(deltar_trgmu_pi)', 'abs(deltar_trgmu_pi)', '|#DeltaR(trg#mu, #pi)|', '<', '', 0.3, 1.) 
   deltar_trgmu_hnl = Quantity('abs(deltar_trgmu_hnl)', 'abs(deltar_trgmu_hnl)', '|#DeltaR(trg#mu, hnl)|', '<', '', 0., 0.5) 
+  mu0_pfiso03_rel = Quantity('mu0_pfiso03_rel', 'mu0_pfiso03_rel', 'primary muon relative PF iso03', '<', '', 0.3, 3)
+  mu0_pfiso04_rel = Quantity('mu0_pfiso04_rel', 'mu0_pfiso04_rel', 'primary muon relative PF iso04', '<', '', 0.3, 3)
+  mu_pfiso03_rel = Quantity('mu_pfiso03_rel', 'mu_pfiso03_rel', 'displaced muon relative PF iso03', '<', '', 0., 0.5)
+  mu_pfiso04_rel = Quantity('mu_pfiso04_rel', 'mu_pfiso04_rel', 'displaced muon relative PF iso04', '<', '', 0.3, 3)
   
+  #signal_files = [signal_m1_ctau1000, signal_m3_ctau100, signal_m4p5_ctau1]
+  #signal_files = [signal_m1_ctau1000]
+  signal_files = [signal_samples['V12_08Aug22_benchmark'][0]]
+  signal_label = 'V12_08Aug22_benchmark'
+  #signal_label = signal_label_m1
+  #signal_files = [signal_m1_ctau1000, signal_m1_ctau100, signal_m1_ctau10]
 
   printSelectionString = True
 
@@ -788,6 +817,45 @@ if __name__ == '__main__':
   )
 
   selection_sequential_incl = [] 
+
+  #cut_mu0_pfiso04_rel = 0.5
+  ##selection_sequential_incl.append(SelectedQuantity(mu0_pfiso04_rel, cut_mu0_pfiso04_rel))
+  ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu0_pfiso04_rel, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_mu0_pfiso04_rel, preexisting_selection=selection_sequential_incl)
+  #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu0_pfiso04_rel, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_mu0_pfiso04_rel) 
+  ##if do_scan_efficiency: selection.getScanGraph(npoints=2)
+  #if do_print_cutflow: selection.printCutflowLine(printNum=False)
+  #if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+  #selection.getSignificanceDiffScan(npoints=10)
+  ##selection_sequential_incl.append(SelectedQuantity(mu0_pfiso04_rel, cut_mu0_pfiso04_rel))
+
+  #selection.do_print_significance()
+
+  #cut_mu0_pfiso03_rel = 0.5
+  ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu0_pfiso03_rel, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_mu0_pfiso03_rel, preexisting_selection=selection_sequential_incl)
+  #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu0_pfiso03_rel, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_mu0_pfiso03_rel) 
+  ##if do_scan_efficiency: selection.getScanGraph(npoints=2)
+  #if do_print_cutflow: selection.printCutflowLine(printNum=False)
+  #if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+  #selection.getSignificanceDiffScan(npoints=10)
+  ##selection_sequential_incl.append(SelectedQuantity(mu0_pfiso03_rel, cut_mu0_pfiso03_rel))
+
+  #cut_mu_pfiso04_rel = 0.5
+  ##selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_pfiso04_rel, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_mu_pfiso04_rel, preexisting_selection=selection_sequential_incl)
+  #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_pfiso04_rel, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_mu_pfiso04_rel) 
+  ##if do_scan_efficiency: selection.getScanGraph(npoints=2)
+  #if do_print_cutflow: selection.printCutflowLine(printNum=False)
+  #if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+  #selection.getSignificanceDiffScan(npoints=10)
+  ##selection_sequential_incl.append(SelectedQuantity(mu_pfiso04_rel, cut_mu_pfiso04_rel))
+
+  cut_mu_pfiso03_rel = 0.5
+  #selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_pfiso03_rel, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_mu_pfiso03_rel, preexisting_selection=selection_sequential_incl)
+  selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu_pfiso03_rel, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_mu_pfiso03_rel) 
+  #if do_scan_efficiency: selection.getScanGraph(npoints=2)
+  if do_print_cutflow: selection.printCutflowLine(printNum=False)
+  if do_scan_significance_diff: selection.getSignificanceDiffScan(npoints=30)
+  selection.getSignificanceDiffScan(npoints=10)
+  #selection_sequential_incl.append(SelectedQuantity(mu_pfiso03_rel, cut_mu_pfiso03_rel))
 
   cut_mu0_softid = 1
   selection = Selection(signal_label=signal_label, signal_files=signal_files, data_file=data_file, qcd_files=qcd_files, baseline_selection=baseline_selection, white_list=white_list, quantity=mu0_softid, category=category_incl, dirlabel=dirlabel, proposed_cut=cut_mu0_softid)
