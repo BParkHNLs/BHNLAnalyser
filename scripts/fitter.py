@@ -24,6 +24,19 @@ class Fitter(Tools, MVATools):
     self.do_parametric = do_parametric
     self.reweighting_strategy = reweighting_strategy
     self.resolution = resolution_p0 + resolution_p1 * self.signal_mass
+    #if category_label == 'lxysig0to50_OS':
+    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.007703509188287372
+    #elif category_label == 'lxysig0to50_SS':
+    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.006724901142894119
+    #elif category_label == 'lxysig50to150_OS':
+    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.004581727840122679
+    #elif category_label == 'lxysig50to150_SS':
+    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.003208392557031866
+    #elif category_label == 'lxysiggt150_OS':
+    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.0009250455813521491
+    #elif category_label == 'lxysiggt150_SS':
+    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.000937908972338861
+
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
@@ -160,17 +173,23 @@ class Fitter(Tools, MVATools):
       if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
         self.mean_CB  = ROOT.RooRealVar("mean_CB","mean_CB", self.signal_mass)
         self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", 0.01, 0.005, 0.15)
+        #self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", self.resolution)
 
         self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
         self.n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
         self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
         self.n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
+        #self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -1.)
+        #self.n_1 = ROOT.RooRealVar("n_1", "n_1", 3.)
+        #self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 1.)
+        #self.n_2 = ROOT.RooRealVar("n_2", "n_2", 3.)
 
         self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
         self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
 
         # defines the relative importance of the two CBs
         self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5, 0.0 ,1.0)
+        #self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5)
 
         if self.signal_model_label == 'doubleCB':
           self.signal_model = ROOT.RooAddPdf("sig", "sig", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
@@ -189,6 +208,8 @@ class Fitter(Tools, MVATools):
         self.mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", self.signal_mass)
         self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.01, 0., 5.)
         self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.01, 0.005, 0.15)
+        #self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.03)
+        #self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.005)
         self.signal_model = ROOT.RooVoigtian('sig', 'sig', self.hnl_mass, self.mean_voigtian, self.gamma_voigtian, self.sigma_voigtian)
 
     ### Background Model ###
@@ -308,7 +329,8 @@ class Fitter(Tools, MVATools):
         print '-> unbinned dataset created'
 
     # create canvas
-    canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
+    #canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
+    canv = self.tools.createTCanvas(name="canv", dimx=700, dimy=600)
 
     # and the two pads
     if process == 'both': # remove residuals for prefit plots
@@ -689,7 +711,6 @@ class Fitter(Tools, MVATools):
     '''
       Returns the normalised number of signal yields in the fit window
     '''
-
     # define ranges and binning
     fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
 
@@ -733,11 +754,11 @@ class Fitter(Tools, MVATools):
 
   def getSignalYields(self):
     n_sig = self.getSignalYieldsFromHist(isBc=False)
-    print 'n_sig = {}'.format(n_sig)
+    #print 'n_sig = {}'.format(n_sig)
 
     if self.add_Bc:
       n_sig += self.getSignalYieldsFromHist(isBc=True)
-      print '+ {}'.format(n_sig)
+      #print '+ {}'.format(n_sig)
 
     return n_sig
 
@@ -762,13 +783,24 @@ class Fitter(Tools, MVATools):
             s = self.sigma_voigtian.getVal(),
             )
           )
+    elif self.signal_model_label == 'doubleCB':
+      workspace.factory('RooDoubleCB::sig(hnl_mass, mean_CB[{m}], sigma_CB[{s}], alpha1[{a1}], n1[{n1}], alpha2[{a2}], n2[{n2}])'.format(
+            m = self.mean_CB.getVal(),
+            s = self.sigma_CB.getVal(),
+            a1 = self.alpha_1.getVal(),
+            n1 = self.n_1.getVal(),
+            a2 = self.alpha_2.getVal(),
+            n2 = self.n_2.getVal(),
+            #f = self.sigfrac_CB.getVal(),
+            )
+          )
 
     # make sure variables are constant
     it = workspace.allVars().createIterator() 
     all_vars = [it.Next() for _ in range( workspace.allVars().getSize())] 
     for var in all_vars: 
       var.setBins(self.nbins)
-      if var.GetName() in ['mean_voigtian', 'gamma_voigtian', 'sigma_voigtian']: 
+      if var.GetName() in ['mean_voigtian', 'gamma_voigtian', 'sigma_voigtian']: #TODO adapt? 
         var.setConstant()
 
     workspace.Write()
@@ -960,7 +992,7 @@ if __name__ == '__main__':
   #selection = 'sv_lxy>5 && trgmu_charge!=mu_charge && trgmu_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((trgmu_charge!=mu_charge && (trgmu_mu_mass < 2.9 || trgmu_mu_mass > 3.3)) || (trgmu_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.3 && sv_lxysig>100 && abs(mu_dxysig)>15 && abs(pi_dxysig)>20 '
   #selection = 'sv_lxy>1 && sv_lxy<=5 && mu0_charge==mu_charge && mu0_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((mu0_charge!=mu_charge && (mu0_mu_mass < 2.9 || mu0_mu_mass > 3.3)) || (mu0_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.2 && sv_lxysig>100 && abs(mu_dxysig)>12 && abs(pi_dxysig)>25'
   selection = 'sv_lxy>1 && sv_lxy<=5 && mu0_charge==mu_charge && mu0_softid == 1 && mu_looseid == 1 && pi_packedcandhashighpurity == 1 && ((mu0_charge!=mu_charge && (mu0_mu_mass < 2.9 || mu0_mu_mass > 3.3)) || (mu0_charge==mu_charge)) && hnl_charge==0 && pi_pt>1.2 && sv_lxysig>100 && abs(mu_dxysig)>12 && abs(pi_dxysig)>25 && score>0.'
-  signal_model_label = 'voigtian'
+  signal_model_label = 'doubleCB'
   signal_files = signal_samples['V10_30Dec21_m1p5'] 
   signal_label = 'V12_08Aug22_m3'
   background_model_label = 'chebychev'
@@ -973,6 +1005,8 @@ if __name__ == '__main__':
   add_CMSlabel = True
   add_lumilabel = True
   CMStag = 'Preliminary'
+  resolution_p0 = 0.0004758
+  resolution_p1 = 0.007316
 
   mass_window_size = 3
   fit_window_size = 10
@@ -1004,7 +1038,7 @@ if __name__ == '__main__':
   ctau = 100.
   category_label = 'lxy1to5_SS'
   category_title = '(1<l_{xy}<=5)cm, SS'
-  fitter = Fitter(signal_label=signal_label, data_files=data_files, selection=selection, do_cutbased=do_cutbased, do_mva=do_mva, training_label=training_label, mass=mass, ctau=ctau, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, mass_window_size=mass_window_size, fit_window_size=fit_window_size, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag, category_label=category_label, category_title=category_title, reweighting_strategy=reweighting_strategy)
+  fitter = Fitter(signal_label=signal_label, data_files=data_files, selection=selection, do_cutbased=do_cutbased, do_mva=do_mva, training_label=training_label, mass=mass, ctau=ctau, signal_model_label=signal_model_label, background_model_label=background_model_label, do_binned_fit=do_binned_fit, do_blind=do_blind, lumi_target=lumi_target, sigma_B=sigma_B, mass_window_size=mass_window_size, fit_window_size=fit_window_size, nbins=nbins, outdirlabel=outdirlabel, plot_pulls=plot_pulls, add_CMSlabel=add_CMSlabel, add_lumilabel=add_lumilabel, CMStag=CMStag, category_label=category_label, category_title=category_title, reweighting_strategy=reweighting_strategy, resolution_p0=resolution_p0, resolution_p1=resolution_p1)
   fitter.process_signal()
   #fitter.getSignalYields()
 

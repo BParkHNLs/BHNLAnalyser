@@ -22,6 +22,7 @@ from points import points
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Script to produce the datacards', add_help=True)
+  parser.add_argument('--homedir'               , type=str, dest='homedir'               , help='name of the homedir'                                           , default=None)
   parser.add_argument('--outdirlabel'           , type=str, dest='outdirlabel'           , help='name of the outdir'                                            , default=None)
   parser.add_argument('--subdirlabel'           , type=str, dest='subdirlabel'           , help='name of the subdir'                                            , default=None)
   #parser.add_argument('--cardlabel'            , type=str, dest='cardlabel'             , help='label of the datacard'                                         , default=None)
@@ -109,7 +110,7 @@ def printInfo(opt):
 
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', do_cutbased=False, do_mva=False, training_label='', do_parametric=False, cut_score='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, resolution_p0=None, resolution_p1=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, plot_prefit=False, outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', do_cutbased=False, do_mva=False, training_label='', do_parametric=False, cut_score='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, resolution_p0=None, resolution_p1=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, plot_prefit=False, homedir='', outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -161,7 +162,8 @@ class DatacardsMaker(Tools):
     self.add_weight_muid = add_weight_muid
     self.add_Bc = add_Bc
     self.plot_prefit = plot_prefit
-    self.outputdir = './outputs/{}/datacards/{}'.format(outdirlabel, subdirlabel)
+    self.homedir = homedir
+    self.outputdir = self.homedir + '/outputs/{}/datacards/{}'.format(outdirlabel, subdirlabel)
     if not path.exists(self.outputdir):
       os.system('mkdir -p {}'.format(self.outputdir))
     self.add_CMSlabel = add_CMSlabel
@@ -248,11 +250,11 @@ class DatacardsMaker(Tools):
     return signal_coupling
 
 
-  def getCardLabel(self, signal_mass='', signal_coupling='', category=''):
+  def getCardLabel(self, signal_mass='', signal_ctau='', signal_coupling='', category=''):
     if not self.do_categories:
-      label = 'bhnl_m_{}_v2_{}_incl'.format(signal_mass, signal_coupling)
+      label = 'bhnl_m_{}_ctau_{}_v2_{}_incl'.format(signal_mass, signal_ctau, signal_coupling)
     else:
-      label = 'bhnl_m_{}_v2_{}_cat_{}'.format(signal_mass, signal_coupling, category.label)
+      label = 'bhnl_m_{}_ctau_{}_v2_{}_cat_{}'.format(signal_mass, signal_ctau, signal_coupling, category.label)
     label = label.replace('.', 'p').replace('-', 'm')
     return label
 
@@ -626,12 +628,15 @@ bkg {bkg_yields}
           #if signal_mass <= 2 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-4): continue
           #if signal_mass> 2 and signal_mass <= 3 and (float(signal_coupling) < 7e-5 or float(signal_coupling) > 7e-4): continue
           #if signal_mass> 3 and (float(signal_coupling) < 7e-4 or float(signal_coupling) > 7e-2): continue
+          if signal_mass <= 2 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-3): continue
+          if signal_mass> 2 and signal_mass <= 3 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-3): continue
+          if signal_mass> 3 and (float(signal_coupling) < 7e-5 or float(signal_coupling) > 7e-2): continue
           #if float(signal_coupling) < 1e-5 or float(signal_coupling) > 1e-1: continue
 
           #if signal_ctau != 0.1: continue
 
           # get the process label
-          card_label = self.getCardLabel(signal_mass=signal_mass, signal_coupling=signal_coupling, category=category)
+          card_label = self.getCardLabel(signal_mass=signal_mass, signal_ctau=signal_ctau, signal_coupling=signal_coupling, category=category)
 
           # get the signal yields (if not shape analysis)
           if self.do_counting or self.do_shape_TH1:
@@ -674,6 +679,7 @@ if __name__ == '__main__':
     
     white_list = white_list[opt.qcd_white_list]
 
+    homedir = opt.homedir
     outdirlabel = opt.outdirlabel
     subdirlabel = opt.subdirlabel
 
@@ -781,6 +787,7 @@ if __name__ == '__main__':
         add_weight_muid = add_weight_muid,
         add_Bc = add_Bc, 
         plot_prefit = plot_prefit,
+        homedir = homedir, 
         outdirlabel = outdirlabel,
         subdirlabel = subdirlabel,
         add_CMSlabel = add_CMSlabel,
