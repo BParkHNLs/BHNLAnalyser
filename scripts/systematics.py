@@ -1,5 +1,6 @@
 import os
 import sys
+from glob import glob
 import numpy as np
 from os import path
 import math
@@ -225,12 +226,97 @@ class Systematics(Tools):
         canv.SaveAs(outdir + name + '.png')
 
 
+  def getMassFromResultFilename(self, filename):
+    idx1 = filename.rfind('_m_')+3
+    idx2 = filename.rfind('_v2_')
+    return filename[idx1:idx2]
+
+
+  def getCouplingFromResultFilename(self, filename):
+    idx1 = filename.rfind('_v2_')+4
+    idx2 = filename.rfind('.txt')
+    return filename[idx1:idx2]
+
+
+  def getMedianValue(self, filename):
+    try:
+      f = open(filename)
+      lines = f.readlines()
+      median = -99.
+      for line in lines:
+        if 'Expected 50.0%' not in line: continue
+        # Expected 50.0%: r < 345.0000
+        idx = line.find('r < ')+4
+        median = float(line[idx:])
+    except: 
+      median = -99.
+
+    return median
+
+
+  def getResultFile(self, path, filename):
+    idx1 = filename.rfind('/')+1
+    idx2 = filename.rfind('.txt')+4
+    name = filename[idx1:idx2] 
+
+    return path + '/' + name
+      
+
+
+
+  def studyShapeSyst(self):
+    '''
+      Study the signal parametrisation systematics based on the median value
+    '''
+
+    path_results = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1/results'
+    path_results_plusonesigma = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1_plusonesigmacat/results'
+    path_results_minusonesigma = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1_minusonesigmacat/results'
+
+    files_results = [f for f in glob(path_results + '/result_m_*_v2_*.txt')]
+    if len(files_results) == 0:
+      raise RuntimeError('No limit results found under path "{}"'.format(path_results))
+
+    #files_results_plusonesigma = [f for f in glob(path_results_plusonesigma + '/result_m_*_v2_*.txt')]
+    #if len(files_results_plusonesigma) == 0:
+    #  raise RuntimeError('No limit results found under path "{}"'.format(path_results_plusonesigma))
+
+    #files_results_minusonesigma = [f for f in glob(path_results_minusonesigma + '/result_m_*_v2_*.txt')]
+    #if len(files_results_minusonesigma) == 0:
+    #  raise RuntimeError('No limit results found under path "{}"'.format(path_results_minusonesigma))
+
+    for file_results in files_results:
+      # get corresponding files for plus/minus one sigma 
+      file_results_plusonesigma = self.getResultFile(path=path_results_plusonesigma, filename=file_results)
+      file_results_minusonesigma = self.getResultFile(path=path_results_minusonesigma, filename=file_results)
+
+      median = self.getMedianValue(filename=file_results)
+      median_plusonesigma = self.getMedianValue(filename=file_results_plusonesigma)
+      median_minusonesigma = self.getMedianValue(filename=file_results_minusonesigma)
+    
+      if median == -99. or median_plusonesigma == -99. or median_minusonesigma == -99.: 
+        continue
+
+      mass = self.getMassFromResultFilename(filename=file_results)
+      v2 = self.getCouplingFromResultFilename(filename=file_results)
+      if float(mass) <= 3. and float(v2) > 1e-3: continue
+      if float(mass) > 3. and float(v2) < 1e-3: continue
+
+      syst_up = (median_plusonesigma / median -1) * 100. 
+      syst_down = (median_minusonesigma / median -1) * 100. 
+
+      print 'mass {} v2 {}: syst up = {}% syst down = {}%'.format(mass, v2, round(syst_up, 1), round(syst_down, 1))
+
+
+
+
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
   do_studyHLTsyst = False
-  do_plotOccupancy = True
-  do_plotTriggeringTable = True
+  do_plotOccupancy = False
+  do_plotTriggeringTable = False
+  do_studyShapeSyst = True
 
   signal_labels = []
   signal_label_m1 = 'central_V11_24Apr22_m1'
@@ -257,6 +343,9 @@ if __name__ == '__main__':
 
   if do_plotTriggeringTable:
     Systematics(signal_labels=signal_labels, categories=categories, selection=selection, lumi=41.6).plotTriggeringTable()
+
+  if do_studyShapeSyst:
+    Systematics(signal_labels=signal_labels, categories=categories, selection=selection, lumi=41.6).studyShapeSyst()
 
 
 
