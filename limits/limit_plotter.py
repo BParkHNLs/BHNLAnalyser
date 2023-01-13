@@ -4,6 +4,7 @@ from os import path
 import glob
 import re
 import pickle
+import math
 import numpy as np
 import otherExp_limits as db 
 from collections import OrderedDict
@@ -58,6 +59,42 @@ class LimitPlotter(object):
 
   def sortList(self, input):
     return float(input)
+
+
+  def get_intersection(self, couplings, values):
+    '''
+      Function that returns the coupling at which the limit intersects with 1 in the log-log plane
+    '''
+    # first, search for couplings whose associated limit is the closest to up and down 1
+    coupling_up = 0
+    coupling_down = 1e9
+    value_up = 0
+    value_down = 0
+    for icoupling, coupling in enumerate(couplings):
+      if coupling > coupling_up and values[icoupling]>1:
+        coupling_up = coupling
+        value_up = values[icoupling]
+      if coupling < coupling_down and values[icoupling]<1:
+        coupling_down = coupling
+        value_down = values[icoupling]
+
+    #print 'coupling up: {} {}'.format(coupling_up, value_up)
+    #print 'coupling down: {} {}'.format(coupling_down, value_down)
+
+    # then, search for the intersection with 1 in the log-log plane
+    # powerlaw y = kx^m behaves as a linear law in the log-log plane: log(y) = mlog(x) + log(k)
+    # get the slope m
+    m = (math.log(value_up) - math.log(value_down)) / (math.log(coupling_up) - math.log(coupling_down))
+
+    # and the coordinate k
+    k = value_up / math.pow(coupling_up, m)
+
+    # to finally compute the coupling where there is the intersection
+    intersection = math.pow(1./ k, 1./m) 
+
+    #print 'intersection {}'.format(intersection)
+
+    return intersection
 
 
   def process(self):
@@ -208,11 +245,19 @@ class LimitPlotter(object):
       if self.do_coupling_scenario:
         plt.title(r'Majorana HN, m = %s GeV, %s' %(mass, coupling_scenario))
       else:
-        plt.title(r'Majorana HN, m = %s GeV' %(mass,))
+        if str(mass) == '1': 
+          mass = '1.0'
+        if str(mass) == '2': 
+          mass = '2.0'
+        if str(mass) == '3': 
+          mass = '3.0'
+        #plt.title(r'Majorana HN, m = %s GeV' %(mass,))
+        plt.title('Majorana HN, m = {} GeV'.format(mass))
       plt.legend()
       plt.ticklabel_format(axis='x', style='sci', scilimits=(0,0))
       #ax.text(0.5, 0.5, coupling_scenario, style='normal', bbox={'facecolor': 'white', 'alpha': 1., 'pad': 10}, transform=ax.transAxes)
-      #plt.xlim(1e-5, 1e-3)
+      plt.xlim(1e-5, 3e-4)
+      #plt.ylim(1e-1, 1e4)
       #plt.yscale('linear')
       #if self.fe == None and self.fu == None and self.ft == None:
       #  name_lin = 'limit_m_{}_lin'.format(mass.replace('.', 'p')) 
@@ -226,6 +271,7 @@ class LimitPlotter(object):
         name_log = 'limit_m_{}_log'.format(mass.replace('.', 'p')) 
       else:
         name_log = 'limit_m_{}_scenario_{}_{}_{}_log'.format(mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
+      print '--> {}/{}.png created'.format(plotDir, name_log)
       plt.savefig('{}/{}.pdf'.format(plotDir, name_log))
       plt.savefig('{}/{}.png'.format(plotDir, name_log))
       
@@ -236,11 +282,14 @@ class LimitPlotter(object):
       # find the intersections    
       x_minus_two, y = intersection(np.array(v2s), np.array(minus_two), np.array(v2s), np.ones(len(v2s)))    
       x_minus_one, y = intersection(np.array(v2s), np.array(minus_one), np.array(v2s), np.ones(len(v2s)))    
-      x_central  , y = intersection(np.array(v2s), np.array(central)  , np.array(v2s), np.ones(len(v2s)))    
+      #x_central  , y = intersection(np.array(v2s), np.array(central)  , np.array(v2s), np.ones(len(v2s)))    
+      #print x_central
       x_plus_one , y = intersection(np.array(v2s), np.array(plus_one) , np.array(v2s), np.ones(len(v2s)))    
       x_plus_two , y = intersection(np.array(v2s), np.array(plus_two) , np.array(v2s), np.ones(len(v2s)))    
       if not self.run_blind:
           x_obs , y = intersection(np.array(v2s), np.array(obs) , np.array(v2s), np.ones(len(v2s)))    
+
+      x_central = self.get_intersection(v2s, central)
 
       limits2D[mass]['exp_minus_two'] = x_minus_two
       limits2D[mass]['exp_minus_one'] = x_minus_one
@@ -278,6 +327,15 @@ class LimitPlotter(object):
             exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
           else:
             exclusion_coupling_file = open(exclusion_coupling_filename, 'a+')
+            # overwrite if necessary
+            exclusion_coupling_filename_tmp = '{}/exclusion_m_{}_tmp.txt'.format(plotDir, str(mass).replace('.', 'p'))
+            exclusion_coupling_file_tmp = open(exclusion_coupling_filename_tmp, 'w+')
+            lines = exclusion_coupling_file.readlines()
+            for line in lines:
+              coupling_string  = '{} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'))
+              if coupling_string not in line: 
+                exclusion_coupling_file_tmp.write(line)
+            os.system('mv {} {}'.format(exclusion_coupling_filename_tmp, exclusion_coupling_filename))
         
         if not self.run_blind:
           if len(limits2D[mass]['obs'])>0: 
@@ -285,12 +343,13 @@ class LimitPlotter(object):
               masses_obs.append(mass)
         
         #if len(limits2D[mass]['exp_central'])>0 and len(limits2D[mass]['exp_minus_one'])>0 and len(limits2D[mass]['exp_plus_one' ])>0 and len(limits2D[mass]['exp_minus_two'])>0 and len(limits2D[mass]['exp_plus_two' ])>0:
-        central.append( min(limits2D[mass]['exp_central']) )
+        #central.append( min(limits2D[mass]['exp_central']) )
+        central.append(limits2D[mass]['exp_central'])
         masses_central.append(float(mass))
-        #NOTE make sure that same coupling line is overwritten
+
+
         if self.do_coupling_scenario:
-          #print '{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), min(limits2D[mass]['exp_central']))
-          exclusion_coupling_file.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), min(limits2D[mass]['exp_central']))) 
+          exclusion_coupling_file_tmp.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['exp_central']))
 
         minus_one.append( min(limits2D[mass]['exp_minus_one']) )
         plus_one.append( min(limits2D[mass]['exp_plus_one' ]) )
@@ -302,6 +361,9 @@ class LimitPlotter(object):
 
         if self.do_coupling_scenario:
           exclusion_coupling_file.close()
+          exclusion_coupling_file_tmp.close()
+          os.system('mv {} {}'.format(exclusion_coupling_filename_tmp, exclusion_coupling_filename))
+          print '--> {} created'.format(exclusion_coupling_filename) 
 
        
     '''
@@ -366,9 +428,9 @@ class LimitPlotter(object):
     plt.xscale('linear')
     plt.grid(True)
     if not self.do_coupling_scenario:
-      name_2d = '2d_hnl_limit'.format(mass.replace('.', 'p')) 
+      name_2d = '2d_hnl_limit_m{}'.format(mass.replace('.', 'p')) 
     else:
-      name_2d = '2d_hnl_limit_scenario_{}_{}_{}'.format(mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
+      name_2d = '2d_hnl_limit_scenario_m{}_{}_{}_{}'.format(mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
     plt.savefig('{}/{}.pdf'.format(plotDir, name_2d))
     plt.savefig('{}/{}.png'.format(plotDir, name_2d))
 
