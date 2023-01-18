@@ -147,7 +147,8 @@ class LimitPlotter(object):
       for limitFile in files:
         if 'm_{}_'.format(mass) not in limitFile: continue
      
-        # for each mass, get the list of the couplings from the file name
+        # for each mass, get the list of the couplings and ctaus from the file name
+        ctau = limitFile[limitFile.find('ctau_')+5:limitFile.find('_', limitFile.find('ctau_')+5)]
         coupling = limitFile[limitFile.find('v2_')+3:limitFile.find('.txt')]
         val_coupling = float(coupling)
       
@@ -159,7 +160,7 @@ class LimitPlotter(object):
           if str(val_coupling) in self.coupling_blacklist.split(','): continue 
         
         try:
-          thefile = open('{}/result_m_{}_v2_{}.txt'.format(pathToResults, mass, coupling), 'r')
+          thefile = open('{}/result_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, mass, ctau, coupling), 'r')
           
           # get the necessary information from the result files
           val_obs       = None

@@ -23,8 +23,10 @@ Script to combine the datacards between the different categories
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Script to combine the datacards among displacement bins, years, and flavour channels', add_help=True)
+  parser.add_argument('--homedir'           , type=str, dest='homedir'           , help='name of the homedir'                          , default=None)
   parser.add_argument('--outdirlabel'       , type=str, dest='outdirlabel'       , help='name of the outdir'                           , default=None)
   parser.add_argument('--subdirlabel'       , type=str, dest='subdirlabel'       , help='name of the subdir'                           , default=None)
+  parser.add_argument('--mass'              , type=str, dest='mass'              , help='mass'                                         , default='1.0')
   parser.add_argument('--signal_type'       , type=str, dest='signal_type'       , help='signal under consideration'                   , default='majorana', choices=['majorana', 'dirac'])
   parser.add_argument('--categories_label'  , type=str, dest='categories_label'  , help='label of the list of categories'              , default='standard')
   parser.add_argument('--mass_whitelist'    , type=str, dest='mass_whitelist'    , help='allowed values for masses'                    , default=None)
@@ -39,19 +41,19 @@ def getOptions():
 # getting the parsed info
 opt = getOptions()
 
+homedir = opt.homedir
 outdirlabel = opt.outdirlabel
 subdirlabel = opt.subdirlabel
 signal_type = opt.signal_type #TODO for the moment, does not do anything 
+the_mass = opt.mass
 categories = categories[opt.categories_label]
 path_to_datacards = subdirlabel
 datacard_wildcard = opt.wildcard
 
 # create directories
-outputdir = './outputs/{}/datacards_combined/{}'.format(outdirlabel, subdirlabel)
+outputdir = '{}/outputs/{}/datacards_combined/{}'.format(homedir, outdirlabel, subdirlabel)
 if not path.exists(outputdir):
   os.system('mkdir -p {}'.format(outputdir))    
-#if not path.exists('./logs/{}'.format(version)):
-#  os.system('mkdir ./logs/{}'.format(version))
 
 print 'loading cards...'
 all_datacards = []
@@ -77,9 +79,7 @@ the_set_datacards = all_datacards
 for idc_ref in the_set_datacards:
     name = idc_ref.split('/')[-1]
     signal_mass = name[name.find('m_')+2:name.find('_', name.find('m_')+2)]
-    #print signal_mass
     signal_coupling = name[name.find('v2_')+3:name.find('_cat')]
-    #print signal_coupling
    
     # get white/black listed mass/couplings
     if opt.mass_whitelist != None:
@@ -109,6 +109,7 @@ for idc_ref in the_set_datacards:
     
     
 for mass, couplings in digested_datacards.iteritems():
+    if mass != the_mass: continue
     print 'mass =', mass
     
     v2s       = []
@@ -129,12 +130,16 @@ for mass, couplings in digested_datacards.iteritems():
         for idc in datacards_to_combine:
           #print idc
           #print '{} \t {}'.format(cat, idc)
+
+          # fetch ctau to add to combined datacard name
+          ctau = idc[idc.find('ctau_')+5:idc.find('_', idc.find('ctau_')+5)]
+
           if any([v in idc for v in categories_to_combine]):
             command += ' {}'.format(idc)
 
-        command += (' > {o}/datacard_combined_m_{m}_v2_{c}.txt'.format(o=outputdir, m=str(mass), c=coupling)) 
+        command += (' > {o}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(o=outputdir, m=str(mass), ctau=ctau, v2=coupling)) 
 
-        print command
+        #print command
         os.system(command)
         
-        print ('\t\t -> combined datacards between the categories in {o}/datacard_combined_m_{m}_v2_{c}.txt'.format(o=outputdir, m=str(mass), c=coupling))
+        print ('\t\t -> combined datacards between the categories in {o}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(o=outputdir, m=str(mass), ctau=ctau, v2=coupling))

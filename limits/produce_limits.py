@@ -53,7 +53,7 @@ class LimitProducer(object):
     v2 = self.tools.getVV(mass=float(self.mass), ctau=float(self.ctau), ismaj=True)
     coupling = self.getCouplingLabel(v2)
 
-    command = 'combine -M AsymptoticLimits {i}/datacard_combined_m_{m}_v2_{c}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), c=str(coupling).replace('.', 'p').replace('-', 'm'))
+    command = 'combine -M AsymptoticLimits {i}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(coupling).replace('.', 'p').replace('-', 'm'))
     if self.run_blind:
       command += ' --run blind'
     if self.use_discrete_profiling:
@@ -73,7 +73,7 @@ class LimitProducer(object):
     if not path.exists(outputdir):
       os.system('mkdir -p {}'.format(outputdir))    
 
-    result_file_name = '{}/result_m_{}_v2_{}.txt'.format(outputdir, str(self.mass), str(coupling)) 
+    result_file_name = '{}/result_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, str(self.mass), str(self.ctau), str(coupling)) 
     with open(result_file_name, 'w') as ff:
         print >> ff, results
 
