@@ -927,10 +927,13 @@ class MVAAnalyser(Tools, MVATools):
     canv.SaveAs('{}/significance_diff_scan_m{}_{}.png'.format(self.outdir, str(signal_mass).replace('.', 'p'), category.label))
 
 
-  def plotMass(self, training_info, mc_samples, data_samples, category):
+  def plotMass(self, training_info, mc_samples, data_samples, category, object_mass):
     '''
       Plot the background mass distribution for given cut on scores
     '''
+    if object_mass not in ['hnl_mass', 'b_mass']:
+      raise RuntimeError('Unknown object_mass. Choose among ["hnl_mass", "b_mass"]')
+
     pd.options.mode.chained_assignment = None
     ROOT.gStyle.SetOptStat(0)
     canv = self.tools.createTCanvas('canv'+category.label, 800, 700) 
@@ -942,28 +945,36 @@ class MVAAnalyser(Tools, MVATools):
     if len(masses) != 1:
       raise RuntimeError('Please provide signal samples of the same mass')
 
-    scores = [0.99]
+    scores = [0.95, 0.]
     colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+3]
 
     mass = mc_samples[0].mass
     resolution = self.resolution_p0 + self.resolution_p1 * mass
 
-    quantity = Qte(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=mass-10*resolution, bin_max=mass+10*resolution)
+    if object_mass == 'hnl_mass':
+      quantity = Qte(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=mass-10*resolution, bin_max=mass+10*resolution)
+    elif object_mass == 'b_mass':
+      quantity = Qte(name_nano='BToMuMuPi_mass', name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0, bin_max=8)
 
     # consider the 10 sigma window around the signal mass
     window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
     bkg_label = 'bkg_{}_{}'.format(mass, category.label)
-    filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=self.baseline_selection + ' && ' + window, label=bkg_label, treename='signal_tree', force_overwrite=True) 
+    extra_branch = ['b_mass']
+    filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=self.baseline_selection + ' && ' + window, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
     file_bkg = self.tools.getRootFile(filename_bkg)
     tree_bkg = self.tools.getTree(file_bkg, 'signal_tree')
 
     hists = []
     for iscore, score in enumerate(scores):
       hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='hist_bkg'+str(score), branchname='flat', selection='score > {}'.format(score))
-      #if hist_bkg.Integral() != 0: hist_bkg.Scale(1./hist_bkg.Integral())
+      if hist_bkg.Integral() != 0: hist_bkg.Scale(1./hist_bkg.Integral())
 
-      hist_bkg.SetMarkerStyle(20)
-      hist_bkg.SetMarkerColor(colours[iscore])
+      if score == 0.:
+        hist_bkg.SetFillColor(ROOT.kBlue-3)
+        hist_bkg.SetFillStyle(3005)
+      else:
+        hist_bkg.SetMarkerStyle(20)
+        hist_bkg.SetMarkerColor(colours[iscore])
       
       hist_bkg.SetTitle(category.title)
       hist_bkg.GetXaxis().SetTitle('#mu#pi invariant mass [GeV]')
@@ -975,15 +986,20 @@ class MVAAnalyser(Tools, MVATools):
       hist_bkg.GetYaxis().SetTitleSize(0.042)
       hist_bkg.GetYaxis().SetTitleOffset(1.1)
       hists.append(hist_bkg)
-      leg.AddEntry(hist_bkg, 'score > {}'.format(score))
+      if score == 0:
+        leg_entry = 'no cut on the pNN score'
+      else:
+        leg_entry = 'pNN score > {}'.format(score)
+      leg.AddEntry(hist_bkg, leg_entry)
 
     for ihist, hist in enumerate(hists):
       if ihist == 0: hist.Draw('')
-      else: hist.Draw('same')
+      elif ihist != 0 and ihist != len(scores)-1: hist.Draw('same')
+      else: hist.Draw('hist same')
     leg.Draw('same')
 
     canv.cd()
-    name = '{}/mass_m{}_{}'.format(self.outdir, str(mass).replace('.', 'p'), category.label)
+    name = '{}/{}_m{}_{}'.format(self.outdir, object_mass, str(mass).replace('.', 'p'), category.label)
     canv.SaveAs(name + '.png')
 
 
@@ -1083,7 +1099,7 @@ class MVAAnalyser(Tools, MVATools):
 
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxy1to5_OS': continue
+      if category.label != 'lxysig0to50_OS': continue
 
       print '\n -> get the training information'
       training_info = TrainingInfo(self.dirname, category.label)
@@ -1127,7 +1143,8 @@ class MVAAnalyser(Tools, MVATools):
         self.plotSignificanceDiffScan(category=category, mc_samples=mc_samples, data_samples=data_samples, n_points=30)
 
       if self.do_plotMass:
-        self.plotMass(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category)
+        self.plotMass(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, object_mass='hnl_mass')
+        self.plotMass(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, object_mass='b_mass')
 
 
 
@@ -1167,7 +1184,8 @@ if __name__ == '__main__':
   #dirname = 'test_2022Sep29_09h11m21s' # without pi dcasig
   #dirname = 'test_2022Oct06_17h34m15s' # new feature set
   #dirname = 'test_2022Oct10_16h40m58s' # invmass and deltaR added
-  dirname = 'test_2022Oct12_15h12m37s' # mass 3 only
+  #dirname = 'test_2022Oct12_15h12m37s' # mass 3 only
+  dirname = 'test_2022Nov29_09h26m28s' # adding muon isolation
 
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
   #categories = categories['V12_08Aug22_permass']
@@ -1176,16 +1194,16 @@ if __name__ == '__main__':
   do_parametric = True
 
   data_files = []
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
 
   do_analyseMVA = True    # assess performance of mva
   do_compareMVA = False   # compare mva performance to that of the cutbased method
 
   if do_analyseMVA:
     signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-    masses = ['m1', 'm1p5', 'm2', 'm3', 'm4p5']
-    #masses = ['m4p5']
+    #masses = ['m1', 'm1p5', 'm2', 'm3', 'm4p5']
+    masses = ['m2']
 
     for mass in masses:
       signal_files = []
