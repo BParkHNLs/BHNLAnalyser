@@ -61,9 +61,9 @@ class LimitPlotter(object):
     return float(input)
 
 
-  def get_intersection(self, couplings, values):
+  def get_intersection(self, couplings, values, crossing=1):
     '''
-      Function that returns the coupling at which the limit intersects with 1 in the log-log plane
+      Function that returns the coupling at which the limit intersects with 1 (crossing) in the log-log plane
     '''
     # first, search for couplings whose associated limit is the closest to up and down 1
     coupling_up = 0
@@ -71,35 +71,38 @@ class LimitPlotter(object):
     value_up = 0
     value_down = 0
     for icoupling, coupling in enumerate(couplings):
-      if coupling > coupling_up and values[icoupling]>1:
-        coupling_up = coupling
-        value_up = values[icoupling]
-      if coupling < coupling_down and values[icoupling]<1:
-        coupling_down = coupling
+      if icoupling+1 >= len(couplings): continue
+      #print '{} {} {} {}'.format(values[icoupling], values[icoupling+1], crossing, values[icoupling] > crossing and values[icoupling+1] < crossing)
+      if values[icoupling] > crossing and values[icoupling+1] < crossing:
+        coupling_up = couplings[icoupling+1]
+        value_up = values[icoupling+1]
+        coupling_down = couplings[icoupling]
         value_down = values[icoupling]
+        break
 
     #print 'coupling up: {} {}'.format(coupling_up, value_up)
     #print 'coupling down: {} {}'.format(coupling_down, value_down)
 
-    # then, search for the intersection with 1 in the log-log plane
-    # powerlaw y = kx^m behaves as a linear law in the log-log plane: log(y) = mlog(x) + log(k)
-    # get the slope m
-    m = (math.log(value_up) - math.log(value_down)) / (math.log(coupling_up) - math.log(coupling_down))
+    # do not proceed if crossing is not found
+    if coupling_up == 0 or coupling_down == 1e9:
+      intersection = -99
+    else:
+      # then, search for the intersection with 1 in the log-log plane
+      # powerlaw y = kx^m behaves as a linear law in the log-log plane: log(y) = mlog(x) + log(k)
+      # get the slope m
+      m = (math.log(value_up) - math.log(value_down)) / (math.log(coupling_up) - math.log(coupling_down))
 
-    # and the coordinate k
-    k = value_up / math.pow(coupling_up, m)
+      # and the coordinate k
+      k = value_up / math.pow(coupling_up, m)
 
-    # to finally compute the coupling where there is the intersection
-    intersection = math.pow(1./ k, 1./m) 
-
-    #print 'intersection {}'.format(intersection)
+      # to finally compute the coupling where there is the intersection
+      intersection = math.pow(float(crossing)/float(k), 1./float(m)) 
 
     return intersection
 
 
   def process(self):
     signal_type = self.signal_type 
-    flavour = r'$|V|^2_{\mu}$'
     lumi =  '41.6 fb'+r'$^{-1}$'
 
     # get the files 
@@ -122,7 +125,7 @@ class LimitPlotter(object):
     # create directory
     plotDir = '{}/outputs/{}/limits/{}/plots'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
     os.system('mkdir -p {d}'.format(d=plotDir)) 
-     
+
     for mass in masses:
       # get white/black listed mass
       if self.mass_whitelist != 'None':
@@ -237,7 +240,6 @@ class LimitPlotter(object):
           plt.plot(v2s, obs, color='black', label='observed')    
       
       plt.axhline(y=1, color='black', linestyle='-')
-      #plt.xlabel(flavour)
       plt.xlabel(r'$|V|^2$')
       plt.ylabel('exclusion limit 95% CL')
 
@@ -256,7 +258,7 @@ class LimitPlotter(object):
       plt.legend()
       plt.ticklabel_format(axis='x', style='sci', scilimits=(0,0))
       #ax.text(0.5, 0.5, coupling_scenario, style='normal', bbox={'facecolor': 'white', 'alpha': 1., 'pad': 10}, transform=ax.transAxes)
-      plt.xlim(1e-5, 3e-4)
+      #plt.xlim(1e-5, 3e-4)
       #plt.ylim(1e-1, 1e4)
       #plt.yscale('linear')
       #if self.fe == None and self.fu == None and self.ft == None:
@@ -280,16 +282,37 @@ class LimitPlotter(object):
       limits2D[mass] = OrderedDict()
 
       # find the intersections    
-      x_minus_two, y = intersection(np.array(v2s), np.array(minus_two), np.array(v2s), np.ones(len(v2s)))    
-      x_minus_one, y = intersection(np.array(v2s), np.array(minus_one), np.array(v2s), np.ones(len(v2s)))    
-      #x_central  , y = intersection(np.array(v2s), np.array(central)  , np.array(v2s), np.ones(len(v2s)))    
-      #print x_central
-      x_plus_one , y = intersection(np.array(v2s), np.array(plus_one) , np.array(v2s), np.ones(len(v2s)))    
-      x_plus_two , y = intersection(np.array(v2s), np.array(plus_two) , np.array(v2s), np.ones(len(v2s)))    
-      if not self.run_blind:
-          x_obs , y = intersection(np.array(v2s), np.array(obs) , np.array(v2s), np.ones(len(v2s)))    
-
+      x_minus_two = self.get_intersection(v2s, minus_two)
+      x_minus_one = self.get_intersection(v2s, minus_one)
       x_central = self.get_intersection(v2s, central)
+      x_plus_one = self.get_intersection(v2s, plus_one)
+      x_plus_two = self.get_intersection(v2s, plus_two)
+
+      if x_plus_one == -99:
+        print '\nWARNING - could not find crossing for +1sigma'
+        crossings = np.linspace(1, 2, 20)
+        for crossing in crossings:
+          x_central_tmp = self.get_intersection(v2s, central, crossing)
+          x_plus_one_tmp = self.get_intersection(v2s, plus_one, crossing)
+          if x_plus_one_tmp != -99: 
+            break
+        x_diff_plus_one = x_plus_one_tmp - x_central_tmp
+        x_plus_one = x_central + x_diff_plus_one
+
+      if x_plus_two == -99:
+        print '\nWARNING - could not find crossing for +2sigma'
+        crossings = np.linspace(1, 2, 20)
+        for crossing in crossings:
+          x_central_tmp = self.get_intersection(v2s, central, crossing)
+          x_plus_two_tmp = self.get_intersection(v2s, plus_two, crossing)
+          if x_plus_two_tmp != -99: 
+            break
+
+        x_diff_plus_two = x_plus_two_tmp - x_central_tmp
+        x_plus_two = x_central + x_diff_plus_two
+
+      if not self.run_blind:
+        x_obs = self.get_intersection(v2s, obs)
 
       limits2D[mass]['exp_minus_two'] = x_minus_two
       limits2D[mass]['exp_minus_one'] = x_minus_one
@@ -343,23 +366,18 @@ class LimitPlotter(object):
               masses_obs.append(mass)
         
         #if len(limits2D[mass]['exp_central'])>0 and len(limits2D[mass]['exp_minus_one'])>0 and len(limits2D[mass]['exp_plus_one' ])>0 and len(limits2D[mass]['exp_minus_two'])>0 and len(limits2D[mass]['exp_plus_two' ])>0:
-        #central.append( min(limits2D[mass]['exp_central']) )
         central.append(limits2D[mass]['exp_central'])
+        minus_one.append(limits2D[mass]['exp_minus_one'])
+        plus_one.append(limits2D[mass]['exp_plus_one' ])
+        minus_two.append(limits2D[mass]['exp_minus_two'])
+        plus_two.append(limits2D[mass]['exp_plus_two' ])
+
         masses_central.append(float(mass))
-
-
-        if self.do_coupling_scenario:
-          exclusion_coupling_file_tmp.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['exp_central']))
-
-        minus_one.append( min(limits2D[mass]['exp_minus_one']) )
-        plus_one.append( min(limits2D[mass]['exp_plus_one' ]) )
         masses_one_sigma.append(float(mass))
-
-        minus_two.append( min(limits2D[mass]['exp_minus_two']) )
-        plus_two.append( min(limits2D[mass]['exp_plus_two' ]) )
         masses_two_sigma.append(float(mass))
 
         if self.do_coupling_scenario:
+          exclusion_coupling_file_tmp.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['exp_central']))
           exclusion_coupling_file.close()
           exclusion_coupling_file_tmp.close()
           os.system('mv {} {}'.format(exclusion_coupling_filename_tmp, exclusion_coupling_filename))
@@ -386,13 +404,22 @@ class LimitPlotter(object):
         plus_two        .append( max(limits2D[mass]['exp_plus_two' ]) )
         masses_two_sigma.append(float(mass))
     '''
-    
+
+
     # plot the 2D limits
     plt.clf()
-    ax = plt.axes()
-    f1 = plt.fill_between(masses_two_sigma, minus_two, plus_two, color='gold'       , label=r'$\pm 2 \sigma$')
-    f2 = plt.fill_between(masses_one_sigma, minus_one, plus_one, color='forestgreen', label=r'$\pm 1 \sigma$')
-    p1, = plt.plot(masses_central, central, color='red', label='central expected', linewidth=2)
+    f, ax = plt.subplots(figsize=(9, 8))
+    if not self.do_coupling_scenario:
+      self.fe = '0.0'
+      self.fu = '1.0'
+      self.ft = '0.0'
+    coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
+    ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
+    ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
+    ax.text(0.26, 0.7, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+    f1 = plt.fill_between(masses_two_sigma, minus_two, plus_two, color='gold'       , label=r'95% expected')
+    f2 = plt.fill_between(masses_one_sigma, minus_one, plus_one, color='forestgreen', label=r'68% expected')
+    p1, = plt.plot(masses_central, central, color='red', label='Median expected', linewidth=2)
     #p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='black', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
     #p3, = plt.plot(db.masses_delphiprompt, db.exp_delphiprompt, color='blueviolet', label='Delphi prompt', linewidth=1.3, linestyle='dashed')
     #if 'mmm' in self.channels or 'mem' in self.channels:
@@ -406,33 +433,35 @@ class LimitPlotter(object):
       p8, = plt.plot(masses_obs, obs, color='black', label='observed', linewidth=2)
 
     if not self.run_blind:
-      first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='upper right')
+      first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=20)
     else:
-      first_legend = plt.legend(handles=[p1, f1, f2], loc='upper right')
+      first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=20)
     ax = plt.gca().add_artist(first_legend)
     #if 'mmm' in self.channels or 'mem' in self.channels:
     #  second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
     #else: 
     #  second_legend = plt.legend(handles=[p2, p3, p7], loc='upper left')
 
-    plt.title('CMS Preliminary', loc='left')
-    plt.title(lumi + ' (13 TeV)', loc='right')
-    plt.ylabel(flavour)
+    plt.title(lumi + ' (13 TeV)', loc='right', fontsize=23)
+    plt.ylabel(r'$|V|^2$', fontsize=23)
+    plt.yticks(fontsize=17)
     #plt.ylim(1e-10, 1e-0)
-    plt.ylim(1e-6, 1e-0)
-    plt.xlabel('mass (GeV)')
+    plt.ylim(1e-5, 1e-1)
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
     #plt.xlim(0, max(masses_central))
     plt.xlim(min(masses_central), max(masses_central))
-    plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    plt.xticks(fontsize=17)
     plt.yscale('log')
     plt.xscale('linear')
     plt.grid(True)
     if not self.do_coupling_scenario:
-      name_2d = '2d_hnl_limit_m{}'.format(mass.replace('.', 'p')) 
+      name_2d = '2d_hnl_limit' 
     else:
-      name_2d = '2d_hnl_limit_scenario_m{}_{}_{}_{}'.format(mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
+      name_2d = '2d_hnl_limit_scenario_{}_{}_{}'.format(self.fe, self.fu, self.ft) 
     plt.savefig('{}/{}.pdf'.format(plotDir, name_2d))
     plt.savefig('{}/{}.png'.format(plotDir, name_2d))
+    print '--> {}/{}.png created'.format(plotDir, name_2d)
 
 
     #print '\n-> Plots saved in {}'.format(plotDir)
