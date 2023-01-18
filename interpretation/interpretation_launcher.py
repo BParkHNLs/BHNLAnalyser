@@ -49,11 +49,11 @@ class InterpretationLauncher(object):
     self.run_blind = run_blind
     self.use_discrete_profiling = use_discrete_profiling
 
-    self.templatename_muon = 'datacard_combined_m_{mass}_v2_{v2}.txt' 
-    self.templatename_electron = 'HNL_M{mass}_ctau{ctau}_PF_combined.txt'
+    self.templatename_muon = 'datacard_combined_m_{mass}_ctau_{ctau}_v2_{v2}.txt' 
+    self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined.txt'
 
-    #self.path_motherdir = '/eos/home-a/anlyon/BHNLDatacards'
-    self.path_motherdir = '/work/anlyon/BHNLDatacards/BHNLDatacards/'
+    self.path_motherdir = '/eos/home-a/anlyon/BHNLDatacards'
+    #self.path_motherdir = '/work/anlyon/BHNLDatacards/BHNLDatacards/'
 
 
   def getSignalCoupling(self, mass, ctau):
@@ -95,11 +95,12 @@ class InterpretationLauncher(object):
 
     self.v2 = self.getSignalCoupling(mass=self.mass, ctau=self.ctau)
 
-    datacard_name_muon = self.templatename_muon.format(mass=str(self.mass).replace('.', 'p'), v2=str(self.v2).replace('.', 'p').replace('-', 'm'))
+    datacard_name_muon = self.templatename_muon.format(mass=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.v2).replace('.', 'p').replace('-', 'm'))
     if not self.checkDatacard(datacard_name=datacard_name_muon, flavour_channel='muon'):
       raise RuntimeError('Muon datacard "{}" not found'.format(datacard_name_muon))
 
-    datacard_name_electron = self.templatename_electron.format(mass=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'))
+    datacard_name_electron = self.templatename_electron.format(mass='{:.2f}'.format(self.mass).replace('.','p'), ctau='{:.3f}'.format(self.ctau).replace('.','p'))
+
     if not self.checkDatacard(datacard_name=datacard_name_electron, flavour_channel='electron'):
       raise RuntimeError('Electron datacard "{}" not found'.format(datacard_name_electron))
 
