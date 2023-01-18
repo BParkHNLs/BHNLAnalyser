@@ -16,7 +16,7 @@ from baseline_selection import selection
 from ABCD_regions import ABCD_regions
 from qcd_white_list import white_list
 from quantity import Quantity
-from points import points
+from ctau_points import ctau_points
 
 
 def getOptions():
@@ -29,7 +29,7 @@ def getOptions():
   parser.add_argument('--data_label'            , type=str, dest='data_label'            , help='which data samples to consider?'                               , default='V07_18Aug21')
   parser.add_argument('--qcd_label'             , type=str, dest='qcd_label'             , help='which qcd samples to consider?'                                , default='V07_18Aug21')
   parser.add_argument('--signal_label'          , type=str, dest='signal_label'          , help='which signal samples to consider?'                             , default='private')
-  parser.add_argument('--points_label'          , type=str, dest='points_label'          , help='which ctau points to consider?'                                , default='generated')
+  parser.add_argument('--ctau_points_label'     , type=str, dest='ctau_points_label'     , help='which ctau_points to consider?'                                , default='generated')
   parser.add_argument('--selection_label'       , type=str, dest='selection_label'       , help='apply a baseline selection_label?'                             , default='standard')
   parser.add_argument('--categories_label '     , type=str, dest='categories_label'      , help='label of the list of categories'                               , default='standard')
   parser.add_argument('--category_label'        , type=str, dest='category_label'        , help='label of a given category within this list'                    , default=None)
@@ -619,44 +619,50 @@ bkg {bkg_yields}
           data_obs = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, label=cat_label)
 
         # loop on the signal points
-        for ctau_point in self.ctau_points:
-          # get the signal mass/coupling
+        for ctau_point_list in self.ctau_points:
+          # get the signal mass
           signal_mass = window['mass']
-          signal_ctau = ctau_point
-          signal_coupling = self.getSignalCoupling(signal_mass=signal_mass, signal_ctau=signal_ctau)
 
-          #if signal_mass <= 2 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-4): continue
-          #if signal_mass> 2 and signal_mass <= 3 and (float(signal_coupling) < 7e-5 or float(signal_coupling) > 7e-4): continue
-          #if signal_mass> 3 and (float(signal_coupling) < 7e-4 or float(signal_coupling) > 7e-2): continue
-          if signal_mass <= 2 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-3): continue
-          if signal_mass> 2 and signal_mass <= 3 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-3): continue
-          if signal_mass> 3 and (float(signal_coupling) < 7e-5 or float(signal_coupling) > 7e-2): continue
-          #if float(signal_coupling) < 1e-5 or float(signal_coupling) > 1e-1: continue
+          # select the ctau_points
+          if signal_mass not in ctau_point_list.mass_list: continue
+          
+          for ctau_point in ctau_point_list.ctau_list:
+            print '\n\n\n mass {} ctau {}'.format(signal_mass, ctau_point)
+            signal_ctau = ctau_point
+            signal_coupling = self.getSignalCoupling(signal_mass=signal_mass, signal_ctau=signal_ctau)
 
-          #if signal_ctau != 0.1: continue
+            #if signal_mass <= 2 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-4): continue
+            #if signal_mass> 2 and signal_mass <= 3 and (float(signal_coupling) < 7e-5 or float(signal_coupling) > 7e-4): continue
+            #if signal_mass> 3 and (float(signal_coupling) < 7e-4 or float(signal_coupling) > 7e-2): continue
+            #if signal_mass <= 2 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-3): continue
+            #if signal_mass> 2 and signal_mass <= 3 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-3): continue
+            #if signal_mass> 3 and (float(signal_coupling) < 7e-5 or float(signal_coupling) > 7e-2): continue
+            #if float(signal_coupling) < 1e-5 or float(signal_coupling) > 1e-1: continue
 
-          # get the process label
-          card_label = self.getCardLabel(signal_mass=signal_mass, signal_ctau=signal_ctau, signal_coupling=signal_coupling, category=category)
+            #if signal_ctau != 0.1: continue
 
-          # get the signal yields (if not shape analysis)
-          if self.do_counting or self.do_shape_TH1:
-            signal_yields = self.getSignalYields(mass=signal_mass, ctau=signal_ctau, category=category, selection=selection)
-      
-          # get the model shape and yields for shape analysis
-          if self.do_shape_analysis:
-            signal_yields = self.runFitter(process='signal', mass=signal_mass, ctau=signal_ctau, category=category, selection=selection, label=card_label)
+            # get the process label
+            card_label = self.getCardLabel(signal_mass=signal_mass, signal_ctau=signal_ctau, signal_coupling=signal_coupling, category=category)
 
-          # create histograme for non-parametric shape strategy
-          if self.do_shape_TH1:
-            self.createSigHisto(mass=signal_mass, ctau=signal_ctau, category=category, signal_yields=signal_yields, selection=selection, label=card_label)
-            self.createBkgHisto(category=category, mass=window['mass'], background_yields=background_yields, selection=selection, label=cat_label)
-            self.createDataObsHisto(category=category, mass=window['mass'], selection=selection, label=cat_label)
+            # get the signal yields (if not shape analysis)
+            if self.do_counting or self.do_shape_TH1:
+              signal_yields = self.getSignalYields(mass=signal_mass, ctau=signal_ctau, category=category, selection=selection)
+        
+            # get the model shape and yields for shape analysis
+            if self.do_shape_analysis:
+              signal_yields = self.runFitter(process='signal', mass=signal_mass, ctau=signal_ctau, category=category, selection=selection, label=card_label)
 
-          # create the datacard
-          self.writeCard(card_label=card_label, cat_label=cat_label, signal_yields=signal_yields, background_yields=background_yields)
+            # create histograme for non-parametric shape strategy
+            if self.do_shape_TH1:
+              self.createSigHisto(mass=signal_mass, ctau=signal_ctau, category=category, signal_yields=signal_yields, selection=selection, label=card_label)
+              self.createBkgHisto(category=category, mass=window['mass'], background_yields=background_yields, selection=selection, label=cat_label)
+              self.createDataObsHisto(category=category, mass=window['mass'], selection=selection, label=cat_label)
 
-          # save yields summary
-          #self.writeYieldsForPlots(label=card_label, signal_yields=signal_yields, background_yields=background_yields)
+            # create the datacard
+            self.writeCard(card_label=card_label, cat_label=cat_label, signal_yields=signal_yields, background_yields=background_yields)
+
+            # save yields summary
+            #self.writeYieldsForPlots(label=card_label, signal_yields=signal_yields, background_yields=background_yields)
 
 
 
@@ -673,8 +679,7 @@ if __name__ == '__main__':
     data_files = data_samples[opt.data_label]
     signal_label = opt.signal_label
     signal_files = signal_samples[signal_label]
-    points_label = opt.points_label
-    ctau_points = points[opt.points_label]
+    ctau_points = ctau_points[opt.ctau_points_label]
     qcd_files = qcd_samples[opt.qcd_label]
     
     white_list = white_list[opt.qcd_white_list]
