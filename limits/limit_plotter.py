@@ -346,20 +346,8 @@ class LimitPlotter(object):
     for mass in sorted(limits2D.keys(), key=self.sortList):
 
         if self.do_coupling_scenario:
-          exclusion_coupling_filename = '{}/exclusion_m_{}.txt'.format(plotDir, str(mass).replace('.', 'p'))
-          if not path.exists(exclusion_coupling_filename):
-            exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
-          else:
-            exclusion_coupling_file = open(exclusion_coupling_filename, 'a+')
-            # overwrite if necessary
-            exclusion_coupling_filename_tmp = '{}/exclusion_m_{}_tmp.txt'.format(plotDir, str(mass).replace('.', 'p'))
-            exclusion_coupling_file_tmp = open(exclusion_coupling_filename_tmp, 'w+')
-            lines = exclusion_coupling_file.readlines()
-            for line in lines:
-              coupling_string  = '{} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'))
-              if coupling_string not in line: 
-                exclusion_coupling_file_tmp.write(line)
-            os.system('mv {} {}'.format(exclusion_coupling_filename_tmp, exclusion_coupling_filename))
+          exclusion_coupling_filename = '{}/exclusion_m_{}_{}_{}_{}.txt'.format(plotDir, str(mass).replace('.', 'p'), self.fe, self.fu, self.ft)
+          exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
         
         if not self.run_blind:
           if len(limits2D[mass]['obs'])>0: 
@@ -378,10 +366,8 @@ class LimitPlotter(object):
         masses_two_sigma.append(float(mass))
 
         if self.do_coupling_scenario:
-          exclusion_coupling_file_tmp.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['exp_central']))
+          exclusion_coupling_file.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['exp_central']))
           exclusion_coupling_file.close()
-          exclusion_coupling_file_tmp.close()
-          os.system('mv {} {}'.format(exclusion_coupling_filename_tmp, exclusion_coupling_filename))
           print '--> {} created'.format(exclusion_coupling_filename) 
 
        
