@@ -52,8 +52,8 @@ class InterpretationLauncher(object):
     self.templatename_muon = 'datacard_combined_m_{mass}_ctau_{ctau}_v2_{v2}.txt' 
     self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined.txt'
 
-    self.path_motherdir = '/eos/home-a/anlyon/BHNLDatacards'
-    #self.path_motherdir = '/work/anlyon/BHNLDatacards/BHNLDatacards/'
+    #self.path_motherdir = '/eos/home-a/anlyon/BHNLDatacards'
+    self.path_motherdir = '/work/anlyon/BHNLDatacards/BHNLDatacards/'
 
 
   def getSignalCoupling(self, mass, ctau):
