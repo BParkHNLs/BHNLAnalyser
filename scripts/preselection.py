@@ -448,9 +448,9 @@ if __name__ == '__main__':
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/bparknano_looseselection_dsaonly.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/bparknano_data_1file_looseselection.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/flat_bparknano_data_1file_looseselection.root',
-      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/merged/bparknano_loosepreselection_1file.root', # used for AN-v3
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/merged/bparknano_loosepreselection_1file.root', # used for AN-v3
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22.root', # for baseline selection cutflow
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/bparknano_data_nocutatall_1000evts.root', # get the loose selection efficiency
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/bparknano_data_nocutatall_1000evts.root', # get the loose selection efficiency
       process = 'background',
       )
 
@@ -505,8 +505,8 @@ if __name__ == '__main__':
   files = []
   files.append(file_background)
   files.append(file_m1)
-  #files.append(file_m3)
-  #files.append(file_m4p5)
+  files.append(file_m3)
+  files.append(file_m4p5)
   #files.append(file_V25)
 
 
@@ -605,33 +605,58 @@ if __name__ == '__main__':
   #soft_muon = Quantity('b_sel_mu_isSoft', 'mu_isSoft', '==', '', 0, 1)
  
   printCutflow = False
-  printEfficiency = False
+  printEfficiency = True
   printScan = False
 
-  doPreselection = False
+  doPreselection = True
   doBaselineSelection = False
-  doLooseSelection = True
+  doLooseSelection = False
 
   if doPreselection:
 
     preselection = [] 
 
-    #cut_trg_cond = 1
-    #if printScan: Selection(files, trg_cond, npoints=30, write_cut_analysis=False, proposed_cut=cut_trg_cond).getScanGraph()
-    ##Selection(files, trg_cond, npoints=5, write_cut_analysis=False, proposed_cut=cut_trg_cond).getScanGraph()
-    ##Selection(files, trg_cond, npoints=30).getROCGraph()
-    #if printCutflow: Selection(files, trg_cond, proposed_cut=cut_trg_cond).printCutflowLine()
-    ##Selection(files, trg_cond, proposed_cut=cut_trg_cond).printCutflowLine()
-    ##preselection.append(PreselectedQuantity(trg_cond, cut_trg_cond))
+    ##cut_trg_cond = 1
+    ##if printScan: Selection(files, trg_cond, npoints=30, write_cut_analysis=False, proposed_cut=cut_trg_cond).getScanGraph()
+    ###Selection(files, trg_cond, npoints=5, write_cut_analysis=False, proposed_cut=cut_trg_cond).getScanGraph()
+    ###Selection(files, trg_cond, npoints=30).getROCGraph()
+    ##if printCutflow: Selection(files, trg_cond, proposed_cut=cut_trg_cond).printCutflowLine()
+    ###Selection(files, trg_cond, proposed_cut=cut_trg_cond).printCutflowLine()
+    ###preselection.append(PreselectedQuantity(trg_cond, cut_trg_cond))
 
-    cut_trg_mu_pt = 1.5 #7
-    if printScan: Selection(files, trg_mu_pt, npoints=30, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
-    #Selection(files, trg_mu_pt, npoints=5, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
-    #Selection(files, trg_mu_pt, npoints=30).getROCGraph()
-    if printCutflow: Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printCutflowLine()
-    if printEfficiency: Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printEfficiencyLine()
-    Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printEfficiencyLine()
-    preselection.append(PreselectedQuantity(trg_mu_pt, cut_trg_mu_pt))
+    #preselection.append(PreselectedQuantity(trg_mu_pt, cut_trg_mu_pt))
+
+    #cut_trg_mu_pt = 1.5 #7
+    #if printScan: Selection(files, trg_mu_pt, npoints=30, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
+    ##Selection(files, trg_mu_pt, npoints=5, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
+    ##Selection(files, trg_mu_pt, npoints=30).getROCGraph()
+    #if printCutflow: Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printCutflowLine()
+    #if printEfficiency: Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printEfficiencyLine()
+    #Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printEfficiencyLine()
+    #preselection.append(PreselectedQuantity(trg_mu_pt, cut_trg_mu_pt))
+
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    #preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
+
 
     cut_trg_mu_eta = 2 #1.5
     if printScan: Selection(files, trg_mu_eta, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_trg_mu_eta).getScanGraph()
@@ -640,9 +665,9 @@ if __name__ == '__main__':
     if printEfficiency: Selection(files, trg_mu_eta, preexisting_selection=preselection, proposed_cut=cut_trg_mu_eta).printEfficiencyLine()
     preselection.append(PreselectedQuantity(trg_mu_eta, cut_trg_mu_eta))
 
-    # for the moment we don't add it
-    #cut_trg_mu_softid = 1 
-    #if printScan: Selection(files, trg_mu_softid, npoints=2, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_trg_mu_softid).getScanGraph()
+    ## for the moment we don't add it
+    ##cut_trg_mu_softid = 1 
+    ##if printScan: Selection(files, trg_mu_softid, npoints=2, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_trg_mu_softid).getScanGraph()
     ##Selection(files, trg_mu_softid, npoints=2, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_trg_mu_softid).getScanGraph()
     ##if printCutflow: Selection(files, trg_mu_softid, preexisting_selection=preselection, proposed_cut=cut_trg_mu_softid).printCutflowLine()
     ##Selection(files, trg_mu_softid, preexisting_selection=preselection, proposed_cut=cut_trg_mu_softid).printCutflowLine()
@@ -656,6 +681,28 @@ if __name__ == '__main__':
     ##if printCutflow: Selection(files, trg_mu_pfiso03rel, preexisting_selection=preselection, proposed_cut=cut_trg_mu_pfiso03rel).printCutflowLine()
     ###Selection(files, trg_mu_pfiso03rel, preexisting_selection=preselection, proposed_cut=cut_trg_mu_pfiso03rel).printCutflowLine()
     ##preselection.append(PreselectedQuantity(trg_mu_pfiso03rel, cut_trg_mu_pfiso03rel))
+
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    #preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
     
     cut_pi_pt = 0.7 # this might be a bit tight
     if printScan: Selection(files, pi_pt, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_pt).getScanGraph()
@@ -664,6 +711,28 @@ if __name__ == '__main__':
     #Selection(files, pi_pt, preexisting_selection=preselection, proposed_cut=cut_pi_pt).printCutflowLine()
     if printEfficiency: Selection(files, pi_pt, preexisting_selection=preselection, proposed_cut=cut_pi_pt).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_pt, cut_pi_pt))
+
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    #preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
     
     cut_pi_eta = 2
     if printScan: Selection(files, pi_eta, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_eta).getScanGraph()
@@ -673,6 +742,27 @@ if __name__ == '__main__':
     if printEfficiency: Selection(files, pi_eta, preexisting_selection=preselection, proposed_cut=cut_pi_eta).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_eta, cut_pi_eta))
 
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    #preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
     cut_pi_dz = 0.005
     if printScan: Selection(files, pi_dz, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_dz).getScanGraph()
     #Selection(files, pi_dz, npoints=30).getROCGraph()
@@ -680,6 +770,28 @@ if __name__ == '__main__':
     #Selection(files, pi_dz, preexisting_selection=preselection, proposed_cut=cut_pi_dz).printCutflowLine()
     if printEfficiency: Selection(files, pi_dz, preexisting_selection=preselection, proposed_cut=cut_pi_dz).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_dz, cut_pi_dz))
+
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    #preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
 
     cut_pi_dxy = 0.005
     if printScan: Selection(files, pi_dxy, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_dxy).getScanGraph()
@@ -689,6 +801,28 @@ if __name__ == '__main__':
     if printEfficiency: Selection(files, pi_dxy, preexisting_selection=preselection, proposed_cut=cut_pi_dxy).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_dxy, cut_pi_dxy))
 
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    #preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
+
     cut_pi_dzS = 1.5
     if printScan: Selection(files, pi_dzS, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_dzS).getScanGraph()
     #Selection(files, pi_dzS, npoints=30).getROCGraph()
@@ -697,6 +831,28 @@ if __name__ == '__main__':
     if printEfficiency: Selection(files, pi_dzS, preexisting_selection=preselection, proposed_cut=cut_pi_dzS).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_dzS, cut_pi_dzS))
 
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    #preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
+
     cut_pi_dxyS = 3
     if printScan: Selection(files, pi_dxyS, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).getScanGraph()
     #Selection(files, pi_dxyS, npoints=30).getROCGraph()
@@ -704,6 +860,28 @@ if __name__ == '__main__':
     #Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printCutflowLine()
     if printEfficiency: Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_dxyS, cut_pi_dxyS))
+
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    #preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
     
     cut_pi_DCASig = 5
     if printScan: Selection(files, pi_DCASig, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).getScanGraph()
@@ -713,6 +891,28 @@ if __name__ == '__main__':
     if printEfficiency: Selection(files, pi_DCASig, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_DCASig, cut_pi_DCASig))
 
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    #preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
+
     cut_mu_pt = 1.5
     if printScan: Selection(files, mu_pt, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_mu_pt).getScanGraph()
     #Selection(files, mu_pt, npoints=30).getROCGraph()
@@ -721,6 +921,28 @@ if __name__ == '__main__':
     if printEfficiency: Selection(files, mu_pt, preexisting_selection=preselection, proposed_cut=cut_mu_pt).printEfficiencyLine()
     preselection.append(PreselectedQuantity(mu_pt, cut_mu_pt))
 
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    #preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
+
     cut_mu_eta = 2
     if printScan: Selection(files, mu_eta, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_mu_eta).getScanGraph()
     #Selection(files, mu_eta, npoints=30).getROCGraph()
@@ -728,6 +950,27 @@ if __name__ == '__main__':
     #Selection(files, mu_eta, preexisting_selection=preselection, proposed_cut=cut_mu_eta).printCutflowLine()
     if printEfficiency: Selection(files, mu_eta, preexisting_selection=preselection, proposed_cut=cut_mu_eta).printEfficiencyLine()
     preselection.append(PreselectedQuantity(mu_eta, cut_mu_eta))
+
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    #preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
 
     cut_mu_dz = 0.0015
     if printScan: Selection(files, mu_dz, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_mu_dz).getScanGraph()
@@ -745,6 +988,27 @@ if __name__ == '__main__':
     ##Selection(files, mu_dxy, preexisting_selection=preselection, proposed_cut=cut_mu_dxy).printCutflowLine()
     ##preselection.append(PreselectedQuantity(mu_dxy, cut_mu_dxy))
 
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    #preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
     cut_mu_dxy_BS = 0.001
     if printScan: Selection(files, mu_dxy_BS, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_mu_dxy_BS).getScanGraph()
     #Selection(files, mu_dxy_BS, npoints=30).getROCGraph()
@@ -752,6 +1016,27 @@ if __name__ == '__main__':
     #Selection(files, mu_dxy_BS, preexisting_selection=preselection, proposed_cut=cut_mu_dxy_BS).printCutflowLine()
     if printEfficiency: Selection(files, mu_dxy_BS, preexisting_selection=preselection, proposed_cut=cut_mu_dxy_BS).printEfficiencyLine()
     preselection.append(PreselectedQuantity(mu_dxy_BS, cut_mu_dxy_BS))
+
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    #preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
 
     cut_mu_dzS = 1
     if printScan: Selection(files, mu_dzS, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_mu_dzS).getScanGraph()
@@ -768,6 +1053,28 @@ if __name__ == '__main__':
     #if printCutflow: Selection(files, mu_dxyS, preexisting_selection=preselection, proposed_cut=cut_mu_dxyS).printCutflowLine()
     ##Selection(files, mu_dxyS, preexisting_selection=preselection, proposed_cut=cut_mu_dxyS).printCutflowLine()
     ##preselection.append(PreselectedQuantity(mu_dxyS, cut_mu_dxyS)) # not added for dsa muons
+
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    #preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
 
     cut_mu_dxyS_BS = 1.5
     if printScan: Selection(files, mu_dxyS_BS, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_mu_dxyS_BS).getScanGraph()
@@ -794,6 +1101,27 @@ if __name__ == '__main__':
 
     ## cuts applied post fit
 
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    #preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
     cut_sv_prob = 0.001
     if printScan: Selection(files, sv_prob, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_sv_prob).getScanGraph()
     #Selection(files, sv_prob, npoints=30).getROCGraph()
@@ -809,6 +1137,28 @@ if __name__ == '__main__':
     ##Selection(files, sv_chi2, preexisting_selection=preselection, proposed_cut=cut_sv_chi2).printCutflowLine()
     ##preselection.append(PreselectedQuantity(sv_chi2, cut_sv_chi2))
 
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    #preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
+
     cut_hnl_cos2D = 0.995
     if printScan: Selection(files, hnl_cos2D, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).getScanGraph()
     #Selection(files, hnl_cos2D, npoints=30).getROCGraph()
@@ -816,6 +1166,28 @@ if __name__ == '__main__':
     #Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printCutflowLine()
     if printEfficiency: Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printEfficiencyLine()
     preselection.append(PreselectedQuantity(hnl_cos2D, cut_hnl_cos2D))
+
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    #preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(b_mass, 8))
+
 
     cut_sv_lxy_sig = 15 
     if printScan: Selection(files, sv_lxy_sig, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_sv_lxy_sig).getScanGraph()
@@ -825,13 +1197,52 @@ if __name__ == '__main__':
     if printEfficiency: Selection(files, sv_lxy_sig, preexisting_selection=preselection, proposed_cut=cut_sv_lxy_sig).printEfficiencyLine()
     preselection.append(PreselectedQuantity(sv_lxy_sig, cut_sv_lxy_sig)) # not added for dsa muons
 
+    preselection = []
+    preselection.append(PreselectedQuantity(trg_mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(trg_mu_eta, 2))
+    preselection.append(PreselectedQuantity(pi_pt, 0.7))
+    preselection.append(PreselectedQuantity(pi_eta, 2))
+    preselection.append(PreselectedQuantity(pi_dz, 0.005))
+    preselection.append(PreselectedQuantity(pi_dxy, 0.005))
+    preselection.append(PreselectedQuantity(pi_dzS, 1.5))
+    preselection.append(PreselectedQuantity(pi_dxyS, 3))
+    preselection.append(PreselectedQuantity(pi_DCASig, 5))
+    preselection.append(PreselectedQuantity(mu_pt, 1.5))
+    preselection.append(PreselectedQuantity(mu_eta, 2))
+    preselection.append(PreselectedQuantity(mu_dz, 0.0015))
+    preselection.append(PreselectedQuantity(mu_dxy_BS, 0.001))
+    preselection.append(PreselectedQuantity(mu_dzS, 1)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(mu_dxyS_BS, 1.5)) # not added for dsa muons
+    preselection.append(PreselectedQuantity(sv_prob, 0.01))
+    preselection.append(PreselectedQuantity(hnl_cos2D, 0.995))
+    preselection.append(PreselectedQuantity(sv_lxy_sig, 15)) # not added for dsa muons
+    #preselection.append(PreselectedQuantity(b_mass, 8))
+
     cut_b_mass = 8 # move back to 8 if we want to have at hand this control region 
     if printScan: Selection(files, b_mass, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_b_mass).getScanGraph()
     #Selection(files, b_mass, npoints=30).getROCGraph()
     if printCutflow: Selection(files, b_mass, preexisting_selection=preselection, proposed_cut=cut_b_mass).printCutflowLine()
-    Selection(files, b_mass, preexisting_selection=preselection, proposed_cut=cut_b_mass).printCutflowLine()
+    #Selection(files, b_mass, preexisting_selection=preselection, proposed_cut=cut_b_mass).printCutflowLine()
     if printEfficiency: Selection(files, b_mass, preexisting_selection=preselection, proposed_cut=cut_b_mass).printEfficiencyLine()
     preselection.append(PreselectedQuantity(b_mass, cut_b_mass))
+
+
+
+    cut_trg_mu_pt = 1.5 #7
+    if printScan: Selection(files, trg_mu_pt, npoints=30, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
+    #Selection(files, trg_mu_pt, npoints=5, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
+    #Selection(files, trg_mu_pt, npoints=30).getROCGraph()
+    if printCutflow: Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printCutflowLine()
+    if printEfficiency: Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printEfficiencyLine()
+    Selection(files, trg_mu_pt, preexisting_selection=preselection, proposed_cut=cut_trg_mu_pt).printEfficiencyLine()
+    #preselection.append(PreselectedQuantity(trg_mu_pt, cut_trg_mu_pt))
+
+
+
+
+
+
+
 
     #cut_hnl_mass_m = 7 
     #if printScan: Selection(files, hnl_mass_m, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_hnl_mass_m).getScanGraph()
