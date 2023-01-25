@@ -504,8 +504,9 @@ class EfficiencyAnalyser(Tools):
       #bins = [(1, 3), (3, 6), (6, 10), (10, 15), (15, 20)] 
       bins = [(1, 4), (4, 7), (7, 10), (10, 15), (15, 20), (20, 30)] 
     elif binning == 'displacement':
-      bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
-      #bins = [(0, 3), (3, 5), (5, 10), (10, 20), (20, 100)]
+      #bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
+      bins = [(0, 3), (3, 5), (5, 10), (10, 20), (20, 100)]
+      #bins = [(0, 3), (3, 5)]
 
     efficiency_m1 = np.zeros(len(bins))
     efficiency_m3 = np.zeros(len(bins))
@@ -522,7 +523,8 @@ class EfficiencyAnalyser(Tools):
     for ibin, bin_ in enumerate(bins):
       bin_min, bin_max = bin_
 
-      if binning == 'pt': qte = 'pt'
+      if binning == 'pt': qte = '{part}_pt'
+      elif binning == 'displacement': qte = 'sv_lxy'
 
       if muon_type == 'primary_muon': part = 'mu0'
       elif muon_type == 'displaced_muon': part = 'mu'
@@ -531,11 +533,15 @@ class EfficiencyAnalyser(Tools):
       elif muon_id == 'loose': muid = 'looseid'
 
       if ibin != len(bins)-1:
-        selection_num = '{part}_{qte}>= {mn} && {part}_{qte}<{mx} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min, mx=bin_max)
-        selection_deno = '{part}_{qte}>= {mn} && {part}_{qte}<{mx}'.format(qte=qte, part=part, mn=bin_min, mx=bin_max)
+        #selection_num = '{part}_{qte}>= {mn} && {part}_{qte}<{mx} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min, mx=bin_max)
+        #selection_deno = '{part}_{qte}>= {mn} && {part}_{qte}<{mx}'.format(qte=qte, part=part, mn=bin_min, mx=bin_max)
+        selection_num = '{qte}>= {mn} && {qte}<{mx} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min, mx=bin_max)
+        selection_deno = '{qte}>= {mn} && {qte}<{mx}'.format(qte=qte, part=part, mn=bin_min, mx=bin_max)
       else: # add overflow
-        selection_num = '{part}_{qte}>= {mn} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min)
-        selection_deno = '{part}_{qte}>= {mn}'.format(qte=qte, part=part, mn=bin_min)
+        #selection_num = '{part}_{qte}>= {mn} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min)
+        #selection_deno = '{part}_{qte}>= {mn}'.format(qte=qte, part=part, mn=bin_min)
+        selection_num = '{qte}>= {mn} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min)
+        selection_deno = '{qte}>= {mn}'.format(qte=qte, part=part, mn=bin_min)
 
       #weight = '(weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2)'
       weight = '(1.)'
@@ -562,24 +568,28 @@ class EfficiencyAnalyser(Tools):
       num_m4p5 = hist_num_m4p5.IntegralAndError(0, 1000, err_num_m4p5)
       deno_m4p5 = hist_deno_m4p5.IntegralAndError(0, 1000, err_deno_m4p5)
 
-      efficiency_m1[ibin] = num_m1 / deno_m1
-      efficiency_m3[ibin] = num_m3 / deno_m3
+      efficiency_m1[ibin] = num_m1 / deno_m1 if deno_m1 != 0 else -1
+      efficiency_m3[ibin] = num_m3 / deno_m3 if deno_m3 != 0 else -1
       #print '{} {}'.format(num_m4p5, deno_m4p5)
-      efficiency_m4p5[ibin] = num_m4p5 / deno_m4p5
+      efficiency_m4p5[ibin] = num_m4p5 / deno_m4p5 if deno_m4p5 != 0 else -1
 
-      err_m1[ibin] = num_m1 / deno_m1 * math.sqrt(math.pow(err_num_m1 / num_m1, 2) + math.pow(err_deno_m1 / deno_m1, 2)) 
-      err_m3[ibin] = num_m3 / deno_m3 * math.sqrt(math.pow(err_num_m3 / num_m3, 2) + math.pow(err_deno_m3 / deno_m3, 2)) 
-      err_m4p5[ibin] = num_m4p5 / deno_m4p5 * math.sqrt(math.pow(err_num_m4p5 / num_m4p5, 2) + math.pow(err_deno_m4p5 / deno_m4p5, 2)) 
+      err_m1[ibin] = num_m1 / deno_m1 * math.sqrt(math.pow(err_num_m1 / num_m1, 2) + math.pow(err_deno_m1 / deno_m1, 2)) if deno_m1 != 0 else 0 
+      err_m3[ibin] = num_m3 / deno_m3 * math.sqrt(math.pow(err_num_m3 / num_m3, 2) + math.pow(err_deno_m3 / deno_m3, 2)) if deno_m3 != 0 else 0
+      err_m4p5[ibin] = num_m4p5 / deno_m4p5 * math.sqrt(math.pow(err_num_m4p5 / num_m4p5, 2) + math.pow(err_deno_m4p5 / deno_m4p5, 2)) if deno_m4p5 != 0 else 0
 
       # fake rate
       if muon_type == 'primary_muon': part2 = 'trgmu'
       elif muon_type == 'displaced_muon': part2 = 'mu'
       if ibin != len(bins)-1:
-        selection_fake_num = '{part}_{qte}>= {mn} && {part}_{qte}<{mx} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
-        selection_fake_deno = '{part}_{qte}>= {mn} && {part}_{qte}<{mx} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
+        #selection_fake_num = '{part}_{qte}>= {mn} && {part}_{qte}<{mx} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
+        #selection_fake_deno = '{part}_{qte}>= {mn} && {part}_{qte}<{mx} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
+        selection_fake_num = '{qte}>= {mn} && {qte}<{mx} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
+        selection_fake_deno = '{qte}>= {mn} && {qte}<{mx} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
       else: # add overflow
-        selection_fake_num = '{part}_{qte}>= {mn} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
-        selection_fake_deno = '{part}_{qte}>= {mn} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
+        #selection_fake_num = '{part}_{qte}>= {mn} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
+        #selection_fake_deno = '{part}_{qte}>= {mn} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
+        selection_fake_num = '{qte}>= {mn} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
+        selection_fake_deno = '{qte}>= {mn} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
 
       hist_fake_num = self.tools.createWeightedHistoQCDMC(qcd_files, white_list=white_list, quantity=hnl_mass, selection=selection_fake_num, treename='sources')
       hist_fake_deno = self.tools.createWeightedHistoQCDMC(qcd_files, white_list=white_list, quantity=hnl_mass, selection=selection_fake_deno, treename='sources')
@@ -680,8 +690,11 @@ class EfficiencyAnalyser(Tools):
     elif muon_type == 'displaced_muon': label1 = 'Displaced muon'
 
     graph_m1.SetTitle('{} ({} ID)'.format(label1, muon_id))
-    if muon_type == 'primary_muon': xlabel = 'primary muon p_{T} [GeV]'
-    elif muon_type == 'displaced_muon': xlabel = 'displaced muon p_{T} [GeV]'
+    if binning == 'pt':
+      if muon_type == 'primary_muon': xlabel = 'primary muon p_{T} [GeV]'
+      elif muon_type == 'displaced_muon': xlabel = 'displaced muon p_{T} [GeV]'
+    elif binning == 'displacement':
+      xlabel = 'SV l_{xy} [cm]'
     graph_m1.GetXaxis().SetTitle(xlabel)
     graph_m1.GetXaxis().SetLabelSize(0.037)
     graph_m1.GetXaxis().SetTitleSize(0.042)
@@ -693,8 +706,10 @@ class EfficiencyAnalyser(Tools):
     graph_m1.GetYaxis().SetRangeUser(0., 1.1)
 
     canv.cd()
-    canv.SaveAs('{}/efficiency_{}_{}id.png'.format(self.outputdir, muon_type, muon_id))
-    canv.SaveAs('{}/efficiency_{}_{}id.pdf'.format(self.outputdir, muon_type, muon_id))
+    #canv.SaveAs('{}/efficiency_{}_{}id.png'.format(self.outputdir, muon_type, muon_id))
+    #canv.SaveAs('{}/efficiency_{}_{}id.pdf'.format(self.outputdir, muon_type, muon_id))
+    canv.SaveAs('{}/efficiency_{}_{}id_{}.png'.format(self.outputdir, muon_type, muon_id, binning))
+    canv.SaveAs('{}/efficiency_{}_{}id_{}.pdf'.format(self.outputdir, muon_type, muon_id, binning))
 
 
 
@@ -755,15 +770,15 @@ if __name__ == '__main__':
     muon_id = 'soft'
     binning = 'pt'
 
-    analyser.plotMuonIDEfficiency(
-        muon_type = muon_type, 
-        muon_id = muon_id, 
-        binning = binning,
-        )
+    #analyser.plotMuonIDEfficiency(
+    #    muon_type = muon_type, 
+    #    muon_id = muon_id, 
+    #    binning = binning,
+    #    )
 
     muon_type = 'displaced_muon'
     muon_id = 'loose'
-    binning = 'pt'
+    binning = 'displacement' #'pt'
 
     analyser.plotMuonIDEfficiency(
         muon_type = muon_type, 
