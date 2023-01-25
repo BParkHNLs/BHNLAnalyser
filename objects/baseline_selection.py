@@ -12,6 +12,7 @@ class Selection(object):
 selection = {}
 selection['none'] = Selection(
     flat = 'hnl_pt > 0',
+    #flat = 'mu0_triggermatching_dr<0.05',
     nano = 'BToMuMuPi_hnl_pt > 0',
 )
 
@@ -33,6 +34,62 @@ selection['standard'] = Selection(
       'mu_looseid == 1',
       'mu_intimemuon == 1',
       'mu_trackerhighpurityflag == 1'
+    ])
+)
+
+selection['preselection'] = Selection(
+    nano = ' && '.join([
+      'Muon_pt[BToMuMuPi_trg_mu_idx]>1.5',
+      'abs(Muon_eta[BToMuMuPi_trg_mu_idx])<2',
+      'BToMuMuPi_pi_pt>0.7',
+      'abs(BToMuMuPi_pi_eta)<2',
+      'abs(BToMuMuPi_pi_dz)>0.005',
+      'abs(BToMuMuPi_pi_dxy)>0.005',
+      'abs(BToMuMuPi_pi_dzS)>1.5',
+      'abs(BToMuMuPi_pi_dxyS)>3',
+      'abs(BToMuMuPi_pi_DCASig)>5',
+      'Muon_pt[BToMuMuPi_sel_mu_idx]>1.5',
+      'abs(Muon_eta[BToMuMuPi_sel_mu_idx])<2',
+      'abs(Muon_dz[BToMuMuPi_sel_mu_idx])>0.0015',
+      'abs(Muon_dxy[BToMuMuPi_sel_mu_idx])>0.001',
+      'abs(Muon_dzS[BToMuMuPi_sel_mu_idx])>1.',
+      'abs(Muon_dxyS[BToMuMuPi_sel_mu_idx])>1.5',
+      'BToMuMuPi_sv_prob>0.001',
+      'BToMuMuPi_hnl_cos2D>0.995',
+      'BToMuMuPi_sv_lxy_sig>15',
+      'BToMuMuPi_mass<8',
+      'Muon_softId[BToMuMuPi_trg_mu_idx] == 1',
+      'Muon_looseId[BToMuMuPi_sel_mu_idx] == 1',
+      #'ProbeTracks_highPurityFlag[BToMuMuPi_pi_idx] == 1',
+    ]),
+    flat = ' && '.join([
+      'mu0_pt>1.5',
+      'abs(mu0_eta)<2',
+      'pi_pt>0.7',
+      'abs(pi_eta)<2',
+      'pi_dz>0.005',
+      'pi_dxy>0.005',
+      'pi_dzsig>1.5',
+      'pi_dxysig>3',
+      'pi_dcasig>5',
+      'mu_pt>1.5',
+      'abs(mu_eta)<2',
+      'mu_dz>0.0015',
+      'mu_dxy>0.001',
+      'mu_dzsig>1.',
+      'mu_dxysig>1.5',
+      'sv_prob>0.001',
+      'hnl_cos2d>0.995',
+      'sv_lxysig>15',
+      'b_mass<8',
+      'mu0_softid == 1',
+      'mu_looseid == 1',
+      'pi_packedcandhashighpurity == 1',
+      '((mu0_charge!=mu_charge && abs(mu0_mu_mass-3.097)>0.15 && abs(mu0_mu_mass-3.686)>0.08 && abs(mu0_mu_mass-1.019)>0.01) || (mu0_charge==mu_charge))',
+      '((mu0_charge==mu_charge && abs(mu0_pi_mass-3.097)>0.05 && abs(mu0_pi_mass-1.76)>0.05) || (mu0_charge!=mu_charge))',
+      'sv_lxy < 100',
+      'sv_lxy/sv_lxysig>0',
+      #'hnl_mass>4.4247326 && hnl_mass<4.5752674',
     ])
 )
 
@@ -65,19 +122,39 @@ selection['baseline_30Dec21'] = Selection(
       '((trgmu_charge==mu_charge && abs(trgmu_pi_mass-3.097)>0.05 && abs(trgmu_pi_mass-1.76)>0.05) || (trgmu_charge!=mu_charge))',
       #'deltar_trgmu_pi < 1.5',
       #'deltar_trgmu_mu < 1',
-      'sv_lxyz < 100',
+      'sv_lxy < 100',
     ])
 )
 
 selection['baseline_08Aug22'] = Selection(
     flat = ' && '.join([
-      'mu0_softid == 1',
-      'mu_looseid == 1',
-      'pi_packedcandhashighpurity == 1',
+      'hnl_charge==0',
+      'mu0_softid==1',
+      'mu_looseid==1',
+      'pi_packedcandhashighpurity==1',
       '((mu0_charge!=mu_charge && abs(mu0_mu_mass-3.097)>0.15 && abs(mu0_mu_mass-3.686)>0.08 && abs(mu0_mu_mass-1.019)>0.01) || (mu0_charge==mu_charge))',
       '((mu0_charge==mu_charge && abs(mu0_pi_mass-3.097)>0.05 && abs(mu0_pi_mass-1.76)>0.05) || (mu0_charge!=mu_charge))',
-      'sv_lxyz < 100',
+      'sv_lxy<100',
       'sv_lxy/sv_lxysig>0',
+      '((mu_istriggering==1 && mu_pt>7 && abs(mu_eta)<1.5) || (mu_istriggering==0))',
+      '((mu0_istriggering==1 && mu0_pt>7 && abs(mu0_eta)<1.5) || (mu0_istriggering==0))',
+    ])
+)
+
+selection['baseline_08Aug22_CR'] = Selection(
+    flat = ' && '.join([
+      'mu0_softid==1',
+      'mu_looseid==1',
+      'pi_packedcandhashighpurity==1',
+      '((mu0_charge!=mu_charge && abs(mu0_mu_mass-3.097)>0.15 && abs(mu0_mu_mass-3.686)>0.08 && abs(mu0_mu_mass-1.019)>0.01) || (mu0_charge==mu_charge))',
+      '((mu0_charge==mu_charge && abs(mu0_pi_mass-3.097)>0.05 && abs(mu0_pi_mass-1.76)>0.05) || (mu0_charge!=mu_charge))',
+      'sv_lxy<100',
+      'sv_lxy/sv_lxysig>0',
+      '((mu_istriggering==1 && mu_pt>7 && abs(mu_eta)<1.5) || (mu_istriggering==0))',
+      '((mu0_istriggering==1 && mu0_pt>7 && abs(mu0_eta)<1.5) || (mu0_istriggering==0))',
+      #'((mu0_istriggering==1 && mu0_pt>7. && abs(mu0_eta)<1.5 && abs(mu0_dxysig_bs)>3.) || (mu_istriggering==1 && mu_pt>7. && abs(mu_eta)<1.5 && abs(mu_dxysig_bs)>3.))',
+      #'((mu0_istriggering==1 && mu0_pt>8. && abs(mu0_eta)<1.5 && abs(mu0_dxysig_bs)>3.) || (mu_istriggering==1 && mu_pt>8. && abs(mu_eta)<1.5 && abs(mu_dxysig_bs)>3.))',
+      #'mu_istriggering==0 && mu0_istriggering==1 && mu0_pt>8. && abs(mu0_eta)<1.5 && abs(mu0_dxysig_bs)>3.',
     ])
 )
 
@@ -95,7 +172,7 @@ selection['tag_and_probe'] = Selection(
 selection['baseline_sources'] = Selection(
     flat = ' && '.join([
       'hnl_charge == 0',
-      'sv_lxyz < 100',
+      'sv_lxy < 100',
     ])
 )
 
