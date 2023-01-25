@@ -11,7 +11,7 @@ from categories import categories
 from ABCD_regions import ABCD_regions
 from baseline_selection import selection
 from qcd_white_list import white_list
-from points import points
+from ctau_points import ctau_points
 
 import ROOT
 
@@ -110,11 +110,14 @@ class YieldsChecks(Tools):
 
     #isMixed = True
 
-    ctau_points = points['baseline']
-    strategy = 'unique'
+    ctau_points = ctau_points['baseline']
+    strategy = 'inclusive'
+
+    resolution_p0 = 0.0002747 
+    resolution_p1 = 0.008302 
+    window_size = 4
 
     ctau_points_m1 = [10., 15., 20., 30., 40., 50., 70., 100., 150., 200., 300., 400., 500., 700., 1000., 1500., 2000., 3000., 4000., 5000., 7000., 10000., 15000., 20000., 30000., 40000., 50000., 70000.] 
-    #ctau_points_m1 = [10.] 
     ctau_points_m3 = [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 1., 1.5, 2., 3., 4., 5., 7., 10., 15., 20., 30., 40., 50., 70., 100., 150., 200., 300., 400., 500., 700., 1000.] 
     #ctau_points_m3 = [0.01, 0.015, 0.02, 0.03, 0.04, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.7, 1., 1.5, 2., 3., 4., 5., 7., 10., 15., 20., 30., 40., 50., 70., 100., 150.] 
     #ctau_points_m3 = [5., 0.3, 0.07] 
@@ -150,11 +153,13 @@ class YieldsChecks(Tools):
       # get signal coupling
       signal_mass = 1.0
       signal_ctau = ctau_point
+      signal_resolution = resolution_p0 + resolution_p1 * signal_mass
       print '\n',signal_ctau
       signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
-      signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+      #signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+      signal_selection = 'hnl_mass>{} && hnl_mass<{} && {}'.format(signal_mass-window_size*signal_resolution, signal_mass+window_size*signal_resolution, selection)
       signal_yields, err = ComputeYields(signal_label=signal_label_m1, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi, sigma_B=472.8e9, isBc=False, strategy=strategy) 
       print signal_yields
       if addBc:
@@ -180,11 +185,13 @@ class YieldsChecks(Tools):
       # get signal coupling
       signal_mass = 3.
       signal_ctau = ctau_point
+      signal_resolution = resolution_p0 + resolution_p1 * signal_mass
       print '\n',signal_ctau
       signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
-      signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+      #signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+      signal_selection = 'hnl_mass>{} && hnl_mass<{} && {}'.format(signal_mass-window_size*signal_resolution, signal_mass+window_size*signal_resolution, selection)
       #signal_selection += ' && sv_lxysig>150 && mu0_charge!=mu_charge' 
       #signal_selection += ' && sv_lxysig>0 && sv_lxysig<=50 && mu0_charge!=mu_charge' 
       #print signal_selection
@@ -213,11 +220,13 @@ class YieldsChecks(Tools):
       # get signal coupling
       signal_mass = 4.5
       signal_ctau = ctau_point
+      signal_resolution = resolution_p0 + resolution_p1 * signal_mass
       print '\n',signal_ctau
       signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
       # compute the signal yields
-      signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+      #signal_selection = 'ismatched==1' if selection=='' else 'ismatched==1 && {}'.format(selection)
+      signal_selection = 'hnl_mass>{} && hnl_mass<{} && {}'.format(signal_mass-window_size*signal_resolution, signal_mass+window_size*signal_resolution, selection)
       signal_yields, err = ComputeYields(signal_label=signal_label_m4p5, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi, sigma_B=472.8e9, isBc=False, strategy=strategy) 
       print signal_yields
       if addBc:
@@ -264,6 +273,43 @@ class YieldsChecks(Tools):
 
     canv.SaveAs('./myPlots/yields/signal_yields_{}.png'.format(label))
     canv.SaveAs('./myPlots/yields/signal_yields_{}.pdf'.format(label))
+
+
+  def writeYieldsTable(self):
+
+    baseline_selection = selection['baseline_08Aug22'].flat
+
+    masses = [1, 3, 4.5]
+    signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
+    ctau_points = [0.1, 1, 10, 100, 1000]
+    strategy = 'inclusive'
+
+    lumi = 41.6
+
+    resolution_p0 = 0.0002747 
+    resolution_p1 = 0.008302 
+    window_size = 4
+
+    addBc = False
+
+    for imass, mass in enumerate(masses):
+      for ctau_point in ctau_points:
+        # get signal coupling
+        signal_mass = mass
+        signal_ctau = ctau_point
+        signal_resolution = resolution_p0 + resolution_p1 * signal_mass
+        signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+
+        # compute the signal yields
+        signal_selection_1 = 'ismatched==1 && {}'.format(baseline_selection)
+        signal_selection_2 = 'hnl_mass>{} && hnl_mass<{} && {}'.format(signal_mass-window_size*signal_resolution, signal_mass+window_size*signal_resolution, baseline_selection)
+
+        signal_yields_1, err_1 = ComputeYields(signal_label=signal_labels[imass], selection=signal_selection_1).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi, sigma_B=472.8e9, isBc=False, strategy=strategy) 
+        signal_yields_2, err_2 = ComputeYields(signal_label=signal_labels[imass], selection=signal_selection_2).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi, sigma_B=472.8e9, isBc=False, strategy=strategy) 
+        #if addBc:
+        #  signal_yields += ComputeYields(signal_file=signal_file, signal_label=signal_label_m1, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9, isBc=True)[0]
+        #  print signal_yields
+        print '{} GeV & {} mm & {} & {} & {} & {} \\\ '.format(signal_mass, signal_ctau, self.tools.getCouplingLabel(signal_v2), '{:.2e}'.format(signal_yields_1), '{:.2e}'.format(signal_yields_2), round(signal_yields_2/signal_yields_1, 2))
 
 
   def plotSigBkgYields(self, lumi=0.774, selection='', label='', doABCD=False, doABCDHybrid=False, doTF=False):
@@ -704,6 +750,9 @@ class YieldsChecks(Tools):
       for item in significances:
         if item.mass==signal_file.mass and item.ctau==signal_file.ctau: print '{} {}'.format(item.category, round(item.significance, 2))
         if item.mass==signal_file.mass and item.ctau==signal_file.ctau: print '{} & {} \\\ '.format(item.category, round(item.significance, 2))
+
+
+
       
       
           
@@ -717,8 +766,6 @@ class Significance(object):
 
 
 
-
-
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
@@ -726,6 +773,11 @@ if __name__ == '__main__':
   plotSigBkgYields = False
   plotBkgYields = False
   getSignificance = False
+  printYieldsTable = True
+
+  if printYieldsTable:
+    plotter = YieldsChecks()
+    plotter.writeYieldsTable()
 
   if plotSigYields:
     data_files = data_samples['V10_30Dec21']
