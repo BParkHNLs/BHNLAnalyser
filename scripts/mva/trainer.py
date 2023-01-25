@@ -38,6 +38,7 @@ from samples import signal_samples
 from baseline_selection import selection
 from categories import categories
 
+#TODO add gen-matching
 
 def getOptions():
   from argparse import ArgumentParser
@@ -165,7 +166,7 @@ class Trainer(object):
     print ' --> {}/{}.png created'.format(self.outdir, name)
 
 
-  def getSamples(self, extra_selection=None):
+  def getSamples(self, extra_selection=None, max_files=-1):
     '''
       Function that fetches the samples into lists
     '''
@@ -178,10 +179,13 @@ class Trainer(object):
     else:
       filename = '{path}/{pl}/ParkingBPH1_Run2018D/Chunk*/flat/flat_bparknano_{tagnano}.root'.format(path=path, pl=self.data_pl, tagnano=self.data_tagnano)
     data_filenames =  [f for f in glob.glob(filename)] 
+    data_filenames = sorted(data_filenames, key=lambda file_: float(file_[file_.find('Chunk')+5:file_.find('_', file_.find('Chunk')+5)]))
 
     data_samples = []
     for ifile, data_filename in enumerate(data_filenames):
-      #if ifile > 1: continue
+      if ifile<10: continue # those datasets will be used for the validation
+      if max_files != -1 and ifile > max_files+9: continue
+      print data_filename
       data_samples.append(Sample(filename=data_filename, selection=self.baseline_selection + ' && ' + extra_selection))
 
     ## signal
@@ -247,7 +251,7 @@ class Trainer(object):
     return data_df, mc_df
 
 
-  def createParametrisedDataframe(self, extra_selection, data_type, statistics=None):
+  def createParametrisedDataframe(self, extra_selection, data_type, statistics=None, max_files=-1):
     '''
       Function to create the dataframe with the training features and parameter
       The statistics is balanced between the signal and background, among the signal
@@ -291,7 +295,7 @@ class Trainer(object):
         dfs[signal_file.mass] = dfs[signal_file.mass] + [the_df]
 
       # get the minimum statistics 
-      statistics = stats[min(stats, key=stats.get)]
+      statistics = min(stats[min(stats, key=stats.get)], 5000)
       
       df = pd.DataFrame()
       for mass in masses:
@@ -300,7 +304,7 @@ class Trainer(object):
         
     elif data_type == 'data':
       # get the sample
-      samples, n = self.getSamples(extra_selection) #TODO this is probably something that we would like to fix. E.g go with data_files? 
+      samples, n = self.getSamples(extra_selection=extra_selection, max_files=max_files) #TODO this is probably something that we would like to fix. E.g go with data_files? 
 
       df_full = [] # will be used for plotting purposes later on
       dfs = dict.fromkeys(masses, []) 
@@ -312,7 +316,7 @@ class Trainer(object):
 
         # first set an invalid parameter for the full spectrum. Ranges with this parameter will be removed from the training
         the_df['mass_key'] = -1 
-        
+
         # and define the windows of nsigma around the mass hypothesis
         # set the mass parameter for a nsigma window range
         window_check = -1
@@ -330,6 +334,7 @@ class Trainer(object):
 
           # set the weight
           df_window['weight'] = 1
+
           dfs[mass] = dfs[mass] + [df_window]
 
           window_check = window_max
@@ -338,13 +343,12 @@ class Trainer(object):
 
       df = pd.DataFrame()
       for mass in masses:
-        requested_stat = statistics/len(masses)
+        requested_stat = statistics
         stat_permass = 0
         for the_df in dfs[mass]:
           stat_permass += len(the_df)
-        if stat_permass < statistics/len(masses):
-          #raise RuntimeError('Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics/len(masses), stat_permass))
-          print 'Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics/len(masses), stat_permass)
+        if stat_permass < statistics:
+          print 'Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics, stat_permass)
           requested_stat = stat_permass
         df_tmp = pd.concat([idt for idt in dfs[mass]], sort=False)
         df_tmp = df_tmp.sample(requested_stat)
@@ -353,7 +357,7 @@ class Trainer(object):
     df = self.removeInfs(df)
 
     if data_type == 'mc':
-      return df, statistics * len(masses)
+      return df, statistics
     else:
       return df, df_full
 
@@ -535,7 +539,7 @@ class Trainer(object):
     '''
       Perform the training
     '''
-    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)  
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)
     #TODO apply weight if any
 
     return history
@@ -733,6 +737,7 @@ class Trainer(object):
   def plotKSTest(self, model, x_train, x_val, y_train, y_val, data_type, label):
     '''
       Plot the outcome of the Kolmogorov test
+      Statistical test of compatibility in shape between two histograms
       Used to test the overfitting
     '''
     if data_type not in ['data', 'mc']:
@@ -792,7 +797,7 @@ class Trainer(object):
         
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxy1to5_OS': continue
+      #if category.label != 'lxysig50to150_OS': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
@@ -810,8 +815,15 @@ class Trainer(object):
 
       else:
         print '\n -> create the dataframes'
+        # do not load too much files in case of large statistics
+        if category.label == 'lxysig0to50_OS' or category.label == 'lxysig0to50_SS': max_files = 5
+        elif category.label == 'lxysig50to150_OS' or category.label == 'lxysig50to150_SS': max_files = 15
+        elif category.label == 'lxysiggt150_OS' or category.label == 'lxysiggt150_SS': max_files = 30
+        else: max_files = -1
+
         mc_df, statistics = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='mc')
-        data_df, data_df_full = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='data', statistics=statistics)
+        data_df, data_df_full = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='data', statistics=statistics, max_files=max_files)
+
 
       # assign the signal tag
       data_df = self.assignTarget(data_df, self.target_branch, 0) 
@@ -841,6 +853,18 @@ class Trainer(object):
       #x_train, x_val, y_train, y_val = self.prepareScaledInputs(main_df, Y, qt)
       x_train, x_val, y_train, y_val = self.prepareInputs(xx, Y)
 
+      # create statistics file
+      stat_filename = '{}/statistics_{}.txt'.format(self.outdir, category.label)
+      stat_file = open(stat_filename, 'w+')
+      stat_file.write('\nAimed statistics per mass parameter: {}'.format(statistics))
+      stat_file.write('\nFull statistics for data: {}'.format(len(data_df)))
+      stat_file.write('\nFull statistics for mc: {}'.format(len(mc_df)))
+      stat_file.write('\nFull statistics for data+mc: {}'.format(len(main_df)))
+      stat_file.write('\nData+mc statistics used for training: {}'.format(len(x_train)))
+      stat_file.write('\nData+mc statistics used for validation: {}'.format(len(x_val)))
+      stat_file.close()
+      print ' --> {} created'.format(stat_filename) 
+
       # do the training
       print '\n -> training...' 
       history = self.train(model, x_train, y_train, x_val, y_val, callbacks)
@@ -859,8 +883,8 @@ class Trainer(object):
       #self.plotScore(model, mc_test_df, data_test_df, category.label)
       #self.plotScore(model, mc_df, data_df, category.label)
       self.plotROC(model, x_train, y_train, x_val, y_val, category.label)
-      self.plotCorrelations(model, data_df, 'data', category.label)
-      self.plotCorrelations(model, mc_df, 'mc', category.label)
+      #self.plotCorrelations(model, data_df, 'data', category.label)
+      #self.plotCorrelations(model, mc_df, 'mc', category.label)
       self.plotKSTest(model, x_train, x_val, y_train, y_val, 'data', category.label)
       self.plotKSTest(model, x_train, x_val, y_train, y_val, 'mc', category.label)
 
@@ -898,10 +922,10 @@ if __name__ == '__main__':
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu_pi', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_prob']
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'sv_prob'] # remove the deltaRs but keep masses as they can learn about possible sm resonances?
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'pi_dcasig', 'sv_lxysig', 'sv_prob']
-  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob', 'sv_chi2', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi']
+  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob', 'sv_chi2', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel']
   #features = ['pi_pt', 'pi_dcasig']
-  epochs = 50
-  batch_size = 32
+  epochs = 80
+  batch_size = 15
   learning_rate = 0.01
   scaler_type = 'robust'
   do_early_stopping = True
@@ -917,8 +941,8 @@ if __name__ == '__main__':
 
   do_parametric = True
   nsigma = 10
-  #signal_label = 'V12_08Aug22_training_large'
-  signal_label = 'V12_08Aug22_m3'
+  signal_label = 'V12_08Aug22_training_large'
+  #signal_label = 'V12_08Aug22_m3'
   data_pl = 'V12_08Aug22'
   data_tagnano = '08Aug22'
   data_tagflat = 'sr'
