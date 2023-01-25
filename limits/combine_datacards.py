@@ -22,7 +22,7 @@ Script to combine the datacards between the different categories
 
 def getOptions():
   from argparse import ArgumentParser
-  parser = ArgumentParser(description='Script to combine the datacards among displacement bins, years, and flavour channels', add_help=True)
+  parser = ArgumentParser(description='Script to combine the datacards among categories', add_help=True)
   parser.add_argument('--homedir'           , type=str, dest='homedir'           , help='name of the homedir'                          , default=None)
   parser.add_argument('--outdirlabel'       , type=str, dest='outdirlabel'       , help='name of the outdir'                           , default=None)
   parser.add_argument('--subdirlabel'       , type=str, dest='subdirlabel'       , help='name of the subdir'                           , default=None)

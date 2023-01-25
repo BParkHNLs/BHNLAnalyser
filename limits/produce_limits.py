@@ -20,9 +20,6 @@ def getOptions():
   parser.add_argument('--run_blind'             , dest='run_blind'             , help='run blinded?'                 , action='store_true', default=False)
   return parser.parse_args()
 
-  # add FitDiagnostics?
-  # combine -M FitDiagnostics datacard_bhnl_m_2p0_v2_1p7em03_cat_lxysiggt150_SS.txt --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams
-
 
 class LimitProducer(object):
   #def __init__(self, opt):
@@ -51,9 +48,10 @@ class LimitProducer(object):
 
   def process(self):
     v2 = self.tools.getVV(mass=float(self.mass), ctau=float(self.ctau), ismaj=True)
-    coupling = self.getCouplingLabel(v2)
+    self.coupling = self.getCouplingLabel(v2)
 
-    command = 'combine -M AsymptoticLimits {i}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(coupling).replace('.', 'p').replace('-', 'm'))
+    # produce limits
+    command = 'combine -M AsymptoticLimits {i}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'))
     if self.run_blind:
       command += ' --run blind'
     if self.use_discrete_profiling:
@@ -73,9 +71,14 @@ class LimitProducer(object):
     if not path.exists(outputdir):
       os.system('mkdir -p {}'.format(outputdir))    
 
-    result_file_name = '{}/result_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, str(self.mass), str(self.ctau), str(coupling)) 
+    result_file_name = '{}/result_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, str(self.mass), str(self.ctau), str(self.coupling)) 
     with open(result_file_name, 'w') as ff:
         print >> ff, results
+
+    # produce prefit plots
+    os.system('mkdir -p  {}/outputs/{}/datacards/{}/prefit_plots_m_{}_ctau_{}_v2_{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, str(self.mass).replace('.', 'p'), str(self.ctau).replace('.', 'p'), str(self.coupling).replace('.', 'p').replace('-', 'm')))
+    command_prefit_plot = 'combine -M FitDiagnostics {i}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams --out {hm}/outputs/{out}/datacards/{sub}/prefit_plots_m_{m}_ctau_{ctau}_v2_{v2}'.format(i=self.indirlabel, hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'))
+    os.system(command_prefit_plot)
 
 
 if __name__ == "__main__":
