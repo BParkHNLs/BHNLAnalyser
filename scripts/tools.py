@@ -43,7 +43,7 @@ class Tools(object):
     return hist
 
 
-  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', hist_name='hist_qcd_tot', selection='', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_mu0id='', weight_muid=''):
+  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', hist_name='hist_qcd_tot', selection='', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_mu0id='', weight_muid='', treename='signal_tree'):
     hist_mc_tot = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
     hist_mc_tot.Sumw2()
 
@@ -55,7 +55,7 @@ class Tools(object):
 
       f_mc = self.getRootFile(qcd_file.filename)
       tree_run = self.getTree(f_mc, 'run_tree')
-      tree_mc = self.getTree(f_mc, 'signal_tree')
+      tree_mc = self.getTree(f_mc, treename)
 
       weight_mc = self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
       #weight_mc = 1. / (self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency) * lumi_tot)
@@ -126,6 +126,16 @@ class Tools(object):
 
       if len(file_list) == 0:
         file_list.append(generated_samples.pop())
+
+    elif strategy == 'unique':
+      for signal_sample in generated_samples:
+        if signal_sample.mass != mass: continue
+        if float(mass) == 1. and 'ctau10p0mm' in signal_sample.filename: 
+          file_list.append(signal_sample)
+        if float(mass) == 3. and 'ctau10p0mm' in signal_sample.filename: 
+          file_list.append(signal_sample)
+        if float(mass) == 4.5 and 'ctau10p0mm' in signal_sample.filename: 
+          file_list.append(signal_sample)
 
     return file_list
 
@@ -207,14 +217,21 @@ class Tools(object):
     # number of generated events (= n_gen / filter_efficiency = n_miniaod / filter_efficiency)
     tree_run = ROOT.TChain('run_tree') 
     for signal_file in signal_files:
-      tree_run.Add(signal_file.filename)
+      if not isBc:
+        tree_run.Add(signal_file.filename)
+      else:
+        tree_run.Add(signal_file.filename_Bc)
 
     n_gen_tot = self.getNminiAODEvts(tree_run)
     # take the weighted average of the filter efficiencies of the generated samples
     filter_efficiency = 0.
     for signal_file in signal_files:
-      the_filter_efficiency = signal_file.filter_efficiency if not isBc else signal_file.filter_efficiency_Bc
-      the_file = self.getRootFile(signal_file.filename)
+      if not isBc:
+        the_file = self.getRootFile(signal_file.filename)
+        the_filter_efficiency = signal_file.filter_efficiency
+      else:
+        the_file = self.getRootFile(signal_file.filename_Bc)
+        the_filter_efficiency = signal_file.filter_efficiency_Bc
       the_tree_run = self.getTree(the_file, 'run_tree')
       n_gen = self.getNminiAODEvts(the_tree_run)
       filter_efficiency += n_gen * the_filter_efficiency
@@ -222,6 +239,7 @@ class Tools(object):
 
     # in the case where the samples were produced with both the electron and muon channels, apply a correction
     corr = signal_file.muon_rate # only consider events that were generated in the muon channel 
+    #TODO fix the above if a different one is taken for Bc
 
     efficiency = filter_efficiency if not isBc else filter_efficiency * lhe_efficiency 
     n_generated = corr * n_gen_tot / efficiency
@@ -348,10 +366,10 @@ class Tools(object):
     return box
 
 
-  def printLatexBox(self, x, y, text, size=0.04, pos='center'):
+  def printLatexBox(self, x, y, text, size=0.04, pos='center', font=42):
     box = ROOT.TLatex()
     box.SetNDC()
-    box.SetTextFont(42)
+    box.SetTextFont(font)
     if pos == 'center': box.SetTextAlign(22) 
     else: box.SetTextAlign(12) 
     box.SetTextSize(size)    
@@ -394,6 +412,23 @@ class Tools(object):
     tag.SetTextSize(0.9*size*pad.GetTopMargin())
     tag.SetTextAlign(11)
     tag.DrawLatex(pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), cms_tag)      
+    pad.Update()
+
+
+  def printCMSTagInFrame(self, pad, cms_tag, size=0.55, offset=0.11):
+    pad.cd()
+    tag = ROOT.TLatex()
+    tag.SetNDC()
+    # print CMS
+    tag.SetTextFont(61)
+    tag.SetTextAlign(11) 
+    tag.SetTextSize(size*pad.GetTopMargin())    
+    tag.DrawLatex(pad.GetLeftMargin()+0.2*pad.GetLeftMargin(), 1-pad.GetTopMargin()-0.8*pad.GetTopMargin(), 'CMS')
+    # print CMS tag
+    tag.SetTextFont(52)
+    tag.SetTextSize(0.9*size*pad.GetTopMargin())
+    tag.SetTextAlign(11)
+    tag.DrawLatex(pad.GetLeftMargin()+0.2*pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()-0.8*pad.GetTopMargin(), cms_tag)      
     pad.Update()
 
 
@@ -520,4 +555,5 @@ class Tools(object):
 
 if __name__ == '__main__':
   tools = Tools()
-  print tools.getCtau(4.5, 2.3e-2)
+  print tools.getCtau(1.0, 1.6e-4)
+  #print tools.getVV(2.0, 300)
