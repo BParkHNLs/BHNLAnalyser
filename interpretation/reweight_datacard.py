@@ -138,10 +138,11 @@ class DatacardReweighter(object):
         if self.flavour_channel == 'muon':
           updated_path = self.path_motherdir + '/muon/' + self.indirlabel
         elif self.flavour_channel == 'electron':
-          if 'multipdf' not in line:
-            updated_path = self.path_motherdir + '/electron/' + self.indirlabel + '/Mass{mass}/Mass{mass}_ctau{ctau}/SigFits'.format(mass=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'))
-          else:
-            updated_path = self.path_motherdir + '/electron/' + self.indirlabel + '/Mass{mass}/ws'.format(mass=str(self.mass).replace('.', 'p'))
+          updated_path = self.path_motherdir + '/electron/' + self.indirlabel
+          #if 'multipdf' not in line:
+          #  updated_path = self.path_motherdir + '/electron/' + self.indirlabel + '/Mass{mass}/Mass{mass}_ctau{ctau}/SigFits'.format(mass=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'))
+          #else:
+          #  updated_path = self.path_motherdir + '/electron/' + self.indirlabel + '/Mass{mass}/ws'.format(mass=str(self.mass).replace('.', 'p'))
 
         rootfile = self.getRootfile(line=line)
         path_to_rootfile = self.getPathToRootfile(line=line)
