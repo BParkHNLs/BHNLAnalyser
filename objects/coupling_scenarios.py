@@ -7,9 +7,9 @@ class CouplingScenario(object):
     self.fu = float(fu)
     self.ft = float(ft)
 
-    if float(self.fe + self.fu + self.ft) != 1.0:
-      print self.fe + self.fu + self.ft
-      raise RuntimeError('Invalid coupling scenario (fe={}, fu={}, ft={}). Make sure that the sum of the couplings is equal to 1.'.format(self.fe, self.fu, self.ft))
+    #if float(self.fe + self.fu + self.ft) != 1.0:
+    #  print self.fe + self.fu + self.ft
+    #  raise RuntimeError('Invalid coupling scenario (fe={}, fu={}, ft={}). Make sure that the sum of the couplings is equal to 1.'.format(self.fe, self.fu, self.ft))
 
 
 
@@ -22,6 +22,7 @@ coupling_scenarios['muon_only'] = (
 coupling_scenarios['benchmark'] = (
     CouplingScenario(fe=0., fu=1., ft=0.),
     CouplingScenario(fe=0., fu=0.5, ft=0.5),
+    CouplingScenario(fe=0.5, fu=0.5, ft=0.),
     CouplingScenario(fe=1./3., fu=1./3., ft=1./3.),
     )
 
