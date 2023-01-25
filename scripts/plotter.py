@@ -9,6 +9,7 @@ import numpy as np
 from itertools import product
 
 from tools import Tools
+from compute_yields import ComputeYields
 
 import sys
 sys.path.append('../objects')
@@ -141,7 +142,7 @@ class Plotter(Tools):
     return max_range
 
 
-  def plot(self, selection='', title='', outdirloc='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_pusig='', weight_mu0id='', weight_muid='', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary', do_tdrstyle=True):
+  def plot(self, selection='', title='', outdirloc='', homedir='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_pusig='', weight_mu0id='', weight_muid='', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary', do_tdrstyle=True):
 
     # check the options
     if plot_data and self.data_files == '':
@@ -174,7 +175,9 @@ class Plotter(Tools):
       if not do_tdrstyle:
         legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.65, xmax=0.84, ymax=0.83, size=0.027)
       else:
-        legend = self.tools.getRootTLegend(xmin=0.42, ymin=0.57, xmax=0.79, ymax=0.79, size=0.038)
+        #legend = self.tools.getRootTLegend(xmin=0.42, ymin=0.57, xmax=0.79, ymax=0.79, size=0.038)
+        legend = self.tools.getRootTLegend(xmin=0.33, ymin=0.57, xmax=0.71, ymax=0.79, size=0.038)
+        #legend = self.tools.getRootTLegend(xmin=0.13, ymin=0.2, xmax=0.45, ymax=0.5, size=0.038)
 
     pad_up.cd()
 
@@ -240,6 +243,7 @@ class Plotter(Tools):
         hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
         matching_selection = 'ismatched==1' if branchname == 'flat' else 'BToMuMuPi_isMatched==1'
         selection_signal = matching_selection if selection == '' else matching_selection + ' && ' + selection
+        #print selection_signal
         weight_sig = '(1)'
         if add_weight_hlt : weight_sig += ' * ({})'.format(weight_hlt)
         if add_weight_pu : weight_sig += ' * ({})'.format(weight_pusig)
@@ -257,11 +261,24 @@ class Plotter(Tools):
         if do_shape: 
           int_signal = hist_signal.Integral()
           if int_signal != 0: hist_signal.Scale(1/int_signal)
+        elif do_luminorm:
+          signal_yields = ComputeYields(signal_label='V12_08Aug22_benchmark', selection=selection_signal).computeSignalYields(mass=signal_file.mass, ctau=signal_file.ctau, lumi=5.302, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid)[0]
+          if signal_file.mass == 1.:
+            corr = 11e-1 #4e1
+          elif signal_file.mass == 3.:
+            corr = 16e3 #4e4
+          elif signal_file.mass == 4.5:
+            corr = 4e5 #2e4
+          else:
+            corr = 1000
 
-        legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
+          hist_signal.Scale(signal_yields/hist_signal.Integral()*corr)
+
+        legend.AddEntry(hist_signal, 'signal - {} (x {})'.format(signal_file.label, '{:.0e}'.format(corr)))
 
         hist_signal.SetLineWidth(3)
         hist_signal.SetLineColor(signal_file.colour)
+        hist_signal.SetFillColorAlpha(0, 0)
         signal_hists.append(hist_signal)
 
     # qcd mc
@@ -284,6 +301,7 @@ class Plotter(Tools):
         if add_weight_hlt : weight_qcd += ' * ({})'.format(weight_hlt)
         if add_weight_pu : weight_qcd += ' * ({}) '.format(weight_puqcd)
         if add_weight_muid : weight_qcd += ' * ({}) * ({})'.format(weight_mu0id, weight_muid)
+        #print weight_qcd
 
         hist_qcd_name = 'hist_qcd_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
         hist_qcd = self.tools.createHisto(tree_qcd, self.quantity, hist_name=hist_qcd_name, branchname=branchname, selection=selection, weight=weight_qcd) 
@@ -352,6 +370,7 @@ class Plotter(Tools):
     elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
     #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
+    #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e2, 1e7)
 
     #ROOT.gStyle.SetPadLeftMargin(0.16) 
     ROOT.gStyle.SetOptStat(0)
@@ -399,15 +418,15 @@ class Plotter(Tools):
     else:
       self.tools.printLatexBox(0.60, 0.84, title, size=0.04 if plot_ratio else 0.038)
     if add_CMSlabel: self.tools.printCMSTag(pad_up, CMS_tag, size=0.55 if plot_ratio else 0.43)
-    if do_luminorm:
-      scale_text = ROOT.TPaveText(0.15, 0.83, 0.3, 0.88, "brNDC")
-      scale_text.SetBorderSize(0)
-      scale_text.SetFillColor(ROOT.kWhite)
-      scale_text.SetTextSize(0.032)
-      scale_text.SetTextAlign(31)
-      scale_text.SetTextFont(42)
-      scale_text.AddText('MC scaled by {}'.format(round(lumi_weight/self.tools.getDataLumi(self.data_files), 2)))
-      scale_text.Draw()
+    #if do_luminorm:
+    #  scale_text = ROOT.TPaveText(0.15, 0.83, 0.3, 0.88, "brNDC")
+    #  scale_text.SetBorderSize(0)
+    #  scale_text.SetFillColor(ROOT.kWhite)
+    #  scale_text.SetTextSize(0.032)
+    #  scale_text.SetTextAlign(31)
+    #  scale_text.SetTextFont(42)
+    #  scale_text.AddText('MC scaled by {}'.format(round(lumi_weight/self.tools.getDataLumi(self.data_files), 2)))
+    #  scale_text.Draw()
 
     # plot the ratio
     if plot_ratio:
@@ -425,6 +444,14 @@ class Plotter(Tools):
         else: 
           err = 0
         if hist_ratio.GetBinContent(ibin) != 0: hist_ratio.SetBinError(ibin, err)
+      #for ibin in range(0, hist_ratio.GetNbinsX()+1):
+      #  if hist_data_tot.GetBinContent(ibin) != 0 and signal_hists[0].GetBinContent(ibin) != 0:
+      #    #err = hist_ratio.GetBinContent(ibin) * (math.sqrt(hist_data.GetBinContent(ibin))/hist_data.GetBinContent(ibin) + math.sqrt(signal_hists[0].GetBinContent(ibin))/signal_hists[0].GetBinContent(ibin))
+      #    #err = math.sqrt((math.sqrt(hist_data.GetBinContent(ibin))/signal_hists[0].GetBinContent(ibin))**2 + (math.sqrt(signal_hists[0].GetBinContent(ibin))*hist_data.GetBinContent(ibin)/(signal_hists[0].GetBinContent(ibin))**2)**2)
+      #    err = math.sqrt((hist_data_tot.GetBinError(ibin)/signal_hists[0].GetBinContent(ibin))**2 + (signal_hists[0].GetBinError(ibin)*hist_data_tot.GetBinContent(ibin)/(signal_hists[0].GetBinContent(ibin))**2)**2)
+      #  else: 
+      #    err = 0
+      #  if hist_ratio.GetBinContent(ibin) != 0: hist_ratio.SetBinError(ibin, err)
 
       hist_ratio.SetLineWidth(2)
       hist_ratio.SetMarkerStyle(20)
@@ -450,7 +477,7 @@ class Plotter(Tools):
       line.SetLineWidth(2)
       line.Draw('same')
 
-    outputdir = self.tools.getOutDir('{}/{}/plots/{}'.format(outdirloc, outdirlabel, subdirlabel), plotdirlabel, do_shape, do_luminorm, do_stack, do_log, add_overflow)
+    outputdir = self.tools.getOutDir('{}/{}/{}/plots/{}'.format(homedir, outdirloc, outdirlabel, subdirlabel), plotdirlabel, do_shape, do_luminorm, do_stack, do_log, add_overflow)
     
     canv.SaveAs('{}/{}.png'.format(outputdir, self.quantity.label))
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
@@ -524,6 +551,7 @@ if __name__ == '__main__':
     '''
     printInfo(opt)
 
+    homedir = opt.homedir
     outdirlabel = opt.outdirlabel
     subdirlabel = opt.subdirlabel
     quantities = quantities[opt.quantities_label]
@@ -554,6 +582,7 @@ if __name__ == '__main__':
 
           plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
                        title = title, 
+                       homedir = homedir,
                        outdirloc = './outputs',
                        outdirlabel = outdirlabel, 
                        subdirlabel = subdirlabel, 
@@ -596,6 +625,7 @@ if __name__ == '__main__':
 
           plotter.plot(selection = baseline_selection + ' && ' + region_definition + ' && ' + category_definition, 
                        title = title, 
+                       homedir = homedir,
                        outdirloc = './outputs',
                        outdirlabel = outdirlabel, 
                        subdirlabel = subdirlabel, 
@@ -634,6 +664,7 @@ if __name__ == '__main__':
 
           plotter.plot(selection = baseline_selection + ' && ' + category_definition, 
                        title = title, 
+                       homedir = homedir,
                        outdirloc = './outputs',
                        outdirlabel = outdirlabel, 
                        subdirlabel = subdirlabel, 
