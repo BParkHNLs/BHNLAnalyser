@@ -4,9 +4,10 @@
 '''
 
 class Category(object):
-  def __init__(self, label='', title='', definition_flat='', definition_nano='', cutbased_selection='', cutbased_selection_lowmass='', cutbased_selection_mediummass='', cutbased_selection_highmass=''):
+  def __init__(self, label='', title='', is_bc=False, definition_flat='', definition_nano='', cutbased_selection='', cutbased_selection_lowmass='', cutbased_selection_mediummass='', cutbased_selection_highmass=''):
     self.label = label
     self.title = title
+    self.is_bc = is_bc
     self.definition_flat = definition_flat
     self.definition_nano = definition_nano
     self.cutbased_selection = cutbased_selection
@@ -29,6 +30,16 @@ categories['inclusive'] = [
            title = 'inclusive',
            definition_flat = 'hnl_pt > 0',
            definition_nano = 'BToMuMuPi_hnl_pt > 0',
+           cutbased_selection = 'hnl_pt > 0',
+          ),
+]
+
+categories['inclusive_Bc'] = [
+  Category(label = 'incl',
+           title = 'inclusive',
+           definition_flat = 'hnl_pt > 0',
+           definition_nano = 'BToMuMuPi_hnl_pt > 0',
+           is_bc = True,
            cutbased_selection = 'hnl_pt > 0',
           ),
 ]
@@ -193,6 +204,74 @@ categories['categories_0_50_150'] = [
   Category(label = 'lxysiggt150_SS',
            title = 'L_{xy}/#sigma>150, SS',
            definition_flat = 'sv_lxysig>150 && mu0_charge==mu_charge',
+          ),
+]
+
+
+categories['categories_0_50_150_Bc'] = [
+  Category(label = 'incl',
+           title = 'inclusive',
+           definition_flat = 'hnl_pt > 0',
+          ),
+  Category(label = 'lxysig0to50_OS',
+           title = 'L_{xy}/#sigma<=50, OS',
+           definition_flat = 'sv_lxysig<=50 && mu0_charge!=mu_charge && b_mass<5.7',
+           is_bc = False,
+          ),
+  Category(label = 'lxysig50to150_OS',
+           title = '50<L_{xy}/#sigma<=150, OS',
+           definition_flat = 'sv_lxysig>50 && sv_lxysig<=150 && mu0_charge!=mu_charge && b_mass<5.7',
+           is_bc = False,
+          ),
+  Category(label = 'lxysiggt150_OS',
+           title = 'L_{xy}/#sigma>150, OS',
+           definition_flat = 'sv_lxysig>150 && mu0_charge!=mu_charge && b_mass<5.7',
+           is_bc = False,
+          ),
+  Category(label = 'lxysig0to50_SS',
+           title = 'L_{xy}/#sigma<=50, SS',
+           definition_flat = 'sv_lxysig<=50 && mu0_charge==mu_charge && b_mass<5.7',
+           is_bc = False,
+          ),
+  Category(label = 'lxysig50to150_SS',
+           title = '50<L_{xy}/#sigma<=150, SS',
+           definition_flat = 'sv_lxysig>50 && sv_lxysig<=150 && mu0_charge==mu_charge && b_mass<5.7',
+           is_bc = False,
+          ),
+  Category(label = 'lxysiggt150_SS',
+           title = 'L_{xy}/#sigma>150, SS',
+           definition_flat = 'sv_lxysig>150 && mu0_charge==mu_charge && b_mass<5.7',
+           is_bc = False,
+          ),
+  Category(label = 'lxysig0to50_OS_Bc',
+           title = 'L_{xy}/#sigma<=50, OS (B_{c})',
+           definition_flat = 'sv_lxysig<=50 && mu0_charge!=mu_charge && b_mass>5.7',
+           is_bc = True,
+          ),
+  Category(label = 'lxysig50to150_OS_Bc',
+           title = '50<L_{xy}/#sigma<=150, OS (B_{c})',
+           definition_flat = 'sv_lxysig>50 && sv_lxysig<=150 && mu0_charge!=mu_charge && b_mass>5.7',  
+           is_bc = True,
+          ),
+  Category(label = 'lxysiggt150_OS_Bc',
+           title = 'L_{xy}/#sigma>150, OS (B_{c})',
+           definition_flat = 'sv_lxysig>150 && mu0_charge!=mu_charge && b_mass>5.7',
+           is_bc = True,
+          ),
+  Category(label = 'lxysig0to50_SS_Bc',
+           title = 'L_{xy}/#sigma<=50, SS (B_{c})',
+           definition_flat = 'sv_lxysig<=50 && mu0_charge==mu_charge && b_mass>5.7',
+           is_bc = True,
+          ),
+  Category(label = 'lxysig50to150_SS_Bc',
+           title = '50<L_{xy}/#sigma<=150, SS (B_{c})',
+           definition_flat = 'sv_lxysig>50 && sv_lxysig<=150 && mu0_charge==mu_charge && b_mass>5.7',
+           is_bc = True,
+          ),
+  Category(label = 'lxysiggt150_SS_Bc',
+           title = 'L_{xy}/#sigma>150, SS (B_{c})',
+           definition_flat = 'sv_lxysig>150 && mu0_charge==mu_charge && b_mass>5.7',
+           is_bc = True,
           ),
 ]
 
