@@ -448,9 +448,9 @@ if __name__ == '__main__':
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/bparknano_looseselection_dsaonly.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/bparknano_data_1file_looseselection.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/flat_bparknano_data_1file_looseselection.root',
-      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/merged/bparknano_loosepreselection_1file.root', # used for AN-v3
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/merged/bparknano_loosepreselection_1file.root', # used for AN-v3
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22.root', # for baseline selection cutflow
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/bparknano_data_nocutatall_1000evts.root', # get the loose selection efficiency
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/bparknano_data_nocutatall_1000evts.root', # get the loose selection efficiency
       process = 'background',
       )
 
@@ -505,8 +505,8 @@ if __name__ == '__main__':
   files = []
   files.append(file_background)
   files.append(file_m1)
-  #files.append(file_m3)
-  #files.append(file_m4p5)
+  files.append(file_m3)
+  files.append(file_m4p5)
   #files.append(file_V25)
 
 
@@ -608,9 +608,9 @@ if __name__ == '__main__':
   printEfficiency = False
   printScan = False
 
-  doPreselection = False
+  doPreselection = True
   doBaselineSelection = False
-  doLooseSelection = True
+  doLooseSelection = False
 
   if doPreselection:
 
@@ -630,7 +630,7 @@ if __name__ == '__main__':
     #Selection(files, trg_mu_pt, npoints=30).getROCGraph()
     if printCutflow: Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printCutflowLine()
     if printEfficiency: Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printEfficiencyLine()
-    Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printEfficiencyLine()
+    #Selection(files, trg_mu_pt, proposed_cut=cut_trg_mu_pt).printEfficiencyLine()
     preselection.append(PreselectedQuantity(trg_mu_pt, cut_trg_mu_pt))
 
     cut_trg_mu_eta = 2 #1.5
@@ -697,13 +697,14 @@ if __name__ == '__main__':
     if printEfficiency: Selection(files, pi_dzS, preexisting_selection=preselection, proposed_cut=cut_pi_dzS).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_dzS, cut_pi_dzS))
 
-    cut_pi_dxyS = 3
-    if printScan: Selection(files, pi_dxyS, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).getScanGraph()
-    #Selection(files, pi_dxyS, npoints=30).getROCGraph()
-    if printCutflow: Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printCutflowLine()
-    #Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printCutflowLine()
-    if printEfficiency: Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printEfficiencyLine()
-    preselection.append(PreselectedQuantity(pi_dxyS, cut_pi_dxyS))
+    #cut_pi_dxyS = 3
+    #if printScan: Selection(files, pi_dxyS, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).getScanGraph()
+    ##Selection(files, pi_dxyS, npoints=30).getROCGraph()
+    #if printCutflow: Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printCutflowLine()
+    ##Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printCutflowLine()
+    #if printEfficiency: Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printEfficiencyLine()
+    #Selection(files, pi_dxyS, preexisting_selection=preselection, proposed_cut=cut_pi_dxyS).printEfficiencyLine()
+    #preselection.append(PreselectedQuantity(pi_dxyS, cut_pi_dxyS))
     
     cut_pi_DCASig = 5
     if printScan: Selection(files, pi_DCASig, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).getScanGraph()
@@ -711,6 +712,7 @@ if __name__ == '__main__':
     if printCutflow: Selection(files, pi_DCASig, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).printCutflowLine()
     #Selection(files, pi_DCASig, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).printCutflowLine()
     if printEfficiency: Selection(files, pi_DCASig, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).printEfficiencyLine()
+    #Selection(files, pi_DCASig, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_DCASig, cut_pi_DCASig))
 
     cut_mu_pt = 1.5
@@ -794,12 +796,13 @@ if __name__ == '__main__':
 
     ## cuts applied post fit
 
-    cut_sv_prob = 0.001
+    cut_sv_prob = 0.01
     if printScan: Selection(files, sv_prob, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_sv_prob).getScanGraph()
     #Selection(files, sv_prob, npoints=30).getROCGraph()
     if printCutflow: Selection(files, sv_prob, preexisting_selection=preselection, proposed_cut=cut_sv_prob).printCutflowLine()
     #Selection(files, sv_prob, preexisting_selection=preselection, proposed_cut=cut_sv_prob).printCutflowLine()
     if printEfficiency: Selection(files, sv_prob, preexisting_selection=preselection, proposed_cut=cut_sv_prob).printEfficiencyLine()
+    Selection(files, sv_prob, preexisting_selection=preselection, proposed_cut=cut_sv_prob).printEfficiencyLine()
     preselection.append(PreselectedQuantity(sv_prob, cut_sv_prob))
 
     # not sufficiently discriminating
@@ -809,12 +812,13 @@ if __name__ == '__main__':
     ##Selection(files, sv_chi2, preexisting_selection=preselection, proposed_cut=cut_sv_chi2).printCutflowLine()
     ##preselection.append(PreselectedQuantity(sv_chi2, cut_sv_chi2))
 
-    cut_hnl_cos2D = 0.995
+    cut_hnl_cos2D = 0.999
     if printScan: Selection(files, hnl_cos2D, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).getScanGraph()
     #Selection(files, hnl_cos2D, npoints=30).getROCGraph()
     if printCutflow: Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printCutflowLine()
     #Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printCutflowLine()
     if printEfficiency: Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printEfficiencyLine()
+    Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printEfficiencyLine()
     preselection.append(PreselectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
     cut_sv_lxy_sig = 15 
