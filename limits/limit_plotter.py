@@ -103,7 +103,8 @@ class LimitPlotter(object):
 
   def process(self):
     signal_type = self.signal_type 
-    lumi =  '41.6 fb'+r'$^{-1}$'
+    #lumi =  '41.6 fb'+r'$^{-1}$'
+    lumi =  '5.3 fb'+r'$^{-1}$'+' projected to 41.6 fb'+r'$^{-1}$'
 
     # get the files 
     if not self.do_coupling_scenario:
@@ -161,6 +162,7 @@ class LimitPlotter(object):
         
         try:
           thefile = open('{}/result_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, mass, ctau, coupling), 'r')
+          #thefile = open('{}/result_m_{}_v2_{}.txt'.format(pathToResults, mass, coupling), 'r')
           
           # get the necessary information from the result files
           val_obs       = None
@@ -288,6 +290,7 @@ class LimitPlotter(object):
       x_central = self.get_intersection(v2s, central)
       x_plus_one = self.get_intersection(v2s, plus_one)
       x_plus_two = self.get_intersection(v2s, plus_two)
+      print 'central {}'.format(x_central)
 
       if x_plus_one == -99:
         print '\nWARNING - could not find crossing for +1sigma'
@@ -403,7 +406,9 @@ class LimitPlotter(object):
     coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
     ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
     ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
-    ax.text(0.26, 0.7, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.26, 0.63, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.7, 0.78, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
+    plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--')
     f1 = plt.fill_between(masses_two_sigma, minus_two, plus_two, color='gold'       , label=r'95% expected')
     f2 = plt.fill_between(masses_one_sigma, minus_one, plus_one, color='forestgreen', label=r'68% expected')
     p1, = plt.plot(masses_central, central, color='red', label='Median expected', linewidth=2)
