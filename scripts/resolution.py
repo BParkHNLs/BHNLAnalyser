@@ -2,6 +2,7 @@ import sys
 import ROOT
 from ROOT import RooFit
 import math
+from collections import OrderedDict
 
 from tools import Tools
 sys.path.append('../objects')
@@ -37,7 +38,7 @@ class Fitter(Tools):
     return masses
 
 
-  def performFit(self, signal_file):
+  def performFit(self, signal_file, category=None):
     # open the file and get the tree
     inputfile = ROOT.TFile.Open(signal_file.filename)
     treename = 'signal_tree'
@@ -54,7 +55,10 @@ class Fitter(Tools):
     hist = ROOT.TH1D("hist", "hist", nbins, binMin, binMax)
     c1 = self.tools.createTCanvas(name='c1', dimx=700, dimy=600)
     branch_name = 'hnl_mass'
-    cond = 'ismatched==1 && {}'.format(baseline_selection)
+    selection = self.baseline_selection
+    if category != None:
+      selection += ' && {}'.format(category.definition_flat)
+    cond = 'ismatched==1 && {}'.format(selection)
     tree.Draw("{}>>hist".format(branch_name), cond)
 
     mupi_invmass = ROOT.RooRealVar("mupi_invmass","mupi_invmass", binMin, binMax)
@@ -65,26 +69,38 @@ class Fitter(Tools):
     # Define the PDF to fit: 
     # Double sided crystal ball
     # we declare all the parameters needed for the fits 
-    mean_init = signal_mass - 0.01*signal_mass
-    mean_min = signal_mass - 0.05*signal_mass
-    mean_max = signal_mass + 0.05*signal_mass
-    mean  = ROOT.RooRealVar("mean","mean", mean_init, mean_min, mean_max)
+    #mean_init = signal_mass - 0.01*signal_mass
+    #mean_min = signal_mass - 0.05*signal_mass
+    #mean_max = signal_mass + 0.05*signal_mass
+    #mean  = ROOT.RooRealVar("mean","mean", mean_init, mean_min, mean_max)
+    mean  = ROOT.RooRealVar("mean","mean", signal_mass)
 
-    sigma = ROOT.RooRealVar("sigma","sigma", 0.01, 0.005, 0.15)
+    sigma = ROOT.RooRealVar("sigma","sigma", 0.01, 0.005, 0.05)
 
-    alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -1, -3, 3)
-    n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 3)
-    alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 1, -3, 3)
-    n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 3)
+    #alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -3, -10, 0)
+    #n_1 = ROOT.RooRealVar("n_1", "n_1", 4, 0, 10)
+    #alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 3, 0, 30)
+    #n_2 = n_1 #ROOT.RooRealVar("n_2", "n_2", 4, 0, 10)
+
+    alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -1.)
+    #n_1 = ROOT.RooRealVar("n_1", "n_1", 4, 0, 10)
+    n_1 = ROOT.RooRealVar("n_1", "n_1", 3.)
+    alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 1.)
+    n_2 = n_1 #ROOT.RooRealVar("n_2", "n_2", 4, 0, 10)
+
+    gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.01, 0., 0.1)
 
     CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", mupi_invmass, mean, sigma, alpha_1, n_1)
     CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", mupi_invmass, mean, sigma, alpha_2, n_2)
+    #CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", mupi_invmass, mean, sigma, alpha_2, n_1)
 
     # defines the relative importance of the two CBs
-    sigfrac = ROOT.RooRealVar("sigfrac","sigfrac", 0.5, 0.0 ,1.0)
+    #sigfrac = ROOT.RooRealVar("sigfrac","sigfrac", 0.5, 0.0 ,1.0)
+    sigfrac = ROOT.RooRealVar("sigfrac","sigfrac", 0.5)
 
     # we add the two CB pdfs together
     doubleCBpdf = ROOT.RooAddPdf("doubleCBpdf", "doubleCBpdf", CBpdf_1, CBpdf_2, sigfrac)
+    #doubleCBpdf = ROOT.RooVoigtian('doubleCBpdf', 'doubleCBpdf', mupi_invmass, mean, gamma_voigtian, sigma)
 
     # we define the frame where to plot
     canv = self.tools.createTCanvas(name="canv", dimx=900, dimy=800)
@@ -109,6 +125,8 @@ class Fitter(Tools):
     result = doubleCBpdf.fitTo(rdh, ROOT.RooFit.Range("peak"))
 
     # plot the fit    
+    doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(2), ROOT.RooFit.Name("CBpdf_1"), ROOT.RooFit.Components("CBpdf_1"))
+    doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(8), ROOT.RooFit.Name("CBpdf_2"), ROOT.RooFit.Components("CBpdf_2"))
     doubleCBpdf.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name("doubleCBpdf"), ROOT.RooFit.Components("doubleCBpdf"))
 
     # and write the fit parameters
@@ -135,7 +153,8 @@ class Fitter(Tools):
     #chi2 = to_string(chisquare)
     #label1.AddText('#chi^{2}/ndof = {}'.format(chisquare))
     qte = '#chi^{2}/ndof'
-    label1.AddText('Double sided Crystal Ball')
+    #label1.AddText('Double sided Crystal Ball')
+    label1.AddText('Voigtian')
     label1.AddText('{} = {}'.format(qte, round(chisquare, 2)))
     label1.AddText('mass {} GeV, ctau {} mm'.format(signal_file.mass, signal_file.ctau))
     print "chisquare = {}".format(chisquare)
@@ -186,11 +205,16 @@ class Fitter(Tools):
     # save output
     canv.cd()
     outputdir = self.tools.getOutDir('./myPlots/fits', self.outdirlabel)
-    canv.SaveAs("{}/fit_m{}_ctau{}.png".format(outputdir, str(signal_file.mass).replace('.', 'p'), str(signal_file.ctau).replace('.', 'p')))
-    canv.SaveAs("{}/fit_m{}_ctau{}.pdf".format(outputdir, str(signal_file.mass).replace('.', 'p'), str(signal_file.ctau).replace('.', 'p')))
+    name = 'fit_m{}_ctau{}'.format(str(signal_file.mass).replace('.', 'p'), str(signal_file.ctau).replace('.', 'p'))
+    if category != None:
+      name += '_{}'.format(category.label)
+    canv.SaveAs("{}/{}.png".format(outputdir, name))
+    canv.SaveAs("{}/{}.pdf".format(outputdir, name))
 
     return sigma.getVal(), (sigma.getAsymErrorHi()+sigma.getAsymErrorLo())/2.
-
+    #return sigma.getVal(), (sigma.getAsymErrorHi()+sigma.getAsymErrorLo())/2., alpha_1.getVal(), (alpha_1.getAsymErrorHi()+alpha_1.getAsymErrorLo())/2.,  alpha_2.getVal(), (alpha_2.getAsymErrorHi()+alpha_2.getAsymErrorLo())/2.,  n_1.getVal(), (n_1.getAsymErrorHi()+n_1.getAsymErrorLo())/2., n_2.getVal(), (n_2.getAsymErrorHi()+n_2.getAsymErrorLo())/2., sigfrac.getVal(), (sigfrac.getAsymErrorHi()+sigfrac.getAsymErrorLo())/2.
+    #return sigma.getVal(), (sigma.getAsymErrorHi()+sigma.getAsymErrorLo())/2., gamma_voigtian.getVal(), (gamma_voigtian.getAsymErrorHi()+gamma_voigtian.getAsymErrorLo())/2.
+    
 
   def getResolutionGraph(self):
     ROOT.gStyle.SetPadLeftMargin(0.15) 
@@ -212,7 +236,8 @@ class Fitter(Tools):
       for signal_file in self.signal_files:
         if signal_file.ctau != ctau: continue
 
-        sigma, sigma_err = self.performFit(signal_file=signal_file)
+        sigma = self.performFit(signal_file=signal_file)[0]
+        sigma_err = self.performFit(signal_file=signal_file)[1]
         resolution[signal_file.mass] = sigma
         resolution_err[signal_file.mass] = sigma_err
 
@@ -232,7 +257,7 @@ class Fitter(Tools):
       graph.GetXaxis().SetLabelSize(0.037)
       graph.GetXaxis().SetTitleSize(0.042)
       graph.GetXaxis().SetTitleOffset(1.1)
-      graph.GetYaxis().SetTitle('Resolution')
+      graph.GetYaxis().SetTitle('Resolution [GeV]')
       graph.GetYaxis().SetLabelSize(0.037)
       graph.GetYaxis().SetTitleSize(0.042)
       graph.GetYaxis().SetTitleOffset(1.5)
@@ -255,7 +280,7 @@ class Fitter(Tools):
     canv.SaveAs("{}/graph.png".format(outputdir))
       
 
-  def getLifetimeDependencyGraph(self):
+  def getLifetimeDependencyGraph(self, category=None):
     ROOT.gStyle.SetPadLeftMargin(0.15) 
     # create graph resolution vs mass
     masses = self.getMassList()
@@ -282,7 +307,7 @@ class Fitter(Tools):
 
         n_ctaus[signal_file.mass] += 1
 
-        sigma, sigma_err = self.performFit(signal_file=signal_file)
+        sigma, sigma_err = self.performFit(signal_file=signal_file, category=category)
         resolution_average[signal_file.mass] += sigma
         resolution_average_err[signal_file.mass] += sigma_err
 
@@ -307,7 +332,7 @@ class Fitter(Tools):
     graph.GetXaxis().SetLabelSize(0.037)
     graph.GetXaxis().SetTitleSize(0.042)
     graph.GetXaxis().SetTitleOffset(1.1)
-    graph.GetYaxis().SetTitle('Resolution')
+    graph.GetYaxis().SetTitle('Resolution [GeV]')
     graph.GetYaxis().SetLabelSize(0.037)
     graph.GetYaxis().SetTitleSize(0.042)
     graph.GetYaxis().SetTitleOffset(1.5)
@@ -332,22 +357,57 @@ class Fitter(Tools):
       for signal_file in self.signal_files:
         if signal_file.ctau != ctau: continue
 
-        sigma, sigma_err = self.performFit(signal_file=signal_file)
+        sigma = self.performFit(signal_file=signal_file)[0]
+        sigma_err = self.performFit(signal_file=signal_file)[1]
         #resolution_diff[signal_file.mass] = abs(sigma - resolution_average[signal_file.mass]) / sigma 
         resolution_diff[signal_file.mass] += ((sigma - resolution_average[signal_file.mass]) * (sigma - resolution_average[signal_file.mass]))
 
     for mass in masses:
       resolution_diff[mass] = math.sqrt(1./float(n_ctaus[mass]) * resolution_diff[mass])
 
+    filename = './myPlots/signal_parametrisation/resolution_diff_{}'.format(category.label)
+    f = open(filename, 'w+')
+    f.write(resolution_diff)
+    f.close()
+
     print resolution_diff
       
 
-  def getResolutionFit(self):
-    ROOT.gStyle.SetPadLeftMargin(0.15) 
+  def getStandardDeviation(self, category=None):
     # create graph resolution vs mass
     masses = self.getMassList()
     
     ctaus = [0.1, 1, 10, 100, 1000]
+    n_ctaus = dict.fromkeys(masses, 0) 
+
+    resolution_diff = dict.fromkeys(masses, 0)
+    for ictau, ctau in enumerate(ctaus):
+      for signal_file in self.signal_files:
+        if signal_file.ctau != ctau: continue
+        n_ctaus[signal_file.mass] += 1
+
+        sigma, sigma_err = self.performFit(signal_file=signal_file, category=category)
+        sigma_predict = 0.0004758 + 0.007316 * signal_file.mass
+        resolution_diff[signal_file.mass] += ((sigma - sigma_predict) * (sigma - sigma_predict))
+
+    for mass in masses:
+      resolution_diff[mass] = math.sqrt(1./float(n_ctaus[mass]) * resolution_diff[mass])
+
+    filename = './myPlots/signal_parametrisation/resolution_diff_{}.txt'.format(category.label)
+    f = open(filename, 'w+')
+    f.write('{}'.format(resolution_diff))
+    f.close()
+
+    print resolution_diff
+      
+
+  def getResolutionFit(self, category=None):
+    ROOT.gStyle.SetPadLeftMargin(0.15) 
+    # create graph resolution vs mass
+    masses = self.getMassList()
+    
+    #ctaus = [0.1, 1, 10, 100, 1000]
+    ctaus = [100]
 
     axis_min = -99
     axis_max = -99
@@ -387,19 +447,161 @@ class Fitter(Tools):
     graph.GetYaxis().SetTitleOffset(1.5)
     graph.GetYaxis().SetRangeUser(axis_min-(0.2*axis_min), axis_max+(0.2*axis_max))
 
-    #graph.Fit('pol1')
+    graph.Fit('pol1')
+    ROOT.gStyle.SetOptFit() 
+    #f = ROOT.TF1('f', '0.0002747 + 0.008302*x', 0, 5)
+    #f.SetLineColor(ROOT.kRed)
+    #f.SetLineWidth(2)
+
+    canv = self.tools.createTCanvas(name='canv', dimx=800, dimy=700)
+    canv.cd()
+    graph.Draw('AP')
+    #f.Draw('same')
+
+    outputdir = self.tools.getOutDir('./myPlots', 'resolution')
+    name = 'graph_fit'
+    if category != None:
+      name += '_{}'.format(category.label)
+    canv.SaveAs("{}/{}.png".format(outputdir, name))
+
+
+  def createGraph(self, val, val_err, name, title, bin_min, bin_max, category=None):
+    ROOT.gStyle.SetPadLeftMargin(0.15) 
+
+    masses = self.getMassList()
+    ctaus = [0.1, 1, 10, 100, 1000]
+    colours = [ROOT.kBlack, ROOT.kMagenta, ROOT.kRed, ROOT.kOrange-1, ROOT.kGreen-2]
+
+    graphs = []
+    graph_forfit = ROOT.TGraphAsymmErrors()
+    axis_min = -99
+    axis_max = -99
+
+    leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.45, xmax=0.45, ymax=0.85, size=0.045)
+
+    for ictau, ctau in enumerate(ctaus):
+      graph = ROOT.TGraphAsymmErrors()
+      for mass in masses:
+        try:
+          point = graph.GetN()
+          graph.SetPoint(point, mass, val[(mass, ctau)])
+          graph.SetPointError(point, 0, 0, val_err[(mass, ctau)], val_err[(mass, ctau)]) 
+          point_fit = graph_forfit.GetN()
+          graph_forfit.SetPoint(point, mass, val[(mass, ctau)])
+          graph_forfit.SetPointError(point, 0, 0, val_err[(mass, ctau)], val_err[(mass, ctau)]) 
+        except:
+          continue
+
+        if axis_min == -99: axis_min = val[(mass, ctau)]
+        if axis_min != -99 and val[(mass, ctau)] < axis_min: axis_min = val[(mass, ctau)]
+        if axis_max == -99: axis_max = val[(mass, ctau)]
+        if axis_max != -99 and val[(mass, ctau)] > axis_max: axis_max = val[(mass, ctau)]
+
+      graph.SetLineColor(colours[ictau])
+      graph.SetMarkerColor(colours[ictau])
+      graph.SetMarkerStyle(20)
+      graphs.append(graph)
+      leg.AddEntry(graph, 'c#tau = {} mm'.format(ctau))
+
+    graph_frame = ROOT.TGraphAsymmErrors()
+    graph_frame.SetPoint(0, 0.9, bin_min)
+    graph_frame.SetPoint(1, 4.6, bin_max)
+    graph_frame.GetXaxis().SetTitle('Signal mass [GeV]')
+    graph_frame.GetXaxis().SetLabelSize(0.037)
+    graph_frame.GetXaxis().SetTitleSize(0.042)
+    graph_frame.GetXaxis().SetTitleOffset(1.1)
+    graph_frame.GetYaxis().SetTitle('{}'.format(title))
+    graph_frame.GetYaxis().SetLabelSize(0.037)
+    graph_frame.GetYaxis().SetTitleSize(0.042)
+    graph_frame.GetYaxis().SetTitleOffset(1.5)
+
+    #graph_forfit.Fit('pol1')
     #ROOT.gStyle.SetOptFit() 
-    f = ROOT.TF1('f', '0.0002747 + 0.008302*x', 0, 5)
+    f = ROOT.TF1('f', '0.0004758 + 0.007316*x', 0, 5)
     f.SetLineColor(ROOT.kRed)
     f.SetLineWidth(2)
 
     canv = self.tools.createTCanvas(name='canv', dimx=800, dimy=700)
     canv.cd()
-    graph.Draw('AP')
+    
+    graph_frame.Draw('AP')
+    graph_forfit.Draw('P same')
+    for igraph, graph in enumerate(graphs):
+      graph.Draw('P same')
+    leg.Draw('same')
     f.Draw('same')
 
-    outputdir = self.tools.getOutDir('./myPlots', 'resolution')
-    canv.SaveAs("{}/graph_fit.png".format(outputdir))
+    outputdir = self.tools.getOutDir('./myPlots', 'signal_parametrisation')
+    name = 'graph_{}'.format(name)
+    if category != None:
+      name += '_{}'.format(category.label)
+    canv.SaveAs("{}/{}.png".format(outputdir, name))
+
+
+  def getParameterGraph(self, category=None):
+    ROOT.gStyle.SetPadLeftMargin(0.15) 
+    # create graph resolution vs mass
+    masses = self.getMassList()
+    
+    #ctaus = [0.1, 1, 10, 100, 1000]
+    ctaus = [100]
+    colours = [ROOT.kBlack, ROOT.kMagenta, ROOT.kRed, ROOT.kOrange-1, ROOT.kGreen-2]
+    graphs_resolution = []
+
+    leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.45, xmax=0.45, ymax=0.85, size=0.045)
+    axis_min = -99
+    axis_max = -99
+
+    resolution = OrderedDict()
+    resolution_err = OrderedDict()
+    alpha1 = OrderedDict()
+    alpha1_err = OrderedDict()
+    alpha2 = OrderedDict()
+    alpha2_err = OrderedDict()
+    n1 = OrderedDict()
+    n1_err = OrderedDict()
+    n2 = OrderedDict()
+    n2_err = OrderedDict()
+    frac = OrderedDict()
+    frac_err = OrderedDict()
+    gamma = OrderedDict()
+    gamma_err = OrderedDict()
+
+    for ictau, ctau in enumerate(ctaus):
+      for signal_file in self.signal_files:
+        if signal_file.ctau != ctau: continue
+
+        #sigma, sigma_err, alpha_1, alpha_1_err, alpha_2, alpha_2_err, n_1, n_1_err, n_2, n_2_err, sigfrac, sigfrac_err = self.performFit(signal_file=signal_file, category=category)
+        #resolution[(signal_file.mass, signal_file.ctau)] = sigma
+        #resolution_err[(signal_file.mass, signal_file.ctau)] = sigma_err
+        #alpha1[(signal_file.mass, signal_file.ctau)] = alpha_1
+        #alpha1_err[(signal_file.mass, signal_file.ctau)] = alpha_1_err
+        #alpha2[(signal_file.mass, signal_file.ctau)] = alpha_2
+        #alpha2_err[(signal_file.mass, signal_file.ctau)] = alpha_2_err
+        #n1[(signal_file.mass, signal_file.ctau)] = n_1
+        #n1_err[(signal_file.mass, signal_file.ctau)] = n_1_err
+        #n2[(signal_file.mass, signal_file.ctau)] = n_2
+        #n2_err[(signal_file.mass, signal_file.ctau)] = n_2_err
+        #frac[(signal_file.mass, signal_file.ctau)] = sigfrac
+        #frac_err[(signal_file.mass, signal_file.ctau)] = sigfrac_err
+
+        #sigma, sigma_err, gamma_voigtian, gamma_voigtian_err = self.performFit(signal_file=signal_file, category=category)
+        #resolution[(signal_file.mass, signal_file.ctau)] = sigma
+        #resolution_err[(signal_file.mass, signal_file.ctau)] = sigma_err
+        #gamma[(signal_file.mass, signal_file.ctau)] = gamma_voigtian
+        #gamma_err[(signal_file.mass, signal_file.ctau)] = gamma_voigtian_err
+
+        sigma, sigma_err = self.performFit(signal_file=signal_file, category=category)
+        resolution[(signal_file.mass, signal_file.ctau)] = sigma
+        resolution_err[(signal_file.mass, signal_file.ctau)] = sigma_err
+
+    self.createGraph(val=resolution, val_err=resolution_err, name='resolution', title='Resolution [GeV]', bin_min=0.005, bin_max=0.045, category=category)
+    #self.createGraph(val=gamma, val_err=gamma_err, name='gamma', title='#gamma', bin_min=0., bin_max=0.1, category=category)
+    #self.createGraph(val=alpha1, val_err=alpha1_err, name='alpha1', title='#alpha_{1}', bin_min=-3, bin_max=3, category=category)
+    #self.createGraph(val=alpha2, val_err=alpha2_err, name='alpha2', title='#alpha_{2}', bin_min=-3, bin_max=3, category=category)
+    #self.createGraph(val=n1, val_err=n1_err, name='n1', title='n_{1}', bin_min=0, bin_max=10, category=category)
+    #self.createGraph(val=n2, val_err=n2_err, name='n2', title='n_{2}', bin_min=0, bin_max=10, category=category)
+    #self.createGraph(val=frac, val_err=frac_err, name='frac', title='CB fraction', bin_min=0, bin_max=1, category=category)
 
 
 if __name__ == '__main__':
@@ -410,16 +612,24 @@ if __name__ == '__main__':
   signal_labels = [
     'V12_08Aug22_training_large',
   ]
-  outdirlabel = 'study_resolution_central_V12_08Aug22'
+  outdirlabel = 'study_signal_parametrisation_voigtian'
 
   fitter = Fitter(signal_labels=signal_labels, baseline_selection=baseline_selection, nbins=150, outdirlabel=outdirlabel)
   #fitter.getResolutionGraph()
   #fitter.getResolutionFit()
   #fitter.getLifetimeDependencyGraph()
+  #fitter.getParameterGraph()
+
+  categories = categories['categories_0_50_150']
+  for category in categories:
+  #  #fitter.getResolutionFit(category=category)
+    #fitter.getParameterGraph(category=category)
+    fitter.getStandardDeviation(category=category)
+    
 
 
   signal_labels = [
-    'V42_08Aug22_m0p5',
+    #'V42_08Aug22_m0p5',
     'V42_08Aug22_m0p6',
     'V42_08Aug22_m0p7',
     'V42_08Aug22_m0p8',
@@ -516,7 +726,7 @@ if __name__ == '__main__':
 
   fitter = Fitter(signal_labels=signal_labels, baseline_selection=baseline_selection, nbins=150, outdirlabel=outdirlabel)
   #fitter.getResolutionGraph()
-  fitter.getResolutionFit()
+  #fitter.getResolutionFit()
 
 
 
