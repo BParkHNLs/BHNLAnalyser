@@ -62,6 +62,8 @@ TRandom3 *RandomGen = new TRandom3();
 
 RooAbsPdf* getPdf(PdfModelBuilder &pdfsModel, string type, int order, const char* ext=""){
 /* Construct the pdf model using the PdfModelBuilder */
+
+  std::cout << "order: " << order << " ext: " << ext << std::endl;
   
   if (type=="Bernstein") return pdfsModel.getBernstein(Form("%s_bern%d",ext,order),order); 
   else if (type=="Exponential") return pdfsModel.getExponentialSingle(Form("%s_exp%d",ext,order),order); 
@@ -647,6 +649,7 @@ int main(int argc, char* argv[]){
   int mass_window_size;
   int fit_window_size;
   int nbins;
+  int cat_index;
 
   po::options_description desc("Allowed options");
   desc.add_options()
@@ -664,6 +667,7 @@ int main(int argc, char* argv[]){
     ("mass_window_size", po::value<int>(&mass_window_size),                                     "Sigma multiplier for the mass window")
     ("fit_window_size", po::value<int>(&fit_window_size),                                       "Sigma multiplier for the fit window")
     ("nbins", po::value<int>(&nbins),                                                           "Number of bins for the fit and plotting")
+    ("cat_index", po::value<int>(&cat_index),                                                   "Index of the category")
     ("verbose,v",                                                                               "Run with more output")
   ;
   po::variables_map vm;
@@ -766,7 +770,7 @@ int main(int argc, char* argv[]){
     map<string,std::vector<int> > choices_envelope;
     map<string,RooAbsPdf*> pdfs;
     map<string,RooAbsPdf*> allPdfs;
-    string catname = Form("%s",category_label[cat].c_str()); //TODO keep?
+    string catname = Form("%s",category_label[cat].c_str());
 
     // Option 1: Use as input an unbinned RooDataSet and bin it
     /*
@@ -797,9 +801,7 @@ int main(int argc, char* argv[]){
     */
 
     // Option 2 (equivalent): Use as input a binned RooDataHist as is
-    //string data_name = Form("CAT_roohist_data_mass_%s",category_label[cat].c_str()); 
-    //RooDataHist *thisdataBinned = (RooDataHist*)inWS->data(Form("Data_13TeV_%s",catname.c_str()));
-    RooDataHist *thisdataBinned = (RooDataHist*)inWS->data("hnl_mass_rdh");
+    RooDataHist *thisdataBinned = (RooDataHist*)inWS->data(Form("hnl_mass_rdh_bhnl_m_%s_cat_%s",mN_label.c_str(),catname.c_str()));
     RooDataSet *data = (RooDataSet*)thisdataBinned;
 
     RooArgList storedPdfs("store");
@@ -830,7 +832,7 @@ int main(int argc, char* argv[]){
       int counter =0;
       while (prob<0.05 && order < 7){ 
         cout << "==> " << *funcType << " " << order << endl;
-        RooAbsPdf *bkgPdf = getPdf(pdfsModel,*funcType,order,Form("ftest_pdf_%d_%s",(cat+catOffset),ext.c_str()));
+        RooAbsPdf *bkgPdf = getPdf(pdfsModel,*funcType,order,Form("ftest_pdf_%d_%s",(cat_index),ext.c_str()));
         if (!bkgPdf){
           // assume this order is not allowed
           order++;
@@ -845,7 +847,7 @@ int main(int argc, char* argv[]){
           chi2 = 2.*(prevNll-thisNll);
           if (chi2<0. && order>1) chi2=0.;
           if (prev_pdf!=NULL){
-            prob = getProbabilityFtest(chi2,order-prev_order,prev_pdf,bkgPdf,mass,data,Form("%s/Ftest_from_%s%d_cat%d.pdf",outDir.c_str(),funcType->c_str(),order,(cat+catOffset)),nBinsForFit);
+            prob = getProbabilityFtest(chi2,order-prev_order,prev_pdf,bkgPdf,mass,data,Form("%s/Ftest_from_%s%d_cat%d.pdf",outDir.c_str(),funcType->c_str(),order,(cat_index)),nBinsForFit);
             std::cout << "[INFO] F-test Prob == " << prob << std::endl;
           } else {
             prob = 0;
@@ -885,7 +887,7 @@ int main(int argc, char* argv[]){
 
         while (prob<upperEnvThreshold){
           cout << "==> " << *funcType << " " << order << endl;
-          RooAbsPdf *bkgPdf = getPdf(pdfsModel,*funcType,order,Form("env_pdf_%d_%s",(cat+catOffset),ext.c_str()));
+          RooAbsPdf *bkgPdf = getPdf(pdfsModel,*funcType,order,Form("env_pdf_%d_%s",(cat_index),ext.c_str()));
           if (!bkgPdf ){
             // assume this order is not allowed
             if (order >6) { std::cout << " [WARNING] could not add ] " << std::endl; break ;}
@@ -956,8 +958,8 @@ int main(int argc, char* argv[]){
       catindexname = "pdfindex_bhnl_m_" + mN_label + "_cat_" + category_label[cat].c_str();
       catname = Form("%s",category_label[cat].c_str());
       RooCategory catIndex(catindexname.c_str(),"c");
-      RooMultiPdf *pdf = new RooMultiPdf("qcd_multipdf","all pdfs",catIndex,storedPdfs);
-      RooRealVar nBackground("qcd_multipdf_norm","nbkg",data->sumEntries(),0,3*data->sumEntries()); //TODO do we want to keep this strategy?, make sure normalisation is correct
+      RooMultiPdf *pdf = new RooMultiPdf(Form("qcd_multipdf_bhnl_m_%s_cat_%s",mN_label.c_str(),catname.c_str()),"all pdfs",catIndex,storedPdfs);
+      RooRealVar nBackground(Form("qcd_multipdf_bhnl_m_%s_cat_%s_norm",mN_label.c_str(),catname.c_str()),"nbkg",data->sumEntries(),0,3*data->sumEntries()); //TODO do we want to keep this strategy?, make sure normalisation is correct
       //nBackground.removeRange(); // bug in roofit will break combine until dev branch brought in
       //double check the best pdf!
       int bestFitPdfIndex = getBestFitFunction(pdf,data,&catIndex,!verbose);
