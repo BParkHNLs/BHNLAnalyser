@@ -149,7 +149,10 @@ class DatacardsMaker(Tools):
     if do_categories and categories == None:
       raise RuntimeError('Please indicate which categories dictionnary to use')
     self.category_label = category_label
+    self.lumi_true = self.tools.getDataLumi(self.data_files)
     self.lumi_target = float(lumi_target)
+    if self.lumi_target == -1.:
+      self.lumi_target = self.lumi_true
     self.sigma_B = float(sigma_B)
     self.lhe_efficiency = float(lhe_efficiency)
     self.sigma_mult = float(sigma_mult)
@@ -217,8 +220,7 @@ class DatacardsMaker(Tools):
 
     if background_yields == 0.: background_yields = 1e-9
 
-    lumi_true = self.tools.getDataLumi(self.data_files)
-    if background_yields != 1e-9: background_yields = background_yields * self.lumi_target/lumi_true
+    if background_yields != 1e-9: background_yields = background_yields * self.lumi_target/self.lumi_true
 
     return background_yields
 
@@ -298,8 +300,7 @@ class DatacardsMaker(Tools):
 
       # extract the background yields from the fit and normalise to lumi
       background_yields = fitter.getBackgroundYieldsFromFit()
-      lumi_true = self.tools.getDataLumi(self.data_files)
-      yields = background_yields * self.lumi_target/lumi_true #NOTE this is needed as the background on which the fit is performed is not normalised to lumi
+      yields = background_yields * self.lumi_target/self.lumi_true #NOTE this is needed as the background on which the fit is performed is not normalised to lumi
 
     elif process == 'data_obs':
       fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, do_veto_SM=do_veto_SM, veto_SM=veto_SM, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
@@ -318,7 +319,8 @@ class DatacardsMaker(Tools):
     fitter.createFTestInputWorkspace(label=label)
 
     # run the F-test and save the output multipdf in a workspace
-    command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins} --cat_index {cidx} --do_veto_SM {veto} --veto_range_min {veto_min} --veto_range_max {veto_max}'.format(
+    #command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins} --cat_index {cidx} --do_veto_SM {veto} --veto_range_min {veto_min} --veto_range_max {veto_max}'.format(
+    command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins} --cat_index {cidx}'.format(
         inws = '{}/input_workspace_fTest_m_{}_cat_{}.root'.format(self.outputdir, mass, category.label),
         outws = '{}/workspace_background_multipdf_bhnl_m_{}_cat_{}.root'.format(self.outputdir, str(mass).replace('.', 'p'), category.label),
         outdir = self.outputdir + '/fTest',
