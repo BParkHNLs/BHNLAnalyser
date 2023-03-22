@@ -12,6 +12,7 @@ from samples import signal_samples
 from categories import categories
 from baseline_selection import selection
 from quantity import Quantity
+from ctau_points import ctau_points
 
 import matplotlib.pyplot as plt
 
@@ -37,10 +38,10 @@ class Systematics(Tools):
         signal_ctau = signal_file.ctau
 
         signal_selection = 'ismatched==1' if self.baseline_selection=='' else 'ismatched==1 && {}'.format(self.baseline_selection)
-        signal_yields_no_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=False)[0] 
-        signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, weight_hlt=weight_hlt)[0]
-        signal_yields_weight_plus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, weight_hlt=weight_hlt+'_plus_one_sigma')[0]
-        signal_yields_weight_minus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, weight_hlt=weight_hlt+'_minus_one_sigma')[0]
+        signal_yields_no_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=False)[0] 
+        signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, weight_hlt=weight_hlt)[0]
+        signal_yields_weight_plus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, weight_hlt=weight_hlt+'_plus_one_sigma')[0]
+        signal_yields_weight_minus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, weight_hlt=weight_hlt+'_minus_one_sigma')[0]
 
         syst_up = round((signal_yields_weight_plus_one_sigma / signal_yields_weight -1 ) * 100, 2)
         syst_down = round((signal_yields_weight_minus_one_sigma / signal_yields_weight -1) * 100, 2)
@@ -156,7 +157,7 @@ class Systematics(Tools):
 
       for signal_file in signal_files:
         #if signal_file.ctau != 1000.: continue
-        f = self.tools.getRootFile(signal_file.filename)
+        f = self.tools.getRootFile(signal_file.filename_Bc)
         tree = self.tools.getTree(f, 'signal_tree')
 
         canv_name = 'canv'+signal_file.filename
@@ -176,38 +177,42 @@ class Systematics(Tools):
         tot = 0
 
         hist_name = 'hist00'
-        selection = 'ismatched == 1 && trgmu_istriggering==1 && mu_istriggering==1'
-        #selection = 'ismatched == 1 && mu0_istriggering==1 && mu_istriggering==1'
+        #selection = 'ismatched == 1 && trgmu_istriggering==1 && mu_istriggering==1'
+        selection = 'ismatched == 1 && mu0_istriggering==1 && mu_istriggering==1'
         weight = '(1)'
         hist = self.tools.createHisto(tree, quantity, hist_name, weight, selection) 
         entries = hist.GetEntries()
+        print entries/entries_incl
         tot = tot + entries
         hist2d.Fill(mu0_bins[0], mu_bins[0], entries/entries_incl)
 
         hist_name = 'hist01'
-        selection = 'ismatched == 1 && trgmu_istriggering==1 && mu_istriggering==0'
-        #selection = 'ismatched == 1 && mu0_istriggering==1 && mu_istriggering==0'
+        #selection = 'ismatched == 1 && trgmu_istriggering==1 && mu_istriggering==0'
+        selection = 'ismatched == 1 && mu0_istriggering==1 && mu_istriggering==0'
         weight = '(1)'
         hist = self.tools.createHisto(tree, quantity, hist_name, weight, selection) 
         entries = hist.GetEntries()
+        print entries/entries_incl
         tot = tot + entries
         hist2d.Fill(mu0_bins[0], mu_bins[1], entries/entries_incl)
 
         hist_name = 'hist10'
-        selection = 'ismatched == 1 && trgmu_istriggering==0 && mu_istriggering==1'
-        #selection = 'ismatched == 1 && mu0_istriggering==0 && mu_istriggering==1'
+        #selection = 'ismatched == 1 && trgmu_istriggering==0 && mu_istriggering==1'
+        selection = 'ismatched == 1 && mu0_istriggering==0 && mu_istriggering==1'
         weight = '(1)'
         hist = self.tools.createHisto(tree, quantity, hist_name, weight, selection) 
         entries = hist.GetEntries()
+        print entries/entries_incl
         tot = tot + entries
         hist2d.Fill(mu0_bins[1], mu_bins[0], entries/entries_incl)
 
         hist_name = 'hist11'
-        selection = 'ismatched == 1 && trgmu_istriggering==0 && mu_istriggering==0'
-        #selection = 'ismatched == 1 && mu0_istriggering==0 && mu_istriggering==0'
+        #selection = 'ismatched == 1 && trgmu_istriggering==0 && mu_istriggering==0'
+        selection = 'ismatched == 1 && mu0_istriggering==0 && mu_istriggering==0'
         weight = '(1)'
         hist = self.tools.createHisto(tree, quantity, hist_name, weight, selection) 
         entries = hist.GetEntries()
+        print entries/entries_incl
         tot = tot + entries
         hist2d.Fill(mu0_bins[1], mu_bins[1], entries/entries_incl)
 
@@ -230,11 +235,12 @@ class Systematics(Tools):
           os.system('mkdir -p {}'.format(outdir))
         name = 'trigger_table_m{}_ctau{}'.format(str(signal_file.mass).replace('.', 'p'), str(signal_file.ctau).replace('.', 'p'))
         canv.SaveAs(outdir + name + '.png')
+        canv.SaveAs(outdir + name + '.pdf')
 
 
   def getMassFromResultFilename(self, filename):
     idx1 = filename.rfind('_m_')+3
-    idx2 = filename.rfind('_v2_')
+    idx2 = filename.rfind('_ctau_')
     return filename[idx1:idx2]
 
 
@@ -275,11 +281,15 @@ class Systematics(Tools):
       Study the signal parametrisation systematics based on the median value
     '''
 
-    path_results = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1/results'
-    path_results_plusonesigma = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1_plusonesigmacat/results'
-    path_results_minusonesigma = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1_minusonesigmacat/results'
+    #path_results = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1/results'
+    #path_results_plusonesigma = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1_plusonesigmacat/results'
+    #path_results_minusonesigma = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1_minusonesigmacat/results'
 
-    files_results = [f for f in glob(path_results + '/result_m_*_v2_*.txt')]
+    path_results = '../outputs/V12_08Aug22/limits/study_parametrisation_v2/results'
+    path_results_plusonesigma = '../outputs/V12_08Aug22/limits/study_parametrisation_percat_resolution/results'
+    path_results_minusonesigma = '../outputs/V12_08Aug22/limits/study_parametrisation_percat_resolution/results'
+
+    files_results = [f for f in glob(path_results + '/result_Majorana_m_*_v2_*.txt')]
     if len(files_results) == 0:
       raise RuntimeError('No limit results found under path "{}"'.format(path_results))
 
@@ -305,13 +315,84 @@ class Systematics(Tools):
 
       mass = self.getMassFromResultFilename(filename=file_results)
       v2 = self.getCouplingFromResultFilename(filename=file_results)
+      if float(mass) not in [1, 1.5, 2, 3., 4.5]: continue
       if float(mass) <= 3. and float(v2) > 1e-3: continue
       if float(mass) > 3. and float(v2) < 1e-3: continue
 
       syst_up = (median_plusonesigma / median -1) * 100. 
       syst_down = (median_minusonesigma / median -1) * 100. 
 
-      print 'mass {} v2 {}: syst up = {}% syst down = {}%'.format(mass, v2, round(syst_up, 1), round(syst_down, 1))
+      #print 'mass {} v2 {}: syst up = {}% syst down = {}%'.format(mass, v2, round(syst_up, 1), round(syst_down, 1))
+      print '{} & {} & {}\% \\\ '.format(mass, v2, round(syst_up, 1))
+
+
+  def studyShapeSystPerCategory(self):
+    '''
+      Study the signal parametrisation systematics based on the median value
+    '''
+
+    from categories import categories
+    from ctau_points import ctau_points
+
+    path_datacards_resoincl = '../outputs/V12_08Aug22/datacards/study_parametrisation_v2'
+    path_datacards_resopercat = '../outputs/V12_08Aug22/datacards/study_parametrisation_percat_resolution'
+
+    categories = categories['categories_0_50_150']
+
+    masses = [1.0, 1.5, 2.0, 3.0, 4.5]
+    ctau_points = ctau_points['close_to_exclusion']
+
+    outputdir = './myPlots/signal_parametrisation/limits'
+    if not path.exists(outputdir):
+      os.system('mkdir -p {}'.format(outputdir))
+
+    for category in categories:
+      if 'incl' in category.label: continue
+
+      for mass in masses:
+        for ctau_point_list in ctau_points:
+          # get the signal mass
+          if mass not in ctau_point_list.mass_list: continue
+          
+          for ctau_point in ctau_point_list.ctau_list:
+            signal_v2 = self.tools.getVV(mass=mass, ctau=ctau_point, ismaj=True)
+            signal_coupling = self.tools.getCouplingLabel(signal_v2)
+
+            datacard_name = 'datacard_bhnl_m_{}_ctau_{}_v2_{}_cat_{}.txt'.format(str(mass).replace('.', 'p'), str(ctau_point).replace('.', 'p'), str(signal_coupling).replace('.', 'p').replace('-', 'm'), category.label) 
+            result_name_resoincl = 'result_resoincl_m_{}_ctau_{}_v2_{}_cat_{}.txt'.format(str(mass).replace('.', 'p'), str(ctau_point).replace('.', 'p'), str(signal_coupling).replace('.', 'p').replace('-', 'm'), category.label) 
+            if not path.exists('{}/{}'.format(outputdir, result_name_resoincl)):
+              combine_command_resoincl = 'combine -M AsymptoticLimits {}/{}  --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams --run blind &> {}/{}'.format(path_datacards_resoincl, datacard_name, outputdir, result_name_resoincl) 
+              #print combine_command_resoincl
+              os.system(combine_command_resoincl)
+
+            result_name_resopercat = 'result_resopercat_m_{}_ctau_{}_v2_{}_cat_{}.txt'.format(str(mass).replace('.', 'p'), str(ctau_point).replace('.', 'p'), str(signal_coupling).replace('.', 'p').replace('-', 'm'), category.label) 
+            if not path.exists('{}/{}'.format(outputdir, result_name_resopercat)):
+              combine_command_resopercat = 'combine -M AsymptoticLimits {}/{}  --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams --run blind &> {}/{}'.format(path_datacards_resopercat, datacard_name, outputdir, result_name_resopercat) 
+              #print combine_command_resopercat
+              os.system(combine_command_resopercat)
+
+            ## get corresponding files for plus/minus one sigma 
+            #file_results_plusonesigma = self.getResultFile(path=path_results_plusonesigma, filename=file_results)
+            #file_results_minusonesigma = self.getResultFile(path=path_results_minusonesigma, filename=file_results)
+
+            median_resoincl = self.getMedianValue(filename='{}/{}'.format(outputdir, result_name_resoincl))
+            median_resopercat = self.getMedianValue(filename='{}/{}'.format(outputdir, result_name_resopercat))
+          
+            if median_resoincl == -99. or median_resopercat == -99.: 
+              continue
+
+            #mass = self.getMassFromResultFilename(filename=file_results)
+            #v2 = self.getCouplingFromResultFilename(filename=file_results)
+            #if float(mass) not in [1, 1.5, 2, 3., 4.5]: continue
+            #if float(mass) <= 3. and float(v2) > 1e-3: continue
+            #if float(mass) > 3. and float(v2) < 1e-3: continue
+
+            syst = (median_resopercat / median_resoincl -1) * 100. 
+            #syst_down = (median_minusonesigma / median -1) * 100. 
+
+            print 'mass {} v2 {} cat {}: syst = {}%'.format(mass, signal_coupling, category.label, round(syst, 1))
+            #print '{} & {} & {}\% \\\ '.format(mass, v2, round(syst_up, 1))
+
 
 
 
@@ -366,14 +447,14 @@ class Systematics(Tools):
           #signal_selection = 'ismatched==1' if self.baseline_selection=='' else 'ismatched==1 && {} && {}'.format(self.baseline_selection, category.definition_flat)
 
           ### for hlt weight
-          ##signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight, weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
-          ##signal_yields_weight_plus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight+'_plus_one_sigma', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
-          ##signal_yields_weight_minus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight+'_minus_one_sigma', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
+          ##signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight, weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
+          ##signal_yields_weight_plus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight+'_plus_one_sigma', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
+          ##signal_yields_weight_minus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight+'_minus_one_sigma', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
 
           ## for mu0 weight
-          #signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight, weight_muid='weight_mu_looseid')[0] 
-          #signal_yields_weight_plus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight+'_plus_one_sigma', weight_muid='weight_mu_looseid')[0] 
-          #signal_yields_weight_minus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight+'_plus_one_sigma', weight_muid='weight_mu_looseid')[0] 
+          #signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight, weight_muid='weight_mu_looseid')[0] 
+          #signal_yields_weight_plus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight+'_plus_one_sigma', weight_muid='weight_mu_looseid')[0] 
+          #signal_yields_weight_minus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight+'_plus_one_sigma', weight_muid='weight_mu_looseid')[0] 
 
           #sig_label = 'm_{}_ctau_{}_cat_{}'.format(signal_mass, signal_ctau, category.label)
           #filename_sig = '{}.root'.format(sig_label.replace('.', 'p'))
@@ -389,12 +470,12 @@ class Systematics(Tools):
           #hist_weight = ROOT.TH1D(hist_name_weight, hist_name_weight, 100, signal_mass-10*signal_resolution, signal_mass+10*signal_resolution)
           #tree_sig.Project(hist_name_weight, 'hnl_mass', selection_string_weight)
 
-          #signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight, weight_muid='weight_mu_looseid')[0] 
+          #signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight, weight_muid='weight_mu_looseid')[0] 
 
           ## for mu weight
-          ##signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight, weight_muid='weight_mu0_softid')[0] 
-          ##signal_yields_weight_plus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight+'_plus_one_sigma', weight_muid='weight_mu0_softid')[0] 
-          ##signal_yields_weight_minus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight+'_plus_one_sigma', weight_muid='weight_mu0_softid')[0] 
+          ##signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight, weight_muid='weight_mu0_softid')[0] 
+          ##signal_yields_weight_plus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight+'_plus_one_sigma', weight_muid='weight_mu0_softid')[0] 
+          ##signal_yields_weight_minus_one_sigma = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight+'_plus_one_sigma', weight_muid='weight_mu0_softid')[0] 
 
           #syst_up = (signal_yields_weight_plus_one_sigma / signal_yields_weight -1 ) * 100
           #syst_down = (signal_yields_weight_minus_one_sigma / signal_yields_weight -1) * 100
@@ -481,7 +562,7 @@ class Systematics(Tools):
           hist_weight_minus_one_sigma = ROOT.TH1D(hist_name_weight_minus_one_sigma, hist_name_weight_minus_one_sigma, 100, signal_mass-10*signal_resolution, signal_mass+10*signal_resolution)
           tree_sig.Project(hist_name_weight_minus_one_sigma, 'hnl_mass', selection_string_weight_minus_one_sigma)
 
-          signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight, weight_muid='weight_mu_looseid')[0] 
+          signal_yields_weight = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=self.lumi, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable', weight_pusig='weight_pu_sig_D', weight_mu0id=weight, weight_muid='weight_mu_looseid')[0] 
 
           # get the number of yields
           n_sig_weight = hist_weight.Integral()
@@ -541,8 +622,8 @@ if __name__ == '__main__':
   do_studyHLTsyst = False
   do_plotOccupancy = False
   do_plotTriggeringTable = False
-  do_studyShapeSyst = False
-  do_plotMCSyst = True
+  do_studyShapeSyst = True
+  do_plotMCSyst = False
 
   signal_labels = []
   signal_label_m1 = 'V12_08Aug22_m1'
@@ -556,7 +637,7 @@ if __name__ == '__main__':
   signal_labels.append(signal_label_m3)
   signal_labels.append(signal_label_m4p5)
 
-  signal_labels = ['V12_08Aug22_benchmark']
+  #signal_labels = ['V12_08Aug22_benchmark']
 
   #categories = categories['inclusive']
   categories = categories['categories_0_50_150']
@@ -575,7 +656,8 @@ if __name__ == '__main__':
     Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).plotTriggeringTable()
 
   if do_studyShapeSyst:
-    Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).studyShapeSyst()
+    #Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).studyShapeSyst()
+    Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).studyShapeSystPerCategory()
 
   if do_plotMCSyst:
     #weight = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable'
