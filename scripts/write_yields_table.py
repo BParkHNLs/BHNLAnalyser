@@ -27,8 +27,9 @@ def getBackgroundYields(workspace):
 
 def getCategoryTitle(category):
   title = category.title
-  title = title.replace('l_{xy}', 'L$_\mathrm{xy}$')
-  title = title.replace('#sigma_{xy}', '$\\sigma$')
+  title = title.replace('L_{xy}', 'L$_\mathrm{xy}$')
+  title = title.replace('#sigma', '$\\sigma$')
+  title = title.replace('B_{c}', 'B$_{c}$')
   title = title.replace('<=', '$\leq$')
   title = title.replace('<', '$<$')
   title = title.replace('>', '$>$')
@@ -68,7 +69,8 @@ def writeYieldsTable():
         v2 = tools.getVV(mass, ctau)
         coupling = tools.getCouplingLabel(v2)
 
-        datacard_name = 'datacard_bhnl_m_{}_v2_{}_cat_{}.txt'.format(str(mass).replace('.', 'p'), str(coupling).replace('.', 'p').replace('-', 'm'), category.label)
+        #datacard_name = 'datacard_bhnl_m_{}_v2_{}_cat_{}.txt'.format(str(mass).replace('.', 'p'), str(coupling).replace('.', 'p').replace('-', 'm'), category.label)
+        datacard_name = 'datacard_bhnl_m_{}_ctau_{}_v2_{}_cat_{}.txt'.format(str(mass).replace('.', 'p'), str(ctau).replace('.', 'p'), str(coupling).replace('.', 'p').replace('-', 'm'), category.label)
         try:
           card = open('{}/{}'.format(path, datacard_name))
           lines = card.readlines()
@@ -147,13 +149,13 @@ def writeEfficiencyTable():
       for ctau in ctaus:
         # get the number of signal yields before the pNN cut
         signal_selection = 'ismatched==1 && ' + baseline_selection + ' && ' + category.definition_flat
-        signal_yields_ini[ctau] = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=mass, ctau=ctau, lumi=41.6, sigma_B=472.8e9, isBc=False, strategy='inclusive', add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
+        signal_yields_ini[ctau] = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=mass, ctau=ctau, lumi=41.6, sigma_B=472.8e9, is_bc=False, strategy='inclusive', add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
 
         # get the number of signal yields after the pNN cut
         v2 = tools.getVV(mass, ctau)
         coupling = tools.getCouplingLabel(v2)
 
-        datacard_name = 'datacard_bhnl_m_{}_v2_{}_cat_{}.txt'.format(str(mass).replace('.', 'p'), str(coupling).replace('.', 'p').replace('-', 'm'), category.label)
+        datacard_name = 'datacard_bhnl_m_{}_ctau_{}_v2_{}_cat_{}.txt'.format(str(mass).replace('.', 'p'), str(ctau).replace('.', 'p'), str(coupling).replace('.', 'p').replace('-', 'm'), category.label)
         try:
           card = open('{}/{}'.format(path, datacard_name))
           lines = card.readlines()
@@ -190,11 +192,12 @@ def writeEfficiencyTable():
 if __name__ == '__main__':
 
   output_label = 'V12_08Aug22' 
-  tag = 'study_categorisation_0_50_150_new_features_v2_score0p95' 
+  tag = 'study_muon_isolation_v2_cutscore0p99' 
   path = '../outputs/{}/datacards/{}'.format(output_label, tag)
 
   masses = [1.0, 1.5, 2.0, 3.0, 4.5]
-  ctaus = [1.0, 10.0, 100.0, 1000.0]
+  #ctaus = [1.0, 10.0, 100.0, 1000.0]
+  ctaus = [0.01, 10.0, 1000.0, 10000.0]
   categories = categories['categories_0_50_150']
 
   data_label = 'V12_08Aug22'
