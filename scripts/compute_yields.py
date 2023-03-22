@@ -580,7 +580,7 @@ class ComputeYields(Tools):
     return efficiency, err_efficiency
 
 
-  def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', strategy='exclusive_fromlargerctau', isBc=False):
+  def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', strategy='exclusive_fromlargerctau', is_bc=False):
     '''
       signal yields computed as sigma_HNL * lumi * efficiency
     '''
@@ -590,13 +590,13 @@ class ComputeYields(Tools):
     fit_window_max = mass + 1.5 
 
     # get the signal files
-    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy=strategy)
+    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy=strategy, is_bc=is_bc)
 
     # get the tree
     treename = 'signal_tree'
     tree_sig = ROOT.TChain(treename)
     for signal_file in signal_files:
-      filename = signal_file.filename if not isBc else signal_file.filename_Bc
+      filename = signal_file.filename if not is_bc else signal_file.filename_Bc
       #print filename
       tree_sig.Add(filename)
 
@@ -605,18 +605,17 @@ class ComputeYields(Tools):
     selection_sig = cond_sig + ' && ' + self.selection
 
     # define signal weights
-    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=ctau)
+    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=ctau, is_bc=is_bc)
     lhe_efficiency = 0.08244 #FIXME
-    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=mass, ctau=ctau, sigma_B=sigma_B, lumi=lumi, lhe_efficiency=lhe_efficiency)
+    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=mass, ctau=ctau, sigma_B=sigma_B, lumi=lumi, lhe_efficiency=lhe_efficiency, is_bc=is_bc)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
     if add_weight_hlt: weight_sig += ' * ({})'.format(weight_hlt)
     if add_weight_pu: weight_sig += ' * ({})'.format(weight_pusig)
     if add_weight_muid: weight_sig += ' * ({}) * ({})'.format(weight_mu0id, weight_muid)
-    #print 'weight ',weight_sig
     #print '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig)
 
     # create histogram
-    hist_name = 'hist_signal_{}'.format(isBc)
+    hist_name = 'hist_signal_{}'.format(is_bc)
     hist = ROOT.TH1D(hist_name, hist_name, 100, fit_window_min, fit_window_max)
     branch_name = 'hnl_mass'
     tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
