@@ -10,7 +10,7 @@ from samples import signal_samples, data_samples
 
 
 class Fitter(Tools, MVATools):
-  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, resolution_p0=None, resolution_p1=None, do_cutbased=False, do_mva=False, training_label=None, do_parametric=False, reweighting_strategy=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, add_Bc=False, file_type='flat', mass_window_size='', fit_window_size='', nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, resolution_p0=None, resolution_p1=None, do_cutbased=False, do_mva=False, training_label=None, do_parametric=False, reweighting_strategy=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, is_bc=False, file_type='flat', mass_window_size='', fit_window_size='',do_veto_SM=None, veto_SM=None, nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_label = signal_label
@@ -24,18 +24,6 @@ class Fitter(Tools, MVATools):
     self.do_parametric = do_parametric
     self.reweighting_strategy = reweighting_strategy
     self.resolution = resolution_p0 + resolution_p1 * self.signal_mass
-    #if category_label == 'lxysig0to50_OS':
-    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.007703509188287372
-    #elif category_label == 'lxysig0to50_SS':
-    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.006724901142894119
-    #elif category_label == 'lxysig50to150_OS':
-    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.004581727840122679
-    #elif category_label == 'lxysig50to150_SS':
-    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.003208392557031866
-    #elif category_label == 'lxysiggt150_OS':
-    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.0009250455813521491
-    #elif category_label == 'lxysiggt150_SS':
-    #  self.resolution = resolution_p0 + resolution_p1 * self.signal_mass - 0.000937908972338861
 
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
@@ -46,8 +34,10 @@ class Fitter(Tools, MVATools):
     if self.lumi_true == 42.001: self.lumi_true = 41.6 
     self.sigma_B = sigma_B
     self.lhe_efficiency = lhe_efficiency
-    self.add_Bc = add_Bc
+    self.is_bc = is_bc
     self.file_type = file_type
+    self.do_veto_SM = do_veto_SM
+    self.veto_SM = veto_SM
     self.nbins = int(nbins)
     self.title = title
     self.plot_pulls = plot_pulls
@@ -109,10 +99,10 @@ class Fitter(Tools, MVATools):
     return label
 
 
-  def getMCWeight(self, signal_files, lumi):
+  def getMCWeight(self, signal_files, lumi, is_bc=False):
     weight_sig_list = ['gen_hnl_ct']
-    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=self.signal_ctau)
-    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=self.signal_mass, ctau=self.signal_ctau, sigma_B=self.sigma_B, lumi=lumi, lhe_efficiency=self.lhe_efficiency) #TODO what about isBc?
+    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=self.signal_ctau, is_bc=is_bc)
+    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=self.signal_mass, ctau=self.signal_ctau, sigma_B=self.sigma_B, lumi=lumi, lhe_efficiency=self.lhe_efficiency, is_bc=is_bc)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
     if self.add_weight_hlt: 
       weight_sig += ' * ({})'.format(self.weight_hlt)
@@ -171,25 +161,28 @@ class Fitter(Tools, MVATools):
 
     if process == 'signal' or process == 'both':
       if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
-        self.mean_CB  = ROOT.RooRealVar("mean_CB","mean_CB", self.signal_mass)
-        self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", 0.01, 0.005, 0.15)
-        #self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", self.resolution)
+        # energy scale correction applied
+        self.mean_CB  = ROOT.RooRealVar("mean_CB","mean_CB", self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
 
-        self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
-        self.n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
-        self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
-        self.n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
-        #self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -1.)
-        #self.n_1 = ROOT.RooRealVar("n_1", "n_1", 3.)
-        #self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 1.)
-        #self.n_2 = ROOT.RooRealVar("n_2", "n_2", 3.)
+        # to uncomment if parameters to be kept floating
+        #self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", 0.01, 0.005, 0.15)
+        #self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
+        #self.n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
+        #self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
+        #self.n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
+        #self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5, 0.0 ,1.0)
+
+        # parameters fixed
+        self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", self.resolution)
+        self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -1.)
+        self.n_1 = ROOT.RooRealVar("n_1", "n_1", 4.)
+        self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 1.)
+        self.n_2 = ROOT.RooRealVar("n_2", "n_2", 4.)
+        # defines the relative importance of the two CBs
+        self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5)
 
         self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
         self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
-
-        # defines the relative importance of the two CBs
-        self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5, 0.0 ,1.0)
-        #self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5)
 
         if self.signal_model_label == 'doubleCB':
           self.signal_model = ROOT.RooAddPdf("sig", "sig", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
@@ -205,7 +198,7 @@ class Fitter(Tools, MVATools):
           self.signal_model = ROOT.RooAddPdf('sig', 'sig', self.doubleCBpdf, self.gaussian, self.sigfrac_gauss) # make sure that the model has the same name as in datacard 
 
       elif self.signal_model_label == 'voigtian':
-        self.mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", self.signal_mass)
+        self.mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
         self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.01, 0., 5.)
         self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.01, 0.005, 0.15)
         #self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.03)
@@ -256,14 +249,15 @@ class Fitter(Tools, MVATools):
     #TODO do we want to apply cut on the hnl fit window (10sigma)?
     if self.do_blind:
       selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
+    if self.do_veto_SM:
+      selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(self.veto_SM.range_min, self.veto_SM.range_max)
     print 'sel bkg before: {}'.format(selection_bkg)
     print 'sel sig before: {}'.format(selection_sig)
 
     # open the file and get the tree
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     if process == 'signal' or process == 'both':
-      #TODO adpat for Bc?
-      signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=self.signal_mass, ctau=self.signal_ctau, strategy=self.reweighting_strategy)
+      signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=self.signal_mass, ctau=self.signal_ctau, strategy=self.reweighting_strategy, is_bc=self.is_bc)
       #print '\n\n'
       #print 'list of signal files'
       #for signal_file in signal_files:
@@ -271,16 +265,17 @@ class Fitter(Tools, MVATools):
       #print '\n\n'
 
       # define signal weights
-      weight_sig, weight_sig_list = self.getMCWeight(signal_files, lumi=self.lumi_true) 
+      weight_sig, weight_sig_list = self.getMCWeight(signal_files, lumi=self.lumi_true, is_bc=self.is_bc) 
       #TODO do we want to have the prefit plots scaled to the target lumi? In which case, also scale the background
 
       if self.do_cutbased:
         tree_sig = ROOT.TChain(treename)
         for signal_file in signal_files:
-          tree_sig.Add(signal_file.filename)
+          signal_filename = signal_file.filename if not self.is_bc else signal_file.filename_Bc
+          tree_sig.Add(signal_filename)
       elif self.do_mva:
         score_label = self.getSignalLabel()
-        filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename) 
+        filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename, is_bc=self.is_bc) 
         file_sig = self.tools.getRootFile(filename_sig)
         tree_sig = self.tools.getTree(file_sig, treename)
 
@@ -321,11 +316,13 @@ class Fitter(Tools, MVATools):
       #TODO correct to have only selection and not selection_sig/bkg below?
       if process == 'signal' or process == 'both':
         print '-> creating unbinned dataset'
-        rds_sig = ROOT.RooDataSet('rds_sig', 'rds_sig', tree_sig, quantity_set, selection)
+        #rds_sig = ROOT.RooDataSet('rds_sig', 'rds_sig', tree_sig, quantity_set, selection)
+        rds_sig = ROOT.RooDataSet('rds_sig', 'rds_sig', tree_sig, quantity_set, selection_sig)
         print '-> unbinned dataset created'
       if process == 'background' or process == 'both':
         print '-> creating unbinned dataset'
-        rds_bkg = ROOT.RooDataSet('rds_bkg', 'rds_bkg', tree_bkg, quantity_set, selection)
+        #rds_bkg = ROOT.RooDataSet('rds_bkg', 'rds_bkg', tree_bkg, quantity_set, selection)
+        rds_bkg = ROOT.RooDataSet('rds_bkg', 'rds_bkg', tree_bkg, quantity_set, selection_bkg)
         print '-> unbinned dataset created'
 
     # create canvas
@@ -707,7 +704,7 @@ class Fitter(Tools, MVATools):
   #  return n_bkg
 
 
-  def getSignalYieldsFromHist(self, isBc=False):
+  def getSignalYieldsFromHist(self):
     '''
       Returns the normalised number of signal yields in the fit window
     '''
@@ -715,15 +712,15 @@ class Fitter(Tools, MVATools):
     fit_window_min, fit_window_max = self.getRegion(nsigma=self.fit_window_size)
 
     # get the signal files
-    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=self.signal_mass, ctau=self.signal_ctau, strategy=self.reweighting_strategy)
+    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=self.signal_mass, ctau=self.signal_ctau, strategy=self.reweighting_strategy, is_bc=self.is_bc)
     #TODO do we want to cancel the reweighting for generated points?
 
     # define selection
     cond_sig = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
-    selection_sig = cond_sig + ' && ' + self.selection
+    selection_sig = cond_sig + ' && ' + self.selection #TODO in case we apply gen-matching condition, do it here /self.efficiency_genmatching
     
     # define signal weights
-    weight_sig, weight_sig_list = self.getMCWeight(signal_files, lumi=self.lumi_target)
+    weight_sig, weight_sig_list = self.getMCWeight(signal_files, lumi=self.lumi_target, is_bc=self.is_bc)
     print 'sel sig before: {}'.format(selection_sig)
 
     # get the tree
@@ -731,16 +728,16 @@ class Fitter(Tools, MVATools):
     if self.do_cutbased:
       tree_sig = ROOT.TChain(treename)
       for signal_file in signal_files:
-        filename = signal_file.filename if not isBc else signal_file.filename_Bc
+        filename = signal_file.filename if not self.is_bc else signal_file.filename_Bc
         tree_sig.Add(filename)
     elif self.do_mva:
       score_label = self.getSignalLabel()
-      filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename) 
+      filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename, is_bc=self.is_bc) 
       file_sig = self.tools.getRootFile(filename_sig)
       tree_sig = self.tools.getTree(file_sig, treename)
 
     # create histogram
-    hist_name = 'hist_signal_{}'.format(isBc)
+    hist_name = 'hist_signal'
     hist = ROOT.TH1D(hist_name, hist_name, self.nbins, fit_window_min, fit_window_max)
     branch_name = 'hnl_mass' if self.file_type == 'flat' else 'BToMuMuPi_hnl_mass'
     tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig if self.do_cutbased else self.mva_tools.getScoreSelection(selection_sig), wght=weight_sig))
@@ -749,16 +746,13 @@ class Fitter(Tools, MVATools):
     # get the number of yields
     n_sig = hist.Integral()
 
+    print 'n_sig = {}'.format(n_sig)
+
     return n_sig
 
 
   def getSignalYields(self):
-    n_sig = self.getSignalYieldsFromHist(isBc=False)
-    #print 'n_sig = {}'.format(n_sig)
-
-    if self.add_Bc:
-      n_sig += self.getSignalYieldsFromHist(isBc=True)
-      #print '+ {}'.format(n_sig)
+    n_sig = self.getSignalYieldsFromHist()
 
     return n_sig
 
@@ -777,14 +771,16 @@ class Fitter(Tools, MVATools):
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size) # sidebands are included
     workspace.factory('hnl_mass[{}, {}]'.format(bin_min, bin_max)) #TODO instead use the sigma from the fit
     if self.signal_model_label == 'voigtian':
-      workspace.factory('RooVoigtian::sig(hnl_mass, mean_voigtian[{m}], gamma_voigtian[{g}], sigma_voigtian[{s}])'.format(
+      workspace.factory('RooVoigtian::sig(hnl_mass, mean_voigtian_{cat}[{m}], gamma_voigtian_{cat}[{g}], sigma_voigtian_{cat}[{s}])'.format(
+            cat = self.category_label,
             m = self.mean_voigtian.getVal(),
             g = self.gamma_voigtian.getVal(),
             s = self.sigma_voigtian.getVal(),
             )
           )
     elif self.signal_model_label == 'doubleCB':
-      workspace.factory('RooDoubleCB::sig(hnl_mass, mean_CB[{m}], sigma_CB[{s}], alpha1[{a1}], n1[{n1}], alpha2[{a2}], n2[{n2}])'.format(
+      workspace.factory('RooDoubleCB::sig(hnl_mass, mean_CB_{cat}[{m}], sigma_CB_{cat}[{s}], alpha1_{cat}[{a1}], n1_{cat}[{n1}], alpha2_{cat}[{a2}], n2_{cat}[{n2}])'.format(
+            cat = self.category_label,
             m = self.mean_CB.getVal(),
             s = self.sigma_CB.getVal(),
             a1 = self.alpha_1.getVal(),
@@ -795,13 +791,14 @@ class Fitter(Tools, MVATools):
             )
           )
 
-    # make sure variables are constant
-    it = workspace.allVars().createIterator() 
-    all_vars = [it.Next() for _ in range( workspace.allVars().getSize())] 
-    for var in all_vars: 
-      var.setBins(self.nbins)
-      if var.GetName() in ['mean_voigtian', 'gamma_voigtian', 'sigma_voigtian']: #TODO adapt? 
-        var.setConstant()
+    ## make sure variables are constant
+    #it = workspace.allVars().createIterator() 
+    #all_vars = [it.Next() for _ in range( workspace.allVars().getSize())] 
+    #for var in all_vars: 
+    #  var.setBins(self.nbins)
+    #  #TODO have a look at this
+    #  if var.GetName() in ['mean_voigtian', 'gamma_voigtian', 'sigma_voigtian']: #TODO adapt? 
+    #    var.setConstant()
 
     workspace.Write()
     workspace.Print()
@@ -811,6 +808,8 @@ class Fitter(Tools, MVATools):
 
 
   def createBackgroundWorkspace(self, label=''):
+    #NOTE not used when using the discrete profiling; veto not applied 
+
     print ' --- Creating Background Workspace --- '
 
     if label == '': label = self.getBackgroundLabel()
@@ -854,7 +853,10 @@ class Fitter(Tools, MVATools):
 
     if label == '': label = self.getBackgroundLabel()
 
-    print 'sel data before: {}'.format(self.selection)
+    selection_dataobs = self.selection
+    if self.do_veto_SM:
+      selection_dataobs += ' && (hnl_mass < {} || hnl_mass > {})'.format(self.veto_SM.range_min, self.veto_SM.range_max)
+
     # getting the observed data
     treename = 'signal_tree' if self.file_type == 'flat' else 'Events'
     if self.do_cutbased:
@@ -863,7 +865,7 @@ class Fitter(Tools, MVATools):
         tree.Add(data_file.filename) 
     elif self.do_mva:
       score_label = label
-      filename = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=self.selection, label=score_label, treename=treename) 
+      filename = self.mva_tools.getFileWithScore(files=self.data_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_dataobs, label=score_label, treename=treename) 
       file_data = self.tools.getRootFile(filename)
       tree = self.tools.getTree(file_data, treename)
 
@@ -873,18 +875,19 @@ class Fitter(Tools, MVATools):
     hist_name = 'hist'
     hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
     branch_name = 'hnl_mass'
-    tree.Project(hist_name, branch_name, self.selection if self.do_cutbased else self.mva_tools.getScoreSelection(self.selection))
-    print 'sel data: {}'.format(self.selection if self.do_cutbased else self.mva_tools.getScoreSelection(self.selection))
+    tree.Project(hist_name, branch_name, selection_dataobs if self.do_cutbased else self.mva_tools.getScoreSelection(selection_dataobs))
+
     # normalise to the target luminosity
     hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
-    data_obs = ROOT.RooDataHist("data_obs", "data_obs", ROOT.RooArgList(hnl_mass), hist)
+    data_obs_name = 'data_obs_bhnl_m_{}_cat_{}'.format(str(self.signal_mass).replace('.', 'p'), self.category_label)
+    data_obs = ROOT.RooDataHist(data_obs_name, data_obs_name, ROOT.RooArgList(hnl_mass), hist)
 
     # create unbinned dataset
     #quantity_set = self.getQuantitySet()
     # add hnl_mass to the RooArgSet
     #quantity_set.add(hnl_mass)
     #print '-> creating unbinned dataset'
-    #data_obs = ROOT.RooDataSet('data_obs', 'data_obs', tree, quantity_set, self.selection)
+    #data_obs = ROOT.RooDataSet('data_obs', 'data_obs', tree, quantity_set, selection_dataobs)
     #print '-> unbinned dataset created'
     
     # create workspace
@@ -912,9 +915,8 @@ class Fitter(Tools, MVATools):
 
     # define selection
     selection_bkg = self.selection
-    print 'sel bkg before: {}'.format(selection_bkg)
-    #if self.do_blind:
-    #  selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(mass_window_min, mass_window_max)
+    if self.do_veto_SM:
+      selection_bkg += ' && (hnl_mass < {} || hnl_mass > {})'.format(self.veto_SM.range_min, self.veto_SM.range_max)
     
     # get the tree
     if self.do_cutbased:
@@ -931,7 +933,6 @@ class Fitter(Tools, MVATools):
     # create the histogram
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
     hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
-    #TODO modify the selection to enforce the blinding in the F-Test
     tree.Project(hist_name, branch_name, selection_bkg if self.do_cutbased else self.mva_tools.getScoreSelection(selection_bkg))
     print 'sel bkg: {}'.format(selection_bkg if self.do_cutbased else self.mva_tools.getScoreSelection(selection_bkg))
 
@@ -940,7 +941,8 @@ class Fitter(Tools, MVATools):
 
     # create the binned dataset
     hnl_mass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
-    hnl_mass_rdh = ROOT.RooDataHist("hnl_mass_rdh", "hnl_mass_rdh", ROOT.RooArgList(hnl_mass), hist)
+    hnl_mass_rdh_name = 'hnl_mass_rdh_bhnl_m_{}_cat_{}'.format(str(self.signal_mass).replace('.', 'p'), self.category_label)
+    hnl_mass_rdh = ROOT.RooDataHist(hnl_mass_rdh_name, hnl_mass_rdh_name, ROOT.RooArgList(hnl_mass), hist)
 
     # import the model in a workspace
     label = 'm_{}_cat_{}'.format(self.signal_mass, self.category_label)
