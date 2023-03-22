@@ -670,10 +670,16 @@ class Plotter(Tools):
     # draw the distributions
     frame.Draw()
     
-    hist_data_tot.Draw('same')
+    hist_data_tot.Draw('PE same')
     for hist_sig in signal_hists:
       hist_sig.Draw('histo same')
-    hist_data_tot.Draw('same')
+    hist_data_tot.Draw('PE same')
+
+    hist_sig_err = signal_hists[0].Clone('hist_sig_err')
+    hist_sig_err.SetLineWidth(0)
+    hist_sig_err.SetFillStyle(3244)
+    hist_sig_err.SetFillColor(ROOT.kGray+2)
+    hist_sig_err.Draw('E2 same')
 
     # draw the legend
     legend.Draw('same')
@@ -744,9 +750,15 @@ if __name__ == '__main__':
 
   dxy = Quantity(name_flat='probe_dxy_bs_uncorrected', label='probe_dxy_bs', title='probe #mu |d_{xy}| (BS) [cm]', nbins=90, bin_min=0, bin_max=0.5)
   dxy_sig = Quantity(name_flat='probe_dxy_sig_bs_uncorrected', label='probe_dxy_sig_bs', title='probe #mu |d_{xy}| significance (BS)', nbins=90, bin_min=0, bin_max=60)
+  lxy = Quantity(name_flat='lxy', label='lxy', title='#mu#mu l_{xy} [cm]', nbins=60, bin_min=0, bin_max=3)
+  lxy_sig = Quantity(name_flat='lxy_sig', label='lxy_sig', title='#mu#mu l_{xy} significance', nbins=60, bin_min=0, bin_max=200)
+  tag_pt = Quantity(name_flat='tag_pt', label='tag_pt', title='tag #mu pT [GeV]', nbins=60, bin_min=7, bin_max=20)
+  probe_pt = Quantity(name_flat='probe_pt', label='probe_pt', title='probe #mu pT [GeV]', nbins=60, bin_min=7, bin_max=20)
   #dxy_sig = Quantity(name_flat='probe_dxy_sig_bs_corrected_linearscale', label='probe_dxy_sig_bs', title='probe #mu |d_{xy}| significance (BS)', nbins=90, bin_min=0, bin_max=60)
   #quantities = [dxy, dxy_sig]
-  quantities = [dxy_sig]
+  #quantities = [dxy, dxy_sig, lxy, lxy_sig]
+  #quantities = [lxy_sig]
+  quantities = [tag_pt, probe_pt]
 
   data_files = data_samples['tag_and_probe']
   signal_files = signal_samples['tag_and_probe_BToJPsiKstar']
