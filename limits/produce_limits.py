@@ -16,17 +16,18 @@ def getOptions():
   parser.add_argument('--subdirlabel', type=str , dest='subdirlabel'           , help='name of the subdir'                                , default=None)
   parser.add_argument('--mass'       , type=str , dest='mass'                  , help='mass'                                              , default='1.0')
   parser.add_argument('--ctau'       , type=str , dest='ctau'                  , help='ctau'                                              , default=None)
+  parser.add_argument('--scenario'   , type=str , dest='scenario'              , help='signal under consideration'                        , default='Majorana', choices=['Majorana', 'Dirac'])
   parser.add_argument('--use_discrete_profiling', dest='use_discrete_profiling', help='use discrete profiling method', action='store_true', default=False)
   parser.add_argument('--run_blind'             , dest='run_blind'             , help='run blinded?'                 , action='store_true', default=False)
   return parser.parse_args()
 
 
 class LimitProducer(object):
-  #def __init__(self, opt):
-  def __init__(self, mass, ctau, homedir, indirlabel, outdirlabel, subdirlabel, run_blind, use_discrete_profiling, fe=None, fu=None, ft=None):
+  def __init__(self, mass, ctau, scenario, homedir, indirlabel, outdirlabel, subdirlabel, run_blind, use_discrete_profiling, fe=None, fu=None, ft=None):
     self.tools = Tools()
     self.mass = mass
     self.ctau = ctau
+    self.scenario = scenario
     self.homedir = homedir
     self.indirlabel = indirlabel
     self.outdirlabel = outdirlabel
@@ -51,7 +52,7 @@ class LimitProducer(object):
     self.coupling = self.getCouplingLabel(v2)
 
     # produce limits
-    command = 'combine -M AsymptoticLimits {i}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'))
+    command = 'combine -M AsymptoticLimits {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
     if self.run_blind:
       command += ' --run blind'
     if self.use_discrete_profiling:
@@ -71,13 +72,13 @@ class LimitProducer(object):
     if not path.exists(outputdir):
       os.system('mkdir -p {}'.format(outputdir))    
 
-    result_file_name = '{}/result_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, str(self.mass), str(self.ctau), str(self.coupling)) 
+    result_file_name = '{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(self.ctau), str(self.coupling)) 
     with open(result_file_name, 'w') as ff:
         print >> ff, results
 
     # produce prefit plots
-    os.system('mkdir -p  {}/outputs/{}/datacards/{}/prefit_plots_m_{}_ctau_{}_v2_{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, str(self.mass).replace('.', 'p'), str(self.ctau).replace('.', 'p'), str(self.coupling).replace('.', 'p').replace('-', 'm')))
-    command_prefit_plot = 'combine -M FitDiagnostics {i}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams --out {hm}/outputs/{out}/datacards/{sub}/prefit_plots_m_{m}_ctau_{ctau}_v2_{v2}'.format(i=self.indirlabel, hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'))
+    os.system('mkdir -p  {}/outputs/{}/datacards/{}/prefit_plots_{}_m_{}_ctau_{}_v2_{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.scenario, str(self.mass).replace('.', 'p'), str(self.ctau).replace('.', 'p'), str(self.coupling).replace('.', 'p').replace('-', 'm')))
+    command_prefit_plot = 'combine -M FitDiagnostics {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams --out {hm}/outputs/{out}/datacards/{sub}/prefit_plots_{sc}_m_{m}_ctau_{ctau}_v2_{v2}'.format(i=self.indirlabel, hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
     os.system(command_prefit_plot)
 
 
@@ -87,6 +88,7 @@ if __name__ == "__main__":
   producer = LimitProducer(
       mass = opt.mass,
       ctau = opt.ctau,
+      scenario = opt.scenario,
       homedir = opt.homedir,
       indirlabel = opt.indirlabel,
       outdirlabel = opt.outdirlabel,
