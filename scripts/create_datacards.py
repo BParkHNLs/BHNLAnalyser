@@ -17,6 +17,7 @@ from ABCD_regions import ABCD_regions
 from qcd_white_list import white_list
 from quantity import Quantity
 from ctau_points import ctau_points
+from vetoes import Veto, vetoes
 
 
 def getOptions():
@@ -110,7 +111,7 @@ def printInfo(opt):
 
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', do_cutbased=False, do_mva=False, training_label='', do_parametric=False, cut_score='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, resolution_p0=None, resolution_p1=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, plot_prefit=False, homedir='', outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', vetoes='', do_cutbased=False, do_mva=False, training_label='', do_parametric=False, cut_score='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, resolution_p0=None, resolution_p1=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, plot_prefit=False, homedir='', outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -119,6 +120,7 @@ class DatacardsMaker(Tools):
     self.qcd_files = qcd_files
     self.white_list = white_list
     self.baseline_selection = baseline_selection
+    self.vetoes = vetoes
     self.do_cutbased = do_cutbased
     self.do_mva = do_mva
     self.training_label = training_label
@@ -176,17 +178,16 @@ class DatacardsMaker(Tools):
 
   def getWindowList(self):
     masses = []
-    resolutions = []
     windows = []
     for signal_file in signal_files:
       window = {}
       mass = signal_file.mass
+      #TODO if resolution per category, make sure this is correct
       resolution = self.resolution_p0 + self.resolution_p1 * mass
-      if mass not in masses and resolution not in resolutions: 
+      if mass not in masses: 
         window['mass'] = mass
         window['resolution'] = resolution
         masses.append(mass)
-        resolutions.append(resolution)
         windows.append(window)
     return windows
 
@@ -268,7 +269,7 @@ class DatacardsMaker(Tools):
     return label
 
 
-  def runFitter(self, process='', mass=None, ctau=None, category='', selection='', label=''):
+  def runFitter(self, process='', mass=None, ctau=None, category='', selection='', do_veto_SM='', veto_SM='', label=''):
     '''
       Run the parametric shapes and extract the yields
     '''
@@ -277,7 +278,7 @@ class DatacardsMaker(Tools):
 
     # initialise the fitter
     if process == 'signal':
-      fitter = Fitter(signal_label=self.signal_label, data_files=self.data_files, selection=selection, mass=mass, ctau=ctau, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, reweighting_strategy=self.reweighting_strategy, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, add_Bc=self.add_Bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, add_weight_muid=self.add_weight_muid, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(signal_label=self.signal_label, data_files=self.data_files, selection=selection, mass=mass, ctau=ctau, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, reweighting_strategy=self.reweighting_strategy, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, is_bc=category.is_bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, add_weight_muid=self.add_weight_muid, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_signal(label=label)
@@ -290,7 +291,7 @@ class DatacardsMaker(Tools):
         fitter.producePrefitPlot(label=label)
 
     elif process == 'background':
-      fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, do_veto_SM=do_veto_SM, veto_SM=veto_SM, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_background(label=label)
@@ -301,7 +302,7 @@ class DatacardsMaker(Tools):
       yields = background_yields * self.lumi_target/lumi_true #NOTE this is needed as the background on which the fit is performed is not normalised to lumi
 
     elif process == 'data_obs':
-      fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, do_veto_SM=do_veto_SM, veto_SM=veto_SM, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
       fitter.process_data_obs(label=label)
@@ -311,13 +312,13 @@ class DatacardsMaker(Tools):
     return yields
 
 
-  def runFTestRoutine(self, mass, window_size, category, selection, label):
+  def runFTestRoutine(self, mass, window_size, category, selection, do_veto_SM, veto_SM, label, cat_index):
     # produce input workspace 
-    fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, lumi_target=self.lumi_target)
+    fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, fit_window_size=self.fit_window_size, do_veto_SM=do_veto_SM, veto_SM=veto_SM, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, lumi_target=self.lumi_target)
     fitter.createFTestInputWorkspace(label=label)
 
     # run the F-test and save the output multipdf in a workspace
-    command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins}'.format(
+    command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins} --cat_index {cidx} --do_veto_SM {veto} --veto_range_min {veto_min} --veto_range_max {veto_max}'.format(
         inws = '{}/input_workspace_fTest_m_{}_cat_{}.root'.format(self.outputdir, mass, category.label),
         outws = '{}/workspace_background_multipdf_bhnl_m_{}_cat_{}.root'.format(self.outputdir, str(mass).replace('.', 'p'), category.label),
         outdir = self.outputdir + '/fTest',
@@ -328,6 +329,10 @@ class DatacardsMaker(Tools):
         fws = self.fit_window_size, 
         mws = self.mass_window_size,
         nbins = self.nbins,
+        cidx = cat_index,
+        veto = do_veto_SM,
+        veto_min = veto_SM.range_min,
+        veto_max = veto_SM.range_max,
         )
     if self.do_blind: command_ftest += ' --blind'
 
@@ -340,7 +345,7 @@ class DatacardsMaker(Tools):
 
   def createSigHisto(self, mass, ctau, category, signal_yields, selection, label):
     #TODO modify to account for Bc samples?
-    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy='exclusive_fromlargerctau') # take as default exclusive reweighting strategy
+    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy='exclusive_fromlargerctau', is_bc=category.is_bc) # take as default exclusive reweighting strategy
     signal_file = signal_files[0]
 
     signal_mass, signal_coupling = self.getSignalMassCoupling(signal_file)
@@ -452,6 +457,16 @@ class DatacardsMaker(Tools):
 
   def writeCard(self, card_label, cat_label, signal_yields, background_yields):
     datacard_name = 'datacard_{}.txt'.format(card_label)
+
+    # define selection systematics
+    syst_sel = 1.00 
+    if 'lxysig0to50' in card_label:
+      syst_sel = 1.05
+    elif 'lxysig50to150' in card_label:
+      syst_sel = 1.05
+    elif 'lxysiggt150' in card_label:
+      syst_sel = 1.10
+
     if self.do_shape_analysis and not self.use_discrete_profiling:
       shape_line = '\n'.join([
           'shapes     sig        {lbl}   workspace_signal_{cardlbl}.root      workspace:sig'.format(lbl=cat_label, cardlbl=card_label),
@@ -472,8 +487,8 @@ class DatacardsMaker(Tools):
     elif self.do_shape_analysis and self.use_discrete_profiling:
       shape_line = '\n'.join([
           'shapes     sig        {lbl}   workspace_signal_{cardlbl}.root           workspace:sig'.format(lbl=cat_label, cardlbl=card_label),
-          'shapes     qcd        {lbl}   workspace_background_multipdf_{lbl}.root  workspace:qcd_multipdf'.format(lbl = cat_label),
-          'shapes     data_obs   {lbl}   workspace_data_obs_{lbl}.root             workspace:data_obs'.format(lbl=cat_label),
+          'shapes     qcd        {lbl}   workspace_background_multipdf_{lbl}.root  workspace:qcd_multipdf_{lbl}'.format(lbl = cat_label),
+          'shapes     data_obs   {lbl}   workspace_data_obs_{lbl}.root             workspace:data_obs_{lbl}'.format(lbl=cat_label),
           ])
       norm_line = ''.format(
           lbl = cat_label,
@@ -521,12 +536,12 @@ process                                                  sig                    
 process                                                  -1                             1                   
 rate                                                     {sig_yields}                   {bkg_yields}    
 --------------------------------------------------------------------------------------------------------------------------------------------
-syst_sig_trigger_sf                        lnN           1.05                           -
-syst_sig_muid_sf                           lnN           1.01                           -
-syst_sig_norm_{lbl}                        lnN           1.15                           -
-syst_sig_track_eff                         lnN           1.05                           -
-syst_sig_sel_{lbl}                         lnN           1.2                            -    
-syst_sig_pheno                             lnN           1.15                           -
+syst_sig_mu_trigger_sf_{lbl}                  lnN           1.05                           -
+syst_sig_mu_muid_sf_{lbl}                     lnN           1.01                           -
+syst_sig_mu_norm                              lnN           1.15                           -
+syst_sig_mu_track_eff_{lbl}                   lnN           1.05                           -
+syst_sig_mu_sel_{lbl}                         lnN           {syst_sel}                     -    
+syst_sig_mu_shape_{lbl}                       lnN           1.15                           -
 {bkg_syst_line}   
 --------------------------------------------------------------------------------------------------------------------------------------------
 {norm_line}
@@ -539,6 +554,7 @@ syst_sig_pheno                             lnN           1.15                   
             sig_yields = signal_yields,
             bkg_yields = background_yields,
             bkg_syst_line = bkg_syst_line,
+            syst_sel = syst_sel,
             norm_line = norm_line,
             index_line = index_line,
             autostat_line = autostat_line,
@@ -567,7 +583,7 @@ bkg {bkg_yields}
 
 
   def process(self):
-    for category in categories:
+    for icat, category in enumerate(categories):
       if self.do_categories and 'incl' in category.label: continue
       if not self.do_categories and 'incl' not in category.label: continue
 
@@ -577,11 +593,57 @@ bkg {bkg_yields}
 
       # loop on the different mass windows
       for window in self.getWindowList():
+        # only keep masses > 3 GeV for bc
+        if category.is_bc and float(window['mass']) < 3: continue
+        if not category.is_bc and float(window['mass']) > 4.7: continue #FIXME to be adapted once we run on the full grid
+
         # get the category label
         cat_label = self.getCategoryLabel(signal_mass=window['mass'], category=category)
 
+        #if category.label == 'lxysig0to50_OS':
+        #  self.resolution_p0 = 1.01753e-03
+        #  self.resolution_p1 = 8.03358e-03
+        #elif category.label == 'lxysig50to150_OS':
+        #  self.resolution_p0 = 8.79842e-04
+        #  self.resolution_p1 = 7.88636e-03
+        #elif category.label == 'lxysiggt150_OS':
+        #  self.resolution_p0 = 3.89498e-04
+        #  self.resolution_p1 = 7.26595e-03
+        #if category.label == 'lxysig0to50_SS':
+        #  self.resolution_p0 = 8.78062e-04
+        #  self.resolution_p1 = 8.08446e-03
+        #elif category.label == 'lxysig50to150_SS':
+        #  self.resolution_p0 = 4.51828e-04
+        #  self.resolution_p1 = 8.22587e-03
+        #elif category.label == 'lxysiggt150_SS':
+        #  self.resolution_p0 = 3.23007e-04
+        #  self.resolution_p1 = 7.29370e-03
+
+        # determine if a veto enters the fit window
+        fit_window_min = window['mass'] - self.fit_window_size * window['resolution']
+        fit_window_max = window['mass'] + self.fit_window_size * window['resolution']
+        do_veto_SM = 0
+        veto_range_min = -99
+        veto_range_max = -99
+
+        for veto in self.vetoes:
+          if veto.range_max > fit_window_min or veto.range_min < fit_window_max:
+            do_veto_SM = 1
+            veto_range_min = veto.range_min
+            veto_range_max = veto.range_max
+            break
+
+        veto_SM = Veto(range_min = veto_range_min, range_max = veto_range_max)
+
+        # skip signal points in vetoed region
+        do_skip_mass = False
+        for veto in self.vetoes:
+          if window['mass'] > veto.range_min and window['mass'] < veto.range_max:
+            do_skip_mass = True
+        if do_skip_mass : continue
+
         # for the moment, remove low displacement category for mass 3 GeV
-        if float(window['mass']) == 3 and category.label in ['lxysig0to50_OS', 'lxysig0to50_SS', 'lxysig50to150_OS', 'lxysig50to150_SS', 'lxy0to1_OS', 'lxy0to1_SS', 'lxy0to1_OS_Bc', 'lxy0to1_SS_Bc']: continue
+        #if float(window['mass']) == 3 and category.label in ['lxysig0to50_OS', 'lxysig0to50_SS', 'lxysig50to150_OS', 'lxysig50to150_SS', 'lxysig0to50_OS_Bc', 'lxysig0to50_SS_Bc', 'lxysig50to150_OS_Bc', 'lxysig50to150_SS_Bc']: continue
 
         # define the selection
         selection = self.baseline_selection
@@ -611,12 +673,12 @@ bkg {bkg_yields}
           background_yields = self.getBackgroundYields(mass=window['mass'], category=category, selection=selection)
 
         elif self.do_shape_analysis and not self.use_discrete_profiling:
-          background_yields = self.runFitter(process='background', mass=window['mass'], category=category, selection=selection, label=cat_label) 
-          data_obs = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, label=cat_label)
+          background_yields = self.runFitter(process='background', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label) 
+          data_obs = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label)
 
         elif self.do_shape_analysis and self.use_discrete_profiling:
-          background_yields = self.runFTestRoutine(mass=window['mass'], window_size=self.fit_window_size, category=category, selection=selection, label=cat_label)
-          data_obs = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, label=cat_label)
+          background_yields = self.runFTestRoutine(mass=window['mass'], window_size=self.fit_window_size, category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label, cat_index=icat)
+          data_obs = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label)
 
         # loop on the signal points
         for ctau_point_list in self.ctau_points:
@@ -627,19 +689,8 @@ bkg {bkg_yields}
           if signal_mass not in ctau_point_list.mass_list: continue
           
           for ctau_point in ctau_point_list.ctau_list:
-            print '\n\n\n mass {} ctau {}'.format(signal_mass, ctau_point)
             signal_ctau = ctau_point
             signal_coupling = self.getSignalCoupling(signal_mass=signal_mass, signal_ctau=signal_ctau)
-
-            #if signal_mass <= 2 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-4): continue
-            #if signal_mass> 2 and signal_mass <= 3 and (float(signal_coupling) < 7e-5 or float(signal_coupling) > 7e-4): continue
-            #if signal_mass> 3 and (float(signal_coupling) < 7e-4 or float(signal_coupling) > 7e-2): continue
-            #if signal_mass <= 2 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-3): continue
-            #if signal_mass> 2 and signal_mass <= 3 and (float(signal_coupling) < 3e-5 or float(signal_coupling) > 3e-3): continue
-            #if signal_mass> 3 and (float(signal_coupling) < 7e-5 or float(signal_coupling) > 7e-2): continue
-            #if float(signal_coupling) < 1e-5 or float(signal_coupling) > 1e-1: continue
-
-            #if signal_ctau != 0.1: continue
 
             # get the process label
             card_label = self.getCardLabel(signal_mass=signal_mass, signal_ctau=signal_ctau, signal_coupling=signal_coupling, category=category)
@@ -647,10 +698,15 @@ bkg {bkg_yields}
             # get the signal yields (if not shape analysis)
             if self.do_counting or self.do_shape_TH1:
               signal_yields = self.getSignalYields(mass=signal_mass, ctau=signal_ctau, category=category, selection=selection)
-        
             # get the model shape and yields for shape analysis
             if self.do_shape_analysis:
               signal_yields = self.runFitter(process='signal', mass=signal_mass, ctau=signal_ctau, category=category, selection=selection, label=card_label)
+              # apply correction to the signal yields (hopefully this is only temporary)
+              corr = 1.
+              if category.label in ['lxysig0to50_OS', 'lxysig0to50_SS']: corr = 0.82
+              elif category.label in ['lxysig50to150_OS', 'lxysig50to150_SS']: corr = 0.88
+              elif category.label in ['lxysiggt150_OS', 'lxysiggt150_SS']: corr = 1.
+              signal_yields = signal_yields * corr
 
             # create histograme for non-parametric shape strategy
             if self.do_shape_TH1:
@@ -751,6 +807,7 @@ if __name__ == '__main__':
         qcd_files = qcd_files,
         white_list = white_list,
         baseline_selection = baseline_selection, 
+        vetoes = vetoes,
         do_cutbased = do_cutbased,
         do_mva = do_mva,
         training_label = training_label,
