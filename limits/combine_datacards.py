@@ -27,7 +27,8 @@ def getOptions():
   parser.add_argument('--outdirlabel'       , type=str, dest='outdirlabel'       , help='name of the outdir'                           , default=None)
   parser.add_argument('--subdirlabel'       , type=str, dest='subdirlabel'       , help='name of the subdir'                           , default=None)
   parser.add_argument('--mass'              , type=str, dest='mass'              , help='mass'                                         , default='1.0')
-  parser.add_argument('--signal_type'       , type=str, dest='signal_type'       , help='signal under consideration'                   , default='majorana', choices=['majorana', 'dirac'])
+  #parser.add_argument('--signal_type'       , type=str, dest='signal_type'       , help='signal under consideration'                   , default='majorana', choices=['majorana', 'dirac'])
+  parser.add_argument('--scenario'          , type=str, dest='scenario'          , help='signal under consideration'                   , default='Majorana', choices=['Majorana', 'Dirac'])
   parser.add_argument('--categories_label'  , type=str, dest='categories_label'  , help='label of the list of categories'              , default='standard')
   parser.add_argument('--mass_whitelist'    , type=str, dest='mass_whitelist'    , help='allowed values for masses'                    , default=None)
   parser.add_argument('--mass_blacklist'    , type=str, dest='mass_blacklist'    , help='values for masses to skip'                    , default=None)
@@ -38,108 +39,202 @@ def getOptions():
   return parser.parse_args()
 
 
-# getting the parsed info
-opt = getOptions()
-
-homedir = opt.homedir
-outdirlabel = opt.outdirlabel
-subdirlabel = opt.subdirlabel
-signal_type = opt.signal_type #TODO for the moment, does not do anything 
-the_mass = opt.mass
-categories = categories[opt.categories_label]
-path_to_datacards = subdirlabel
-datacard_wildcard = opt.wildcard
-
-# create directories
-outputdir = '{}/outputs/{}/datacards_combined/{}'.format(homedir, outdirlabel, subdirlabel)
-if not path.exists(outputdir):
-  os.system('mkdir -p {}'.format(outputdir))    
-
-print 'loading cards...'
-all_datacards = []
-all_datacards = glob('/'.join([path_to_datacards, datacard_wildcard]))
-print '... datacards loaded'
-
-categories_to_combine = []
-for category in categories:
-  if 'incl' in category.label: continue
-  categories_to_combine.append(category.label)
-
-# nested dictionary with mass and coupling as keys
-digested_datacards = OrderedDict()
-
-# store results for 2D limits
-limits2D = OrderedDict()
-
-the_set_datacards = all_datacards
-
-#for card in all_datacards:
-#  print card
-
-for idc_ref in the_set_datacards:
-    name = idc_ref.split('/')[-1]
-    signal_mass = name[name.find('m_')+2:name.find('_', name.find('m_')+2)]
-    signal_coupling = name[name.find('v2_')+3:name.find('_cat')]
-   
-    # get white/black listed mass/couplings
-    if opt.mass_whitelist != None:
-      if str(signal_mass) not in opt.mass_whitelist.split(','): continue
+class DatacardCombiner(object):
+  def __init__(self, opt):
+    self.homedir = opt.homedir
+    self.outdirlabel = opt.outdirlabel
+    self.subdirlabel = opt.subdirlabel
+    #signal_type = opt.signal_type #TODO for the moment, does not do anything 
+    self.scenario = opt.scenario
+    self.the_mass = opt.mass
+    self.categories = categories[opt.categories_label]
+    self.path_to_datacards = self.subdirlabel
+    self.datacard_wildcard = opt.wildcard
+    self.mass_whitelist = opt.mass_whitelist
+    self.mass_blacklist = opt.mass_blacklist
+    self.coupling_whitelist = opt.coupling_whitelist
+    self.coupling_blacklist = opt.coupling_blacklist
     
-    if opt.mass_blacklist != None:
-      if str(signal_mass) in opt.mass_blacklist.split(','): continue
-    
-    if opt.coupling_whitelist != None:
-      if str(signal_coupling) not in opt.coupling_whitelist.split(','): continue 
-    
-    if opt.coupling_blacklist != None:
-      if str(signal_coupling) in opt.coupling_blacklist.split(','): continue 
 
-    # will fetch the datacards
-    if signal_mass not in digested_datacards.keys():
-        digested_datacards[signal_mass] = OrderedDict()
-    
-    if signal_coupling not in digested_datacards[signal_mass].keys():
-        digested_datacards[signal_mass][signal_coupling] = []
+  def getRateList(self, datacard_name):
+    '''
+      Get the list of the signal and background rates from the initial datacard
+    '''
+    f = open(datacard_name)
+    lines = f.readlines()
+    for line in lines:
+      if 'rate ' not in line: continue
+      rate_line = line
+      break
+    idx = 0
+    rate_list = []
+    while idx < len(rate_line) and idx != -1:
+      if rate_line[idx].isdigit():
+        idx1 = idx
+        idx2 = rate_line.find(' ', idx+1)
+        rate_list.append(float(rate_line[idx1:idx2]))
+        idx = idx2
+      else:
+        idx = idx + 1
 
-    for cat in categories_to_combine:
-      #print 'cat ',cat
-      if cat+'.txt' in idc_ref:
-        #print '{} {} {}'.format(signal_mass, signal_coupling, idc_ref)
-        digested_datacards[signal_mass][signal_coupling].append(idc_ref) 
-    
-    
-for mass, couplings in digested_datacards.iteritems():
-    if mass != the_mass: continue
-    print 'mass =', mass
-    
-    v2s       = []
-    obs       = []
-    minus_two = []
-    minus_one = []
-    central   = []
-    plus_one  = []
-    plus_two  = []
+    return rate_list
 
-    for coupling in couplings.keys():
-        print '\tcoupling =', coupling
 
-        datacards_to_combine = digested_datacards[mass][coupling]
-                                                              
-        # combine the cards    
-        command = 'combineCards.py'
-        for idc in datacards_to_combine:
-          #print idc
-          #print '{} \t {}'.format(cat, idc)
+  def updateRateList(self, rate_list):
+    '''
+      Update the signal rates according to given coupling scenario
+    '''
 
-          # fetch ctau to add to combined datacard name
-          ctau = idc[idc.find('ctau_')+5:idc.find('_', idc.find('ctau_')+5)]
+    updated_rate_list = []
+    for rate in rate_list:
+      if rate != 1.:
+        updated_rate = rate * 0.5
+      else:
+        # do not modify background rate, keep it to 1
+        updated_rate = 1.
 
-          if any([v in idc for v in categories_to_combine]):
-            command += ' {}'.format(idc)
+      updated_rate_list.append(updated_rate)
 
-        command += (' > {o}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(o=outputdir, m=str(mass), ctau=ctau, v2=coupling)) 
+    return updated_rate_list
 
-        #print command
-        os.system(command)
+
+  def updateDatacard(self, datacard_name, updated_rate_list):
+    '''
+      Update the datacard with the updated signal rates
+    '''
+    updated_datacard_name = datacard_name + '_tmp'
+    updated_datacard = open(updated_datacard_name, 'w+')
+    datacard = open(datacard_name)
+    lines = datacard.readlines()
+    for line in lines:
+      if 'rate ' in line:
+        rate_line = 'rate                                                           '            
+        for updated_rate in updated_rate_list:
+          rate_line += '{}  '.format(updated_rate)    
+        updated_datacard.write(rate_line + '\n')
+
+      else:
+        updated_datacard.write(line)
+
+    updated_datacard.close()
+
+    print 'mv {} {}'.format(updated_datacard_name, datacard_name)
+    os.system('mv {} {}'.format(updated_datacard_name, datacard_name))
+
+
+  def process(self):
+    # create directories
+    outputdir = '{}/outputs/{}/datacards_combined/{}'.format(self.homedir, self.outdirlabel, self.subdirlabel)
+    if not path.exists(outputdir):
+      os.system('mkdir -p {}'.format(outputdir))    
+
+    print 'loading cards...'
+    all_datacards = []
+    all_datacards = glob('/'.join([self.path_to_datacards, self.datacard_wildcard]))
+    print '... datacards loaded'
+
+    categories_to_combine = []
+    for category in self.categories:
+      if 'incl' in category.label: continue
+      categories_to_combine.append(category.label)
+
+    # nested dictionary with mass and coupling as keys
+    digested_datacards = OrderedDict()
+
+    # store results for 2D limits
+    limits2D = OrderedDict()
+
+    the_set_datacards = all_datacards
+
+    #for card in all_datacards:
+    #  print card
+
+    for idc_ref in the_set_datacards:
+        name = idc_ref.split('/')[-1]
+        signal_mass = name[name.find('m_')+2:name.find('_', name.find('m_')+2)]
+        signal_coupling = name[name.find('v2_')+3:name.find('_cat')]
+       
+        # get white/black listed mass/couplings
+        if self.mass_whitelist != None:
+          if str(signal_mass) not in self.mass_whitelist.split(','): continue
         
-        print ('\t\t -> combined datacards between the categories in {o}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(o=outputdir, m=str(mass), ctau=ctau, v2=coupling))
+        if self.mass_blacklist != None:
+          if str(signal_mass) in self.mass_blacklist.split(','): continue
+        
+        if self.coupling_whitelist != None:
+          if str(signal_coupling) not in self.coupling_whitelist.split(','): continue 
+        
+        if self.coupling_blacklist != None:
+          if str(signal_coupling) in self.coupling_blacklist.split(','): continue 
+
+        # will fetch the datacards
+        if signal_mass not in digested_datacards.keys():
+            digested_datacards[signal_mass] = OrderedDict()
+        
+        if signal_coupling not in digested_datacards[signal_mass].keys():
+            digested_datacards[signal_mass][signal_coupling] = []
+
+        for cat in categories_to_combine:
+          #print 'cat ',cat
+          if self.scenario == 'Dirac' and '_SS' in cat: continue
+          if cat+'.txt' in idc_ref:
+            #print '{} {} {}'.format(signal_mass, signal_coupling, idc_ref)
+
+          # in the dirac scenario, correct the signal rate
+            digested_datacards[signal_mass][signal_coupling].append(idc_ref) 
+        
+        
+    for mass, couplings in digested_datacards.iteritems():
+        if mass != self.the_mass: continue
+        print 'mass =', mass
+        
+        v2s       = []
+        obs       = []
+        minus_two = []
+        minus_one = []
+        central   = []
+        plus_one  = []
+        plus_two  = []
+
+        for coupling in couplings.keys():
+            print '\tcoupling =', coupling
+
+            datacards_to_combine = digested_datacards[mass][coupling]
+                                                                  
+            # combine the cards    
+            command = 'combineCards.py'
+            for idc in datacards_to_combine:
+              #print idc
+              #print '{} \t {}'.format(cat, idc)
+
+              # fetch ctau to add to combined datacard name
+              ctau = idc[idc.find('ctau_')+5:idc.find('_', idc.find('ctau_')+5)]
+
+              if any([v in idc for v in categories_to_combine]):
+                command += ' {}'.format(idc)
+
+            combined_datacard = '{o}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(o=outputdir, m=str(mass), ctau=ctau, v2=coupling, sc=self.scenario)
+            command += (' > {}'.format(combined_datacard)) 
+
+            #print command
+            os.system(command)
+            
+            #print ('\t\t -> combined datacards between the categories in {o}/datacard_combined_m_{m}_ctau_{ctau}_v2_{v2}_{sc}.txt'.format(o=outputdir, m=str(mass), ctau=ctau, v2=coupling, sc=self.scenario))
+            print ('\t\t -> combined datacards between the categories in {}'.format(combined_datacard))
+
+            # in the dirac scenario, correct the signal rate
+            if self.scenario == 'Dirac':
+              rate_list = self.getRateList(datacard_name=combined_datacard)
+              updated_rate_list = self.updateRateList(rate_list=rate_list)
+              self.updateDatacard(datacard_name=combined_datacard, updated_rate_list=updated_rate_list)
+
+
+
+if __name__ == "__main__":
+  # getting the parsed info
+  opt = getOptions()
+
+  DatacardCombiner(opt=opt).process()
+
+
+
