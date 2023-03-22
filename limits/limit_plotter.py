@@ -18,10 +18,11 @@ from utils import getMassList
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Run limit on a single mass/coupling point', add_help=True)
-  parser.add_argument('--homedir'           , type=str, dest='homedir'           , help='name of the homedir'                           , default=None)
+  parser.add_argument('--scenario'          , type=str, dest='scenario'          , help='signal under consideration'                   , default='Majorana', choices=['Majorana', 'Dirac'])
+  parser.add_argument('--homedir'           , type=str, dest='homedir'           , help='name of the homedir'                          , default=None)
   parser.add_argument('--outdirlabel'       , type=str, dest='outdirlabel'       , help='name of the outdir'                           , default=None)
   parser.add_argument('--subdirlabel'       , type=str, dest='subdirlabel'       , help='name of the subdir'                           , default=None)
-  parser.add_argument('--signal_type'       , type=str, dest='signal_type'       , help='signal under consideration'                   , default='majorana', choices=['majorana', 'dirac'])
+  #parser.add_argument('--signal_type'       , type=str, dest='signal_type'       , help='signal under consideration'                   , default='majorana', choices=['majorana', 'dirac'])
   parser.add_argument('--mass_whitelist'    , type=str, dest='mass_whitelist'    , help='allowed values for masses'                    , default='None')
   parser.add_argument('--mass_blacklist'    , type=str, dest='mass_blacklist'    , help='values for masses to skip'                    , default='None')
   parser.add_argument('--coupling_whitelist', type=str, dest='coupling_whitelist', help='allowed values for couplings'                 , default='None')
@@ -34,8 +35,8 @@ def getOptions():
 
 
 class LimitPlotter(object):
-  def __init__(self, signal_type, homedir, outdirlabel, subdirlabel, mass_whitelist, mass_blacklist, coupling_whitelist, coupling_blacklist, run_blind, fe, fu, ft):
-    self.signal_type = signal_type
+  def __init__(self, scenario, homedir, outdirlabel, subdirlabel, mass_whitelist, mass_blacklist, coupling_whitelist, coupling_blacklist, run_blind, fe, fu, ft):
+    self.scenario = scenario
     self.homedir = homedir
     self.outdirlabel = outdirlabel
     self.subdirlabel = subdirlabel
@@ -102,7 +103,7 @@ class LimitPlotter(object):
 
 
   def process(self):
-    signal_type = self.signal_type 
+    #signal_type = self.signal_type 
     #lumi =  '41.6 fb'+r'$^{-1}$'
     lumi =  '5.3 fb'+r'$^{-1}$'+' projected to 41.6 fb'+r'$^{-1}$'
 
@@ -112,7 +113,7 @@ class LimitPlotter(object):
     else:
       pathToResults = './results_{}_{}_{}/'.format(self.fe, self.fu, self.ft)
 
-    fileName = 'result*.txt'
+    fileName = 'result*{}*.txt'.format(self.scenario)
 
     files = [f for f in glob.glob(pathToResults+fileName)]
    
@@ -161,7 +162,8 @@ class LimitPlotter(object):
           if str(val_coupling) in self.coupling_blacklist.split(','): continue 
         
         try:
-          thefile = open('{}/result_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, mass, ctau, coupling), 'r')
+          thefile = open('{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, ctau, coupling), 'r')
+          #thefile = open('{}/result_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, mass, ctau, coupling), 'r')
           #thefile = open('{}/result_m_{}_v2_{}.txt'.format(pathToResults, mass, coupling), 'r')
           
           # get the necessary information from the result files
@@ -209,7 +211,7 @@ class LimitPlotter(object):
           if not self.run_blind: obs.append(float(val_obs))
 
         except:
-          print 'Cannot open {}result_m_{}_v2_{}.txt'.format(pathToResults, mass, coupling)
+          print 'Cannot open {}result_{}_m_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, coupling)
 
 
       print '-> will plot 1D limit for mass {}'.format(mass)
@@ -273,9 +275,9 @@ class LimitPlotter(object):
       plt.yscale('log')
       plt.xscale('log')
       if not self.do_coupling_scenario:
-        name_log = 'limit_m_{}_log'.format(mass.replace('.', 'p')) 
+        name_log = 'limit_{}_m_{}_log'.format(self.scenario, mass.replace('.', 'p')) 
       else:
-        name_log = 'limit_m_{}_scenario_{}_{}_{}_log'.format(mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
+        name_log = 'limit_{}_m_{}_scenario_{}_{}_{}_log'.format(self.scenario, mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
       print '--> {}/{}.png created'.format(plotDir, name_log)
       plt.savefig('{}/{}.pdf'.format(plotDir, name_log))
       plt.savefig('{}/{}.png'.format(plotDir, name_log))
@@ -294,7 +296,7 @@ class LimitPlotter(object):
 
       if x_plus_one == -99:
         print '\nWARNING - could not find crossing for +1sigma'
-        crossings = np.linspace(1, 2, 20)
+        crossings = np.linspace(1, 3, 50)
         for crossing in crossings:
           x_central_tmp = self.get_intersection(v2s, central, crossing)
           x_plus_one_tmp = self.get_intersection(v2s, plus_one, crossing)
@@ -305,15 +307,39 @@ class LimitPlotter(object):
 
       if x_plus_two == -99:
         print '\nWARNING - could not find crossing for +2sigma'
-        crossings = np.linspace(1, 2, 20)
+        crossings = np.linspace(1, 3, 50)
         for crossing in crossings:
           x_central_tmp = self.get_intersection(v2s, central, crossing)
           x_plus_two_tmp = self.get_intersection(v2s, plus_two, crossing)
           if x_plus_two_tmp != -99: 
             break
-
         x_diff_plus_two = x_plus_two_tmp - x_central_tmp
         x_plus_two = x_central + x_diff_plus_two
+
+      #if x_minus_one == -99:
+      #  print '\nWARNING - could not find crossing for +1sigma'
+      #  crossings = np.linspace(1, 2, 20)
+      #  for crossing in crossings:
+      #    x_central_tmp = self.get_intersection(v2s, central, crossing)
+      #    x_minus_one_tmp = self.get_intersection(v2s, minus_one, crossing)
+      #    if x_minus_one_tmp != -99: 
+      #      break
+      #  x_diff_minus_one = x_minus_one_tmp - x_central_tmp
+      #  x_minus_one = x_central + x_diff_minus_one
+
+      #if x_minus_two == -99:
+      #  print '\nWARNING - could not find crossing for +2sigma'
+      #  crossings = np.linspace(1, 2, 20)
+      #  for crossing in crossings:
+      #    x_central_tmp = self.get_intersection(v2s, central, crossing)
+      #    x_minus_two_tmp = self.get_intersection(v2s, minus_two, crossing)
+      #    if x_minus_two_tmp != -99: 
+      #      break
+      #  x_diff_minus_two = x_minus_two_tmp - x_central_tmp
+      #  x_minus_two = x_central + x_diff_minus_two
+
+      #if x_minus_two == -99:
+      #  x_minus_two = 4e-3 #TODO remove, this is a temporary fix for mass 4.5
 
       if not self.run_blind:
         x_obs = self.get_intersection(v2s, obs)
@@ -408,6 +434,7 @@ class LimitPlotter(object):
     ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
     ax.text(0.26, 0.63, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.7, 0.78, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
+    ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
     plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--')
     f1 = plt.fill_between(masses_two_sigma, minus_two, plus_two, color='gold'       , label=r'95% expected')
     f2 = plt.fill_between(masses_one_sigma, minus_one, plus_one, color='forestgreen', label=r'68% expected')
@@ -448,9 +475,9 @@ class LimitPlotter(object):
     plt.xscale('linear')
     plt.grid(True)
     if not self.do_coupling_scenario:
-      name_2d = '2d_hnl_limit' 
+      name_2d = '2d_hnl_limit_{}'.format(self.scenario) 
     else:
-      name_2d = '2d_hnl_limit_scenario_{}_{}_{}'.format(self.fe, self.fu, self.ft) 
+      name_2d = '2d_hnl_limit_scenario_{}_{}_{}_{}'.format(self.scenario, self.fe, self.fu, self.ft) 
     plt.savefig('{}/{}.pdf'.format(plotDir, name_2d))
     plt.savefig('{}/{}.png'.format(plotDir, name_2d))
     print '--> {}/{}.png created'.format(plotDir, name_2d)
@@ -464,7 +491,7 @@ if __name__ == "__main__":
   opt=getOptions()
 
   plotter = LimitPlotter(
-      signal_type = opt.signal_type,
+      scenario = opt.scenario,
       homedir = opt.homedir,
       outdirlabel = opt.outdirlabel,
       subdirlabel = opt.subdirlabel,
