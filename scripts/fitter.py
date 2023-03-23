@@ -390,8 +390,8 @@ class Fitter(Tools, MVATools):
       pdf_name = 'sig' if process == 'signal' else 'qcd'
       if process == 'signal':
         if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
-          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
-          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2"),ROOT.RooFit.Components("CBpdf_2"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1_"+self.category_label),ROOT.RooFit.Components("CBpdf_1_"+self.category_label), ROOT.RooFit.LineStyle(ROOT.kDashed))
+          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2_"+self.category_label),ROOT.RooFit.Components("CBpdf_2_"+self.category_label), ROOT.RooFit.LineStyle(ROOT.kDashed))
           if self.signal_model_label == 'doubleCBPlusGaussian':
             self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(6),ROOT.RooFit.Name("gaussian"),ROOT.RooFit.Components("gaussian"), ROOT.RooFit.LineStyle(ROOT.kDashed))
         self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name(pdf_name), ROOT.RooFit.Components(pdf_name))
@@ -416,8 +416,8 @@ class Fitter(Tools, MVATools):
 
       # plot the fit
       if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
-        self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1"),ROOT.RooFit.Components("CBpdf_1"), ROOT.RooFit.LineStyle(ROOT.kDashed))
-        self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2"),ROOT.RooFit.Components("CBpdf_2"), ROOT.RooFit.LineStyle(ROOT.kDashed))
+        self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1_"+self.category_label),ROOT.RooFit.Components("CBpdf_1_"+self.category_label), ROOT.RooFit.LineStyle(ROOT.kDashed))
+        self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2_"+self.category_label),ROOT.RooFit.Components("CBpdf_2_"+self.category_label), ROOT.RooFit.LineStyle(ROOT.kDashed))
         if self.signal_model_label == 'doubleCBPlusGaussian':
           self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(6),ROOT.RooFit.Name("gaussian"),ROOT.RooFit.Components("gaussian"), ROOT.RooFit.LineStyle(ROOT.kDashed))
       self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(ROOT.kOrange+7), ROOT.RooFit.Name('sig'), ROOT.RooFit.Components('sig'))
@@ -580,8 +580,8 @@ class Fitter(Tools, MVATools):
           model_label = 'Voigtian'
         leg.AddEntry(frame.findObject(pdf_name), model_label)
         if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
-          leg.AddEntry(frame.findObject('CBpdf_1'), 'CB_1')
-          leg.AddEntry(frame.findObject('CBpdf_2'), 'CB_2')
+          leg.AddEntry(frame.findObject('CBpdf_1_'+self.category_label), 'CB_1')
+          leg.AddEntry(frame.findObject('CBpdf_2_'+self.category_label), 'CB_2')
           if self.signal_model_label == 'doubleCBPlusGaussian':
             leg.AddEntry(frame.findObject('gaussian'), 'Gaussian')
       else:
