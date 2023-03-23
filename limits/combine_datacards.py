@@ -35,7 +35,7 @@ def getOptions():
   parser.add_argument('--coupling_whitelist', type=str, dest='coupling_whitelist', help='allowed values for couplings'                 , default=None)
   parser.add_argument('--coupling_blacklist', type=str, dest='coupling_blacklist', help='values for couplings to skip'                 , default=None)
   parser.add_argument('--wildcard'          , type=str, dest='wildcard'          , help='datacard generic string'                      , default='datacard_bhnl*.txt')
-  parser.add_argument('--run_blind'                   , dest='run_blind'         , help='run blinded or unblinded', action='store_true', default=False)
+  parser.add_argument('--do_blind'                    , dest='do_blin d'         , help='run blinded or unblinded', action='store_true', default=False)
   return parser.parse_args()
 
 

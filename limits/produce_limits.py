@@ -18,12 +18,12 @@ def getOptions():
   parser.add_argument('--ctau'       , type=str , dest='ctau'                  , help='ctau'                                              , default=None)
   parser.add_argument('--scenario'   , type=str , dest='scenario'              , help='signal under consideration'                        , default='Majorana', choices=['Majorana', 'Dirac'])
   parser.add_argument('--use_discrete_profiling', dest='use_discrete_profiling', help='use discrete profiling method', action='store_true', default=False)
-  parser.add_argument('--run_blind'             , dest='run_blind'             , help='run blinded?'                 , action='store_true', default=False)
+  parser.add_argument('--do_blind'               , dest='do_blind'             , help='run blinded?'                 , action='store_true', default=False)
   return parser.parse_args()
 
 
 class LimitProducer(object):
-  def __init__(self, mass, ctau, scenario, homedir, indirlabel, outdirlabel, subdirlabel, run_blind, use_discrete_profiling, fe=None, fu=None, ft=None):
+  def __init__(self, mass, ctau, scenario, homedir, indirlabel, outdirlabel, subdirlabel, do_blind, use_discrete_profiling, fe=None, fu=None, ft=None):
     self.tools = Tools()
     self.mass = mass
     self.ctau = ctau
@@ -32,7 +32,7 @@ class LimitProducer(object):
     self.indirlabel = indirlabel
     self.outdirlabel = outdirlabel
     self.subdirlabel = subdirlabel
-    self.run_blind = run_blind
+    self.do_blind = do_blind
     self.use_discrete_profiling = use_discrete_profiling
     self.fe = fe
     self.fu = fu
@@ -53,7 +53,7 @@ class LimitProducer(object):
 
     # produce limits
     command = 'combine -M AsymptoticLimits {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
-    if self.run_blind:
+    if self.do_blind:
       command += ' --run blind'
     if self.use_discrete_profiling:
       command += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
       indirlabel = opt.indirlabel,
       outdirlabel = opt.outdirlabel,
       subdirlabel = opt.subdirlabel,
-      run_blind = opt.run_blind,
+      do_blind = opt.do_blind,
       use_discrete_profiling = opt.use_discrete_profiling,
       )
   producer.process()

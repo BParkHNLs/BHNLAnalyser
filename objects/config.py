@@ -60,7 +60,6 @@ class Config(object):
                signal_model_label=None, 
                background_model_label=None,
                do_binned_fit=None, 
-               do_blind=None, 
                mass_window_size=None,
                fit_window_size=None,
                nbins=None, 
@@ -76,7 +75,7 @@ class Config(object):
                resolution_p1=None,
 
                # for limits
-               run_blind=None,
+               do_blind=None,
 
                # for interpretation
                muon_eoslabel=None,
@@ -134,7 +133,6 @@ class Config(object):
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
-    self.do_blind = do_blind
     self.mass_window_size = mass_window_size
     self.fit_window_size = fit_window_size
     self.nbins = nbins
@@ -148,7 +146,7 @@ class Config(object):
     self.sigma_mult_window = sigma_mult_window
     self.resolution_p0 = resolution_p0
     self.resolution_p1 = resolution_p1
-    self.run_blind = run_blind
+    self.do_blind = do_blind
     self.muon_eoslabel = muon_eoslabel
     self.electron_eoslabel = electron_eoslabel
     self.coupling_scenarios_label = coupling_scenarios_label
@@ -170,20 +168,20 @@ class Config(object):
             raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
     print '       ---> Data samples OK'
 
-    #if self.qcd_label != None and self.qcd_label not in qcd_samples.keys():
-    #  raise RuntimeError('The qcd sample label (qcd_label) is not valid. Please choose amongst {}.'.format(qcd_samples.keys()))
-    #else: 
-    #  print '       ---> QCD sample label OK'
-    #  if self.qcd_label != None:
-    #    for sample in qcd_samples[self.qcd_label]:
-    #      if 'pt' not in sample.label or 'to' not in sample.label:
-    #        raise RuntimeError('Please make sure that the qcd sample label contains "ptXXtoYY" for the white list to work')
-    #      if not ROOT.TFile.Open(sample.filename, 'READ'):
-    #        raise RuntimeError('The sample "{}" does not exist. Please check the filename.'.format(sample.filename))
-    #      else:
-    #        if not ROOT.TFile.Open(sample.filename, 'READ').Get(self.tree_name):
-    #          raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
-    #  print '       ---> QCD samples OK'
+    if self.qcd_label != None and self.qcd_label not in qcd_samples.keys():
+      raise RuntimeError('The qcd sample label (qcd_label) is not valid. Please choose amongst {}.'.format(qcd_samples.keys()))
+    else: 
+      print '       ---> QCD sample label OK'
+      if self.qcd_label != None:
+        for sample in qcd_samples[self.qcd_label]:
+          if 'pt' not in sample.label or 'to' not in sample.label:
+            raise RuntimeError('Please make sure that the qcd sample label contains "ptXXtoYY" for the white list to work')
+          if not ROOT.TFile.Open(sample.filename, 'READ'):
+            raise RuntimeError('The sample "{}" does not exist. Please check the filename.'.format(sample.filename))
+          else:
+            if not ROOT.TFile.Open(sample.filename, 'READ').Get(self.tree_name):
+              raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
+      print '       ---> QCD samples OK'
 
     for signal_label in self.signal_labels:
       if signal_label != None and signal_label not in signal_samples.keys():
@@ -191,6 +189,7 @@ class Config(object):
     print '       ---> Signal sample label OK'
     for signal_label in self.signal_labels:
         for sample in signal_samples[signal_label]:
+          print sample.filename
           if not ROOT.TFile.Open(sample.filename, 'READ'):
             raise RuntimeError('The sample "{}" does not exist. Please check the filename.'.format(sample.filename))
           else:

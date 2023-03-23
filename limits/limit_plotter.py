@@ -30,12 +30,12 @@ def getOptions():
   parser.add_argument('--fe'                , type=str, dest='fe'                , help='electron coupling fraction'                   , default='1.0')
   parser.add_argument('--fu'                , type=str, dest='fu'                , help='muon coupling fraction'                       , default='1.0')
   parser.add_argument('--ft'                , type=str, dest='ft'                , help='tau coupling fraction'                        , default='1.0')
-  parser.add_argument('--run_blind'                   , dest='run_blind'         , help='run blinded or unblinded', action='store_true', default=False)
+  parser.add_argument('--do_blind'                    , dest='do_blind'          , help='run blinded or unblinded', action='store_true', default=False)
   return parser.parse_args()
 
 
 class LimitPlotter(object):
-  def __init__(self, scenario, homedir, outdirlabel, subdirlabel, mass_whitelist, mass_blacklist, coupling_whitelist, coupling_blacklist, run_blind, fe, fu, ft):
+  def __init__(self, scenario, homedir, outdirlabel, subdirlabel, mass_whitelist, mass_blacklist, coupling_whitelist, coupling_blacklist, do_blind, fe, fu, ft):
     self.scenario = scenario
     self.homedir = homedir
     self.outdirlabel = outdirlabel
@@ -44,7 +44,7 @@ class LimitPlotter(object):
     self.mass_blacklist = mass_blacklist
     self.coupling_whitelist = coupling_whitelist
     self.coupling_blacklist = coupling_blacklist
-    self.run_blind = run_blind
+    self.do_blind = do_blind
     self.fe = fe
     self.fu = fu
     self.ft = ft
@@ -196,7 +196,7 @@ class LimitPlotter(object):
               val_plus_two = values[2] + '.' + values[3]
           
           if all([jj is None for jj in [val_minus_two, val_minus_one, val_central, val_plus_one, val_plus_two] ]): continue
-          if not self.run_blind:
+          if not self.do_blind:
             if val_obs is None: 
               print 'WARNING: cannot plot unblinded if limits were produced blinded'
               print '--> Aborting'
@@ -208,7 +208,7 @@ class LimitPlotter(object):
           central.append(float(val_central))
           plus_one.append(float(val_plus_one))
           plus_two.append(float(val_plus_two))
-          if not self.run_blind: obs.append(float(val_obs))
+          if not self.do_blind: obs.append(float(val_obs))
 
         except:
           print 'Cannot open {}result_{}_m_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, coupling)
@@ -216,7 +216,7 @@ class LimitPlotter(object):
 
       print '-> will plot 1D limit for mass {}'.format(mass)
       
-      if not self.run_blind:
+      if not self.do_blind:
           graph = zip(v2s, minus_two, minus_one, central, plus_one, plus_two, obs)
       else:
         graph = zip(v2s, minus_two, minus_one, central, plus_one, plus_two)    
@@ -229,7 +229,7 @@ class LimitPlotter(object):
       central   = [jj[3] for jj in graph]
       plus_one  = [jj[4] for jj in graph]
       plus_two  = [jj[5] for jj in graph]
-      if not self.run_blind:
+      if not self.do_blind:
           obs = [jj[6] for jj in graph]
       
       print '\n-> Plots will be saved in {}'.format(plotDir)
@@ -241,7 +241,7 @@ class LimitPlotter(object):
       plt.fill_between(v2s, minus_two, plus_two, color='gold', label=r'$\pm 2 \sigma$')
       plt.fill_between(v2s, minus_one, plus_one, color='forestgreen' , label=r'$\pm 1 \sigma$')
       plt.plot(v2s, central, color='red', label='central expected', linewidth=2)
-      if not self.run_blind:
+      if not self.do_blind:
           plt.plot(v2s, obs, color='black', label='observed')    
       
       plt.axhline(y=1, color='black', linestyle='-')
@@ -341,7 +341,7 @@ class LimitPlotter(object):
       #if x_minus_two == -99:
       #  x_minus_two = 4e-3 #TODO remove, this is a temporary fix for mass 4.5
 
-      if not self.run_blind:
+      if not self.do_blind:
         x_obs = self.get_intersection(v2s, obs)
 
       limits2D[mass]['exp_minus_two'] = x_minus_two
@@ -349,7 +349,7 @@ class LimitPlotter(object):
       limits2D[mass]['exp_central'  ] = x_central  
       limits2D[mass]['exp_plus_one' ] = x_plus_one 
       limits2D[mass]['exp_plus_two' ] = x_plus_two 
-      if not self.run_blind:
+      if not self.do_blind:
           limits2D[mass]['obs'] = x_obs 
 
       #print '({}, {}, {}): {}'.format(self.fe, self.fu, self.ft, x_central)
@@ -378,7 +378,7 @@ class LimitPlotter(object):
           exclusion_coupling_filename = '{}/exclusion_m_{}_{}_{}_{}.txt'.format(plotDir, str(mass).replace('.', 'p'), self.fe, self.fu, self.ft)
           exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
         
-        if not self.run_blind:
+        if not self.do_blind:
           if len(limits2D[mass]['obs'])>0: 
               obs.append( min(limits2D[mass]['obs']) )
               masses_obs.append(mass)
@@ -403,7 +403,7 @@ class LimitPlotter(object):
     '''
     for mass in sorted(limits2D.keys(), key=self.sortList, reverse=True):
 
-        if not self.run_blind:
+        if not self.do_blind:
           if len(limits2D[mass]['obs'])>1: 
               obs.append( max(limits2D[mass]['obs']) )
               masses_obs.append(mass)
@@ -448,10 +448,10 @@ class LimitPlotter(object):
     #else: 
     #  p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
 
-    if not self.run_blind:
+    if not self.do_blind:
       p8, = plt.plot(masses_obs, obs, color='black', label='observed', linewidth=2)
 
-    if not self.run_blind:
+    if not self.do_blind:
       first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=20)
     else:
       first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=20)
@@ -499,7 +499,7 @@ if __name__ == "__main__":
       mass_blacklist = opt.mass_blacklist,
       coupling_whitelist = opt.coupling_whitelist,
       coupling_blacklist = opt.coupling_blacklist,
-      run_blind = True if opt.run_blind else False,
+      do_blind = True if opt.do_blind else False,
       fe = opt.fe,
       fu = opt.fu,
       ft = opt.ft,
