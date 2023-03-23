@@ -65,6 +65,8 @@ class Fitter(Tools, MVATools):
     self.mass_window_size = mass_window_size
     self.fit_window_size = fit_window_size
 
+    self.do_fixed_shape = True #FIXME configure option
+
 
     signal_model_list = ['doubleCB', 'doubleCBPlusGaussian', 'voigtian']
     if self.signal_model_label != None and self.signal_model_label not in signal_model_list:
@@ -161,27 +163,28 @@ class Fitter(Tools, MVATools):
     if process == 'signal' or process == 'both':
       if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
         # energy scale correction applied
-        self.mean_CB  = ROOT.RooRealVar("mean_CB","mean_CB", self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
+        self.mean_CB  = ROOT.RooRealVar("mean_CB_"+self.category_label,"mean_CB_"+self.category_label, self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
 
-        # to uncomment if parameters to be kept floating
-        #self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", 0.01, 0.005, 0.15)
-        #self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -2, -5, 5)
-        #self.n_1 = ROOT.RooRealVar("n_1", "n_1", 0, 5)
-        #self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 2, -5, 5)
-        #self.n_2 = ROOT.RooRealVar("n_2", "n_2", 0, 5)
-        #self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5, 0.0 ,1.0)
+        if not self.do_fixed_shape:
+          # parameters to be kept floating
+          self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+self.category_label, "sigma_CB_"+self.category_label, self.resolution, 0.005, 0.15)
+          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, -2, -5, 5)
+          self.n_1 = ROOT.RooRealVar("n_1_"+self.category_label, "n_1_"+self.category_label, 0, 5)
+          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 2, -5, 5)
+          self.n_2 = ROOT.RooRealVar("n_2_"+self.category_label, "n_2_"+self.category_label, 0, 5)
+          self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB_"+self.category_label,"sigfrac_CB_"+self.category_label, 0.5, 0.0 ,1.0)
+        else:
+          # parameters fixed
+          self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+self.category_label, "sigma_CB_"+self.category_label, self.resolution)
+          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, -1.)
+          self.n_1 = ROOT.RooRealVar("n_1_"+self.category_label, "n_1_"+self.category_label, 4.)
+          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 1.)
+          self.n_2 = ROOT.RooRealVar("n_2_"+self.category_label, "n_2_"+self.category_label, 4.)
+          # defines the relative importance of the two CBs
+          self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB_"+self.category_label,"sigfrac_CB_"+self.category_label, 0.5)
 
-        # parameters fixed
-        self.sigma_CB = ROOT.RooRealVar("sigma_CB", "sigma_CB", self.resolution)
-        self.alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", -1.)
-        self.n_1 = ROOT.RooRealVar("n_1", "n_1", 4.)
-        self.alpha_2 = ROOT.RooRealVar("alpha_2", "alpha_2", 1.)
-        self.n_2 = ROOT.RooRealVar("n_2", "n_2", 4.)
-        # defines the relative importance of the two CBs
-        self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB","sigfrac_CB", 0.5)
-
-        self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1", "CBpdf_1", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
-        self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2", "CBpdf_2", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
+        self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1_"+self.category_label, "CBpdf_1_"+self.category_label, self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
+        self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2_"+self.category_label, "CBpdf_2_"+self.category_label, self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
 
         if self.signal_model_label == 'doubleCB':
           self.signal_model = ROOT.RooAddPdf("sig", "sig", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
@@ -198,10 +201,13 @@ class Fitter(Tools, MVATools):
 
       elif self.signal_model_label == 'voigtian':
         self.mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
-        self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.01, 0., 5.)
-        self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.01, 0.005, 0.15)
-        #self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian", "gamma_voigtian", 0.03)
-        #self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian", "sigma_voigtian", 0.005)
+        if not self.do_fixed_shape:
+          self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian_"+self.category_label, "gamma_voigtian_"+self.category_label, 0.01, 0., 5.)
+          self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian_"+self.category_label, "sigma_voigtian_"+self.category_label, 0.01, 0.005, 0.15)
+        else:
+          self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian_"+self.category_label, "gamma_voigtian_"+self.category_label, 0.03)
+          self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian_"+self.category_label, "sigma_voigtian_"+self.category_label, self.resolution)
+
         self.signal_model = ROOT.RooVoigtian('sig', 'sig', self.hnl_mass, self.mean_voigtian, self.gamma_voigtian, self.sigma_voigtian)
 
     ### Background Model ###
@@ -766,38 +772,18 @@ class Fitter(Tools, MVATools):
     output_file = ROOT.TFile(workspace_filename, 'RECREATE')
     workspace = ROOT.RooWorkspace('workspace', 'workspace')
 
-    # create factory
+    # import model
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size) # sidebands are included
-    workspace.factory('hnl_mass[{}, {}]'.format(bin_min, bin_max)) #TODO instead use the sigma from the fit
-    if self.signal_model_label == 'voigtian':
-      workspace.factory('RooVoigtian::sig(hnl_mass, mean_voigtian_{cat}[{m}], gamma_voigtian_{cat}[{g}], sigma_voigtian_{cat}[{s}])'.format(
-            cat = self.category_label,
-            m = self.mean_voigtian.getVal(),
-            g = self.gamma_voigtian.getVal(),
-            s = self.sigma_voigtian.getVal(),
-            )
-          )
-    elif self.signal_model_label == 'doubleCB':
-      workspace.factory('RooDoubleCB::sig(hnl_mass, mean_CB_{cat}[{m}], sigma_CB_{cat}[{s}], alpha1_{cat}[{a1}], n1_{cat}[{n1}], alpha2_{cat}[{a2}], n2_{cat}[{n2}])'.format(
-            cat = self.category_label,
-            m = self.mean_CB.getVal(),
-            s = self.sigma_CB.getVal(),
-            a1 = self.alpha_1.getVal(),
-            n1 = self.n_1.getVal(),
-            a2 = self.alpha_2.getVal(),
-            n2 = self.n_2.getVal(),
-            #f = self.sigfrac_CB.getVal(),
-            )
-          )
+    workspace.factory('hnl_mass[{}, {}]'.format(bin_min, bin_max))
+    getattr(workspace, 'import')(self.signal_model)
 
-    ## make sure variables are constant
-    #it = workspace.allVars().createIterator() 
-    #all_vars = [it.Next() for _ in range( workspace.allVars().getSize())] 
-    #for var in all_vars: 
-    #  var.setBins(self.nbins)
-    #  #TODO have a look at this
-    #  if var.GetName() in ['mean_voigtian', 'gamma_voigtian', 'sigma_voigtian']: #TODO adapt? 
-    #    var.setConstant()
+    # make sure that the shape parameters are fixed
+    it = workspace.allVars().createIterator() 
+    all_vars = [it.Next() for _ in range( workspace.allVars().getSize())] 
+    for var in all_vars: 
+      # keep the mean floating (energy scale correction)
+      if var.GetName() != 'hnl_mass' and 'mean' not in var.GetName():
+        var.setConstant()
 
     workspace.Write()
     workspace.Print()
