@@ -306,9 +306,7 @@ class DatacardsMaker(Tools):
       fitter = Fitter(data_files=self.data_files, mass=mass, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, selection=selection, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, do_veto_SM=do_veto_SM, veto_SM=veto_SM, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
 
       # perform the fits and write the workspaces
-      fitter.process_data_obs(label=label)
-
-      yields = -1 if self.do_blind else -1 #FIXME
+      yields = fitter.process_data_obs(label=label)
 
     return yields
 
@@ -457,7 +455,7 @@ class DatacardsMaker(Tools):
     print '--> {}/{} created'.format(self.outputdir, rootfile_name)
 
 
-  def writeCard(self, card_label, cat_label, signal_yields, background_yields):
+  def writeCard(self, card_label, cat_label, signal_yields, background_yields, data_obs_yields):
     datacard_name = 'datacard_{}.txt'.format(card_label)
 
     # define selection systematics
@@ -552,7 +550,7 @@ syst_sig_mu_shape_{lbl}                       lnN           1.15                
 '''.format(
             shape_line = shape_line,
             lbl = cat_label,
-            obs =  -1, # for the moment, we only look at blinded data #TODO implement not blind option
+            obs =  data_obs_yields if not self.do_blind else -1,
             sig_yields = signal_yields,
             bkg_yields = background_yields,
             bkg_syst_line = bkg_syst_line,
@@ -676,11 +674,11 @@ bkg {bkg_yields}
 
         elif self.do_shape_analysis and not self.use_discrete_profiling:
           background_yields = self.runFitter(process='background', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label) 
-          data_obs = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label)
+          data_obs_yields = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label)
 
         elif self.do_shape_analysis and self.use_discrete_profiling:
           background_yields = self.runFTestRoutine(mass=window['mass'], window_size=self.fit_window_size, category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label, cat_index=icat)
-          data_obs = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label)
+          data_obs_yields = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label)
 
         # loop on the signal points
         for ctau_point_list in self.ctau_points:
@@ -717,7 +715,7 @@ bkg {bkg_yields}
               self.createDataObsHisto(category=category, mass=window['mass'], selection=selection, label=cat_label)
 
             # create the datacard
-            self.writeCard(card_label=card_label, cat_label=cat_label, signal_yields=signal_yields, background_yields=background_yields)
+            self.writeCard(card_label=card_label, cat_label=cat_label, signal_yields=signal_yields, background_yields=background_yields, data_obs_yields=data_obs_yields)
 
             # save yields summary
             #self.writeYieldsForPlots(label=card_label, signal_yields=signal_yields, background_yields=background_yields)

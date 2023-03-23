@@ -24,7 +24,6 @@ class Fitter(Tools, MVATools):
     self.do_parametric = do_parametric
     self.reweighting_strategy = reweighting_strategy
     self.resolution = resolution_p0 + resolution_p1 * self.signal_mass
-
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
@@ -761,7 +760,7 @@ class Fitter(Tools, MVATools):
     print ' --- Creating Signal Workspace --- '
 
     if label == '': label = self.getSignalLabel()
-    
+
     # create workspace
     workspace_filename = '{}/workspace_signal_{}.root'.format(self.workspacedir, label)
     output_file = ROOT.TFile(workspace_filename, 'RECREATE')
@@ -879,6 +878,11 @@ class Fitter(Tools, MVATools):
 
     # normalise to the target luminosity
     hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
+    
+    # get the number of yields
+    data_obs_yields = hist.Integral()
+
+    # create the workspace
     data_obs_name = 'data_obs_bhnl_m_{}_cat_{}'.format(str(self.signal_mass).replace('.', 'p'), self.category_label)
     data_obs = ROOT.RooDataHist(data_obs_name, data_obs_name, ROOT.RooArgList(hnl_mass), hist)
 
@@ -901,6 +905,8 @@ class Fitter(Tools, MVATools):
     output_file.Close()
 
     print '--> {} created'.format(workspace_filename)
+
+    return data_obs_yields
 
 
   def createFTestInputWorkspace(self, label=''):
@@ -983,7 +989,8 @@ class Fitter(Tools, MVATools):
 
 
   def process_data_obs(self, label=''):
-    self.createDataObsWorkspace(label=label)
+    data_obs_yields = self.createDataObsWorkspace(label=label)
+    return data_obs_yields
 
 
 if __name__ == '__main__':
