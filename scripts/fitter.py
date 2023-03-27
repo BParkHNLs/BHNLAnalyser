@@ -68,7 +68,7 @@ class Fitter(Tools, MVATools):
     self.do_fixed_shape = True #FIXME configure option
 
 
-    signal_model_list = ['doubleCB', 'doubleCBPlusGaussian', 'voigtian']
+    signal_model_list = ['doubleCB', 'doubleCBPlusGaussian', 'voigtian', 'gaussian']
     if self.signal_model_label != None and self.signal_model_label not in signal_model_list:
       raise RuntimeError('Unrecognised signal model "{}". Please choose among {}'.format(self.signal_model_label, signal_model_list))
 
@@ -168,15 +168,15 @@ class Fitter(Tools, MVATools):
         if not self.do_fixed_shape:
           # parameters to be kept floating
           self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+self.category_label, "sigma_CB_"+self.category_label, self.resolution, 0.005, 0.15)
-          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, -2, -5, 5)
+          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, 2, 0, 5) # positive definite when using RooDoubleCBFast
           self.n_1 = ROOT.RooRealVar("n_1_"+self.category_label, "n_1_"+self.category_label, 0, 5)
-          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 2, -5, 5)
+          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 2, 0, 5) # positive definite when using RooDoubleCBFast
           self.n_2 = ROOT.RooRealVar("n_2_"+self.category_label, "n_2_"+self.category_label, 0, 5)
           self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB_"+self.category_label,"sigfrac_CB_"+self.category_label, 0.5, 0.0 ,1.0)
         else:
           # parameters fixed
           self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+self.category_label, "sigma_CB_"+self.category_label, self.resolution)
-          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, -1.)
+          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, 1.)
           self.n_1 = ROOT.RooRealVar("n_1_"+self.category_label, "n_1_"+self.category_label, 4.)
           self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 1.)
           self.n_2 = ROOT.RooRealVar("n_2_"+self.category_label, "n_2_"+self.category_label, 4.)
@@ -187,7 +187,8 @@ class Fitter(Tools, MVATools):
         self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2_"+self.category_label, "CBpdf_2_"+self.category_label, self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
 
         if self.signal_model_label == 'doubleCB':
-          self.signal_model = ROOT.RooAddPdf("sig", "sig", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
+          #self.signal_model = ROOT.RooAddPdf("sig", "sig", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
+          self.signal_model = ROOT.RooDoubleCBFast("sig", "sig", self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1, self.alpha_2, self.n_2)
 
         if self.signal_model_label == 'doubleCBPlusGaussian':
           self.sigma_gauss = ROOT.RooRealVar("sigma_gauss", "sigma_gauss", 0.01, 0.005, 0.15)
@@ -209,6 +210,15 @@ class Fitter(Tools, MVATools):
           self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian_"+self.category_label, "sigma_voigtian_"+self.category_label, self.resolution)
 
         self.signal_model = ROOT.RooVoigtian('sig', 'sig', self.hnl_mass, self.mean_voigtian, self.gamma_voigtian, self.sigma_voigtian)
+
+      elif self.signal_model_label == 'gaussian':
+        self.mean_gauss  = ROOT.RooRealVar("mean_gauss_"+self.category_label,"mean_gauss_"+self.category_label, self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
+        if not self.do_fixed_shape:
+          self.sigma_gauss = ROOT.RooRealVar("sigma_gauss_"+self.category_label, "sigma_gauss_"+self.category_label, self.resolution, 0.005, 0.15)
+        else:
+          self.sigma_gauss = ROOT.RooRealVar("sigma_gauss_"+self.category_label, "sigma_gauss_"+self.category_label, self.resolution)
+          
+        self.signal_model = ROOT.RooGaussian("sig", "sig", self.hnl_mass, self.mean_gauss, self.sigma_gauss)
 
     ### Background Model ###
 
@@ -390,8 +400,8 @@ class Fitter(Tools, MVATools):
       pdf_name = 'sig' if process == 'signal' else 'qcd'
       if process == 'signal':
         if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
-          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1_"+self.category_label),ROOT.RooFit.Components("CBpdf_1_"+self.category_label), ROOT.RooFit.LineStyle(ROOT.kDashed))
-          self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2_"+self.category_label),ROOT.RooFit.Components("CBpdf_2_"+self.category_label), ROOT.RooFit.LineStyle(ROOT.kDashed))
+          #self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(2),ROOT.RooFit.Name("CBpdf_1_"+self.category_label),ROOT.RooFit.Components("CBpdf_1_"+self.category_label), ROOT.RooFit.LineStyle(ROOT.kDashed))
+          #self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(3),ROOT.RooFit.Name("CBpdf_2_"+self.category_label),ROOT.RooFit.Components("CBpdf_2_"+self.category_label), ROOT.RooFit.LineStyle(ROOT.kDashed))
           if self.signal_model_label == 'doubleCBPlusGaussian':
             self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(6),ROOT.RooFit.Name("gaussian"),ROOT.RooFit.Components("gaussian"), ROOT.RooFit.LineStyle(ROOT.kDashed))
         self.signal_model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name(pdf_name), ROOT.RooFit.Components(pdf_name))
@@ -578,6 +588,8 @@ class Fitter(Tools, MVATools):
           model_label = 'Double Crystal Ball + Gaussian'
         elif self.signal_model_label == 'voigtian':
           model_label = 'Voigtian'
+        elif self.signal_model_label == 'gaussian':
+          model_label = 'Gaussian'
         leg.AddEntry(frame.findObject(pdf_name), model_label)
         if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
           leg.AddEntry(frame.findObject('CBpdf_1_'+self.category_label), 'CB_1')
