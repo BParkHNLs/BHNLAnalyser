@@ -102,6 +102,12 @@ class LimitPlotter(object):
     return intersection
 
 
+  def smooth(self, y, box_pts):
+    box = np.ones(box_pts)/box_pts
+    y_smooth = np.convolve(y, box, mode='same')
+    return y_smooth
+
+
   def process(self):
     #signal_type = self.signal_type 
     #lumi =  '41.6 fb'+r'$^{-1}$'
@@ -384,15 +390,26 @@ class LimitPlotter(object):
               masses_obs.append(mass)
         
         #if len(limits2D[mass]['exp_central'])>0 and len(limits2D[mass]['exp_minus_one'])>0 and len(limits2D[mass]['exp_plus_one' ])>0 and len(limits2D[mass]['exp_minus_two'])>0 and len(limits2D[mass]['exp_plus_two' ])>0:
-        central.append(limits2D[mass]['exp_central'])
-        minus_one.append(limits2D[mass]['exp_minus_one'])
-        plus_one.append(limits2D[mass]['exp_plus_one' ])
-        minus_two.append(limits2D[mass]['exp_minus_two'])
-        plus_two.append(limits2D[mass]['exp_plus_two' ])
+        #central.append(limits2D[mass]['exp_central'])
+        #minus_one.append(limits2D[mass]['exp_minus_one'])
+        #plus_one.append(limits2D[mass]['exp_plus_one' ])
+        #minus_two.append(limits2D[mass]['exp_minus_two'])
+        #plus_two.append(limits2D[mass]['exp_plus_two' ])
 
+        #masses_central.append(float(mass))
+        #masses_one_sigma.append(float(mass))
+        #masses_two_sigma.append(float(mass))
+
+        central.append(limits2D[mass]['exp_central'])
         masses_central.append(float(mass))
-        masses_one_sigma.append(float(mass))
-        masses_two_sigma.append(float(mass))
+        if limits2D[mass]['exp_plus_one' ] != -99. and limits2D[mass]['exp_plus_two' ] != -99.:
+          minus_two.append(limits2D[mass]['exp_minus_two'])
+          minus_one.append(limits2D[mass]['exp_minus_one'])
+          plus_one.append(limits2D[mass]['exp_plus_one' ])
+          plus_two.append(limits2D[mass]['exp_plus_two' ])
+
+          masses_one_sigma.append(float(mass))
+          masses_two_sigma.append(float(mass))
 
         if self.do_coupling_scenario:
           exclusion_coupling_file.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['exp_central']))
@@ -478,6 +495,70 @@ class LimitPlotter(object):
       name_2d = '2d_hnl_limit_{}'.format(self.scenario) 
     else:
       name_2d = '2d_hnl_limit_scenario_{}_{}_{}_{}'.format(self.scenario, self.fe, self.fu, self.ft) 
+    plt.savefig('{}/{}.pdf'.format(plotDir, name_2d))
+    plt.savefig('{}/{}.png'.format(plotDir, name_2d))
+    print '--> {}/{}.png created'.format(plotDir, name_2d)
+
+
+    # smoothing the structures
+    plt.clf()
+    smooth_index = 4
+    f, ax = plt.subplots(figsize=(9, 8))
+    if not self.do_coupling_scenario:
+      self.fe = '0.0'
+      self.fu = '1.0'
+      self.ft = '0.0'
+    coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
+    ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
+    ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
+    ax.text(0.26, 0.63, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.7, 0.78, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
+    ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
+    plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--')
+    f1 = plt.fill_between(masses_two_sigma, self.smooth(minus_two, smooth_index), self.smooth(plus_two, smooth_index), color='gold', label=r'95% expected')
+    f2 = plt.fill_between(masses_one_sigma, self.smooth(minus_one, smooth_index), self.smooth(plus_one, smooth_index), color='forestgreen', label=r'68% expected')
+    #f1 = plt.fill_between(masses_two_sigma, self.smooth(minus_two, smooth_index), self.smooth(plus_two, smooth_index-1), color='gold', label=r'95% expected')
+    #f2 = plt.fill_between(masses_one_sigma, self.smooth(minus_one, smooth_index), self.smooth(plus_one, smooth_index-1), color='forestgreen', label=r'68% expected')
+    p1, = plt.plot(masses_central, self.smooth(central, smooth_index), color='red', label='Median expected', linewidth=2)
+    #p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='black', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
+    #p3, = plt.plot(db.masses_delphiprompt, db.exp_delphiprompt, color='blueviolet', label='Delphi prompt', linewidth=1.3, linestyle='dashed')
+    #if 'mmm' in self.channels or 'mem' in self.channels:
+    #  p4, = plt.plot(db.masses_atlasdisplacedmuonLNV, db.exp_atlasdisplacedmuonLNV, color='firebrick', label='Atlas displaced muon LNV', linewidth=1.3, linestyle='dashed')
+    #  p5, = plt.plot(db.masses_atlasdisplacedmuonLNC, db.exp_atlasdisplacedmuonLNC, color='darkorange', label='Atlas displaced muon LNC', linewidth=1.3, linestyle='dashed')
+    #  p7, = plt.plot(db.masses_cmspromptmuon, db.exp_cmspromptmuon, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
+    #else: 
+    #  p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
+
+    if not self.do_blind:
+      p8, = plt.plot(masses_obs, obs, color='black', label='observed', linewidth=2)
+
+    if not self.do_blind:
+      first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=20)
+    else:
+      first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=20)
+    ax = plt.gca().add_artist(first_legend)
+    #if 'mmm' in self.channels or 'mem' in self.channels:
+    #  second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
+    #else: 
+    #  second_legend = plt.legend(handles=[p2, p3, p7], loc='upper left')
+
+    plt.title(lumi + ' (13 TeV)', loc='right', fontsize=23)
+    plt.ylabel(r'$|V|^2$', fontsize=23)
+    plt.yticks(fontsize=17)
+    #plt.ylim(1e-10, 1e-0)
+    plt.ylim(1e-5, 1e-1)
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
+    #plt.xlim(0, max(masses_central))
+    plt.xlim(min(masses_central), max(masses_central))
+    plt.xticks(fontsize=17)
+    plt.yscale('log')
+    plt.xscale('linear')
+    plt.grid(True)
+    if not self.do_coupling_scenario:
+      name_2d = '2d_hnl_limit_{}_smoothed'.format(self.scenario) 
+    else:
+      name_2d = '2d_hnl_limit_scenario_{}_{}_{}_{}_smoothed'.format(self.scenario, self.fe, self.fu, self.ft) 
     plt.savefig('{}/{}.pdf'.format(plotDir, name_2d))
     plt.savefig('{}/{}.png'.format(plotDir, name_2d))
     print '--> {}/{}.png created'.format(plotDir, name_2d)
