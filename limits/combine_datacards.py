@@ -122,6 +122,10 @@ class DatacardCombiner(object):
     os.system('mv {} {}'.format(updated_datacard_name, datacard_name))
 
 
+  def getCategoryLabel(self, datacard):
+    return datacard[datacard.find('cat_')+4:datacard.find('.txt')]
+
+
   def process(self):
     # create directories
     outputdir = '{}/outputs/{}/datacards_combined/{}'.format(self.homedir, self.outdirlabel, self.subdirlabel)
@@ -140,6 +144,7 @@ class DatacardCombiner(object):
 
     # nested dictionary with mass and coupling as keys
     digested_datacards = OrderedDict()
+    channel_labels = OrderedDict()
 
     # store results for 2D limits
     limits2D = OrderedDict()
@@ -170,9 +175,11 @@ class DatacardCombiner(object):
         # will fetch the datacards
         if signal_mass not in digested_datacards.keys():
             digested_datacards[signal_mass] = OrderedDict()
+            channel_labels[signal_mass] = OrderedDict()
         
         if signal_coupling not in digested_datacards[signal_mass].keys():
             digested_datacards[signal_mass][signal_coupling] = []
+            channel_labels[signal_mass][signal_coupling] = []
 
         for cat in categories_to_combine:
           #print 'cat ',cat
@@ -182,6 +189,7 @@ class DatacardCombiner(object):
 
           # in the dirac scenario, correct the signal rate
             digested_datacards[signal_mass][signal_coupling].append(idc_ref) 
+            channel_labels[signal_mass][signal_coupling].append(self.getCategoryLabel(idc_ref)) 
         
         
     for mass, couplings in digested_datacards.iteritems():
@@ -200,18 +208,19 @@ class DatacardCombiner(object):
             print '\tcoupling =', coupling
 
             datacards_to_combine = digested_datacards[mass][coupling]
+            labels = channel_labels[mass][coupling]
                                                                   
             # combine the cards    
             command = 'combineCards.py'
-            for idc in datacards_to_combine:
-              #print idc
-              #print '{} \t {}'.format(cat, idc)
+            for idc, datacard in enumerate(datacards_to_combine):
+              #print datacard
+              #print '{} \t {}'.format(cat, datacard)
 
               # fetch ctau to add to combined datacard name
-              ctau = idc[idc.find('ctau_')+5:idc.find('_', idc.find('ctau_')+5)]
+              ctau = datacard[datacard.find('ctau_')+5:datacard.find('_', datacard.find('ctau_')+5)]
 
-              if any([v in idc for v in categories_to_combine]):
-                command += ' {}'.format(idc)
+              if any([v in datacard for v in categories_to_combine]):
+                command += ' {}={}'.format(labels[idc], datacard)
 
             combined_datacard = '{o}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(o=outputdir, m=str(mass), ctau=ctau, v2=coupling, sc=self.scenario)
             command += (' > {}'.format(combined_datacard)) 
