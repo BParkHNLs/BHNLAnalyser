@@ -356,7 +356,7 @@ class LimitPlotter(object):
       limits2D[mass]['exp_plus_one' ] = x_plus_one 
       limits2D[mass]['exp_plus_two' ] = x_plus_two 
       if not self.do_blind:
-          limits2D[mass]['obs'] = x_obs 
+        limits2D[mass]['obs'] = x_obs 
 
       #print '({}, {}, {}): {}'.format(self.fe, self.fu, self.ft, x_central)
 
@@ -384,11 +384,6 @@ class LimitPlotter(object):
           exclusion_coupling_filename = '{}/exclusion_m_{}_{}_{}_{}.txt'.format(plotDir, str(mass).replace('.', 'p'), self.fe, self.fu, self.ft)
           exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
         
-        if not self.do_blind:
-          if len(limits2D[mass]['obs'])>0: 
-              obs.append( min(limits2D[mass]['obs']) )
-              masses_obs.append(mass)
-        
         #if len(limits2D[mass]['exp_central'])>0 and len(limits2D[mass]['exp_minus_one'])>0 and len(limits2D[mass]['exp_plus_one' ])>0 and len(limits2D[mass]['exp_minus_two'])>0 and len(limits2D[mass]['exp_plus_two' ])>0:
         #central.append(limits2D[mass]['exp_central'])
         #minus_one.append(limits2D[mass]['exp_minus_one'])
@@ -410,6 +405,10 @@ class LimitPlotter(object):
 
           masses_one_sigma.append(float(mass))
           masses_two_sigma.append(float(mass))
+
+        if not self.do_blind:
+          obs.append(limits2D[mass]['obs'])
+          masses_obs.append(float(mass))
 
         if self.do_coupling_scenario:
           exclusion_coupling_file.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['exp_central']))
@@ -466,7 +465,7 @@ class LimitPlotter(object):
     #  p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
 
     if not self.do_blind:
-      p8, = plt.plot(masses_obs, obs, color='black', label='observed', linewidth=2)
+      p8, = plt.plot(masses_obs, obs, color='black', label='Observed', linewidth=2)
 
     if not self.do_blind:
       first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=20)
