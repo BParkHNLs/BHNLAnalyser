@@ -167,7 +167,7 @@ class Fitter(Tools, MVATools):
 
         if not self.do_fixed_shape:
           # parameters to be kept floating
-          self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+self.category_label, "sigma_CB_"+self.category_label, self.resolution, 0.005, 0.15)
+          self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+self.category_label, "sigma_CB_"+self.category_label, self.resolution, 0.001, 0.15)
           self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, 2, 0, 5) # positive definite when using RooDoubleCBFast
           self.n_1 = ROOT.RooRealVar("n_1_"+self.category_label, "n_1_"+self.category_label, 0, 5)
           self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 2, 0, 5) # positive definite when using RooDoubleCBFast
@@ -176,10 +176,10 @@ class Fitter(Tools, MVATools):
         else:
           # parameters fixed
           self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+self.category_label, "sigma_CB_"+self.category_label, self.resolution)
-          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, 1.)
-          self.n_1 = ROOT.RooRealVar("n_1_"+self.category_label, "n_1_"+self.category_label, 4.)
-          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 1.)
-          self.n_2 = ROOT.RooRealVar("n_2_"+self.category_label, "n_2_"+self.category_label, 4.)
+          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, 1.5)
+          self.n_1 = ROOT.RooRealVar("n_1_"+self.category_label, "n_1_"+self.category_label, 3.)
+          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 1.5)
+          self.n_2 = ROOT.RooRealVar("n_2_"+self.category_label, "n_2_"+self.category_label, 3.)
           # defines the relative importance of the two CBs
           self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB_"+self.category_label,"sigfrac_CB_"+self.category_label, 0.5)
 
