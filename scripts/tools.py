@@ -85,7 +85,11 @@ class Tools(object):
         file_list.append(generated_sample)
         is_generated_ctau = True
 
+    # uncomment to not reweight points with generated ctau
+    is_generated_ctau = False
+
     if not is_generated_ctau:
+      file_list = []
       if strategy == 'inclusive':
         for signal_sample in generated_samples:
           if signal_sample.mass != mass: continue
@@ -627,5 +631,5 @@ class Tools(object):
 
 if __name__ == '__main__':
   tools = Tools()
-  print tools.getCtau(4.5, 1e-2)
-  #print tools.getVV(3.6, 0.01)
+  #print tools.getCtau(4.5, 1e-2)
+  print tools.getVV(1., 1000.)
