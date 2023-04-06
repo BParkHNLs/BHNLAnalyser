@@ -80,6 +80,7 @@ class Tools(object):
     # do not reweight in case their is a sample generated with that ctau
     is_generated_ctau = False
     for generated_sample in generated_samples:
+      if generated_sample.mass != mass: continue
       filename = generated_sample.filename if not is_bc else generated_sample.filename_Bc
       if ctau == generated_sample.ctau and filename != None:
         file_list.append(generated_sample)
@@ -632,4 +633,4 @@ class Tools(object):
 if __name__ == '__main__':
   tools = Tools()
   #print tools.getCtau(4.5, 1e-2)
-  print tools.getVV(1., 1000.)
+  print tools.getVV(2., 1)
