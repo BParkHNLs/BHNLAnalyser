@@ -30,6 +30,8 @@ from samples import signal_samples, data_samples
 from categories import categories
 from baseline_selection import selection
 from quantity import Quantity as Qte
+from quantity import quantities
+quantities_preselection = quantities['preselection']
 
 
 class TrainingInfo(object):
@@ -77,6 +79,7 @@ class Sample(object):
   def __init__(self, filename, selection, training_info, do_parametric=False, mass=None, ctau=None, colour=None, filter_efficiency=None, muon_rate=None):
     self.filename = filename
     self.selection = selection
+    #self.selection = 'hnl_charge==0'
     cutbased_selection_qte = ['hnl_pt', 'hnl_charge', 'sv_lxysig', 'hnl_cos2d', 'hnl_mass'] 
     self.extra_branches = [
       'ismatched',
@@ -93,13 +96,16 @@ class Sample(object):
       ]
     if mass != None and ctau != None: 
       self.extra_branches.append('gen_hnl_ct')
-      #self.extra_branches.append('weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable')
+      self.extra_branches.append('weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable')
+      #self.extra_branches.append('weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2')
       self.extra_branches.append('weight_pu_sig_D')
       self.extra_branches.append('weight_mu0_softid')
       self.extra_branches.append('weight_mu_looseid')
+    #print self.selection
     try:
       #self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True, columns=training_info.features+cutbased_selection_qte)
       self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True, columns=training_info.features+cutbased_selection_qte+self.extra_branches)
+      #self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True)
     except:
       self.df = pd.DataFrame()
     self.mass = mass
@@ -113,7 +119,7 @@ class Sample(object):
 
 
 class MVAAnalyser(Tools, MVATools):
-  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_addCutbased=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotScoreCurve=False, do_plotMVAPerformance=False, do_plotWPScan=False, do_plotAUC=False, do_plotAUCvsLifetime=False, do_plotMass=False, do_plotPNNComparison=False):
+  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_addCutbased=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotScoreCurve=False, do_plotMVAPerformance=False, do_plotWPScan=False, do_plotAUC=False, do_plotAUCvsLifetime=False, do_plotMass=False, do_plotPNNComparison=False, do_plotPreselection=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_files = signal_files
@@ -134,14 +140,15 @@ class MVAAnalyser(Tools, MVATools):
     self.do_plotMass = do_plotMass
     self.do_plotAUCvsLifetime = do_plotAUCvsLifetime
     self.do_plotPNNComparison = do_plotPNNComparison 
+    self.do_plotPreselection = do_plotPreselection
 
     self.outdir = self.createOutDir()
 
     self.resolution_p0 = 0.0002747
     self.resolution_p1 = 0.008302
 
-    #self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2'
-    self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable'
+    self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2'
+    #self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable'
     self.weight_pusig = 'weight_pu_sig_D'
     self.weight_mu0id = 'weight_mu0_softid'
     self.weight_muid = 'weight_mu_looseid'
@@ -190,7 +197,9 @@ class MVAAnalyser(Tools, MVATools):
     ## signal
     mc_samples = []
     for signal_file in self.signal_files:
-      mc_sample = Sample(filename=signal_file.filename, selection=selection, training_info=training_info, mass=signal_file.mass, ctau=signal_file.ctau, colour=signal_file.colour, filter_efficiency=signal_file.filter_efficiency, muon_rate=signal_file.muon_rate)
+      signal_filename = signal_file.filename if not category.is_bc else signal_file.filename_Bc
+      filter_efficiency = signal_file.filter_efficiency if not category.is_bc else signal_file.filter_efficiency_Bc
+      mc_sample = Sample(filename=signal_filename, selection=selection, training_info=training_info, mass=signal_file.mass, ctau=signal_file.ctau, colour=signal_file.colour, filter_efficiency=filter_efficiency, muon_rate=signal_file.muon_rate)
       if len(mc_sample.df) != 0:
         mc_samples.append(mc_sample)
       
@@ -208,7 +217,9 @@ class MVAAnalyser(Tools, MVATools):
 
     mc_samples = []
     for signal_file in signal_files:
-      mc_sample = Sample(filename=signal_file.filename, selection=selection, training_info=training_info, mass=signal_file.mass, ctau=signal_file.ctau, colour=signal_file.colour, filter_efficiency=signal_file.filter_efficiency, muon_rate=signal_file.muon_rate)
+      signal_filename = signal_file.filename if not category.is_bc else signal_file.filename_Bc
+      filter_efficiency = signal_file.filter_efficiency if not category.is_bc else signal_file.filter_efficiency_Bc
+      mc_sample = Sample(filename=signal_filename, selection=selection, training_info=training_info, mass=signal_file.mass, ctau=signal_file.ctau, colour=signal_file.colour, filter_efficiency=filter_efficiency, muon_rate=signal_file.muon_rate)
       if len(mc_sample.df) != 0:
         mc_samples.append(mc_sample)
 
@@ -270,6 +281,7 @@ class MVAAnalyser(Tools, MVATools):
     masses = []
     for mc_sample in mc_samples:
       if mc_sample.mass not in masses: masses.append(mc_sample.mass)
+    print masses
     if len(masses) != 1:
       raise RuntimeError('Please provide signal samples of the same mass')
 
@@ -1301,7 +1313,11 @@ class MVAAnalyser(Tools, MVATools):
         hist_bkg.SetMarkerColor(colours[iscore])
       
       hist_bkg.SetTitle(category.title)
-      hist_bkg.GetXaxis().SetTitle('#mu#pi invariant mass [GeV]')
+      if object_mass == 'hnl_mass':
+        x_label = '#mu#pi invariant mass [GeV]'
+      elif object_mass == 'b_mass':
+        x_label = '#mu#mu#pi invariant mass [GeV]'
+      hist_bkg.GetXaxis().SetTitle(x_label)
       hist_bkg.GetXaxis().SetLabelSize(0.033)
       hist_bkg.GetXaxis().SetTitleSize(0.042)
       hist_bkg.GetXaxis().SetTitleOffset(1.1)
@@ -1324,6 +1340,93 @@ class MVAAnalyser(Tools, MVATools):
 
     canv.cd()
     name = '{}/{}_m{}_{}'.format(self.outdir, object_mass, str(mass).replace('.', 'p'), category.label)
+    canv.SaveAs(name + '.png')
+
+
+  def plotPreselectionQuantity(self, training_info, mc_samples, quantity, category):
+    '''
+      Plot the background mass distribution for given cut on scores
+    '''
+    pd.options.mode.chained_assignment = None
+    ROOT.gStyle.SetOptStat(0)
+    canv = self.tools.createTCanvas('canv'+category.label, 800, 700) 
+    leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.45, xmax=0.65, ymax=0.83, size=0.04)
+    
+    #masses = []
+    #for mc_sample in mc_samples:
+    #  if mc_sample.mass not in masses: masses.append(mc_sample.mass)
+    #if len(masses) != 1:
+    #  raise RuntimeError('Please provide signal samples of the same mass')
+
+    #scores = [0.99, 0.]
+    scores = [0.95]
+    colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+3]
+
+    #mass = mc_samples[0].mass
+    #resolution = self.resolution_p0 + self.resolution_p1 * mass
+
+    #if object_mass == 'hnl_mass':
+    #  quantity = Qte(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=mass-10*resolution, bin_max=mass+10*resolution)
+    #elif object_mass == 'b_mass':
+    #  quantity = Qte(name_nano='BToMuMuPi_mass', name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0, bin_max=8)
+
+    # consider the 10 sigma window around the signal mass
+    #window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
+
+    hists = []
+    for mc_sample in mc_samples:
+      sig_label = 'sig_{}_{}_{}'.format(mc_sample.mass, mc_sample.ctau, category.label)
+      extra_branch = [quantity.name_flat]
+      #filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=self.baseline_selection + ' && ' + window, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
+      #filename_sig = self.mva_tools.getFileWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mc_sample.mass, selection=self.baseline_selection, weights=extra_branch+['gen_hnl_ct', self.weight_hlt, self.weight_pusig, self.weight_mu0id, self.weight_muid], label=sig_label, treename='signal_tree', force_overwrite=True) 
+      filename_sig = self.mva_tools.getFileWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mc_sample.mass, selection=self.baseline_selection, weights=extra_branch+['gen_hnl_ct', self.weight_pusig, self.weight_mu0id, self.weight_muid], label=sig_label, treename='signal_tree', force_overwrite=True) 
+      file_sig = self.tools.getRootFile(filename_sig)
+      tree_sig = self.tools.getTree(file_sig, 'signal_tree')
+
+      #hists = []
+      for iscore, score in enumerate(scores):
+        #score = 0.99
+        hist_sig = self.tools.createHisto(tree_sig, quantity, hist_name='hist_sig'+str(score), branchname='flat', selection='score > {}'.format(score))
+        if hist_sig.Integral() != 0: hist_sig.Scale(1./hist_sig.Integral())
+
+        if score == 0.:
+          hist_sig.SetFillColor(mc_sample.colour)#ROOT.kBlue-3)
+          hist_sig.SetFillStyle(3005)
+        else:
+          hist_sig.SetMarkerStyle(20)
+          hist_sig.SetMarkerColor(mc_sample.colour)#colours[iscore])
+        
+        hist_sig.SetTitle(category.title)
+        #if object_mass == 'hnl_mass':
+        #  x_label = '#mu#pi invariant mass [GeV]'
+        #elif object_mass == 'b_mass':
+        #  x_label = '#mu#mu#pi invariant mass [GeV]'
+        hist_sig.GetXaxis().SetTitle(quantity.title)#x_label)
+        hist_sig.GetXaxis().SetLabelSize(0.033)
+        hist_sig.GetXaxis().SetTitleSize(0.042)
+        hist_sig.GetXaxis().SetTitleOffset(1.1)
+        hist_sig.GetYaxis().SetTitle('Normalised to unity')
+        hist_sig.GetYaxis().SetLabelSize(0.033)
+        hist_sig.GetYaxis().SetTitleSize(0.042)
+        hist_sig.GetYaxis().SetTitleOffset(1.1)
+        hists.append(hist_sig)
+        leg_entry = '{} GeV {} mm score>{}'.format(mc_sample.mass, mc_sample.ctau, score)
+        #if score == 0:
+        #  leg_entry = '{} GeV {} mm score>0'.format(mc_sample.mass, mc_sample.ctau)
+        #else:
+        #  leg_entry = 'pNN score > {}'.format(score)
+        leg.AddEntry(hist_sig, leg_entry)
+
+    for ihist, hist in enumerate(hists):
+      if ihist == 0: hist.Draw('')
+      else: hist.Draw('same')
+      #elif ihist != 0 and ihist != len(scores)-1: hist.Draw('same')
+      #else: hist.Draw('hist same')
+    leg.Draw('same')
+
+    canv.cd()
+    os.system('mkdir -p {}/preselection'.format(self.outdir))
+    name = '{}/preselection/{}_{}'.format(self.outdir, quantity.label, category.label)
     canv.SaveAs(name + '.png')
 
 
@@ -1424,6 +1527,7 @@ class MVAAnalyser(Tools, MVATools):
     for category in self.categories:
       if category.label == 'incl': continue
       #if category.label != 'lxysig0to50_SS': continue
+      #if 'Bc' not in category.label: continue
 
       print '\n -> get the training information'
       training_info = TrainingInfo(self.dirname, category.label)
@@ -1476,6 +1580,12 @@ class MVAAnalyser(Tools, MVATools):
         self.plotMass(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, object_mass='hnl_mass')
         self.plotMass(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, object_mass='b_mass')
 
+      if self.do_plotPreselection:
+        #quantitites = quantities['preselection']
+        for quantity in quantities_preselection:
+          print quantity.name_flat
+          self.plotPreselectionQuantity(training_info=training_info, mc_samples=mc_samples, quantity=quantity, category=category)
+
 
 
 
@@ -1516,7 +1626,10 @@ if __name__ == '__main__':
   #dirname = 'test_2022Oct06_17h34m15s' # new feature set
   #dirname = 'test_2022Oct10_16h40m58s' # invmass and deltaR added
   #dirname = 'test_2022Oct12_15h12m37s' # mass 3 only
-  dirname = 'test_2022Nov29_09h26m28s' # adding muon isolation
+  #dirname = 'test_2022Nov29_09h26m28s' # adding muon isolation
+  #dirname = 'test_2023Jan25_12h38m31s' # test statistics
+  dirname = 'test_Bc_2023Jan25_22h42m38s' # Bc
+  #dirname = 'test_2023Jan30_17h10m34s' # test statistics ML review
 
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
   #categories = categories['V12_08Aug22_permass']
@@ -1525,16 +1638,48 @@ if __name__ == '__main__':
   do_parametric = True
 
   data_files = []
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
+
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk4_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk5_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk6_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk7_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk10_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk11_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk12_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk13_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk14_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk15_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk16_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk17_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk18_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk19_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk20_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk21_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk22_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk23_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk24_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk25_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk26_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk27_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk28_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk29_n500/flat/flat_bparknano_08Aug22_sr.root')
 
   do_analyseMVA = False    # assess performance of mva
   do_compareMVA = False   # compare mva performance to that of the cutbased method
 
   if do_analyseMVA:
+    #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-    #masses = ['m1', 'm1p5', 'm2', 'm3', 'm4p5']
-    masses = ['m2']
+    signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
+    #masses = ['m1p0', 'm1p5', 'm2', 'm3', 'm4p5']
+    masses = ['m4p5']
 
     for mass in masses:
       signal_files = []
@@ -1542,7 +1687,7 @@ if __name__ == '__main__':
         if mass not in signal_label: continue
         if mass == 'm1' and 'm1p5' in signal_label: continue
         for signal_file in signal_samples[signal_label]:
-          print signal_file.filename
+          #print signal_file.filename
           signal_files.append(signal_file)
 
       analyser = MVAAnalyser(
@@ -1559,9 +1704,10 @@ if __name__ == '__main__':
           do_plotROC = True,
           do_plotScoreCurve = False,
           do_plotMVAPerformance = False,
-          do_plotWPScan = True,
+          do_plotWPScan = False,
           do_plotAUC = False,
-          do_plotMass = True,
+          do_plotMass = False, #True,
+          do_plotPreselection = False,
           )
 
       analyser.process()
@@ -1592,6 +1738,7 @@ if __name__ == '__main__':
         do_plotWPScan = False,
         do_plotAUC = False,
         do_plotMass = False,
+        do_plotPreselection = False,
         )
 
     analyser.process()
@@ -1606,12 +1753,13 @@ if __name__ == '__main__':
     do_plotWPScan = False
     do_plotROC = False
     do_plotAUC = False
-    do_plotMass = True
+    do_plotMass = False
     do_plotAUCvsLifetime = False
     do_plotPNNComparison = False
+    do_plotPreselection = True
 
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-    signal_labels = ['V12_08Aug22_m4p5']
+    signal_labels = ['V12_08Aug22_sensitivity']
 
     #signal_labels = [
     #  #'V42_08Aug22_m0p5',
@@ -1734,6 +1882,7 @@ if __name__ == '__main__':
         do_plotMass = do_plotMass,
         do_plotAUCvsLifetime = do_plotAUCvsLifetime,
         do_plotPNNComparison = do_plotPNNComparison,
+        do_plotPreselection = do_plotPreselection,
         )
 
     analyser.process()
