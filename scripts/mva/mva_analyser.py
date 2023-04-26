@@ -96,7 +96,7 @@ class Sample(object):
       ]
     if mass != None and ctau != None: 
       self.extra_branches.append('gen_hnl_ct')
-      self.extra_branches.append('weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable')
+      #self.extra_branches.append('weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable')
       #self.extra_branches.append('weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2')
       self.extra_branches.append('weight_pu_sig_D')
       self.extra_branches.append('weight_mu0_softid')
@@ -1296,7 +1296,11 @@ class MVAAnalyser(Tools, MVATools):
     window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
     bkg_label = 'bkg_{}_{}'.format(mass, category.label)
     extra_branch = ['b_mass']
-    filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=self.baseline_selection + ' && ' + window, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
+    selection_bkg = self.baseline_selection + ' && ' + window + ' && ' + category.definition_flat
+    #TODO understand why the category selection should be added while the samples are selected with that selection applied
+    print selection_bkg
+    #filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=self.baseline_selection + ' && ' + window, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
+    filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=selection_bkg, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
     file_bkg = self.tools.getRootFile(filename_bkg)
     tree_bkg = self.tools.getTree(file_bkg, 'signal_tree')
 
@@ -1526,7 +1530,7 @@ class MVAAnalyser(Tools, MVATools):
 
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxysig0to50_SS': continue
+      #if category.label != 'lxysiggt150_OS': continue
       #if 'Bc' not in category.label: continue
 
       print '\n -> get the training information'
@@ -1628,19 +1632,21 @@ if __name__ == '__main__':
   #dirname = 'test_2022Oct12_15h12m37s' # mass 3 only
   #dirname = 'test_2022Nov29_09h26m28s' # adding muon isolation
   #dirname = 'test_2023Jan25_12h38m31s' # test statistics
-  dirname = 'test_Bc_2023Jan25_22h42m38s' # Bc
+  #dirname = 'test_Bc_2023Jan25_22h42m38s' # Bc
   #dirname = 'test_2023Jan30_17h10m34s' # test statistics ML review
+  dirname = 'V13_06Feb23_2023Apr06_14h13m31s'
 
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
   #categories = categories['V12_08Aug22_permass']
-  categories = categories['categories_0_50_150']
+  categories = categories['categories_0_50_150_Bc']
 
   do_parametric = True
 
   data_files = []
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_partial.root')
 
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_08Aug22_sr.root')
@@ -1671,13 +1677,13 @@ if __name__ == '__main__':
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk28_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk29_n500/flat/flat_bparknano_08Aug22_sr.root')
 
-  do_analyseMVA = False    # assess performance of mva
+  do_analyseMVA = True    # assess performance of mva
   do_compareMVA = False   # compare mva performance to that of the cutbased method
 
   if do_analyseMVA:
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-    signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-    signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
+    #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
+    signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
     #masses = ['m1p0', 'm1p5', 'm2', 'm3', 'm4p5']
     masses = ['m4p5']
 
@@ -1706,7 +1712,7 @@ if __name__ == '__main__':
           do_plotMVAPerformance = False,
           do_plotWPScan = False,
           do_plotAUC = False,
-          do_plotMass = False, #True,
+          do_plotMass = True,
           do_plotPreselection = False,
           )
 
