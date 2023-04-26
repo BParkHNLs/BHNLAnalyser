@@ -142,7 +142,7 @@ class Plotter(Tools):
     return max_range
 
 
-  def plot(self, selection='', title='', outdirloc='', homedir='', outdirlabel='', subdirlabel='', plotdirlabel='', branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_pusig='', weight_mu0id='', weight_muid='', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary', do_tdrstyle=True):
+  def plot(self, selection='', title='', outdirloc='', homedir='', outdirlabel='', subdirlabel='', plotdirlabel='', is_bc=False, branchname='flat', treename='signal_tree', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_pusig='', weight_mu0id='', weight_muid='', plot_data=False, plot_qcd=False, plot_sig=False, plot_ratio=False, do_shape=True, do_luminorm=False, do_stack=True, do_log=False, add_overflow=False, add_CMSlabel=True, CMS_tag='Preliminary', do_tdrstyle=True):
 
     # check the options
     if plot_data and self.data_files == '':
@@ -237,7 +237,8 @@ class Plotter(Tools):
     if plot_sig:
       signal_hists = []
       for signal_file in self.signal_files:
-        f_sig = self.tools.getRootFile(signal_file.filename)
+        signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
+        f_sig = self.tools.getRootFile(signal_filename)
         tree_sig = self.tools.getTree(f_sig, treename)
 
         hist_signal_name = 'hist_signal_{}_{}_{}_{}'.format(self.quantity, outdirlabel.replace('/', '_'), do_log, do_shape)
@@ -274,7 +275,10 @@ class Plotter(Tools):
 
           hist_signal.Scale(signal_yields/hist_signal.Integral()*corr)
 
-        legend.AddEntry(hist_signal, 'signal - {} (x {})'.format(signal_file.label, '{:.0e}'.format(corr)))
+        if do_luminorm:
+          legend.AddEntry(hist_signal, 'signal - {} (x {})'.format(signal_file.label, '{:.0e}'.format(corr)))
+        else:
+          legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
 
         hist_signal.SetLineWidth(3)
         hist_signal.SetLineColor(signal_file.colour)
@@ -587,6 +591,7 @@ if __name__ == '__main__':
                        outdirlabel = outdirlabel, 
                        subdirlabel = subdirlabel, 
                        plotdirlabel = plotdirlabel, 
+                       is_bc = False,
                        branchname = opt.sample_type, 
                        treename = opt.tree_name,
                        add_weight_hlt = 1 if opt.add_weight_hlt else 0,
@@ -616,6 +621,7 @@ if __name__ == '__main__':
           title = 'Signal Region, {}'.format(category.title)
           plotdirlabel = 'SR/{}'.format(category.label)
           region_definition = 'hnl_charge == 0'
+          is_bc = True if category.is_bc else False
           plot_data = False
           plot_qcd = True
           plot_sig = True
@@ -630,6 +636,7 @@ if __name__ == '__main__':
                        outdirlabel = outdirlabel, 
                        subdirlabel = subdirlabel, 
                        plotdirlabel = plotdirlabel, 
+                       is_bc = is_bc,
                        branchname = opt.sample_type, 
                        treename = opt.tree_name,
                        add_weight_hlt = 1 if opt.add_weight_hlt else 0,
@@ -657,6 +664,7 @@ if __name__ == '__main__':
         if opt.plot_dataSig:
           title = 'Signal Region, {}'.format(category.title)
           plotdirlabel = 'DataSig/{}'.format(category.label)
+          is_bc = True if category.is_bc else False
           plot_data = True
           plot_qcd = False
           plot_sig = True
@@ -669,6 +677,7 @@ if __name__ == '__main__':
                        outdirlabel = outdirlabel, 
                        subdirlabel = subdirlabel, 
                        plotdirlabel = plotdirlabel, 
+                       is_bc = is_bc,
                        branchname = opt.sample_type, 
                        treename = opt.tree_name,
                        add_weight_hlt = 1 if opt.add_weight_hlt else 0,
