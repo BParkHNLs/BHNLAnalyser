@@ -254,7 +254,7 @@ class MVATools(object):
     print ' --> {} created'.format(root_filename)
 
     
-  def getFileWithScore(self, files=None, training_label='', do_parametric=False, mass=None, category_label=None, selection='hnl_charge>-99', weights=None, label='', treename='signal_tree', force_overwrite=False): 
+  def getFileWithScore(self, files=None, training_label='', do_parametric=False, mass=None, category_label=None, selection='hnl_charge>-99', weights=None, label='', treename='signal_tree', force_overwrite=False, is_bc=False): 
     '''
       This function returns the file with the analysis tree that contains the hnl mass, the score and other quantities used for signal reweighting
       The argument 'weights' is the list of branches that will need to be added to the tree for the reweighting at analysis level
@@ -263,7 +263,11 @@ class MVATools(object):
     '''
     samples_filename = []
     for file_ in files:
-      samples_filename.append(file_.filename)
+      if not is_bc:
+        filename = file_.filename
+      else:
+        filename = file_.filename_Bc
+      samples_filename.append(filename)
       
     root_filename = './{}.root'.format(label.replace('.', 'p'))
     if force_overwrite or not path.exists(root_filename):
