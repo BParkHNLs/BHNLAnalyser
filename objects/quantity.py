@@ -12,7 +12,7 @@ class Quantity(object):
 
 quantities = {}
 quantities['small'] = [
-  Quantity(name_nano='BToMuMuPi_mass', name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0.55, bin_max=6.5),
+  #Quantity(name_nano='BToMuMuPi_mass', name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0.55, bin_max=8),
   #Quantity(name_nano='BToMuMuPi_pt', name_flat='b_pt', label='b_pt', title='#mu#mu#pi pT [GeV]', nbins=60, bin_min=0, bin_max=80),
   #Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=0., bin_max=5.4),
   #Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=2., bin_max=4.),
@@ -45,21 +45,21 @@ quantities['small'] = [
   #Quantity(name_nano='BToMuMuPi_fit_mu_eta', name_flat='mu_eta', label='mu_eta', title='displaced #mu #eta', nbins=80, bin_min=-2, bin_max=2),
 
   Quantity(name_nano='', name_flat='mu0_triggering_pt', label='mu0_triggering_pt', title='triggering primary #mu pT [GeV]', nbins=60, bin_min=7, bin_max=20),
-  #Quantity(name_nano='', name_flat='mu_triggering_pt', label='mu_triggering_pt', title='triggering displaced #mu pT [GeV]', nbins=60, bin_min=7, bin_max=20),
+  Quantity(name_nano='', name_flat='mu_triggering_pt', label='mu_triggering_pt', title='triggering displaced #mu pT [GeV]', nbins=60, bin_min=7, bin_max=20),
   #Quantity(name_nano='', name_flat='mu0_pt', label='mu0_pt', title='primary #mu pT [GeV]', nbins=60, bin_min=1.5, bin_max=20),
   #Quantity(name_nano='', name_flat='mu_pt', label='mu_pt', title='displaced #mu pT [GeV]', nbins=60, bin_min=1.5, bin_max=20),
   ####Quantity(name_nano='', name_flat='fabs(mu0_triggering_dxysig)', label='mu0_triggering_dxysig', title='triggering primary #mu impact parameter significance on xy (PV)', nbins=60, bin_min=0, bin_max=20),
   ####Quantity(name_nano='', name_flat='fabs(mu_triggering_dxysig)', label='mu_triggering_dxysig', title='triggering displaced #mu impact parameter significance on xy (PV)', nbins=60, bin_min=0, bin_max=60),
-  #Quantity(name_nano='', name_flat='fabs(mu0_triggering_dxysig_bs)', label='mu0_triggering_dxysig_bs', title='triggering primary #mu impact parameter significance on xy (BS)', nbins=60, bin_min=0, bin_max=20),
-  #Quantity(name_nano='', name_flat='fabs(mu_triggering_dxysig_bs)', label='mu_triggering_dxysig_bs', title='triggering displaced #mu impact parameter significance on xy (BS)', nbins=60, bin_min=0, bin_max=60),
+  Quantity(name_nano='', name_flat='fabs(mu0_triggering_dxysig_bs)', label='mu0_triggering_dxysig_bs', title='triggering primary #mu impact parameter significance on xy (BS)', nbins=60, bin_min=0, bin_max=20),
+  Quantity(name_nano='', name_flat='fabs(mu_triggering_dxysig_bs)', label='mu_triggering_dxysig_bs', title='triggering displaced #mu impact parameter significance on xy (BS)', nbins=60, bin_min=0, bin_max=60),
   #Quantity(name_nano='', name_flat='fabs(mu0_dxysig_bs)', label='mu0_dxysig_bs', title='rimary #mu impact parameter significance on xy (BS)', nbins=60, bin_min=0, bin_max=20),
   #Quantity(name_nano='', name_flat='fabs(mu_dxysig_bs)', label='mu_dxysig_bs', title='displaced #mu impact parameter significance on xy (BS)', nbins=60, bin_min=0, bin_max=60),
   ####Quantity(name_nano='', name_flat='mu0_triggering_dxysig_bs', label='mu0_triggering_dxysig_bs', title='triggering primary #mu impact parameter significance on xy (BS)', nbins=60, bin_min=0, bin_max=20),
   ####Quantity(name_nano='', name_flat='mu_triggering_dxysig_bs', label='mu_triggering_dxysig_bs', title='triggering displaced #mu impact parameter significance on xy (BS)', nbins=60, bin_min=0, bin_max=60),
   ####Quantity(name_nano='', name_flat='fabs(mu0_triggering_dxysig_bs_rdst)', label='mu0_triggering_dxysig_bs_rdst', title='triggering primary #mu impact parameter significance on xy (BS R(D*))', nbins=60, bin_min=0, bin_max=20),
   ####Quantity(name_nano='', name_flat='fabs(mu_triggering_dxysig_bs_rdst)', label='mu_triggering_dxysig_bs_rdst', title='triggering displaced #mu impact parameter significance on xy (BS R(D*))', nbins=60, bin_min=0, bin_max=60),
-  #Quantity(name_nano='', name_flat='mu0_triggering_eta', label='mu0_triggering_eta', title='triggering primary #mu #eta', nbins=80, bin_min=-2, bin_max=2),
-  #Quantity(name_nano='', name_flat='mu_triggering_eta', label='mu_triggering_eta', title='triggering displaced #mu #eta', nbins=80, bin_min=-2, bin_max=2),
+  Quantity(name_nano='', name_flat='mu0_triggering_eta', label='mu0_triggering_eta', title='triggering primary #mu #eta', nbins=80, bin_min=-2, bin_max=2),
+  Quantity(name_nano='', name_flat='mu_triggering_eta', label='mu_triggering_eta', title='triggering displaced #mu #eta', nbins=80, bin_min=-2, bin_max=2),
   #Quantity(name_nano='', name_flat='mu0_eta', label='mu0_eta', title='primary #mu #eta', nbins=80, bin_min=-2, bin_max=2),
   #Quantity(name_nano='', name_flat='mu_eta', label='mu_eta', title='displaced #mu #eta', nbins=80, bin_min=-2, bin_max=2),
 
@@ -69,7 +69,7 @@ quantities['small'] = [
 
   #Quantity(name_nano='Muon_numberOfPixelLayers[BToMuMuPi_sel_mu_idx]', name_flat='mu_numberofpixellayers', label='mu_numberOfPixelLayers', title='numberOfPixelLayers', nbins=4, bin_min=0, bin_max=4),
 
-  Quantity(name_nano='BToMuMuPi_hnl_cos2D', name_flat='hnl_cos2d', label='hnl_cos2d', title='cos(#Theta_{back-pointing})', nbins=70, bin_min=0.995, bin_max=1),
+  #Quantity(name_nano='BToMuMuPi_hnl_cos2D', name_flat='hnl_cos2d', label='hnl_cos2d', title='cos(#Theta_{back-pointing})', nbins=70, bin_min=0.995, bin_max=1),
   #Quantity(name_nano='BToMuMuPi_cos_theta_star_pion', name_flat='cos_theta_star_pion', label='cos_theta_star_pion', title='cos(#theta_{#pi}*)', nbins=80, bin_min=-1, bin_max=1),
   #Quantity(name_nano='BToMuMuPi_cos_theta_star_muon', name_flat='cos_theta_star_muon', label='cos_theta_star_muon', title='cos(#theta_{#mu}*)', nbins=80, bin_min=-1, bin_max=1),
   #Quantity(name_nano='fabs(BToMuMuPi_cos_theta_star_pion)', name_flat='fabs(cos_theta_star_pion)', label='cos_theta_star_pion_abs', title='|cos(#theta_{#pi}*)|', nbins=80, bin_min=0, bin_max=1),
@@ -222,7 +222,7 @@ quantities['preselection'] = [
   #Quantity(name_nano='fabs(BToMuMuPi_pi_dxy)', name_flat='fabs(pi_dxy)', label='pi_dxy', title='displaced #pi impact parameter on xy [cm]', nbins=40, bin_min=0, bin_max=0.01),
   #Quantity(name_nano='fabs(BToMuMuPi_pi_dzS)', name_flat='fabs(pi_dzsig)', label='pi_dzsig', title='displaced #pi impact parameter significance on z', nbins=50, bin_min=0, bin_max=10),
   #Quantity(name_nano='fabs(BToMuMuPi_pi_dxyS)', name_flat='fabs(pi_dxysig)', label='pi_dxysig', title='displaced #pi impact parameter significance on xy', nbins=45, bin_min=0, bin_max=12),
-  #Quantity(name_nano='BToMuMuPi_pi_DCASig', name_flat='pi_dcasig', label='pi_dcasig', title='displaced #pi DCA significance on z', nbins=50, bin_min=0, bin_max=30),
+  Quantity(name_nano='BToMuMuPi_pi_DCASig', name_flat='pi_dcasig', label='pi_dcasig', title='displaced #pi DCA significance on z', nbins=50, bin_min=0, bin_max=30),
   #Quantity(name_nano='BToMuMuPi_fit_mu_pt', name_flat='mu_pt', label='mu_pt', title='displaced #mu pT [GeV]', nbins=50, bin_min=0, bin_max=30),
   #Quantity(name_nano='BToMuMuPi_fit_mu_eta', name_flat='mu_eta', label='mu_eta', title='displaced #mu #eta', nbins=40, bin_min=-3, bin_max=3),
   #Quantity(name_nano='fabs(Muon_dz[BToMuMuPi_sel_mu_idx])', name_flat='fabs(mu_dz)', label='mu_dz', title='displaced #mu impact parameter on z [cm]', nbins=90, bin_min=0, bin_max=0.1),
@@ -230,11 +230,11 @@ quantities['preselection'] = [
   #Quantity(name_nano='fabs(Muon_dzS[BToMuMuPi_sel_mu_idx])', name_flat='fabs(mu_dzsig)', label='mu_dzsig', title='displaced #mu impact parameter significance on z', nbins=45, bin_min=0, bin_max=10),
   #Quantity(name_nano='fabs(Muon_dxyS_BS[BToMuMuPi_sel_mu_idx])', name_flat='fabs(mu_dxysig)', label='mu_dxysig', title='displaced #mu impact parameter significance on xy', nbins=45, bin_min=0.03, bin_max=5),
   #Quantity(name_nano='BToMuMuPi_sv_prob', name_flat='sv_prob', label='sv_prob', title='displaced vertex probability', nbins=90, bin_min=0, bin_max=1.),
-  #Quantity(name_nano='BToMuMuPi_hnl_cos2D', name_flat='hnl_cos2d', label='hnl_cos2d', title='#mu#pi cos(#theta)', nbins=30, bin_min=0.99, bin_max=1),
+  #Quantity(name_nano='BToMuMuPi_hnl_cos2D', name_flat='hnl_cos2d', label='hnl_cos2d', title='#mu#pi cos(#theta)', nbins=30, bin_min=0.995, bin_max=1),
   #Quantity(name_nano='BToMuMuPi_hnl_cos2D', name_flat='hnl_cos2d', label='hnl_cos2d', title='cos(#Theta_{back-pointing})', nbins=70, bin_min=0.97, bin_max=1),
   #Quantity(name_nano='BToMuMuPi_sv_lxy_sig', name_flat='sv_lxysig', label='sv_lxysig', title='L_{xy}/#sigma', nbins=50, bin_min=15, bin_max=400),
   #Quantity(name_nano='BToMuMuPi_mass', name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=0.55, bin_max=8),
-  Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass (GeV)', nbins=80, bin_min=0.8, bin_max=6.),
+  #Quantity(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass (GeV)', nbins=80, bin_min=0.8, bin_max=6.),
   #Quantity(name_nano='BToMuMuPi_cos_theta_star_pion', name_flat='cos_theta_star_pion', label='cos_theta_star_pion', title='cos(#theta_{#pi}*)', nbins=80, bin_min=-1, bin_max=1),
 
   #Quantity(name_nano='BToMuMuPi_trgmu_mu_mass', name_flat='trgmu_mu_mass', label='trgmu_mu_mass', title='dimuon invariant mass [GeV]', nbins=60, bin_min=0, bin_max=6),
