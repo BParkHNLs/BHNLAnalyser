@@ -77,9 +77,23 @@ class LimitProducer(object):
         print >> ff, results
 
     # produce prefit plots
-    os.system('mkdir -p  {}/outputs/{}/datacards/{}/prefit_plots_{}_m_{}_ctau_{}_v2_{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.scenario, str(self.mass).replace('.', 'p'), str(self.ctau).replace('.', 'p'), str(self.coupling).replace('.', 'p').replace('-', 'm')))
-    command_prefit_plot = 'combine -M FitDiagnostics {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams --out {hm}/outputs/{out}/datacards/{sub}/prefit_plots_{sc}_m_{m}_ctau_{ctau}_v2_{v2}'.format(i=self.indirlabel, hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+    os.system('mkdir -p  {}/outputs/{}/datacards/{}/prefit_postfit_plots_{}_m_{}_ctau_{}_v2_{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.scenario, str(self.mass).replace('.', 'p'), str(self.ctau).replace('.', 'p'), str(self.coupling).replace('.', 'p').replace('-', 'm')))
+    os.system('cp ../data/index.php {}/outputs/{}/datacards/{}/prefit_postfit_plots_{}_m_{}_ctau_{}_v2_{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.scenario, str(self.mass).replace('.', 'p'), str(self.ctau).replace('.', 'p'), str(self.coupling).replace('.', 'p').replace('-', 'm')))
+    command_prefit_plot = 'combine -M FitDiagnostics {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams --out {hm}/outputs/{out}/datacards/{sub}/prefit_postfit_plots_{sc}_m_{m}_ctau_{ctau}_v2_{v2}'.format(i=self.indirlabel, hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
     os.system(command_prefit_plot)
+
+    # compute p-value
+    command_pvalue = 'combine -M Significance {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --pval'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+    if self.use_discrete_profiling:
+      command_pvalue += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
+    
+    print '\t\t',command_pvalue
+     
+    results_pvalue = subprocess.check_output(command_pvalue.split())
+    
+    result_pvalue_file_name = '{}/pvalue_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(self.ctau), str(self.coupling)) 
+    with open(result_pvalue_file_name, 'w') as ff:
+        print >> ff, results_pvalue
 
 
 if __name__ == "__main__":
