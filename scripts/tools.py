@@ -43,7 +43,7 @@ class Tools(object):
     return hist
 
 
-  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', hist_name='hist_qcd_tot', selection='', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_mu0id='', weight_muid=''):
+  def createWeightedHistoQCDMC(self, qcd_files, white_list='', quantity='', hist_name='hist_qcd_tot', selection='', add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_puqcd='', weight_mu0id='', weight_muid='', treename='signal_tree'):
     hist_mc_tot = ROOT.TH1D(hist_name, hist_name, quantity.nbins, quantity.bin_min, quantity.bin_max)
     hist_mc_tot.Sumw2()
 
@@ -55,7 +55,7 @@ class Tools(object):
 
       f_mc = self.getRootFile(qcd_file.filename)
       tree_run = self.getTree(f_mc, 'run_tree')
-      tree_mc = self.getTree(f_mc, 'signal_tree')
+      tree_mc = self.getTree(f_mc, treename)
 
       weight_mc = self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency)
       #weight_mc = 1. / (self.computeQCDMCWeight(tree_run, qcd_file.cross_section, qcd_file.filter_efficiency) * lumi_tot)
@@ -72,60 +72,94 @@ class Tools(object):
     return hist_mc_tot
 
 
-  def getSignalFileList(self, signal_label, mass, ctau, strategy='inclusive'):
-    # add bc option?
+  def getSignalFileList(self, signal_label, mass, ctau, strategy='inclusive', is_bc=False):
+    #TODO rename as getSignalSampleList?
     file_list = []
     generated_samples = signal_samples[signal_label] 
 
-    if strategy == 'inclusive':
-      for signal_sample in generated_samples:
-        if signal_sample.mass != mass: continue
-        file_list.append(signal_sample)
+    # do not reweight in case their is a sample generated with that ctau
+    is_generated_ctau = False
+    for generated_sample in generated_samples:
+      if generated_sample.mass != mass: continue
+      filename = generated_sample.filename if not is_bc else generated_sample.filename_Bc
+      if ctau == generated_sample.ctau and filename != None:
+        file_list.append(generated_sample)
+        is_generated_ctau = True
 
-    elif strategy == 'partial_inclusive':
-      for signal_sample in generated_samples:
-        if signal_sample.mass != mass: continue
-        if signal_sample.ctau < ctau: 
-        #  if len(file_list) == 0: # for mass 1, we reweight to even larger ctaus than the ones generated
-        #    file_list.append(signal_sample)
-          file_list.append(signal_sample)
-          break
-        file_list.append(signal_sample)
+    # uncomment to not reweight points with generated ctau
+    is_generated_ctau = False
 
-    elif strategy == 'exclusive_fromlargerctau':
-      # only use the generated sample with the closest larger ctau
-      for signal_sample in generated_samples:
-        if signal_sample.mass != mass: continue
-        if signal_sample.ctau >= ctau:
-          file_list.append(signal_sample)
-        elif signal_sample.ctau < ctau and len(file_list) == 0: 
-          # for mass 1, we reweight to even larger ctaus than the ones generated
+    if not is_generated_ctau:
+      file_list = []
+      if strategy == 'inclusive':
+        for signal_sample in generated_samples:
+          if signal_sample.mass != mass: continue
+          filename = signal_sample.filename if not is_bc else signal_sample.filename_Bc
+          if filename == None: continue
           file_list.append(signal_sample)
 
-      if len(file_list) > 1:
-        # only keep last element of the list
-        file_list_tmp = []
-        file_list_tmp.append(file_list.pop())
-        file_list = file_list_tmp
-
-    elif strategy == 'exclusive_fromsmallerctau':
-      # only use the generated sample with the closest larger ctau
-      for signal_sample in generated_samples:
-        if signal_sample.mass != mass: continue
-        if signal_sample.ctau <= ctau:
-          file_list.append(signal_sample)
-        elif signal_sample.ctau < ctau and len(file_list) == 0: 
-          # for mass 1, we reweight to even larger ctaus than the ones generated
+      elif strategy == 'partial_inclusive':
+        for signal_sample in generated_samples:
+          if signal_sample.mass != mass: continue
+          filename = signal_sample.filename if not is_bc else signal_sample.filename_Bc
+          if filename == None: continue
+          if signal_sample.ctau < ctau: 
+          #  if len(file_list) == 0: # for mass 1, we reweight to even larger ctaus than the ones generated
+          #    file_list.append(signal_sample)
+            file_list.append(signal_sample)
+            break
           file_list.append(signal_sample)
 
-      if len(file_list) > 1:
-        # only keep last element of the list
-        file_list_tmp = []
-        file_list_tmp.append(file_list[0])
-        file_list = file_list_tmp
+      elif strategy == 'exclusive_fromlargerctau':
+        # only use the generated sample with the closest larger ctau
+        for signal_sample in generated_samples:
+          if signal_sample.mass != mass: continue
+          filename = signal_sample.filename if not is_bc else signal_sample.filename_Bc
+          if filename == None: continue
+          if signal_sample.ctau >= ctau:
+            file_list.append(signal_sample)
+          elif signal_sample.ctau < ctau and len(file_list) == 0: 
+            # for mass 1, we reweight to even larger ctaus than the ones generated
+            file_list.append(signal_sample)
 
-      if len(file_list) == 0:
-        file_list.append(generated_samples.pop())
+        if len(file_list) > 1:
+          # only keep last element of the list
+          file_list_tmp = []
+          file_list_tmp.append(file_list.pop())
+          file_list = file_list_tmp
+
+      elif strategy == 'exclusive_fromsmallerctau':
+        # only use the generated sample with the closest larger ctau
+        for signal_sample in generated_samples:
+          if signal_sample.mass != mass: continue
+          filename = signal_sample.filename if not is_bc else signal_sample.filename_Bc
+          if filename == None: continue
+          if signal_sample.ctau <= ctau:
+            file_list.append(signal_sample)
+          elif signal_sample.ctau < ctau and len(file_list) == 0: 
+            # for mass 1, we reweight to even larger ctaus than the ones generated
+            file_list.append(signal_sample)
+
+        if len(file_list) > 1:
+          # only keep last element of the list
+          file_list_tmp = []
+          file_list_tmp.append(file_list[0])
+          file_list = file_list_tmp
+
+        if len(file_list) == 0:
+          file_list.append(generated_samples.pop())
+
+      elif strategy == 'unique':
+        for signal_sample in generated_samples:
+          if signal_sample.mass != mass: continue
+          filename = signal_sample.filename if not is_bc else signal_sample.filename_Bc
+          if filename == None: continue
+          if float(mass) == 1. and 'ctau10p0mm' in signal_sample.filename: 
+            file_list.append(signal_sample)
+          if float(mass) == 3. and 'ctau10p0mm' in signal_sample.filename: 
+            file_list.append(signal_sample)
+          if float(mass) == 4.5 and 'ctau10p0mm' in signal_sample.filename: 
+            file_list.append(signal_sample)
 
     return file_list
 
@@ -188,7 +222,7 @@ class Tools(object):
     return weight
 
 
-  def getSignalWeight(self, signal_files, mass, ctau, sigma_B, lumi, lhe_efficiency=0.08244, isBc=False):
+  def getSignalWeight(self, signal_files, mass, ctau, sigma_B, lumi, lhe_efficiency=0.08244, is_bc=False):
     '''
       weight = sigma_B * lumi * v_square * BR(B->muNX) * BR(N->mupi) * filter_eff / N_mini 
     '''
@@ -198,23 +232,82 @@ class Tools(object):
     # production branching ratio
     from decays import Decays 
     dec = Decays(mass=mass, mixing_angle_square=1) # we factorise the mixing angle 
-    if not isBc: BR_prod = dec.BR_tot_mu 
+    if not is_bc: BR_prod = dec.BR_tot_mu 
     else: BR_prod = dec.BR_Bc_mu 
 
     # decay branching ratio
-    BR_NToMuPi = self.gamma_partial(mass=mass, vv=v_square) / self.gamma_total(mass=mass, vv=v_square)
+    BR_NToMuPi = self.gamma_partial(mass=mass, vv=1.) / self.gamma_total(mass=mass, vv=1.) # the coupling cancels in the ratio
 
     # number of generated events (= n_gen / filter_efficiency = n_miniaod / filter_efficiency)
     tree_run = ROOT.TChain('run_tree') 
     for signal_file in signal_files:
-      tree_run.Add(signal_file.filename)
+      if not is_bc:
+        tree_run.Add(signal_file.filename)
+      else:
+        tree_run.Add(signal_file.filename_Bc)
 
     n_gen_tot = self.getNminiAODEvts(tree_run)
     # take the weighted average of the filter efficiencies of the generated samples
     filter_efficiency = 0.
     for signal_file in signal_files:
-      the_filter_efficiency = signal_file.filter_efficiency if not isBc else signal_file.filter_efficiency_Bc
-      the_file = self.getRootFile(signal_file.filename)
+      if not is_bc:
+        the_file = self.getRootFile(signal_file.filename)
+        the_filter_efficiency = signal_file.filter_efficiency
+      else:
+        the_file = self.getRootFile(signal_file.filename_Bc)
+        the_filter_efficiency = signal_file.filter_efficiency_Bc
+      the_tree_run = self.getTree(the_file, 'run_tree')
+      n_gen = self.getNminiAODEvts(the_tree_run)
+      filter_efficiency += n_gen * the_filter_efficiency
+    filter_efficiency = filter_efficiency / n_gen_tot
+    #print 'filter efficiency {}'.format(filter_efficiency)
+
+    # in the case where the samples were produced with both the electron and muon channels, apply a correction
+    corr = signal_file.muon_rate # only consider events that were generated in the muon channel 
+    #TODO fix the above if a different one is taken for Bc
+
+    efficiency = filter_efficiency if not is_bc else filter_efficiency * lhe_efficiency 
+    n_generated = corr * n_gen_tot / efficiency
+    #print 'n_generated = corr * n_gen_tot / efficiency'
+    #print 'n_generated = {} * {} / {}'.format(corr, n_gen_tot, efficiency)
+
+    f_u = 0.4 # B fragmentation fraction
+
+    weight = sigma_B / f_u * lumi * v_square * BR_prod * BR_NToMuPi / n_generated 
+    #print 'sigma_B / f_u * lumi * v_square * BR_prod * BR_NToMuPi / n_generated'
+    #print 'weight = {} / 0.4 * {} * {} * {} * {} / {}'.format(sigma_B, lumi, v_square, BR_prod, BR_NToMuPi, n_generated)
+
+    return weight
+
+
+  def getSignalEfficiency(self, signal_files, selection=None, lhe_efficiency=0.08244, is_bc=False):
+
+    tree_signal = ROOT.TChain('signal_tree') 
+    tree_run = ROOT.TChain('run_tree') 
+    for signal_file in signal_files:
+      if not is_bc:
+        tree_run.Add(signal_file.filename)
+        tree_signal.Add(signal_file.filename)
+      else:
+        tree_run.Add(signal_file.filename_Bc)
+        tree_signal.Add(signal_file.filename_Bc)
+
+    # number of selected events
+    hist = ROOT.TH1D('hist', 'hist', 100, 0, 10)
+    tree_signal.Project('hist', 'hnl_mass', selection)
+    n_selected = hist.Integral()
+
+    # number of generated events (= n_gen / filter_efficiency = n_miniaod / filter_efficiency)
+    n_gen_tot = self.getNminiAODEvts(tree_run)
+    # take the weighted average of the filter efficiencies of the generated samples
+    filter_efficiency = 0.
+    for signal_file in signal_files:
+      if not is_bc:
+        the_file = self.getRootFile(signal_file.filename)
+        the_filter_efficiency = signal_file.filter_efficiency
+      else:
+        the_file = self.getRootFile(signal_file.filename_Bc)
+        the_filter_efficiency = signal_file.filter_efficiency_Bc
       the_tree_run = self.getTree(the_file, 'run_tree')
       n_gen = self.getNminiAODEvts(the_tree_run)
       filter_efficiency += n_gen * the_filter_efficiency
@@ -222,31 +315,31 @@ class Tools(object):
 
     # in the case where the samples were produced with both the electron and muon channels, apply a correction
     corr = signal_file.muon_rate # only consider events that were generated in the muon channel 
+    #TODO fix the above if a different one is taken for Bc
 
-    efficiency = filter_efficiency if not isBc else filter_efficiency * lhe_efficiency 
+    efficiency = filter_efficiency if not is_bc else filter_efficiency * lhe_efficiency 
     n_generated = corr * n_gen_tot / efficiency
 
-    f_u = 0.4 # B fragmentation fraction
+    signal_efficiency = n_selected / n_generated 
 
-    weight = sigma_B / f_u * lumi * v_square * BR_prod * BR_NToMuPi / n_generated 
-    #print 'weight = {} / 0.4 * {} * {} * {} * {} / {}'.format(sigma_B, lumi, v_square, BR_prod, BR_NToMuPi, n_generated)
-
-    return weight
+    return signal_efficiency
 
 
-  def getCtauWeight(self, signal_files, ctau, strategy='new', isBc=False):
+  def getCtauWeight(self, signal_files, ctau, strategy='new', is_bc=False):
     #TODO add treatment for bc?
     if strategy == 'new':
       # get the total number of gen (=miniaod) events
       tree_run_tot = ROOT.TChain('run_tree') 
       for signal_file in signal_files:
-        tree_run_tot.Add(signal_file.filename)
+        signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
+        tree_run_tot.Add(signal_filename)
       n_miniaod_tot = self.getNminiAODEvts(tree_run_tot)
 
       filter_efficiency_avg = 0.
       for signal_file in signal_files:
-        the_filter_efficiency = signal_file.filter_efficiency if not isBc else signal_file.filter_efficiency_Bc
-        the_file = self.getRootFile(signal_file.filename)
+        the_filter_efficiency = signal_file.filter_efficiency if not is_bc else signal_file.filter_efficiency_Bc
+        signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
+        the_file = self.getRootFile(signal_filename)
         the_tree_run = self.getTree(the_file, 'run_tree')
         n_gen = self.getNminiAODEvts(the_tree_run)
         filter_efficiency_avg += n_gen * the_filter_efficiency
@@ -254,17 +347,19 @@ class Tools(object):
 
       deno_weight = ''
       for ifile, signal_file in enumerate(signal_files):
-        the_file = self.getRootFile(signal_file.filename)
+        the_filter_efficiency = signal_file.filter_efficiency if not is_bc else signal_file.filter_efficiency_Bc
+        signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
+        the_file = self.getRootFile(signal_filename)
         tree_run = self.getTree(the_file, 'run_tree')
         n_miniaod = self.getNminiAODEvts(tree_run)
         if ifile == 0:
           deno_weight += ' {n0} / {ctau0} * exp(-gen_hnl_ct / {ctau0})'.format(
-                n0 = n_miniaod / signal_file.filter_efficiency,
+                n0 = n_miniaod / the_filter_efficiency,
                 ctau0 = signal_file.ctau,
                 )
         else:
           deno_weight += ' + {n0} / {ctau0} * exp(-gen_hnl_ct / {ctau0})'.format(
-                n0 = n_miniaod / signal_file.filter_efficiency,
+                n0 = n_miniaod / the_filter_efficiency,
                 ctau0 = signal_file.ctau,
                 )
       weight_ctau = '({ntot} / {ctau1} * exp(-gen_hnl_ct / {ctau1}) * (1. / ({deno_weight})))'.format(
@@ -274,11 +369,11 @@ class Tools(object):
           )
 
     elif strategy == 'old':
-      filename = signal_file.filename # might need to be modified later on for Bc
+      signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
       if signal_file.is_private:
-        original_ctau = filename[filename.find('ctau')+4:filename.find('/', filename.find('ctau')+1)]
+        original_ctau = signal_filename[signal_filename.find('ctau')+4:signal_filename.find('/', signal_filename.find('ctau')+1)]
       else:
-        original_ctau = filename[filename.find('ctau')+4:filename.find('mm', filename.find('ctau')+1)]
+        original_ctau = signal_filename[signal_filename.find('ctau')+4:signal_filename.find('mm', signal_filename.find('ctau')+1)]
       original_ctau = original_ctau.replace('p', '.')
       target_ctau = signal_file.ctau
 
@@ -348,10 +443,10 @@ class Tools(object):
     return box
 
 
-  def printLatexBox(self, x, y, text, size=0.04, pos='center'):
+  def printLatexBox(self, x, y, text, size=0.04, pos='center', font=42):
     box = ROOT.TLatex()
     box.SetNDC()
-    box.SetTextFont(42)
+    box.SetTextFont(font)
     if pos == 'center': box.SetTextAlign(22) 
     else: box.SetTextAlign(12) 
     box.SetTextSize(size)    
@@ -394,6 +489,23 @@ class Tools(object):
     tag.SetTextSize(0.9*size*pad.GetTopMargin())
     tag.SetTextAlign(11)
     tag.DrawLatex(pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), cms_tag)      
+    pad.Update()
+
+
+  def printCMSTagInFrame(self, pad, cms_tag, size=0.55, offset=0.11):
+    pad.cd()
+    tag = ROOT.TLatex()
+    tag.SetNDC()
+    # print CMS
+    tag.SetTextFont(61)
+    tag.SetTextAlign(11) 
+    tag.SetTextSize(size*pad.GetTopMargin())    
+    tag.DrawLatex(pad.GetLeftMargin()+0.2*pad.GetLeftMargin(), 1-pad.GetTopMargin()-0.8*pad.GetTopMargin(), 'CMS')
+    # print CMS tag
+    tag.SetTextFont(52)
+    tag.SetTextSize(0.9*size*pad.GetTopMargin())
+    tag.SetTextAlign(11)
+    tag.DrawLatex(pad.GetLeftMargin()+0.2*pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()-0.8*pad.GetTopMargin(), cms_tag)      
     pad.Update()
 
 
@@ -502,6 +614,14 @@ class Tools(object):
     return k/(np.power(mass, 5) * ctau)
 
 
+  def getCtau(self, mass=-99, vv=-99, ismaj=True):
+    '''
+    Helper function to go from vv,m(GeV) -> ctau (mm)
+    '''
+    mult = 2. if ismaj else 1.
+    return self.ctau_from_gamma(mult*self.gamma_total(mass=mass,vv=vv))
+
+
   def getCouplingLabel(self, v2):
     coupling = "{:e}".format(v2)
     part1 = coupling[:coupling.find('e')]
@@ -509,3 +629,8 @@ class Tools(object):
     part2 = coupling[coupling.find('e'):]
     return (part1+part2)
 
+
+if __name__ == '__main__':
+  tools = Tools()
+  #print tools.getCtau(4.5, 1e-2)
+  print tools.getVV(2., 1)

@@ -5,11 +5,14 @@ from os import path
 import pickle
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('pdf')
 import matplotlib.pyplot as plt
 from itertools import product
 from time import time 
 from datetime import datetime
-import seaborn as sns
+#import seaborn as sns
+import glob
 
 import ROOT
 import root_pandas
@@ -35,6 +38,17 @@ from samples import signal_samples
 from baseline_selection import selection
 from categories import categories
 
+#TODO add gen-matching
+#TODO make sure that only gen matched events are saved in bc
+
+def getOptions():
+  from argparse import ArgumentParser
+  parser = ArgumentParser(description='Script to perform the NN training', add_help=True)
+  parser.add_argument('--category_batch', type=str, dest='category_batch', help='category label'                               , default=None)
+  parser.add_argument('--outdir'        , type=str, dest='outdir'        , help='output directory'                             , default=None)
+  parser.add_argument('--process'       , dest='process'                 , help='run the process function', action='store_true', default=False)
+  return parser.parse_args()
+
 
 class Sample(object):
   '''
@@ -43,6 +57,8 @@ class Sample(object):
   def __init__(self, filename, selection):
     self.filename = filename
     self.selection = selection
+    #print self.selection
+    self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True)
     try:
       self.df = read_root(self.filename, 'signal_tree', where=self.selection, warn_missing_tree=True)
     except:
@@ -54,7 +70,7 @@ class Sample(object):
 
 
 class Trainer(object):
-  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, nsigma, dirname, baseline_selection, categories):
+  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, data_pl, data_tagnano, data_tagflat, nsigma, dirname, baseline_selection, categories, category_batch, outdir):
     self.features = features
     self.epochs = epochs
     self.batch_size = batch_size
@@ -66,8 +82,16 @@ class Trainer(object):
 
     self.baseline_selection = baseline_selection
     self.categories = categories
+    self.category_batch = category_batch
     self.signal_label = signal_label
     self.signal_files = signal_samples[self.signal_label]
+
+    self.outdir = outdir
+
+    self.username = 'anlyon'
+    self.data_pl = data_pl
+    self.data_tagnano = data_tagnano
+    self.data_tagflat = data_tagflat
 
     self.do_parametric = do_parametric
     self.nsigma = nsigma
@@ -75,8 +99,8 @@ class Trainer(object):
     self.target_branch = 'is_signal'
     self.do_scale_key = True
 
-    self.resolution_p0 = 0.0002747
-    self.resolution_p1 = 0.008302
+    self.resolution_p0 = 6.98338e-04
+    self.resolution_p1 = 7.78382e-03
 
 
   def createOutDir(self):
@@ -90,6 +114,53 @@ class Trainer(object):
     return outdir
 
 
+  def writeSubmitter(self, category):
+    '''
+      Write bash submitter
+    '''
+    content = '\n'.join([
+        '#!/bin/bash',
+        'homedir="$PWD"',
+        'workdir=/scratch/{}/training_{}'.format(self.username, category.label),
+        'mkdir -p $workdir',
+        'cp -r ../*py $workdir', #TODO adapt if changing directory
+        'cp -r ./*py $workdir',
+        'cp -r ../../objects/*py $workdir',
+        'cd $workdir',
+        'DATE_START=`date +%s`',
+        'python trainer.py --category_batch {cat} --outdir {out} --process'.format(cat=category.label, out=self.outdir),
+        'DATE_END=`date +%s`',
+        'runtime=$((DATE_END-DATE_START))',
+        'echo " --> Wallclock running time: $runtime s"',
+        'cp -r *h5 $homedir/{out}'.format(out=self.outdir),
+        'cp -r *pck $homedir/{out}'.format(out=self.outdir),
+        'cp -r *png $homedir/{out}'.format(out=self.outdir),
+        'cp -r *pdf $homedir/{out}'.format(out=self.outdir),
+        'cp -r *txt $homedir/{out}'.format(out=self.outdir),
+        'cp trainer.py $homedir/{out}'.format(out=self.outdir),
+        'cd $homedir',
+        'rm -r $workdir',
+        ])
+    submitter_name = '{}/submitter_{}.sh'.format(self.outdir, category.label)
+    submitter = open(submitter_name, 'w+')
+    submitter.write(content)
+    submitter.close()
+    '\n -> {} created'.format(submitter_name)
+
+
+  def submit(self, category):
+    '''
+      Submit bash script on slurm
+    '''
+    command = 'sbatch -p standard --account t3 -o {out}/log_{cat}.txt -e {out}/log_{cat}.txt --job-name=trainer_{cat} --mem {mem} {out}/submitter_{cat}.sh'.format(
+        out = self.outdir,
+        cat = category.label,
+        mem = 20000,
+        )
+    print '\n --> submitting category {}'.format(category.label)
+    os.system(command)
+
+
   def saveFig(self, plt, name):
     '''
       Save python figure
@@ -99,50 +170,40 @@ class Trainer(object):
     print ' --> {}/{}.png created'.format(self.outdir, name)
 
 
-  def getSamples(self, extra_selection=None):
+  def getDataSamples(self, extra_selection=None, max_files=-1):
     '''
       Function that fetches the samples into lists
     '''
     print('========> starting reading the trees')
     now = time()
     ## data 
-    # used for training
-    filename_data = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root'
-    filename_data_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_4 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk4_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_6 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk5_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_7 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk6_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_8 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk7_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_9 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_10 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_11 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk10_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_12 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk11_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_13 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk12_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_14 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk13_n500/flat/flat_bparknano_08Aug22_sr.root'
-    filename_data_15 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk14_n500/flat/flat_bparknano_08Aug22_sr.root'
-    data_samples = [
-      Sample(filename=filename_data, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_1, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_2, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_3, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_4, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_5, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_6, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_7, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_8, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_9, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_10, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_11, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_12, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_13, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_14, selection=self.baseline_selection + ' && ' + extra_selection),
-      #Sample(filename=filename_data_15, selection=self.baseline_selection + ' && ' + extra_selection),
-    ]
+    path = '/pnfs/psi.ch/cms/trivcat/store/user/{}/BHNLsGen/data'.format(self.username)
+    if self.data_tagflat != None:
+      filename = '{path}/{pl}/ParkingBPH1_Run2018D/Chunk*/flat/flat_bparknano_{tagnano}_{tagflat}.root'.format(path=path, pl=self.data_pl, tagnano=self.data_tagnano, tagflat=self.data_tagflat)
+    else:
+      filename = '{path}/{pl}/ParkingBPH1_Run2018D/Chunk*/flat/flat_bparknano_{tagnano}.root'.format(path=path, pl=self.data_pl, tagnano=self.data_tagnano)
+    data_filenames =  [f for f in glob.glob(filename)] 
+    data_filenames = sorted(data_filenames, key=lambda file_: float(file_[file_.find('Chunk')+5:file_.find('_', file_.find('Chunk')+5)]))
 
-    ## signal
+    data_samples = []
+    for ifile, data_filename in enumerate(data_filenames):
+      #if ifile<10: continue # those datasets will be used for the validation
+      #if ifile<30: continue # those datasets will be used for the validation
+      if max_files != -1 and ifile > max_files+9: continue
+      print data_filename
+      data_samples.append(Sample(filename=data_filename, selection=self.baseline_selection + ' && ' + extra_selection))
+
+    print('========> it took %.2f seconds' %(time() - now))
+
+    return data_samples
+
+
+  def getMCSamples(self, extra_selection=None, max_files=-1):
+    '''
+      Function that fetches the samples into lists
+    '''
+    print('========> starting reading the trees')
+    now = time()
     filename_mc_1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
     filename_mc_2 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
     filename_mc_3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
@@ -155,7 +216,7 @@ class Trainer(object):
       
     print('========> it took %.2f seconds' %(time() - now))
 
-    return data_samples, mc_samples
+    return mc_samples
 
 
   def getPandasQuery(self, selection):
@@ -167,7 +228,7 @@ class Trainer(object):
     return query
 
 
-  def getMassList(self):
+  def getMassList(self, is_bc=False):
     '''
       Get the list of signal masses used in the training
     '''
@@ -175,7 +236,10 @@ class Trainer(object):
     for signal_file in self.signal_files:
       mass = signal_file.mass
       if mass not in masses:
-        masses.append(mass)
+        if not is_bc:
+          masses.append(mass)
+        elif is_bc and mass >= 3.:
+          masses.append(mass)
 
     masses.sort()
 
@@ -205,7 +269,7 @@ class Trainer(object):
     return data_df, mc_df
 
 
-  def createParametrisedDataframe(self, extra_selection, data_type, statistics=None):
+  def createParametrisedDataframe(self, extra_selection, data_type, is_bc=False, statistics=None, max_files=-1):
     '''
       Function to create the dataframe with the training features and parameter
       The statistics is balanced between the signal and background, among the signal
@@ -219,7 +283,8 @@ class Trainer(object):
 
     pd.options.mode.chained_assignment = None
 
-    masses = self.getMassList()
+    masses = self.getMassList(is_bc=is_bc)
+    print 'masses ',masses
     
     if data_type == 'mc':
       stats = dict.fromkeys(masses, 0)
@@ -228,7 +293,10 @@ class Trainer(object):
 
       for signal_file in self.signal_files: 
         # get sample
-        sample = Sample(filename=signal_file.filename, selection=self.baseline_selection + ' && ' + extra_selection)
+        signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
+        if is_bc and signal_file.filename_Bc == None: continue # skip points for which there is no Bc sample
+        print signal_filename
+        sample = Sample(filename=signal_filename, selection=self.baseline_selection + ' && ' + extra_selection)
 
         # get dataframe
         the_df = sample.df
@@ -244,21 +312,24 @@ class Trainer(object):
 
         # compute the signal weight (unused for the time being)
         # lumi set to one as the normalisation does not matter
-        the_df['weight'] = Tools().getSignalWeight(signal_files=[signal_file], mass=signal_file.mass, ctau=signal_file.ctau, sigma_B=472.8e9, lumi=1, lhe_efficiency=0.08244) #TODO what about isBc?
+        #the_df['weight'] = Tools().getSignalWeight(signal_files=[signal_file], mass=signal_file.mass, ctau=signal_file.ctau, sigma_B=472.8e9, lumi=1, lhe_efficiency=0.08244) #TODO what about isBc?
 
         dfs[signal_file.mass] = dfs[signal_file.mass] + [the_df]
 
       # get the minimum statistics 
+      #statistics = min(stats[min(stats, key=stats.get)], 5000)
+      #aimed_statistics = stats[min(stats, key=stats.get)]
       statistics = stats[min(stats, key=stats.get)]
       
       df = pd.DataFrame()
       for mass in masses:
         df_tmp = pd.concat([(idt.sample(statistics/n_ctaus[mass]) if statistics/n_ctaus[mass]<len(idt) else idt) for idt in dfs[mass]], sort=False)
         df = pd.concat([df, df_tmp], sort=False) 
+      
         
     elif data_type == 'data':
       # get the sample
-      samples, n = self.getSamples(extra_selection) #TODO this is probably something that we would like to fix. E.g go with data_files? 
+      samples = self.getDataSamples(extra_selection=extra_selection, max_files=max_files) 
 
       df_full = [] # will be used for plotting purposes later on
       dfs = dict.fromkeys(masses, []) 
@@ -270,7 +341,7 @@ class Trainer(object):
 
         # first set an invalid parameter for the full spectrum. Ranges with this parameter will be removed from the training
         the_df['mass_key'] = -1 
-        
+
         # and define the windows of nsigma around the mass hypothesis
         # set the mass parameter for a nsigma window range
         window_check = -1
@@ -288,6 +359,7 @@ class Trainer(object):
 
           # set the weight
           df_window['weight'] = 1
+
           dfs[mass] = dfs[mass] + [df_window]
 
           window_check = window_max
@@ -296,13 +368,12 @@ class Trainer(object):
 
       df = pd.DataFrame()
       for mass in masses:
-        requested_stat = statistics/len(masses)
+        requested_stat = statistics
         stat_permass = 0
         for the_df in dfs[mass]:
           stat_permass += len(the_df)
-        if stat_permass < statistics/len(masses):
-          #raise RuntimeError('Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics/len(masses), stat_permass))
-          print 'Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics/len(masses), stat_permass)
+        if stat_permass < statistics:
+          print 'Requesting {} events from a sample of {} events. Please provide a larger input data sample'.format(statistics, stat_permass)
           requested_stat = stat_permass
         df_tmp = pd.concat([idt for idt in dfs[mass]], sort=False)
         df_tmp = df_tmp.sample(requested_stat)
@@ -311,7 +382,7 @@ class Trainer(object):
     df = self.removeInfs(df)
 
     if data_type == 'mc':
-      return df, statistics * len(masses)
+      return df, statistics
     else:
       return df, df_full
 
@@ -493,7 +564,7 @@ class Trainer(object):
     '''
       Perform the training
     '''
-    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)  
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)
     #TODO apply weight if any
 
     return history
@@ -653,44 +724,45 @@ class Trainer(object):
     plt.clf()
 
 
-  def plotCorrelations(self, model, df, data_type, label):
-    '''
-      Plot the correlation matrix based on the training set
-    '''
-    if data_type not in ['data', 'mc']:
-      raise RuntimeError('Unknown data_type "{}". Aborting'.format(data_type))
+  #def plotCorrelations(self, model, df, data_type, label):
+  #  '''
+  #    Plot the correlation matrix based on the training set
+  #  '''
+  #  if data_type not in ['data', 'mc']:
+  #    raise RuntimeError('Unknown data_type "{}". Aborting'.format(data_type))
 
-    # get the score for the test dataframe
-    score = self.predictScore(model, df, label)
+  #  # get the score for the test dataframe
+  #  score = self.predictScore(model, df, label)
 
-    # add the score to the dataframes
-    df['score'] = score
+  #  # add the score to the dataframes
+  #  df['score'] = score
 
-    corr = df[self.features + ['score']].corr()
-    
-    # Set up the matplotlib figure
-    f, ax = plt.subplots(figsize=(11, 9))
-    
-    # Generate a custom diverging colormap
-    cmap = sns.diverging_palette(220, 10, as_cmap=True)
+  #  corr = df[self.features + ['score']].corr()
+  #  
+  #  # Set up the matplotlib figure
+  #  f, ax = plt.subplots(figsize=(11, 9))
+  #  
+  #  # Generate a custom diverging colormap
+  #  cmap = sns.diverging_palette(220, 10, as_cmap=True)
 
-    # Draw the heatmap with the mask and correct aspect ratio
-    g = sns.heatmap(corr, cmap=cmap, vmax=1., vmin=-1, center=0, annot=True, fmt='.2f',
-                    square=True, linewidths=.8, cbar_kws={"shrink": .8})
+  #  # Draw the heatmap with the mask and correct aspect ratio
+  #  g = sns.heatmap(corr, cmap=cmap, vmax=1., vmin=-1, center=0, annot=True, fmt='.2f',
+  #                  square=True, linewidths=.8, cbar_kws={"shrink": .8})
 
-    # rotate axis labels
-    g.set_xticklabels(self.features+['score'], rotation='vertical')
-    g.set_yticklabels(self.features+['score'], rotation='horizontal')
+  #  # rotate axis labels
+  #  g.set_xticklabels(self.features+['score'], rotation='vertical')
+  #  g.set_yticklabels(self.features+['score'], rotation='horizontal')
 
-    plt.title('Linear Correlation Matrix - {}'.format(data_type))
-    plt.tight_layout()
-    self.saveFig(plt, 'correlations_{}_{}'.format(data_type, label))
-    plt.clf()
+  #  plt.title('Linear Correlation Matrix - {}'.format(data_type))
+  #  plt.tight_layout()
+  #  self.saveFig(plt, 'correlations_{}_{}'.format(data_type, label))
+  #  plt.clf()
 
 
   def plotKSTest(self, model, x_train, x_val, y_train, y_val, data_type, label):
     '''
       Plot the outcome of the Kolmogorov test
+      Statistical test of compatibility in shape between two histograms
       Used to test the overfitting
     '''
     if data_type not in ['data', 'mc']:
@@ -739,23 +811,29 @@ class Trainer(object):
     print '---- MVA Trainer ----'
     
     # create output directory
-    print '\n -> create output directory'
-    self.outdir = self.createOutDir()
+    if self.outdir == None:
+      print '\n -> create output directory'
+      self.outdir = self.createOutDir()
+    else:
+      self.outdir = '.'
 
     # copy script
     os.system('cp trainer.py {}'.format(self.outdir))
-
+        
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxy1to5_OS': continue
+      #if category.label != 'lxysiggt150_OS_Bc': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
 
+      if self.category_batch != None and category.label != category_batch: continue 
+
       # get the samples
       if not self.do_parametric:
         print '\n -> get the samples'
-        data_samples, mc_samples = self.getSamples(extra_selection=category.definition_flat)
+        data_samples = self.getDataSamples(extra_selection=category.definition_flat)
+        mc_samples = self.getMCSamples(extra_selection=category.definition_flat)
 
         # create dataframes
         print '\n -> create the dataframes'
@@ -763,21 +841,27 @@ class Trainer(object):
 
       else:
         print '\n -> create the dataframes'
-        mc_df, statistics = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='mc')
-        data_df, data_df_full = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='data', statistics=statistics)
+        # do not load too much files in case of large statistics
+        #if category.label in ['lxysig0to50_OS', 'lxysig0to50_SS', 'lxysig0to50_OS_Bc', 'lxysig0to50_SS_Bc']: max_files = 10 
+        #elif category.label in ['lxysig50to150_OS', 'lxysig50to150_SS', 'lxysig50to150_OS_Bc', 'lxysig50to150_SS_Bc']: max_files = 30 
+        #else: max_files = -1
+        max_files = -1
+
+        mc_df, statistics = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='mc', is_bc=category.is_bc)
+        data_df, data_df_full = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='data', statistics=statistics, max_files=max_files, is_bc=category.is_bc)
 
       # assign the signal tag
       data_df = self.assignTarget(data_df, self.target_branch, 0) 
       mc_df = self.assignTarget(mc_df, self.target_branch, 1) 
 
-      if self.do_parametric:
-        self.plotParametrisedMass(df=data_df, df_full=data_df_full, data_type='data', label=category.label)
-        self.plotParametrisedMass(df=mc_df, data_type='mc', label=category.label)
-
       # preprocessing the dataframes
       print '\n -> preprocessing the dataframes' 
       main_df, qt, xx, Y = self.preprocessing(data_df, mc_df, category.label)
       #TODO add the scatter plots?
+
+      if self.do_parametric:
+        self.plotParametrisedMass(df=data_df, df_full=data_df_full, data_type='data', label=category.label)
+        self.plotParametrisedMass(df=mc_df, data_type='mc', label=category.label)
 
       # define the NN
       print '\n -> defining the model' 
@@ -793,6 +877,18 @@ class Trainer(object):
       print '\n -> prepare the inputs' 
       #x_train, x_val, y_train, y_val = self.prepareScaledInputs(main_df, Y, qt)
       x_train, x_val, y_train, y_val = self.prepareInputs(xx, Y)
+
+      # create statistics file
+      stat_filename = '{}/statistics_{}.txt'.format(self.outdir, category.label)
+      stat_file = open(stat_filename, 'w+')
+      stat_file.write('\nAimed statistics per mass parameter: {}'.format(statistics))
+      stat_file.write('\nFull statistics for data: {}'.format(len(data_df)))
+      stat_file.write('\nFull statistics for mc: {}'.format(len(mc_df)))
+      stat_file.write('\nFull statistics for data+mc: {}'.format(len(main_df)))
+      stat_file.write('\nData+mc statistics used for training: {}'.format(len(x_train)))
+      stat_file.write('\nData+mc statistics used for validation: {}'.format(len(x_val)))
+      stat_file.close()
+      print ' --> {} created'.format(stat_filename) 
 
       # do the training
       print '\n -> training...' 
@@ -812,8 +908,8 @@ class Trainer(object):
       #self.plotScore(model, mc_test_df, data_test_df, category.label)
       #self.plotScore(model, mc_df, data_df, category.label)
       self.plotROC(model, x_train, y_train, x_val, y_val, category.label)
-      self.plotCorrelations(model, data_df, 'data', category.label)
-      self.plotCorrelations(model, mc_df, 'mc', category.label)
+      #self.plotCorrelations(model, data_df, 'data', category.label)
+      #self.plotCorrelations(model, mc_df, 'mc', category.label)
       self.plotKSTest(model, x_train, x_val, y_train, y_val, 'data', category.label)
       self.plotKSTest(model, x_train, x_val, y_train, y_val, 'mc', category.label)
 
@@ -823,6 +919,23 @@ class Trainer(object):
 
       print '\n --- Done ---'
 
+
+  def process_batch(self):
+    print '---- MVA Trainer ----'
+
+    # create output directory
+    print '\n -> create output directory'
+    self.outdir = self.createOutDir()
+
+    for category in self.categories:
+      if category.label == 'incl': continue
+      print '\n-.-.-'
+      print 'category: {}'.format(category.label)
+      print '-.-.-'
+      self.writeSubmitter(category=category)
+      self.submit(category=category)
+      
+    print '\n --- Done ---'
 
 
 
@@ -834,22 +947,33 @@ if __name__ == '__main__':
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu_pi', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_prob']
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'sv_prob'] # remove the deltaRs but keep masses as they can learn about possible sm resonances?
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'pi_dcasig', 'sv_lxysig', 'sv_prob']
-  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob']
+  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob', 'sv_chi2', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel']
   #features = ['pi_pt', 'pi_dcasig']
-  epochs = 50
+  epochs = 60
   batch_size = 32
   learning_rate = 0.01
   scaler_type = 'robust'
-  do_early_stopping = True
+  do_early_stopping = False
   do_reduce_lr = True
-  dirname = 'test'
+  dirname = 'V13_06Feb23'
   baseline_selection = 'hnl_charge==0 && ' + selection['baseline_08Aug22'].flat 
-  categories = categories['categories_0_50_150']
+  categories = categories['categories_0_50_150_Bc']
+  category_batch = getOptions().category_batch
+  outdir = getOptions().outdir
   #NOTE add optimiser, learning rate etc? 
+
+  submit_batch = True
 
   do_parametric = True
   nsigma = 10
-  signal_label = 'V12_08Aug22_training_large'
+  signal_label = 'V13_06Feb23_training_large'
+  data_pl = 'V13_06Feb23'
+  data_tagnano = '06Feb23'
+  data_tagflat = 'partial'
+  #signal_label = 'V12_08Aug22_training_large'
+  #data_pl = 'V12_08Aug22'
+  #data_tagnano = '08Aug22'
+  #data_tagflat = 'sr'
 
   trainer = Trainer(
       features = features, 
@@ -861,13 +985,21 @@ if __name__ == '__main__':
       do_reduce_lr = do_reduce_lr,
       do_parametric = do_parametric,
       signal_label = signal_label, 
+      data_pl = data_pl,
+      data_tagnano = data_tagnano,
+      data_tagflat = data_tagflat,
       nsigma = nsigma,
       dirname = dirname,
       baseline_selection = baseline_selection,
       categories = categories,
+      category_batch = category_batch,
+      outdir = outdir,
       )
 
-  trainer.process()
+  if submit_batch and not getOptions().process:
+    trainer.process_batch()
+  else:
+    trainer.process()
 
 
 

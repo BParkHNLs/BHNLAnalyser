@@ -37,6 +37,11 @@ make
 cd ..
 ```
 
+Install the ternary plotting tool (taken from [[https://github.com/marcharper/python-ternary][here]])
+```
+pip install python-ternary --user
+```
+
 ### After first installation
 ```
 cd CMSSW_10_2_15/src/HiggsAnalysis/CombinedLimit/BHNAnalyser

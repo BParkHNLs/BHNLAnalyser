@@ -9,7 +9,7 @@ class Config(object):
                data_label=None, 
                qcd_label=None, 
                signal_labels=None, 
-               points_label=None,
+               ctau_points_label=None,
                sample_type=None,
                tree_name=None, 
                reweighting_strategy=None,
@@ -60,7 +60,6 @@ class Config(object):
                signal_model_label=None, 
                background_model_label=None,
                do_binned_fit=None, 
-               do_blind=None, 
                mass_window_size=None,
                fit_window_size=None,
                nbins=None, 
@@ -76,13 +75,18 @@ class Config(object):
                resolution_p1=None,
 
                # for limits
-               run_blind=None,
+               do_blind=None,
+
+               # for interpretation
+               muon_eoslabel=None,
+               electron_eoslabel=None,
+               coupling_scenarios_label=None,
   ):
 
     self.data_label = data_label
     self.qcd_label = qcd_label
     self.signal_labels = signal_labels
-    self.points_label = points_label
+    self.ctau_points_label = ctau_points_label
     self.sample_type = sample_type
     self.tree_name = tree_name
     self.categories_label = categories_label
@@ -129,7 +133,6 @@ class Config(object):
     self.signal_model_label = signal_model_label
     self.background_model_label = background_model_label
     self.do_binned_fit = do_binned_fit
-    self.do_blind = do_blind
     self.mass_window_size = mass_window_size
     self.fit_window_size = fit_window_size
     self.nbins = nbins
@@ -143,7 +146,10 @@ class Config(object):
     self.sigma_mult_window = sigma_mult_window
     self.resolution_p0 = resolution_p0
     self.resolution_p1 = resolution_p1
-    self.run_blind = run_blind
+    self.do_blind = do_blind
+    self.muon_eoslabel = muon_eoslabel
+    self.electron_eoslabel = electron_eoslabel
+    self.coupling_scenarios_label = coupling_scenarios_label
 
 
   def checkConfig(self):
@@ -183,6 +189,7 @@ class Config(object):
     print '       ---> Signal sample label OK'
     for signal_label in self.signal_labels:
         for sample in signal_samples[signal_label]:
+          print sample.filename
           if not ROOT.TFile.Open(sample.filename, 'READ'):
             raise RuntimeError('The sample "{}" does not exist. Please check the filename.'.format(sample.filename))
           else:
@@ -190,11 +197,11 @@ class Config(object):
               raise RuntimeError('The tree "{}" does not exist in "{}". Please check the tree name.'.format(self.tree_name, sample.filename))
     print '       ---> Signal samples OK'
 
-    from points import points
-    if self.points_label != None and self.points_label not in points.keys():
-      raise RuntimeError('The ctau points label (points_label) is not valid. Please choose amongst {}.'.format(points.keys()))
+    from ctau_points import ctau_points
+    if self.ctau_points_label != None and self.ctau_points_label not in ctau_points.keys():
+      raise RuntimeError('The ctau ctau_points label (ctau_points_label) is not valid. Please choose amongst {}.'.format(ctau_points.keys()))
     else: 
-      print '       ---> Lifetime points label OK'
+      print '       ---> Lifetime ctau_points label OK'
 
     from qcd_white_list import white_list
     if self.qcd_white_list != None and self.qcd_white_list not in white_list.keys():
@@ -273,7 +280,7 @@ class Config(object):
     if self.do_counting + self.do_shape_analysis + self.do_shape_TH1 != 1:
       raise RuntimeError("Please specify which analysis strategy to use among ['do_counting', 'do_shape_analysis', 'do_shape_TH1']")
 
-    signal_model_list = ['voigtian']
+    signal_model_list = ['voigtian', 'doubleCB']
     if self.do_shape_analysis and self.signal_model_label not in signal_model_list:
       raise RuntimeError('Please make sure to enter a valid signal model. Choose among {}'.format(signal_model_list))
 
@@ -281,6 +288,11 @@ class Config(object):
     if self.do_shape_analysis  and not self.use_discrete_profiling and self.background_model_label not in background_model_list:
       raise RuntimeError('Please make sure to enter a valid background model. Choose among {}'.format(background_model_list))
       
+    from coupling_scenarios import coupling_scenarios
+    if self.coupling_scenarios_label != None and self.coupling_scenarios_label not in coupling_scenarios.keys():
+      raise RuntimeError('The coupling scenarios label (coupling_scenarios_label) is not valid. Please choose amongst {}.'.format(coupling_scenarios.keys()))
+    else: 
+      print '       ---> Coupling scenarios label OK'
 
   # check that either lumi or shape, or can process both in parallel?
 

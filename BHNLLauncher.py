@@ -5,37 +5,47 @@ import subprocess
 import sys
 sys.path.append('./objects')
 from categories import categories
-from points import points
+from ctau_points import ctau_points
 from samples import signal_samples
+from coupling_scenarios import coupling_scenarios
 sys.path.append('./cfgs')
+sys.path.append('./scripts')
+sys.path.append('./data')
+from tools import Tools
 
 
 #"----------------User's decision board-----------------"
 
-output_label = 'V12_08Aug22'
-tag = 'study_categorisation_0_50_150_syst'
-cfg_filename = 'V12_08Aug22_cfg.py'
+output_label = 'V13_06Feb23'
+tag = 'unblinding_Bc_fullscan_nobernstein_v2'
+cfg_filename = 'V13_06Feb23_cfg.py'
 submit_batch = True
 do_plotter = False
 do_datacards = True
 do_limits = True
+do_interpretation = False
 
 ### in do_limits
 do_combine_datacards = True
 do_produce_limits = True
 do_plot_limits = True
 
+### in do_interpretation
+do_interpretation_limits = True
+do_interpretation_plotter = True
+
 ### other
-do_check_config = True
+do_check_config = False
 do_standard_queue = True
-memory = 2000
+memory = 20000 #5500
+scenarios = ['Majorana']
 
 #'------------------------------------------------------'
 
 
 
 class BHNLLauncher(object):
-  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits, do_check_config, do_standard_queue, memory):
+  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits, do_interpretation, do_interpretation_limits, do_interpretation_plotter, do_check_config, do_standard_queue, memory, scenarios):
     self.cfg_name = cfg_name
     self.outlabel = outlabel
     self.tag = tag
@@ -46,9 +56,21 @@ class BHNLLauncher(object):
     self.do_combine_datacards = do_combine_datacards
     self.do_produce_limits = do_produce_limits
     self.do_plot_limits = do_plot_limits
+    self.do_interpretation = do_interpretation
+    self.do_interpretation_limits = do_interpretation_limits
+    self.do_interpretation_plotter = do_interpretation_plotter
     self.do_check_config = do_check_config
     self.do_standard_queue = do_standard_queue
     self.memory = memory
+    self.scenarios = scenarios
+    # get current directory
+    self.homedir = '/work/anlyon/'
+    #self.homedir = os.getcwd()
+
+    self.logdir_name = '/work/anlyon/outputs/{}/logs/{}'.format(self.outlabel, self.tag)
+    if not path.exists(self.logdir_name):
+      #print 'creating directory'
+      os.system('mkdir -p {}'.format(self.logdir_name))
 
 
   def printHeader(self):
@@ -97,8 +119,12 @@ class BHNLLauncher(object):
     return masses
 
 
-  def getCtauList(self):
-    return points[self.cfg.points_label] 
+  def getCtauList(self, mass):
+    from ctau_points import ctau_points
+    for ctau_points_list in ctau_points[self.cfg.ctau_points_label]:
+      if mass not in ctau_points_list.mass_list: continue
+      ctau_points = ctau_points_list.ctau_list
+    return ctau_points
 
 
   def getJobId(self, job):
@@ -123,20 +149,23 @@ class BHNLLauncher(object):
         'echo " --> copying scripts"',
         'cp -r ./scripts/*py $workdir',
         'cp -r ./limits/*py $workdir',
+        'cp -r ./interpretation/*py $workdir',
         'cp -r ./objects/*py $workdir',
         'cp -r ./data $workdir/..',
         '{}'.format('cp -r ./flashgg_plugin $workdir' if self.do_datacards and self.cfg.use_discrete_profiling else ''),
-        '{}'.format('cp -r ./outputs/{}/datacards/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
-        '{}'.format('cp -r ./outputs/{}/datacards_combined/{}/ $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
-        '{}'.format('cp -r ./outputs/{}/limits/{}/results $workdir'.format(self.outlabel, self.tag) if self.do_limits and self.do_plot_limits else ''),
         'cp -r ./scripts/mva/outputs/{} $workdir'.format(self.cfg.training_label),
+        '{}'.format('cp -r {}/outputs/{}/datacards/{}/ $workdir'.format(self.homedir, self.outlabel, self.tag) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
+        '{}'.format('cp -r {}/outputs/{}/datacards_combined/{}/ $workdir'.format(self.homedir, self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
+        '{}'.format('cp -r {}/outputs/{}/limits/{}/results* $workdir'.format(self.homedir, self.outlabel, self.tag) if (self.do_limits and self.do_plot_limits) or (self.do_interpretation and self.do_interpretation_plotter) else ''),
+        # end fixme
         'cd $workdir',
         'DATE_START=`date +%s`',
         command,
         #'echo " --> content of the wordir"',
         #'ls -l',
         'echo " --> coyping the files to the home directory $homedir"',
-        'cp -r ./outputs $homedir',
+        #FIXME we probably want to remove the copying and save directly in the good location
+        #'cp -r ./outputs $homedir',
         'DATE_END=`date +%s`',
         'runtime=$((DATE_END-DATE_START))',
         'echo " --> Wallclock running time: $runtime s"',
@@ -153,15 +182,15 @@ class BHNLLauncher(object):
 
 
   def launchPlotter(self, category='', quantity_label=''):
-    # get current directory
-    homedir = os.getcwd()
+    ## get current directory
+    #homedir = os.getcwd()
 
     # get the command to run the plotting script
     command_plotter = ' '.join([
         'python plotter.py',
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
-        '--homedir {}'.format(homedir),
+        '--homedir {}'.format(self.homedir),
         '--data_label {}'.format(self.cfg.data_label),
         '--qcd_label {}'.format(self.cfg.qcd_label),
         '--signal_label {}'.format(self.cfg.signal_labels[0]), #FIXME
@@ -203,14 +232,9 @@ class BHNLLauncher(object):
       command_submit = 'sh submitter_{}.sh'.format(label)
       os.system(command_submit)
     else:
-      # create logdir
-      logdir_name = './outputs/{}/logs/{}'.format(self.outlabel, self.tag)
-      if not path.exists(logdir_name):
-        os.system('mkdir -p {}'.format(logdir_name))
-
       command_submit = 'sbatch -p {que} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnlplt_{lbl} submitter_{lbl}.sh'.format(
           que = 'standard' if self.do_standard_queue else 'short',
-          ld = logdir_name,
+          ld = self.logdir_name,
           lbl=label,
           ) 
 
@@ -227,12 +251,13 @@ class BHNLLauncher(object):
     # get the command to run the datacards script
     command_datacards = ' '.join([
         'python create_datacards.py',
+        '--homedir {}'.format(self.homedir),
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
         '--data_label {}'.format(self.cfg.data_label),
         '--qcd_label {}'.format(self.cfg.qcd_label),
         '--signal_label {}'.format(signal_label),
-        '--points_label {}'.format(self.cfg.points_label),
+        '--ctau_points_label {}'.format(self.cfg.ctau_points_label),
         '--selection_label {}'.format(self.cfg.baseline_selection_label),
         '--training_label {}'.format(self.cfg.training_label),
         '--cut_score {}'.format(self.cfg.cut_score),
@@ -291,16 +316,10 @@ class BHNLLauncher(object):
       os.system(command_submit)
       job_id = 0
     else:
-      # create logdir
-      logdir_name = './outputs/{}/logs/{}'.format(self.outlabel, self.tag)
-      if not path.exists(logdir_name):
-        print 'creating directory'
-        os.system('mkdir -p {}'.format(logdir_name))
-
       command_submit = 'sbatch -p {que} --mem {mem} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
           que = 'standard' if self.do_standard_queue else 'short',
           mem = self.memory,
-          ld = logdir_name,
+          ld = self.logdir_name,
           lbl=label,
           ) 
 
@@ -316,19 +335,22 @@ class BHNLLauncher(object):
     return job_id
 
 
-  def launchCombineDatacards(self, mass='', do_dependency=False, job_id=''):
+  def launchCombineDatacards(self, mass='', scenario='', do_dependency=False, job_id=''):
     # get the command to run the datacards combination script
     command_datacards_combine = ' '.join([
         'python combine_datacards.py',
+        '--homedir {}'.format(self.homedir),
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
         '--categories_label {}'.format(self.cfg.categories_label),
+        '--mass {}'.format(mass),
+        '--scenario {}'.format(scenario),
         #'--wildcard {}'.format(self.cfg.datacards_wildcard), #TODO add that in config
         #'--mass_whitelist {}'.format(mass), #TODO adapt
         #'--mass_blacklist {}'.format(self.getParserString(self.cfg.mass_black_list)), #TODO adapt
         #'--coupling_whitelist {}'.format(self.getParserString(self.cfg.coupling_white_list)), #TODO adapt
         #'--coupling_blacklist {}'.format(self.getParserString(self.cfg.coupling_black_list)), #TODO adapt
-        '{}'.format('--run_blind' if self.cfg.run_blind else ''),
+        '{}'.format('--do_blind' if self.cfg.do_blind else ''),
         ])
 
     # write the submitter
@@ -341,14 +363,8 @@ class BHNLLauncher(object):
       os.system(command_submit)
       job_id = 0
     else:
-      # create logdir
-      logdir_name = './outputs/{}/logs/{}'.format(self.outlabel, self.tag)
-      if not path.exists(logdir_name):
-        print 'creating directory'
-        os.system('mkdir -p {}'.format(logdir_name))
-
       command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcscmb_{lbl} {dpd} submitter_{lbl}.sh'.format(
-          ld = logdir_name,
+          ld = self.logdir_name,
           lbl = label,
           dpd = '--dependency=afterany:{}'.format(job_id) if do_dependency else ''
           ) 
@@ -366,16 +382,19 @@ class BHNLLauncher(object):
     return job_id
 
 
-  def launchLimitsProducer(self, mass='', ctau='', do_dependency=False, job_id=''):
+  def launchLimitsProducer(self, mass='', ctau='', scenario='', do_dependency=False, job_id=''):
     # get the command to run the limits producer script
     command_limits_producer = ' '.join([
         'python produce_limits.py',
+        '--homedir {}'.format(self.homedir),
+        '--indirlabel {}'.format(self.tag),
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
         '--mass {}'.format(mass),
         '--ctau {}'.format(ctau), 
+        '--scenario {}'.format(scenario),
         '{}'.format('--use_discrete_profiling' if self.cfg.use_discrete_profiling else ''),
-        '{}'.format('--run_blind' if self.cfg.run_blind else ''),
+        '{}'.format('--do_blind' if self.cfg.do_blind else ''),
         ])
 
     # write the submitter
@@ -388,15 +407,10 @@ class BHNLLauncher(object):
       os.system(command_submit)
       job_id = 0
     else:
-      # create logdir
-      logdir_name = './outputs/{}/logs/{}'.format(self.outlabel, self.tag)
-      if not path.exists(logdir_name):
-        print 'creating directory'
-        os.system('mkdir -p {}'.format(logdir_name))
-
       command_submit = 'sbatch -p {que} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} {dpd} submitter_{lbl}.sh'.format(
+          #que = 'short',
           que = 'standard' if self.do_standard_queue else 'short',
-          ld = logdir_name,
+          ld = self.logdir_name,
           lbl = label,
           dpd = '--dependency=afterany:{}'.format(job_id) if do_dependency else ''
           ) 
@@ -413,20 +427,25 @@ class BHNLLauncher(object):
     return job_id
 
 
-  def launchLimitsPlotter(self, do_dependency=False, job_id=''):
+  def launchLimitsPlotter(self, scenario='', do_dependency=False, job_id='', fe=None, fu=None, ft=None):
     # get the command to run the limits plotter script
     command_limits_plotter = ' '.join([
+        #'python pvalue.py',
         'python limit_plotter.py',
+        '--scenario {}'.format(scenario),
+        '--homedir {}'.format(self.homedir),
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
         #'--mass_whitelist {}'.format(self.getParserString(self.cfg.mass_white_list)), #FIXME 
-        #'--mass_whitelist 4.5',
-        #'--mass_blacklist 3.0',
-        #'--mass_blacklist {}'.format(self.getParserString(self.cfg.mass_black_list)), #FIXME  
+        #'--mass_whitelist 2.0',
+        #'--mass_blacklist 2.55,3.15,3.3,3.35,3.85,3.95,5.0',
         #'--coupling_whitelist {}'.format(self.getParserString(self.cfg.coupling_white_list)), #FIXME 
         #'--coupling_blacklist {}'.format(self.getParserString(self.cfg.coupling_black_list)), #FIXME  
-        #'--coupling_blacklist 0.0011,0.0013,0.0018,0.0036,0.001,0.0024,0.0042,0.0056,0.0084,0.024,0.034,0.042,0.056,0.084,0.0015,0.0022,0.0032,0.0044,0.0055,0.0074,0.011,0.015,0.022,0.032,0.044,0.055,0.074,1.5e-05,1.9e-05,2.9e-05,4.2e-05,5.8e-05,7.3e-05,9.7e-05,0.00015,0.00019,0.00029,0.00042,0.00058,0.00073',
-        '{}'.format('--run_blind' if self.cfg.run_blind else ''),
+        #'--coupling_blacklist 0.00054,0.00017',
+        '--fe {}'.format(fe),
+        '--fu {}'.format(fu),
+        '--ft {}'.format(ft),
+        '{}'.format('--do_blind' if self.cfg.do_blind else ''),
         ])
 
     # write the submitter
@@ -438,14 +457,8 @@ class BHNLLauncher(object):
       command_submit = 'sh submitter_{}.sh'.format(label)
       os.system(command_submit)
     else:
-      # create logdir
-      logdir_name = './outputs/{}/logs/{}'.format(self.outlabel, self.tag)
-      if not path.exists(logdir_name):
-        print 'creating directory'
-        os.system('mkdir -p {}'.format(logdir_name))
-
       command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=limitplotter_{lbl} {dpd} submitter_{lbl}.sh'.format(
-          ld = logdir_name,
+          ld = self.logdir_name,
           lbl = label,
           dpd = '--dependency=afterany:{}'.format(job_id) if do_dependency else ''
           ) 
@@ -457,6 +470,53 @@ class BHNLLauncher(object):
 
     command_clean = 'rm submitter_{}.sh'.format(label)
     os.system(command_clean)
+
+
+  def launchInterpretationLimits(self, mass='', ctau='', fe='', fu='', ft=''):
+    # get the command to run the limits producer script
+    command_interpretation_limits_producer = ' '.join([
+        'python interpretation_launcher.py',
+        '--homedir {}'.format(self.homedir),
+        '--outdirlabel {}'.format(self.outlabel),
+        '--subdirlabel {}'.format(self.tag),
+        '--mass {}'.format(mass),
+        '--ctau {}'.format(ctau), 
+        '--fe {}'.format(fe),
+        '--fu {}'.format(fu),
+        '--ft {}'.format(ft),
+        '--muon_label {}'.format(self.cfg.muon_eoslabel),
+        '--electron_label {}'.format(self.cfg.electron_eoslabel),
+        '{}'.format('--use_discrete_profiling' if self.cfg.use_discrete_profiling else ''),
+        '{}'.format('--do_blind' if self.cfg.do_blind else ''),
+        ])
+
+    # write the submitter
+    label = 'interpretation_limits_producer_' + self.outlabel + '_' + self.tag + '_' + str(mass).replace('.', 'p') + '_' + str(ctau).replace('.', 'p')
+    self.writeSubmitter(command_interpretation_limits_producer, label)
+
+    # launch submitter
+    if not self.submit_batch:
+      command_submit = 'sh submitter_{}.sh'.format(label)
+      os.system(command_submit)
+      job_id = 0
+    else:
+      command_submit = 'sbatch -p {que} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} submitter_{lbl}.sh'.format(
+          #que = 'standard' if self.do_standard_queue else 'short',
+          que = 'short' if self.do_standard_queue else 'short',
+          ld = self.logdir_name,
+          lbl = label,
+          ) 
+
+      job = subprocess.check_output(command_submit, shell=True)
+      job_id = self.getJobId(job)
+
+      print '--> Interpretation limits production job has been submitted'
+      print '---> The interpretation limits results will be stored in ./outputs/{}/limits/{}/results'.format(self.outlabel, self.tag) #add coupling
+
+    command_clean = 'rm submitter_{}.sh'.format(label)
+    os.system(command_clean)
+    
+    return job_id
 
 
   def process(self):
@@ -498,30 +558,62 @@ class BHNLLauncher(object):
           dependency_combined_datacards[signal_label] = []
           print '\n -> Launching the combination of the datacards'
           for mass in self.getMassList(signal_label):
-            if self.submit_batch and self.do_datacards:
-              job_id = self.launchCombineDatacards(mass=str(mass).replace('.', 'p'), do_dependency=True, job_id=self.getJobIdsList(dependency_datacards[signal_label]))
-            else:
-              job_id = self.launchCombineDatacards(mass=str(mass).replace('.', 'p'), do_dependency=False)
-            dependency_combined_datacards[signal_label].append(job_id)
+            for scenario in self.scenarios:
+              if self.submit_batch and self.do_datacards:
+                job_id = self.launchCombineDatacards(mass=str(mass).replace('.', 'p'), scenario=scenario, do_dependency=True, job_id=self.getJobIdsList(dependency_datacards[signal_label]))
+              else:
+                job_id = self.launchCombineDatacards(mass=str(mass).replace('.', 'p'), scenario=scenario, do_dependency=False)
+              dependency_combined_datacards[signal_label].append(job_id)
 
       if self.do_produce_limits:
         dependency_limits = []
         for signal_label in self.cfg.signal_labels:
           for mass in self.getMassList(signal_label):
-            for ctau in self.getCtauList():
-              print '\n -> Launching the limits production for mass {} and ctau {}'.format(mass, ctau)
-              if self.submit_batch and self.do_combine_datacards:
-                job_id = self.launchLimitsProducer(mass=mass, ctau=ctau, do_dependency=True, job_id=self.getJobIdsList(dependency_combined_datacards[signal_label]))
-              else:
-                job_id = self.launchLimitsProducer(mass=mass, ctau=ctau, do_dependency=False)
-              dependency_limits.append(job_id)
+            for scenario in self.scenarios:
+              for ctau in self.getCtauList(mass=mass):
+                print '\n -> Launching the limits production for mass {} and ctau {} ({})'.format(mass, ctau, scenario)
+                if self.submit_batch and self.do_combine_datacards:
+                  job_id = self.launchLimitsProducer(mass=mass, ctau=ctau, scenario=scenario, do_dependency=True, job_id=self.getJobIdsList(dependency_combined_datacards[signal_label]))
+                else:
+                  job_id = self.launchLimitsProducer(mass=mass, ctau=ctau, scenario=scenario, do_dependency=False)
+                dependency_limits.append(job_id)
 
       if self.do_plot_limits:
-        print '\n -> Launching the limits plotter'
-        if self.submit_batch and self.do_produce_limits:
-          job_id = self.launchLimitsPlotter(do_dependency=True, job_id=self.getJobIdsList(dependency_limits))
-        else:
-          job_id = self.launchLimitsPlotter(do_dependency=False)
+        for scenario in self.scenarios:
+          print '\n -> Launching the limits plotter ({})'.format(scenario)
+          if self.submit_batch and self.do_produce_limits:
+            job_id = self.launchLimitsPlotter(scenario=scenario, do_dependency=True, job_id=self.getJobIdsList(dependency_limits))
+          else:
+            job_id = self.launchLimitsPlotter(scenario=scenario, do_dependency=False)
+
+    if self.do_interpretation:
+      if self.do_interpretation_limits:
+        dependency_interpretation_limits = []
+        for coupling_scenario in coupling_scenarios[self.cfg.coupling_scenarios_label]:
+          fe = coupling_scenario.fe
+          fu = coupling_scenario.fu
+          ft = coupling_scenario.ft
+          for signal_label in self.cfg.signal_labels:
+            for mass in self.getMassList(signal_label):
+              for ctau in self.getCtauList(mass=mass):
+                # add loop on coupling scenario
+                signal_v2 = Tools().getVV(mass=mass, ctau=ctau, ismaj=True)
+                signal_coupling = Tools().getCouplingLabel(signal_v2)
+                print '\n -> Launching the interpretation limits production for (fe={}, fu={}, ft={}) and mass {} and ctau {}'.format(fe, fu, ft, mass, ctau)
+                job_id = self.launchInterpretationLimits(mass=mass, ctau=ctau, fe=fe, fu=fu, ft=ft)
+                dependency_interpretation_limits.append(job_id)
+          os.system('sleep 30s')
+
+      if self.do_interpretation_plotter:
+        for coupling_scenario in coupling_scenarios[self.cfg.coupling_scenarios_label]:
+          fe = coupling_scenario.fe
+          fu = coupling_scenario.fu
+          ft = coupling_scenario.ft
+          print '\n -> Launching the limits plotter for (fe={}, fu={}, ft={})'.format(fe, fu, ft)
+          if self.submit_batch and self.do_interpretation_limits:
+            job_id = self.launchLimitsPlotter(scenario='Majorana', do_dependency=True, job_id=self.getJobIdsList(dependency_interpretation_limits), fe=fe, fu=fu, ft=ft)
+          else:
+            job_id = self.launchLimitsPlotter(scenario='Majorana', do_dependency=False, fe=fe, fu=fu, ft=ft)
 
     print '\nDone'
   
@@ -538,9 +630,13 @@ if __name__ == '__main__':
                           do_combine_datacards=do_combine_datacards, 
                           do_produce_limits=do_produce_limits, 
                           do_plot_limits=do_plot_limits,
+                          do_interpretation=do_interpretation,
+                          do_interpretation_limits=do_interpretation_limits,
+                          do_interpretation_plotter=do_interpretation_plotter,
                           do_check_config=do_check_config,
                           do_standard_queue=do_standard_queue,
                           memory=memory,
+                          scenarios=scenarios,
                           )
   launcher.process()
 

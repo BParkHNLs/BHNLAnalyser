@@ -39,6 +39,8 @@ class TrainingInfo(object):
       model_filename = '{}/net_model_weighted_{}.h5'.format(self.indir, self.category_label)
     else:
       model_filename = '{}/net_model_weighted.h5'.format(self.indir)
+    if '_scoreplus' in model_filename: model_filename = model_filename.replace('_scoreplus', '')
+    if '_scoreminus' in model_filename: model_filename = model_filename.replace('_scoreminus', '')
     model = load_model(model_filename)
     return model
 
@@ -49,6 +51,8 @@ class TrainingInfo(object):
       scaler_filename = '/'.join([self.indir, 'input_tranformation_weighted_{}.pck'.format(self.category_label)])
     else:
       scaler_filename = '/'.join([self.indir, 'input_tranformation_weighted.pck'])
+    if '_scoreplus' in scaler_filename: scaler_filename = scaler_filename.replace('_scoreplus', '')
+    if '_scoreminus' in scaler_filename: scaler_filename = scaler_filename.replace('_scoreminus', '')
     qt = pickle.load(open(scaler_filename, 'rb'))
     return qt
 
@@ -59,6 +63,8 @@ class TrainingInfo(object):
       features_filename = '/'.join([self.indir, 'input_features_{}.pck'.format(self.category_label)])
     else:
       features_filename = '/'.join([self.indir, 'input_features.pck'])
+    if '_scoreplus' in features_filename: features_filename = features_filename.replace('_scoreplus', '')
+    if '_scoreminus' in features_filename: features_filename = features_filename.replace('_scoreminus', '')
     features = pickle.load(open(features_filename, 'rb'))
     if 'mass_key' in features: features.remove('mass_key')
     return features
@@ -83,6 +89,13 @@ class MVATools(object):
         selection_string = selection[:idx_in-1]
       else:
         selection_string = selection[:idx-1] + selection[idx_in+2:]
+      if 'score' in selection_string:
+        idx = selection_string.find('score')
+        idx_in = selection_string.rfind('&&')
+        if idx_in < idx:
+          selection_string = selection_string[:idx_in-1]
+        else:
+          selection_string = selection_string[:idx-1] + selection_string[idx_in+2:]
     
     return selection_string
 
@@ -100,7 +113,17 @@ class MVATools(object):
         selection_string = selection[idx:]
       else:
         selection_string = selection[idx:idx_in-1]
-    
+      if 'score' in selection[:idx] + selection[idx_in:]:
+        selection = selection[:idx] + selection[idx_in:]
+        idx = selection.find('score')
+        idx_in = selection.rfind('&&')
+        if idx_in < idx:
+          selection_string_second = selection[idx:]
+        else:
+          selection_string_second = selection[idx:idx_in-1]
+
+        selection_string += ' && {}'.format(selection_string_second)
+        
     return selection_string
 
 
@@ -231,7 +254,7 @@ class MVATools(object):
     print ' --> {} created'.format(root_filename)
 
     
-  def getFileWithScore(self, files=None, training_label='', do_parametric=False, mass=None, category_label=None, selection='hnl_charge>-99', weights=None, label='', treename='signal_tree', force_overwrite=False): 
+  def getFileWithScore(self, files=None, training_label='', do_parametric=False, mass=None, category_label=None, selection='hnl_charge>-99', weights=None, label='', treename='signal_tree', force_overwrite=False, is_bc=False): 
     '''
       This function returns the file with the analysis tree that contains the hnl mass, the score and other quantities used for signal reweighting
       The argument 'weights' is the list of branches that will need to be added to the tree for the reweighting at analysis level
@@ -240,7 +263,11 @@ class MVATools(object):
     '''
     samples_filename = []
     for file_ in files:
-      samples_filename.append(file_.filename)
+      if not is_bc:
+        filename = file_.filename
+      else:
+        filename = file_.filename_Bc
+      samples_filename.append(filename)
       
     root_filename = './{}.root'.format(label.replace('.', 'p'))
     if force_overwrite or not path.exists(root_filename):

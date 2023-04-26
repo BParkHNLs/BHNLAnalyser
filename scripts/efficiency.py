@@ -7,10 +7,15 @@ import math
 import numpy as np
 
 from tools import Tools
+import sys
+sys.path.append('../objects')
+from quantity import Quantity
+from samples import qcd_samples
+from qcd_white_list import white_list as wt
 
 
 class EfficiencyAnalyser(Tools):
-  def __init__(self, filename, sample_type='flat', process_type='mumupi', add_dsa='yes', matchings=None, cuts=None, displacement_bins=None, pt_bins=None, title='', outdirlabel='default'):
+  def __init__(self, filename='', sample_type='flat', process_type='mumupi', add_dsa='yes', matchings=None, cuts=None, displacement_bins=None, pt_bins=None, title='', outdirlabel='default'):
     self.tools = Tools()
     self.filename = filename
     self.sample_type = sample_type
@@ -39,9 +44,10 @@ class EfficiencyAnalyser(Tools):
     if self.add_dsa not in ['yes', 'no']:
       raise RuntimeError("Unknown add-dsa decision. Please choose among ['yes', 'no']")
 
-    for matching in self.matchings:
-      if matching not in ['candidate', 'trigger_muon', 'muon', 'pion']:
-        raise RuntimeError("Unknown matching strategy. Please choose among ['candidate', 'trigger_muon', 'muon', 'pion']")
+    if self.matchings != None:
+      for matching in self.matchings:
+        if matching not in ['candidate', 'trigger_muon', 'muon', 'pion']:
+          raise RuntimeError("Unknown matching strategy. Please choose among ['candidate', 'trigger_muon', 'muon', 'pion']")
 
     if path.exists('{}/numbers.txt'.format(self.outputdir)):
       os.system('rm {}/numbers.txt'.format(self.outputdir))
@@ -463,45 +469,321 @@ class EfficiencyAnalyser(Tools):
       canv.SaveAs('{}/acceptance_cut_{}_pt_matching_{}.pdf'.format(self.outputdir, quantity, matching))
 
 
+  def plotMuonIDEfficiency(self, muon_type, muon_id, binning):
+    if muon_type not in ['primary_muon', 'displaced_muon']:
+      raise RuntimeError('Muon type "{}" not valid.'.format(muon_type))
+
+    if muon_id not in ['soft', 'loose']:
+      raise RuntimeError('Muon ID "{}" not valid.'.format(muon_id))
+
+    if binning not in ['pt', 'displacement']:
+      raise RuntimeError('Binning "{}" not valid'.format(binning))
+
+    filename_m1 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root' 
+    filename_m3 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
+    filename_m4p5 = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22_sr.root'
+
+    f_m1 = self.tools.getRootFile(filename_m1, with_ext=False) 
+    f_m3 = self.tools.getRootFile(filename_m3, with_ext=False) 
+    f_m4p5 = self.tools.getRootFile(filename_m4p5, with_ext=False) 
+
+    tree_m1 = self.tools.getTree(f_m1, 'signal_tree')
+    tree_m3 = self.tools.getTree(f_m3, 'signal_tree')
+    tree_m4p5 = self.tools.getTree(f_m4p5, 'signal_tree')
+
+    # for fake rate
+    qcd_files = qcd_samples['V11_24Apr22_sources']
+    white_list = wt['20to300']
+
+    if binning == 'pt':
+      #bins = [(1, 7), (7, 8), (8, 9), (9, 10), (10, 12), (12, 20), (20, 30), (30, 100)] 
+      #bins = [(1, 7), (7, 10), (10, 20), (20, 30)] 
+      #bins = [(1, 7), (7, 10), (10, 15), (15, 20), (20, 30)] 
+      #bins = [(1, 7), (7, 10), (10, 15), (15, 20), (20, 25), (25, 30)] 
+      #bins = [(1, 7), (7, 10), (10, 15), (15, 30), (30, 100)] 
+      #bins = [(1, 3), (3, 6), (6, 10), (10, 15), (15, 20)] 
+      bins = [(1, 4), (4, 7), (7, 10), (10, 15), (15, 20), (20, 30)] 
+    elif binning == 'displacement':
+      #bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
+      bins = [(0, 3), (3, 5), (5, 10), (10, 20), (20, 100)]
+      #bins = [(0, 3), (3, 5)]
+
+    efficiency_m1 = np.zeros(len(bins))
+    efficiency_m3 = np.zeros(len(bins))
+    efficiency_m4p5 = np.zeros(len(bins))
+    fake_rate = np.zeros(len(bins))
+
+    err_m1 = np.zeros(len(bins))
+    err_m3 = np.zeros(len(bins))
+    err_m4p5 = np.zeros(len(bins))
+    err_fake = np.zeros(len(bins))
+      
+    hnl_mass = Quantity(name_flat='hnl_mass', label='hnl_mass', nbins=80, bin_min=0, bin_max=1000)
+
+    for ibin, bin_ in enumerate(bins):
+      bin_min, bin_max = bin_
+
+      if binning == 'pt': qte = '{part}_pt'
+      elif binning == 'displacement': qte = 'sv_lxy'
+
+      if muon_type == 'primary_muon': part = 'mu0'
+      elif muon_type == 'displaced_muon': part = 'mu'
+
+      if muon_id == 'soft': muid = 'softid'
+      elif muon_id == 'loose': muid = 'looseid'
+
+      if ibin != len(bins)-1:
+        #selection_num = '{part}_{qte}>= {mn} && {part}_{qte}<{mx} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min, mx=bin_max)
+        #selection_deno = '{part}_{qte}>= {mn} && {part}_{qte}<{mx}'.format(qte=qte, part=part, mn=bin_min, mx=bin_max)
+        selection_num = '{qte}>= {mn} && {qte}<{mx} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min, mx=bin_max)
+        selection_deno = '{qte}>= {mn} && {qte}<{mx}'.format(qte=qte, part=part, mn=bin_min, mx=bin_max)
+      else: # add overflow
+        #selection_num = '{part}_{qte}>= {mn} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min)
+        #selection_deno = '{part}_{qte}>= {mn}'.format(qte=qte, part=part, mn=bin_min)
+        selection_num = '{qte}>= {mn} && {part}_{muid}==1'.format(qte=qte, part=part, muid=muid, mn=bin_min)
+        selection_deno = '{qte}>= {mn}'.format(qte=qte, part=part, mn=bin_min)
+
+      #weight = '(weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2)'
+      weight = '(1.)'
+
+      hist_num_m1 = self.tools.createHisto(tree_m1, hnl_mass, hist_name='hist_m1', branchname='flat', selection=selection_num, weight=weight)
+      hist_deno_m1 = self.tools.createHisto(tree_m1, hnl_mass, hist_name='hist_m1', branchname='flat', selection=selection_deno, weight=weight)
+      hist_num_m3 = self.tools.createHisto(tree_m3, hnl_mass, hist_name='hist_m3', branchname='flat', selection=selection_num, weight=weight)
+      hist_deno_m3 = self.tools.createHisto(tree_m3, hnl_mass, hist_name='hist_m3', branchname='flat', selection=selection_deno, weight=weight)
+      hist_num_m4p5 = self.tools.createHisto(tree_m4p5, hnl_mass, hist_name='hist_m4p5', branchname='flat', selection=selection_num, weight=weight)
+      hist_deno_m4p5 = self.tools.createHisto(tree_m4p5, hnl_mass, hist_name='hist_m4p5', branchname='flat', selection=selection_deno, weight=weight)
+        
+      err_num_m1 = ROOT.double(0.)
+      err_deno_m1 = ROOT.double(0.)
+      num_m1 = hist_num_m1.IntegralAndError(0, 1000, err_num_m1)
+      deno_m1 = hist_deno_m1.IntegralAndError(0, 1000, err_deno_m1)
+
+      err_num_m3 = ROOT.double(0.)
+      err_deno_m3 = ROOT.double(0.)
+      num_m3 = hist_num_m3.IntegralAndError(0, 1000, err_num_m3)
+      deno_m3 = hist_deno_m3.IntegralAndError(0, 1000, err_deno_m3)
+
+      err_num_m4p5 = ROOT.double(0.)
+      err_deno_m4p5 = ROOT.double(0.)
+      num_m4p5 = hist_num_m4p5.IntegralAndError(0, 1000, err_num_m4p5)
+      deno_m4p5 = hist_deno_m4p5.IntegralAndError(0, 1000, err_deno_m4p5)
+
+      efficiency_m1[ibin] = num_m1 / deno_m1 if deno_m1 != 0 else -1
+      efficiency_m3[ibin] = num_m3 / deno_m3 if deno_m3 != 0 else -1
+      #print '{} {}'.format(num_m4p5, deno_m4p5)
+      efficiency_m4p5[ibin] = num_m4p5 / deno_m4p5 if deno_m4p5 != 0 else -1
+
+      err_m1[ibin] = num_m1 / deno_m1 * math.sqrt(math.pow(err_num_m1 / num_m1, 2) + math.pow(err_deno_m1 / deno_m1, 2)) if deno_m1 != 0 else 0 
+      err_m3[ibin] = num_m3 / deno_m3 * math.sqrt(math.pow(err_num_m3 / num_m3, 2) + math.pow(err_deno_m3 / deno_m3, 2)) if deno_m3 != 0 else 0
+      err_m4p5[ibin] = num_m4p5 / deno_m4p5 * math.sqrt(math.pow(err_num_m4p5 / num_m4p5, 2) + math.pow(err_deno_m4p5 / deno_m4p5, 2)) if deno_m4p5 != 0 else 0
+
+      # fake rate
+      if muon_type == 'primary_muon': part2 = 'trgmu'
+      elif muon_type == 'displaced_muon': part2 = 'mu'
+      if ibin != len(bins)-1:
+        #selection_fake_num = '{part}_{qte}>= {mn} && {part}_{qte}<{mx} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
+        #selection_fake_deno = '{part}_{qte}>= {mn} && {part}_{qte}<{mx} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
+        selection_fake_num = '{qte}>= {mn} && {qte}<{mx} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
+        selection_fake_deno = '{qte}>= {mn} && {qte}<{mx} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min, mx=bin_max)
+      else: # add overflow
+        #selection_fake_num = '{part}_{qte}>= {mn} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
+        #selection_fake_deno = '{part}_{qte}>= {mn} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
+        selection_fake_num = '{qte}>= {mn} && {part2}_{muid}==1 && {part}_isfake==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
+        selection_fake_deno = '{qte}>= {mn} && {part2}_{muid}==1'.format(qte=qte, part=part, part2=part2, muid=muid, mn=bin_min)
+
+      hist_fake_num = self.tools.createWeightedHistoQCDMC(qcd_files, white_list=white_list, quantity=hnl_mass, selection=selection_fake_num, treename='sources')
+      hist_fake_deno = self.tools.createWeightedHistoQCDMC(qcd_files, white_list=white_list, quantity=hnl_mass, selection=selection_fake_deno, treename='sources')
+
+      err_fake_num = ROOT.double(0.)
+      err_fake_deno = ROOT.double(0.)
+      fake_num = hist_fake_num.IntegralAndError(0, 1000, err_fake_num)
+      fake_deno = hist_fake_deno.IntegralAndError(0, 1000, err_fake_deno)
+
+      fake_rate[ibin] = fake_num / fake_deno
+      err_fake[ibin] = fake_num / fake_deno * math.sqrt(math.pow(err_fake_num / fake_num, 2) + math.pow(err_fake_deno / fake_deno, 2)) 
+
+    print efficiency_m1
+    print efficiency_m3
+    print efficiency_m4p5
+
+    canv = self.tools.createTCanvas('canv', 900, 800)
+
+    pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
+    pad.Draw()
+    pad.SetGrid()
+    pad.cd()
+
+    leg = self.tools.getRootTLegend(xmin=0.15, ymin=0.4, xmax=0.4, ymax=0.6, size=0.035)
+
+    graph_m1 = ROOT.TGraphAsymmErrors()
+    for ibin, bin_ in enumerate(bins):
+      bin_min, bin_max = bin_
+      x_m1 = (float(bin_min) + float(bin_max))/2.
+      y_m1 = efficiency_m1[ibin]
+      #err = 0.
+
+      point_m1 = graph_m1.GetN()
+      graph_m1.SetPoint(point_m1, x_m1, y_m1)
+      graph_m1.SetPointError(point_m1, (bin_max - bin_min)/2., (bin_max - bin_min)/2., err_m1[ibin], err_m1[ibin])
+
+    graph_m1.SetLineColor(ROOT.kOrange+0)
+    graph_m1.SetMarkerStyle(20)
+    graph_m1.SetMarkerColor(ROOT.kOrange+0)
+    leg.AddEntry(graph_m1, 'mass 1 GeV, ctau 1000 mm')
+
+    graph_m3 = ROOT.TGraphAsymmErrors()
+    for ibin, bin_ in enumerate(bins):
+      bin_min, bin_max = bin_
+      x_m3 = (float(bin_min) + float(bin_max))/2.
+      y_m3 = efficiency_m3[ibin]
+      #err = 0.
+
+      point_m3 = graph_m3.GetN()
+      graph_m3.SetPoint(point_m3, x_m3, y_m3)
+      graph_m3.SetPointError(point_m3, (bin_max - bin_min)/2., (bin_max - bin_min)/2., err_m3[ibin], err_m3[ibin])
+
+    graph_m3.SetLineColor(ROOT.kRed+1)
+    graph_m3.SetMarkerStyle(20)
+    graph_m3.SetMarkerColor(ROOT.kRed+1)
+    leg.AddEntry(graph_m3, 'mass 3 GeV, ctau 100 mm')
+
+    graph_m4p5 = ROOT.TGraphAsymmErrors()
+    for ibin, bin_ in enumerate(bins):
+      bin_min, bin_max = bin_
+      x_m4p5 = (float(bin_min) + float(bin_max))/2.
+      y_m4p5 = efficiency_m4p5[ibin]
+      #err = 0.
+
+      point_m4p5 = graph_m4p5.GetN()
+      graph_m4p5.SetPoint(point_m4p5, x_m4p5, y_m4p5)
+      graph_m4p5.SetPointError(point_m4p5, (bin_max - bin_min)/2., (bin_max - bin_min)/2., err_m4p5[ibin], err_m4p5[ibin])
+
+    graph_m4p5.SetLineColor(ROOT.kRed+4)
+    graph_m4p5.SetMarkerStyle(20)
+    graph_m4p5.SetMarkerColor(ROOT.kRed+4)
+    leg.AddEntry(graph_m4p5, 'mass 4.5 GeV, ctau 1 mm')
+
+    graph_fake = ROOT.TGraphAsymmErrors()
+    for ibin, bin_ in enumerate(bins):
+      bin_min, bin_max = bin_
+      x_fake = (float(bin_min) + float(bin_max))/2.
+      y_fake = fake_rate[ibin]
+      #err = 0.
+
+      point_fake = graph_fake.GetN()
+      graph_fake.SetPoint(point_fake, x_fake, y_fake)
+      graph_fake.SetPointError(point_fake, (bin_max - bin_min)/2., (bin_max - bin_min)/2., err_fake[ibin], err_fake[ibin])
+
+    graph_fake.SetLineColor(ROOT.kBlue+2)
+    graph_fake.SetMarkerStyle(45)
+    graph_fake.SetMarkerSize(2)
+    graph_fake.SetMarkerColor(ROOT.kBlue+2)
+    leg.AddEntry(graph_fake, 'fake rate')
+
+    graph_m1.Draw('AP')  
+    graph_m3.Draw('P same')  
+    graph_m4p5.Draw('P same')  
+    graph_fake.Draw('P same')
+    leg.Draw()
+
+    if muon_type == 'primary_muon': label1 = 'Primary muon'
+    elif muon_type == 'displaced_muon': label1 = 'Displaced muon'
+
+    graph_m1.SetTitle('{} ({} ID)'.format(label1, muon_id))
+    if binning == 'pt':
+      if muon_type == 'primary_muon': xlabel = 'primary muon p_{T} [GeV]'
+      elif muon_type == 'displaced_muon': xlabel = 'displaced muon p_{T} [GeV]'
+    elif binning == 'displacement':
+      xlabel = 'SV l_{xy} [cm]'
+    graph_m1.GetXaxis().SetTitle(xlabel)
+    graph_m1.GetXaxis().SetLabelSize(0.037)
+    graph_m1.GetXaxis().SetTitleSize(0.042)
+    graph_m1.GetXaxis().SetTitleOffset(1.1)
+    graph_m1.GetYaxis().SetTitle('Efficiency')
+    graph_m1.GetYaxis().SetLabelSize(0.037)
+    graph_m1.GetYaxis().SetTitleSize(0.042)
+    graph_m1.GetYaxis().SetTitleOffset(1.1)
+    graph_m1.GetYaxis().SetRangeUser(0., 1.1)
+
+    canv.cd()
+    #canv.SaveAs('{}/efficiency_{}_{}id.png'.format(self.outputdir, muon_type, muon_id))
+    #canv.SaveAs('{}/efficiency_{}_{}id.pdf'.format(self.outputdir, muon_type, muon_id))
+    canv.SaveAs('{}/efficiency_{}_{}id_{}.png'.format(self.outputdir, muon_type, muon_id, binning))
+    canv.SaveAs('{}/efficiency_{}_{}id_{}.pdf'.format(self.outputdir, muon_type, muon_id, binning))
+
+
+
 
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/plugins/dumper/flat_bparknano.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_motherpdgid_unfittedmass.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_fittedmass_looseselection_originalmatching.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looselection_updatedmatching_fullgen.root' # used for the july study
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looselection_updatedmatching_fullgen.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_v1.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_minigenmatching_v2.root'
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_efficiency_study.root' # used for study on efficiency gain with dsa (Nov 21)
-  #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V36/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection.root' # for reconstruction efficiency without trigger matching efficiency
-  filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V36/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection_fullgen.root'
+  do_studyRecoEfficiency = False
+  do_studyMuonIDEfficiency = True
 
-  displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
-  #displacement_bins = [(0, 3), (3, 5), (5, 10), (10, 20), (20, 100)]
-  pt_bins = [(1, 7), (7, 10), (10, 15), (15, 30), (30, 100)] 
-  #pt_bins = [(1, 7), (7, 8), (8, 9), (9, 10), (10, 12), (12, 20), (20, 30), (30, 100)] 
+  if do_studyRecoEfficiency:
+    #filename = '/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/plugins/dumper/flat_bparknano.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_motherpdgid_unfittedmass.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V20_test/mass3.0_ctau184.256851021/nanoFiles/merged/flat_bparknano_unresolved_fittedmass_looseselection_originalmatching.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looselection_updatedmatching_fullgen.root' # used for the july study
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looselection_updatedmatching_fullgen.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_v1.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_looseselection_mupi_minigenmatching_v2.root'
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V25/mass3.0_ctau2000.0/nanoFiles/merged/flat_bparknano_efficiency_study.root' # used for study on efficiency gain with dsa (Nov 21)
+    #filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V36/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection.root' # for reconstruction efficiency without trigger matching efficiency
+    filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V36/mass3.0_ctau2000.0/nanoFiles/merged/bparknano_looseselection_fullgen.root'
 
-  cuts_mu_pt = [0., 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
-  cuts_trigger_mu_pt = [6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0]
+    displacement_bins = [(0, 1), (1, 3), (3, 5), (5, 10), (10, 15), (15, 30), (30, 50), (50, 100)]
+    #displacement_bins = [(0, 3), (3, 5), (5, 10), (10, 20), (20, 100)]
+    pt_bins = [(1, 7), (7, 10), (10, 15), (15, 30), (30, 100)] 
+    #pt_bins = [(1, 7), (7, 8), (8, 9), (9, 10), (10, 12), (12, 20), (20, 30), (30, 100)] 
 
-  #outdirlabel = 'signalV20_test_unresolved_fittedmass_looseselection_originalmatching_withoutdsa'
-  #outdirlabel = 'dsa_study_Nov21_dsa'
-  outdirlabel = 'test_V36_fullgen_v1'
+    cuts_mu_pt = [0., 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
+    cuts_trigger_mu_pt = [6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0]
 
-  title = ''
+    #outdirlabel = 'signalV20_test_unresolved_fittedmass_looseselection_originalmatching_withoutdsa'
+    #outdirlabel = 'dsa_study_Nov21_dsa'
+    outdirlabel = 'test_V36_fullgen_v1'
 
-  matchings = ['candidate', 'trigger_muon', 'muon', 'pion']
-  #matchings = ['candidate', 'trigger_muon']
+    title = ''
 
-  sample_type = 'nano'
-  process_type = 'mumupi'
-  add_dsa = 'no'
+    matchings = ['candidate', 'trigger_muon', 'muon', 'pion']
+    #matchings = ['candidate', 'trigger_muon']
 
-  analyser = EfficiencyAnalyser(filename=filename, sample_type=sample_type, process_type=process_type, add_dsa=add_dsa, matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel)
+    sample_type = 'nano'
+    process_type = 'mumupi'
+    add_dsa = 'no'
 
-  analyser.plot2DEfficiency()
-  analyser.plot1DEfficiency(binning='displacement')
-  analyser.plot1DEfficiency(binning='pt')
+    analyser = EfficiencyAnalyser(filename=filename, sample_type=sample_type, process_type=process_type, add_dsa=add_dsa, matchings=matchings, displacement_bins=displacement_bins, pt_bins=pt_bins, title=title, outdirlabel=outdirlabel)
+
+    analyser.plot2DEfficiency()
+    analyser.plot1DEfficiency(binning='displacement')
+    analyser.plot1DEfficiency(binning='pt')
+
+
+  if do_studyMuonIDEfficiency:
+    outdirlabel = 'muon_ID'
+    analyser = EfficiencyAnalyser(
+        outdirlabel=outdirlabel,
+        )
+
+    muon_type = 'primary_muon'
+    muon_id = 'soft'
+    binning = 'pt'
+
+    #analyser.plotMuonIDEfficiency(
+    #    muon_type = muon_type, 
+    #    muon_id = muon_id, 
+    #    binning = binning,
+    #    )
+
+    muon_type = 'displaced_muon'
+    muon_id = 'loose'
+    binning = 'displacement' #'pt'
+
+    analyser.plotMuonIDEfficiency(
+        muon_type = muon_type, 
+        muon_id = muon_id, 
+        binning = binning,
+        )
+
 
