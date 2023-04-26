@@ -317,8 +317,7 @@ class DatacardsMaker(Tools):
     fitter.createFTestInputWorkspace(label=label)
 
     # run the F-test and save the output multipdf in a workspace
-    #command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins} --cat_index {cidx} --do_veto_SM {veto} --veto_range_min {veto_min} --veto_range_max {veto_max}'.format(
-    command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins} --cat_index {cidx}'.format(
+    command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins} --cat_index {cidx} --do_veto_SM {veto} --veto_range_min {veto_min} --veto_range_max {veto_max}'.format(
         inws = '{}/input_workspace_fTest_m_{}_cat_{}.root'.format(self.outputdir, mass, category.label),
         outws = '{}/workspace_background_multipdf_bhnl_m_{}_cat_{}.root'.format(self.outputdir, str(mass).replace('.', 'p'), category.label),
         outdir = self.outputdir + '/fTest',
@@ -330,11 +329,11 @@ class DatacardsMaker(Tools):
         mws = self.mass_window_size,
         nbins = self.nbins,
         cidx = cat_index,
-        veto = do_veto_SM,
+        veto = 0, #do_veto_SM, #FIXME to adapt once we apply the vetoes
         veto_min = veto_SM.range_min,
         veto_max = veto_SM.range_max,
         )
-    if self.do_blind: command_ftest += ' --blind'
+    command_ftest += ' --blind' # always blind SR region when building the envelope
 
     os.system(command_ftest)
 
@@ -589,6 +588,25 @@ bkg {bkg_yields}
 
       if self.category_label != None and category.label != self.category_label: continue # needed for category parallelisation on the batch
 
+      #if category.label == 'lxysig0to50_OS':
+      #  self.resolution_p0 = 7.63277e-04
+      #  self.resolution_p1 = 8.35213e-03
+      #elif category.label == 'lxysig50to150_OS':
+      #  self.resolution_p0 = 7.73244e-04
+      #  self.resolution_p1 = 8.10455e-03
+      #elif category.label == 'lxysiggt150_OS':
+      #  self.resolution_p0 = 4.08416e-04
+      #  self.resolution_p1 = 7.63926e-03
+      #if category.label == 'lxysig0to50_SS':
+      #  self.resolution_p0 = 8.15199e-04
+      #  self.resolution_p1 = 8.26159e-03
+      #elif category.label == 'lxysig50to150_SS':
+      #  self.resolution_p0 = 6.71277e-04
+      #  self.resolution_p1 = 8.17517e-03
+      #elif category.label == 'lxysiggt150_SS':
+      #  self.resolution_p0 = 3.27706e-04
+      #  self.resolution_p1 = 7.68029e-03
+
       #if category.label != 'lxy1to5_SS' and category.label != 'lxy0to1_SS': continue
 
       # loop on the different mass windows
@@ -600,25 +618,6 @@ bkg {bkg_yields}
         # get the category label
         cat_label = self.getCategoryLabel(signal_mass=window['mass'], category=category)
 
-        #if category.label == 'lxysig0to50_OS':
-        #  self.resolution_p0 = 1.01753e-03
-        #  self.resolution_p1 = 8.03358e-03
-        #elif category.label == 'lxysig50to150_OS':
-        #  self.resolution_p0 = 8.79842e-04
-        #  self.resolution_p1 = 7.88636e-03
-        #elif category.label == 'lxysiggt150_OS':
-        #  self.resolution_p0 = 3.89498e-04
-        #  self.resolution_p1 = 7.26595e-03
-        #if category.label == 'lxysig0to50_SS':
-        #  self.resolution_p0 = 8.78062e-04
-        #  self.resolution_p1 = 8.08446e-03
-        #elif category.label == 'lxysig50to150_SS':
-        #  self.resolution_p0 = 4.51828e-04
-        #  self.resolution_p1 = 8.22587e-03
-        #elif category.label == 'lxysiggt150_SS':
-        #  self.resolution_p0 = 3.23007e-04
-        #  self.resolution_p1 = 7.29370e-03
-
         # determine if a veto enters the fit window
         fit_window_min = window['mass'] - self.fit_window_size * window['resolution']
         fit_window_max = window['mass'] + self.fit_window_size * window['resolution']
@@ -627,7 +626,7 @@ bkg {bkg_yields}
         veto_range_max = -99
 
         for veto in self.vetoes:
-          if veto.range_max > fit_window_min or veto.range_min < fit_window_max:
+          if veto.range_max > fit_window_min or veto.range_min < fit_window_max: #FIXME ill defined condition
             do_veto_SM = 1
             veto_range_min = veto.range_min
             veto_range_max = veto.range_max
@@ -641,6 +640,8 @@ bkg {bkg_yields}
           if window['mass'] > veto.range_min and window['mass'] < veto.range_max:
             do_skip_mass = True
         if do_skip_mass : continue
+
+        do_veto_SM = 0 #FIXME remove veto treatment
 
         # for the moment, remove low displacement category for mass 3 GeV
         #if float(window['mass']) == 3 and category.label in ['lxysig0to50_OS', 'lxysig0to50_SS', 'lxysig50to150_OS', 'lxysig50to150_SS', 'lxysig0to50_OS_Bc', 'lxysig0to50_SS_Bc', 'lxysig50to150_OS_Bc', 'lxysig50to150_SS_Bc']: continue
@@ -701,12 +702,17 @@ bkg {bkg_yields}
             # get the model shape and yields for shape analysis
             if self.do_shape_analysis:
               signal_yields = self.runFitter(process='signal', mass=signal_mass, ctau=signal_ctau, category=category, selection=selection, label=card_label)
-              # apply correction to the signal yields (hopefully this is only temporary)
+
+              # apply correction to the signal yields (hopefully this is only temporary) #TODO create correction class and make it configurable
               corr = 1.
               if category.label in ['lxysig0to50_OS', 'lxysig0to50_SS']: corr = 0.82
               elif category.label in ['lxysig50to150_OS', 'lxysig50to150_SS']: corr = 0.88
               elif category.label in ['lxysiggt150_OS', 'lxysiggt150_SS']: corr = 1.
               signal_yields = signal_yields * corr
+
+              # apply correction to the gen-matching efficiency
+              corr_genmatching = 1.2
+              signal_yields = signal_yields * corr_genmatching
 
             # create histograme for non-parametric shape strategy
             if self.do_shape_TH1:
