@@ -274,8 +274,6 @@ class Systematics(Tools):
     return path + '/' + name
       
 
-
-
   def studyShapeSyst(self):
     '''
       Study the signal parametrisation systematics based on the median value
@@ -285,9 +283,11 @@ class Systematics(Tools):
     #path_results_plusonesigma = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1_plusonesigmacat/results'
     #path_results_minusonesigma = '../outputs/V12_08Aug22/limits/signal_parametrisation_systematics_v1_minusonesigmacat/results'
 
-    path_results = '../outputs/V12_08Aug22/limits/study_parametrisation_v2/results'
-    path_results_plusonesigma = '../outputs/V12_08Aug22/limits/study_parametrisation_percat_resolution/results'
-    path_results_minusonesigma = '../outputs/V12_08Aug22/limits/study_parametrisation_percat_resolution/results'
+    #path_results = '../outputs/V12_08Aug22/limits/study_parametrisation_doubleCBFast_floating/results'
+    path_results = '../outputs/V12_08Aug22/limits/study_parametrisation_doubleCBFast_inclusive/results'
+    path_results_plusonesigma = '../outputs/V12_08Aug22/limits/study_parametrisation_doubleCBFast_percat/results'
+    #path_results_plusonesigma = '../outputs/V12_08Aug22/limits/study_parametrisation_doubleCBFast_percat/results'
+    path_results_minusonesigma = path_results_plusonesigma
 
     files_results = [f for f in glob(path_results + '/result_Majorana_m_*_v2_*.txt')]
     if len(files_results) == 0:
@@ -303,6 +303,7 @@ class Systematics(Tools):
 
     for file_results in files_results:
       # get corresponding files for plus/minus one sigma 
+      if 'ctau_5000.0' not in file_results and 'ctau_1500.0' not in file_results and 'ctau_300.0' not in file_results and 'ctau_15.0' not in file_results and 'ctau_0.02' not in file_results: continue
       file_results_plusonesigma = self.getResultFile(path=path_results_plusonesigma, filename=file_results)
       file_results_minusonesigma = self.getResultFile(path=path_results_minusonesigma, filename=file_results)
 
@@ -315,9 +316,9 @@ class Systematics(Tools):
 
       mass = self.getMassFromResultFilename(filename=file_results)
       v2 = self.getCouplingFromResultFilename(filename=file_results)
-      if float(mass) not in [1, 1.5, 2, 3., 4.5]: continue
-      if float(mass) <= 3. and float(v2) > 1e-3: continue
-      if float(mass) > 3. and float(v2) < 1e-3: continue
+      #if float(mass) not in [1, 1.5, 2, 3., 4.5]: continue
+      #if float(mass) <= 3. and float(v2) > 1e-3: continue
+      #if float(mass) > 3. and float(v2) < 1e-3: continue
 
       syst_up = (median_plusonesigma / median -1) * 100. 
       syst_down = (median_minusonesigma / median -1) * 100. 
@@ -656,8 +657,8 @@ if __name__ == '__main__':
     Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).plotTriggeringTable()
 
   if do_studyShapeSyst:
-    #Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).studyShapeSyst()
-    Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).studyShapeSystPerCategory()
+    Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).studyShapeSyst()
+    #Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).studyShapeSystPerCategory()
 
   if do_plotMCSyst:
     #weight = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable'
