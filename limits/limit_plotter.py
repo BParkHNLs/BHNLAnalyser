@@ -74,7 +74,7 @@ class LimitPlotter(object):
     for icoupling, coupling in enumerate(couplings):
       if icoupling+1 >= len(couplings): continue
       #print '{} {} {} {}'.format(values[icoupling], values[icoupling+1], crossing, values[icoupling] > crossing and values[icoupling+1] < crossing)
-      if values[icoupling] > crossing and values[icoupling+1] < crossing:
+      if values[icoupling] >= crossing and values[icoupling+1] <= crossing:
         coupling_up = couplings[icoupling+1]
         value_up = values[icoupling+1]
         coupling_down = couplings[icoupling]
@@ -111,13 +111,14 @@ class LimitPlotter(object):
   def process(self):
     #signal_type = self.signal_type 
     #lumi =  '41.6 fb'+r'$^{-1}$'
-    lumi =  '5.3 fb'+r'$^{-1}$'+' projected to 41.6 fb'+r'$^{-1}$'
+    #lumi =  '5.3 fb'+r'$^{-1}$'+' projected to 41.6 fb'+r'$^{-1}$'
+    lumi =  '40.0 fb'+r'$^{-1}$'
 
     # get the files 
     if not self.do_coupling_scenario:
-      pathToResults = './results/'
+      pathToResults = '{}/outputs/{}/limits/{}/results/'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
     else:
-      pathToResults = './results_{}_{}_{}/'.format(self.fe, self.fu, self.ft)
+      pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
 
     fileName = 'result*{}*.txt'.format(self.scenario)
 
@@ -141,6 +142,8 @@ class LimitPlotter(object):
       
       if self.mass_blacklist != 'None':
         if mass in self.mass_blacklist.split(','): continue
+
+      #if float(mass) < 3. or float(mass) > 3.5: continue
 
       print '\nmass {}'.format(mass)
 
@@ -169,6 +172,7 @@ class LimitPlotter(object):
         
         try:
           thefile = open('{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, ctau, coupling), 'r')
+          #print '{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, ctau, coupling)
           #thefile = open('{}/result_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, mass, ctau, coupling), 'r')
           #thefile = open('{}/result_m_{}_v2_{}.txt'.format(pathToResults, mass, coupling), 'r')
           
@@ -300,6 +304,7 @@ class LimitPlotter(object):
       x_plus_two = self.get_intersection(v2s, plus_two)
       print 'central {}'.format(x_central)
 
+      #if float(mass) < 2.8 or float(mass) > 3.5:
       if x_plus_one == -99:
         print '\nWARNING - could not find crossing for +1sigma'
         crossings = np.linspace(1, 3, 50)
@@ -439,6 +444,12 @@ class LimitPlotter(object):
 
 
     # plot the 2D limits
+    print masses_central
+    #print 'the_central = np.array({})'.format(central)
+    #print 'the_minus_two = np.array({})'.format(minus_two)
+    #print 'the_minus_one = np.array({})'.format(minus_one)
+    #print 'the_plus_one = np.array({})'.format(plus_one)
+    #print 'the_plus_two = np.array({})'.format(plus_two)
     plt.clf()
     f, ax = plt.subplots(figsize=(9, 8))
     if not self.do_coupling_scenario:
@@ -448,8 +459,8 @@ class LimitPlotter(object):
     coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
     ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
     ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
-    ax.text(0.26, 0.63, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.7, 0.78, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
+    ax.text(0.26, 0.73, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.25, 0.63, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
     ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
     plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--')
     f1 = plt.fill_between(masses_two_sigma, minus_two, plus_two, color='gold'       , label=r'95% expected')
@@ -471,7 +482,7 @@ class LimitPlotter(object):
       first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=20)
     else:
       first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=20)
-    ax = plt.gca().add_artist(first_legend)
+    #ax = plt.gca().add_artist(first_legend)
     #if 'mmm' in self.channels or 'mem' in self.channels:
     #  second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
     #else: 
@@ -481,7 +492,7 @@ class LimitPlotter(object):
     plt.ylabel(r'$|V|^2$', fontsize=23)
     plt.yticks(fontsize=17)
     #plt.ylim(1e-10, 1e-0)
-    plt.ylim(1e-5, 1e-1)
+    plt.ylim(1e-5, 1e-0)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
     #plt.xlim(0, max(masses_central))
@@ -510,8 +521,8 @@ class LimitPlotter(object):
     coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
     ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
     ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
-    ax.text(0.26, 0.63, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.7, 0.78, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
+    ax.text(0.26, 0.73, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.25, 0.63, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
     ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
     plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--')
     f1 = plt.fill_between(masses_two_sigma, self.smooth(minus_two, smooth_index), self.smooth(plus_two, smooth_index), color='gold', label=r'95% expected')
@@ -535,7 +546,7 @@ class LimitPlotter(object):
       first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=20)
     else:
       first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=20)
-    ax = plt.gca().add_artist(first_legend)
+    #ax = plt.gca().add_artist(first_legend)
     #if 'mmm' in self.channels or 'mem' in self.channels:
     #  second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
     #else: 
@@ -545,7 +556,7 @@ class LimitPlotter(object):
     plt.ylabel(r'$|V|^2$', fontsize=23)
     plt.yticks(fontsize=17)
     #plt.ylim(1e-10, 1e-0)
-    plt.ylim(1e-5, 1e-1)
+    plt.ylim(1e-5, 1e-0)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
     #plt.xlim(0, max(masses_central))
