@@ -605,7 +605,7 @@ if __name__ == '__main__':
   #soft_muon = Quantity('b_sel_mu_isSoft', 'mu_isSoft', '==', '', 0, 1)
  
   printCutflow = False
-  printEfficiency = False
+  printEfficiency = True
   printScan = False
 
   doPreselection = True
@@ -624,7 +624,7 @@ if __name__ == '__main__':
     ##Selection(files, trg_cond, proposed_cut=cut_trg_cond).printCutflowLine()
     ##preselection.append(PreselectedQuantity(trg_cond, cut_trg_cond))
 
-    cut_trg_mu_pt = 1.5 #7
+    cut_trg_mu_pt = 2. #7
     if printScan: Selection(files, trg_mu_pt, npoints=30, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
     #Selection(files, trg_mu_pt, npoints=5, write_cut_analysis=False, proposed_cut=cut_trg_mu_pt).getScanGraph()
     #Selection(files, trg_mu_pt, npoints=30).getROCGraph()
@@ -657,7 +657,7 @@ if __name__ == '__main__':
     ###Selection(files, trg_mu_pfiso03rel, preexisting_selection=preselection, proposed_cut=cut_trg_mu_pfiso03rel).printCutflowLine()
     ##preselection.append(PreselectedQuantity(trg_mu_pfiso03rel, cut_trg_mu_pfiso03rel))
     
-    cut_pi_pt = 0.7 # this might be a bit tight
+    cut_pi_pt = 1. # this might be a bit tight
     if printScan: Selection(files, pi_pt, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_pi_pt).getScanGraph()
     #Selection(files, pi_pt, npoints=30).getROCGraph()
     if printCutflow: Selection(files, pi_pt, preexisting_selection=preselection, proposed_cut=cut_pi_pt).printCutflowLine()
@@ -715,7 +715,7 @@ if __name__ == '__main__':
     #Selection(files, pi_DCASig, preexisting_selection=preselection, proposed_cut=cut_pi_DCASig).printEfficiencyLine()
     preselection.append(PreselectedQuantity(pi_DCASig, cut_pi_DCASig))
 
-    cut_mu_pt = 1.5
+    cut_mu_pt = 2.
     if printScan: Selection(files, mu_pt, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_mu_pt).getScanGraph()
     #Selection(files, mu_pt, npoints=30).getROCGraph()
     if printCutflow: Selection(files, mu_pt, preexisting_selection=preselection, proposed_cut=cut_mu_pt).printCutflowLine()
@@ -802,7 +802,7 @@ if __name__ == '__main__':
     if printCutflow: Selection(files, sv_prob, preexisting_selection=preselection, proposed_cut=cut_sv_prob).printCutflowLine()
     #Selection(files, sv_prob, preexisting_selection=preselection, proposed_cut=cut_sv_prob).printCutflowLine()
     if printEfficiency: Selection(files, sv_prob, preexisting_selection=preselection, proposed_cut=cut_sv_prob).printEfficiencyLine()
-    Selection(files, sv_prob, preexisting_selection=preselection, proposed_cut=cut_sv_prob).printEfficiencyLine()
+    #Selection(files, sv_prob, preexisting_selection=preselection, proposed_cut=cut_sv_prob).printEfficiencyLine()
     preselection.append(PreselectedQuantity(sv_prob, cut_sv_prob))
 
     # not sufficiently discriminating
@@ -818,7 +818,7 @@ if __name__ == '__main__':
     if printCutflow: Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printCutflowLine()
     #Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printCutflowLine()
     if printEfficiency: Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printEfficiencyLine()
-    Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printEfficiencyLine()
+    #Selection(files, hnl_cos2D, preexisting_selection=preselection, proposed_cut=cut_hnl_cos2D).printEfficiencyLine()
     preselection.append(PreselectedQuantity(hnl_cos2D, cut_hnl_cos2D))
 
     cut_sv_lxy_sig = 15 
@@ -829,11 +829,11 @@ if __name__ == '__main__':
     if printEfficiency: Selection(files, sv_lxy_sig, preexisting_selection=preselection, proposed_cut=cut_sv_lxy_sig).printEfficiencyLine()
     preselection.append(PreselectedQuantity(sv_lxy_sig, cut_sv_lxy_sig)) # not added for dsa muons
 
-    cut_b_mass = 8 # move back to 8 if we want to have at hand this control region 
+    cut_b_mass = 7 # move back to 8 if we want to have at hand this control region 
     if printScan: Selection(files, b_mass, npoints=30, write_cut_analysis=False, preexisting_selection=preselection, proposed_cut=cut_b_mass).getScanGraph()
     #Selection(files, b_mass, npoints=30).getROCGraph()
     if printCutflow: Selection(files, b_mass, preexisting_selection=preselection, proposed_cut=cut_b_mass).printCutflowLine()
-    Selection(files, b_mass, preexisting_selection=preselection, proposed_cut=cut_b_mass).printCutflowLine()
+    #Selection(files, b_mass, preexisting_selection=preselection, proposed_cut=cut_b_mass).printCutflowLine()
     if printEfficiency: Selection(files, b_mass, preexisting_selection=preselection, proposed_cut=cut_b_mass).printEfficiencyLine()
     preselection.append(PreselectedQuantity(b_mass, cut_b_mass))
 
