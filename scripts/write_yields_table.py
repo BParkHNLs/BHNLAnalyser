@@ -19,8 +19,8 @@ def getSignalYields(line):
   return '{:.2e}'.format(yields)
 
 
-def getBackgroundYields(workspace):
-  yields = workspace.data("data_obs").createHistogram("hnl_mass").Integral()
+def getBackgroundYields(workspace, mass, category_label):
+  yields = workspace.data("data_obs_bhnl_m_{}_cat_{}".format(str(mass).replace('.', 'p'), category_label)).createHistogram("hnl_mass").Integral()
   yields = yields * 0.2 #(2 sigma / 10 sigma)
   return '{:.2e}'.format(yields)
 
@@ -60,7 +60,7 @@ def writeYieldsTable():
       try:
         data_obs_file = tools.getRootFile('{}/{}'.format(path, data_obs_name))
         workspace = data_obs_file.Get("workspace")
-        background_yields = getBackgroundYields(workspace)
+        background_yields = getBackgroundYields(workspace, mass, category.label)
       except:
         background_yields = '-'
       table_entry = ' & {} & {}'.format(getCategoryTitle(category), background_yields)
@@ -130,7 +130,7 @@ def writeEfficiencyTable():
       try:
         data_obs_file = tools.getRootFile('{}/{}'.format(path, data_obs_name))
         workspace = data_obs_file.Get("workspace")
-        background_yields_sel = float(getBackgroundYields(workspace))
+        background_yields_sel = float(getBackgroundYields(workspace, mass, category.label))
       except:
         background_yields_sel = '-'
       #print '{} ini: {} sel: {}'.format(category.label, background_yields_ini, background_yields_sel)
@@ -149,7 +149,8 @@ def writeEfficiencyTable():
       for ctau in ctaus:
         # get the number of signal yields before the pNN cut
         signal_selection = 'ismatched==1 && ' + baseline_selection + ' && ' + category.definition_flat
-        signal_yields_ini[ctau] = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=mass, ctau=ctau, lumi=41.6, sigma_B=472.8e9, is_bc=False, strategy='inclusive', add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
+        lumi = 40.0
+        signal_yields_ini[ctau] = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=mass, ctau=ctau, lumi=lumi, sigma_B=472.8e9, is_bc=False, strategy='inclusive', add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_fullBpark', weight_pusig='weight_pu_sig_tot', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
 
         # get the number of signal yields after the pNN cut
         v2 = tools.getVV(mass, ctau)
@@ -171,6 +172,7 @@ def writeEfficiencyTable():
           efficiency_signal[ctau] = str(efficiency_signal[ctau]) + '\%'
         else:
           efficiency_signal[ctau] = '-'
+        print efficiency_signal[ctau]
         #print '{} {} {}'.format(getCategoryTitle(category), ctau, efficiency_signal[ctau])
 
       for ictau, ctau in enumerate(ctaus):
@@ -191,26 +193,27 @@ def writeEfficiencyTable():
 
 if __name__ == '__main__':
 
-  output_label = 'V12_08Aug22' 
-  tag = 'study_muon_isolation_v2_cutscore0p99' 
-  path = '../outputs/{}/datacards/{}'.format(output_label, tag)
+  output_label = 'V13_06Feb23' 
+  tag = 'unblinding_Bc_fullscan_nobernstein_v2' 
+  #path = '../outputs/{}/datacards/{}'.format(output_label, tag)
+  path = '/work/anlyon/outputs/{}/datacards/{}'.format(output_label, tag)
 
   masses = [1.0, 1.5, 2.0, 3.0, 4.5]
   #ctaus = [1.0, 10.0, 100.0, 1000.0]
   ctaus = [0.01, 10.0, 1000.0, 10000.0]
   categories = categories['categories_0_50_150']
 
-  data_label = 'V12_08Aug22'
+  data_label = 'V13_06Feb23'
   data_sample = data_samples[data_label][0]
 
   baseline_selection = selection['baseline_08Aug22'].flat
 
-  resolution_p0 = 0.0002747
-  resolution_p1 = 0.008302 
+  resolution_p0 = 6.98338e-04
+  resolution_p1 = 7.78382e-03 
 
-  signal_label = 'V12_08Aug22_training_large'
+  signal_label = 'V13_06Feb23_training_large'
 
-  #writeYieldsTable()
-  writeEfficiencyTable()
+  writeYieldsTable()
+  #writeEfficiencyTable()
 
 
