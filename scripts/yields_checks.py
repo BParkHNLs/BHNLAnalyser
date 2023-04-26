@@ -320,79 +320,48 @@ class YieldsChecks(Tools):
 
 
   def writeYieldsTable(self):
-
     baseline_selection = selection['baseline_08Aug22'].flat
 
-    masses = [4.5]
-    signal_labels = ['V12_08Aug22_m4p5']
-    ctau_points = [0.01]
+    masses = [3., 4.5, 5.5]
+    #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
+    signal_labels = ['V12_08Aug22_genmatching']
+    ctau_points = [0.1, 1, 10, 100, 1000]
     strategy = 'inclusive'
 
     lumi = 41.6
 
-    resolution_p0 = 0.0002747 
-    resolution_p1 = 0.008302 
-    window_size = 10
+    weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2'
+    weight_pusig = 'weight_pu_sig_D'
+    weight_mu0id = 'weight_mu0_softid'
+    weight_muid = 'weight_mu_looseid'
+    add_weight_hlt = True
+    add_weight_pu = True
+    add_weight_muid = True
 
-    is_bc = False
+    resolution_p0 = 6.98338e-04 
+    resolution_p1 = 7.78382e-03 
+    window_size = 4
+
+    is_bc = True
 
     for imass, mass in enumerate(masses):
       for ctau_point in ctau_points:
+        #print '\n'
         # get signal coupling
         signal_mass = mass
         signal_ctau = ctau_point
         signal_resolution = resolution_p0 + resolution_p1 * signal_mass
         signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
 
-        ## compute the signal yields
-        #signal_selection_1 = 'ismatched==1 && {}'.format(baseline_selection)
-        #signal_selection_2 = 'hnl_mass>{} && hnl_mass<{} && {}'.format(signal_mass-window_size*signal_resolution, signal_mass+window_size*signal_resolution, baseline_selection)
+        # compute the signal yields
+        signal_selection_1 = 'ismatched==1 && {}'.format(baseline_selection)
+        signal_selection_2 = 'hnl_mass>{} && hnl_mass<{} && {}'.format(signal_mass-window_size*signal_resolution, signal_mass+window_size*signal_resolution, baseline_selection)
+        print signal_selection_2
 
-        #signal_yields_1, err_1 = ComputeYields(signal_label=signal_labels[imass], selection=signal_selection_1).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi, sigma_B=472.8e9, is_bc=False, strategy=strategy) 
-        #signal_yields_2, err_2 = ComputeYields(signal_label=signal_labels[imass], selection=signal_selection_2).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi, sigma_B=472.8e9, is_bc=False, strategy=strategy) 
-
-        # define ranges and binning
-        fit_window_min = signal_mass-window_size*signal_resolution 
-        fit_window_max = signal_mass+window_size*signal_resolution 
-
-        # get the signal files
-        signal_files = self.tools.getSignalFileList(signal_label=signal_labels[imass], mass=signal_mass, ctau=signal_ctau, strategy=strategy, is_bc=is_bc)
-
-        # define selection
-        cond_sig = 'ismatched==1'
-        selection_sig = cond_sig + ' && ' + baseline_selection
-        
-        # define signal weights
-
-        weight_sig, weight_sig_list = self.getMCWeight(signal_files=signal_files, signal_mass=signal_mass, signal_ctau=signal_ctau, lumi=41.6, sigma_B=472.8e9, lhe_efficiency=0.08244, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='', weight_pusig='', weight_mu0id='', weight_muid='', is_bc=False)
-        print 'sel sig before: {}'.format(selection_sig)
-
-        # get the tree
-        treename = 'signal_tree'
-        #if self.do_cutbased:
-        tree_sig = ROOT.TChain(treename)
-        for signal_file in signal_files:
-          filename = signal_file.filename if not is_bc else signal_file.filename_Bc
-          tree_sig.Add(filename)
-        #elif self.do_mva:
-        #  score_label = self.getSignalLabel()
-        #  filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename, is_bc=self.is_bc) 
-        #  file_sig = self.tools.getRootFile(filename_sig)
-        #  tree_sig = self.tools.getTree(file_sig, treename)
-
-        # create histogram
-        hist_name = 'hist_signal'
-        hist = ROOT.TH1D(hist_name, hist_name, 80, fit_window_min, fit_window_max)
-        branch_name = 'hnl_mass'
-        #tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
-        tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig if do_cutbased else self.mva_tools.getScoreSelection(selection_sig), wght=weight_sig))
-        print 'sel sig: ({sel}) * ({wght})'.format(sel=selection_sig if do_cutbased else self.mva_tools.getScoreSelection(selection_sig), wght=weight_sig)
-
-        # get the number of yields
-        n_sig = hist.Integral()
-
+        signal_yields_1, err_1 = ComputeYields(signal_label=signal_labels[0], selection=signal_selection_1).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi, sigma_B=472.8e9, is_bc=is_bc, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, add_weight_muid=add_weight_muid, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid, strategy=strategy) 
+        signal_yields_2, err_2 = ComputeYields(signal_label=signal_labels[0], selection=signal_selection_2).computeSignalYields(mass=signal_mass, ctau=signal_ctau, lumi=lumi, sigma_B=472.8e9, is_bc=is_bc, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, add_weight_muid=add_weight_muid, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid, strategy=strategy) 
         #if addBc:
-        #  signal_yields += ComputeYields(signal_file=signal_file, signal_label=signal_label_m1, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9, is_bc=True)[0]
+        #  signal_yields += ComputeYields(signal_file=signal_file, signal_label=signal_label_m1, selection=signal_selection).computeSignalYields(lumi=lumi, sigma_B=472.8e9, isBc=True)[0]
         #  print signal_yields
         print '{} GeV & {} mm & {} & {} & {} & {} \\\ '.format(signal_mass, signal_ctau, self.tools.getCouplingLabel(signal_v2), '{:.2e}'.format(signal_yields_1), '{:.2e}'.format(signal_yields_2), round(signal_yields_2/signal_yields_1, 2))
 
@@ -856,11 +825,11 @@ class Significance(object):
 if __name__ == '__main__':
   ROOT.gROOT.SetBatch(True)
 
-  plotSigYields = True
+  plotSigYields = False
   plotSigBkgYields = False
   plotBkgYields = False
   getSignificance = False
-  printYieldsTable = False
+  printYieldsTable = True
 
   if printYieldsTable:
     plotter = YieldsChecks()
