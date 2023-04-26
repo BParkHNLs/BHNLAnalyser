@@ -25,7 +25,7 @@ def getOptions():
   parser.add_argument('--muon_label'    , type=str , dest='muon_label'            , help='muon_label'                                        , default='')
   parser.add_argument('--electron_label', type=str , dest='electron_label'        , help='electron_label'                                    , default='')
   parser.add_argument('--use_discrete_profiling'   , dest='use_discrete_profiling', help='use discrete profiling method', action='store_true', default=False)
-  parser.add_argument('--run_blind'                , dest='run_blind'             , help='run blinded?'                 , action='store_true', default=False)
+  parser.add_argument('--do_blind'                 , dest='do_blind'              , help='run blinded?'                 , action='store_true', default=False)
   return parser.parse_args()
 
 
@@ -34,7 +34,7 @@ class InterpretationLauncher(object):
     This class monitors the signal normalisation reweighting to a given coupling scenario,
     the combination of the datacards between the two flavour channels and the limit production
   '''
-  def __init__(self, mass, ctau, fe, fu, ft, muon_label, electron_label, homedir, outdirlabel, subdirlabel, run_blind, use_discrete_profiling):
+  def __init__(self, mass, ctau, fe, fu, ft, muon_label, electron_label, homedir, outdirlabel, subdirlabel, do_blind, use_discrete_profiling):
     self.tools = Tools()
     self.mass = float(mass)
     self.ctau = float(ctau)
@@ -46,10 +46,14 @@ class InterpretationLauncher(object):
     self.homedir = homedir
     self.outdirlabel = outdirlabel
     self.subdirlabel = subdirlabel
-    self.run_blind = run_blind
+    self.do_blind = do_blind
     self.use_discrete_profiling = use_discrete_profiling
 
-    self.templatename_muon = 'datacard_combined_m_{mass}_ctau_{ctau}_v2_{v2}.txt' 
+    self.templatename_muon = 'datacard_combined_Majorana_m_{mass}_ctau_{ctau}_v2_{v2}.txt' 
+    #if self.mass not in [3., 4.5]:
+    #  self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined.txt'
+    #else:
+    #  self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined_B_Bc.txt'
     self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined.txt'
 
     #self.path_motherdir = '/eos/home-a/anlyon/BHNLDatacards'
@@ -161,8 +165,9 @@ class InterpretationLauncher(object):
         indirlabel = './outputs/{}/{}/weighted_datacards/coupling_{}_{}_{}/flavour_combined'.format(self.outdirlabel, self.subdirlabel, fe, fu, ft),
         outdirlabel = self.outdirlabel,
         subdirlabel = self.subdirlabel,
-        run_blind = self.run_blind,
+        do_blind = self.do_blind,
         use_discrete_profiling = self.use_discrete_profiling,
+        scenario = 'Majorana',
         )
     limit_producer.process()
 
@@ -185,7 +190,7 @@ if __name__ == '__main__':
       outdirlabel = opt.outdirlabel,
       subdirlabel = opt.subdirlabel,
       use_discrete_profiling = True if opt.use_discrete_profiling else False,
-      run_blind = True if opt.run_blind else False,
+      do_blind = True if opt.do_blind else False,
       )
   launcher.process()
 
