@@ -3,6 +3,7 @@ import os
 import ternary
 import matplotlib.pyplot as plt
 from os import path
+import numpy as np
 
 
 # have a look at https://seaborn.pydata.org/tutorial/color_palettes.html for color palettes
@@ -43,14 +44,18 @@ class TernaryPlotter(object):
   def heat_function(self, point):
     coupling = 1e9 # default value of the coupling used when exclusion is missing
     exclusion_filename = '{}/exclusion_m_{}_{}_{}_{}.txt'.format(self.plotdir, str(self.mass).replace('.', 'p'), str(round(point[0], 1)).replace('.', 'p'), str(round(point[1], 1)).replace('.', 'p'), str(round(point[2], 1)).replace('.', 'p'))
-    f = open(exclusion_filename)
-    lines = f.readlines()
-    for line in lines:
-      point_line = '{} {} {}'.format(round(point[0], 1), round(point[1], 1), round(point[2], 1))
-      if point_line in line:
-        coupling = self.get_exclusion(line) 
-        if coupling == -99: print exclusion_filename
-    f.close()
+    try:
+      f = open(exclusion_filename)
+      lines = f.readlines()
+      for line in lines:
+        point_line = '{} {} {}'.format(round(point[0], 1), round(point[1], 1), round(point[2], 1))
+        if point_line in line:
+          coupling = self.get_exclusion(line) 
+          if coupling == -99: print exclusion_filename
+      f.close()
+    except:
+      coupling = -99
+      print '{} missing'.format(exclusion_filename)
 
     return coupling
 
@@ -153,9 +158,10 @@ class TernaryPlotter(object):
 if __name__ == '__main__':
 
   mass = '3.0'
-  homedir = '/t3home/anlyon/BHNL/BHNLAnalyser/CMSSW_10_2_15/src/HiggsAnalysis/CombinedLimit/BHNLAnalyser'
-  outdirlabel = 'V12_08Aug22'
-  subdirlabel = 'combination_AN-v4'
+  #homedir = '/t3home/anlyon/BHNL/BHNLAnalyser/CMSSW_10_2_15/src/HiggsAnalysis/CombinedLimit/BHNLAnalyser'
+  homedir = '/work/anlyon'
+  outdirlabel = 'V13_06Feb23'
+  subdirlabel = 'combination_ANv8'
   plotter = TernaryPlotter(
     mass = mass,
     homedir = homedir,
