@@ -96,8 +96,8 @@ class Fitter(Tools):
     #n_2 = n_1 #ROOT.RooRealVar("n_2", "n_2", 4, 0, 10)
 
     if not do_fixed:
-      alpha_1_min = -30
-      alpha_1_max = 0
+      alpha_1_min = 0
+      alpha_1_max = 30
       alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", alpha_1_ini, alpha_1_min, alpha_1_max)
     else:
       alpha_1 = ROOT.RooRealVar("alpha_1", "alpha_1", alpha_1_ini)
@@ -142,7 +142,8 @@ class Fitter(Tools):
 
     # we add the two CB pdfs together
     if model_name == 'doubleCB':
-      model = ROOT.RooAddPdf("model", "model", CBpdf_1, CBpdf_2, sigfrac)
+      #model = ROOT.RooAddPdf("model", "model", CBpdf_1, CBpdf_2, sigfrac)
+      model = ROOT.RooDoubleCBFast("model", "model", mupi_invmass, mean, sigma, alpha_1, n_1, alpha_2, n_2)
     elif model_name == 'voigtian':
       model = ROOT.RooVoigtian('model', 'model', mupi_invmass, mean, gamma_voigtian, sigma)
 
@@ -169,9 +170,9 @@ class Fitter(Tools):
     result = model.fitTo(rdh, ROOT.RooFit.Range("peak"))
 
     # plot the fit    
-    if model_name == 'doubleCB':
-      model.plotOn(frame, ROOT.RooFit.LineColor(2), ROOT.RooFit.Name("CBpdf_1"), ROOT.RooFit.Components("CBpdf_1"))
-      model.plotOn(frame, ROOT.RooFit.LineColor(8), ROOT.RooFit.Name("CBpdf_2"), ROOT.RooFit.Components("CBpdf_2"))
+    #if model_name == 'doubleCB':
+    #  model.plotOn(frame, ROOT.RooFit.LineColor(2), ROOT.RooFit.Name("CBpdf_1"), ROOT.RooFit.Components("CBpdf_1"))
+    #  model.plotOn(frame, ROOT.RooFit.LineColor(8), ROOT.RooFit.Name("CBpdf_2"), ROOT.RooFit.Components("CBpdf_2"))
     model.plotOn(frame, ROOT.RooFit.LineColor(4), ROOT.RooFit.Name("model"), ROOT.RooFit.Components("model"))
 
     # and write the fit parameters
@@ -718,7 +719,7 @@ class Fitter(Tools):
         #parameters, parameters_err = self.performFit(signal_file=signal_file, category=category, model_name='voigtian', sigma_ini=0.001, gamma_ini=0.007, do_fixed=True)
         sigma_ini = 0.007316 * signal_mass + 0.0004758 
         sigma_ini = sigma_ini - 0.35 * sigma_ini
-        parameters, parameters_err = self.performFit(signal_file=signal_file, category=category, model_name='doubleCB', sigma_ini=sigma_ini, alpha_1_ini=-1., alpha_2_ini=1., n_1_ini=4., n_2_ini=4., do_fixed=True)
+        parameters, parameters_err = self.performFit(signal_file=signal_file, category=category, model_name='doubleCB', sigma_ini=sigma_ini, alpha_1_ini=1.5, alpha_2_ini=1.5, n_1_ini=3., n_2_ini=3., do_fixed=True)
         resolution = parameters[0]
         resolution_err = parameters_err[0]
         alpha1 = parameters[1]
@@ -859,7 +860,7 @@ class Fitter(Tools):
         #parameters, parameters_err = self.performFit(signal_file=signal_file, category=category, model_name='voigtian', sigma_ini=0.001, gamma_ini=0.007, do_fixed=True)
         sigma_ini = 0.007316 * signal_mass + 0.0004758 
         sigma_ini = sigma_ini - 0.35 * sigma_ini
-        parameters, parameters_err = self.performFit(signal_file=signal_file, category=category, model_name='doubleCB', sigma_ini=sigma_ini, alpha_1_ini=-1., alpha_2_ini=1., n_1_ini=4., n_2_ini=4., do_fixed=True)
+        parameters, parameters_err = self.performFit(signal_file=signal_file, category=category, model_name='doubleCB', sigma_ini=sigma_ini, alpha_1_ini=1.5, alpha_2_ini=1.5, n_1_ini=3., n_2_ini=3., do_fixed=True)
         resolution += parameters[0]
         resolution_err += parameters_err[0]
         print resolution
@@ -892,8 +893,10 @@ class Fitter(Tools):
     ROOT.gStyle.SetPadLeftMargin(0.15) 
 
     masses = [1.0, 1.5, 2.0, 3.0, 4.5]
-    resolutions = [8.29939e-03, 1.21634e-02, 1.55410e-02, 2.31232e-02, 3.56260e-02]
-    errors = [2.07059e-05, 2.80112e-05, 4.49008e-05, 9.31097e-05, 2.19555e-04]
+    #resolutions = [8.29939e-03, 1.21634e-02, 1.55410e-02, 2.31232e-02, 3.56260e-02]
+    #errors = [2.07059e-05, 2.80112e-05, 4.49008e-05, 9.31097e-05, 2.19555e-04]
+    resolutions = [8.75174e-03, 1.25745e-02, 1.63083e-02, 2.42540e-02, 3.72958e-02]
+    errors = [1.65701e-05, 2.76289e-05, 4.16503e-05, 8.36789e-05, 1.97366e-04]
 
     graph = ROOT.TGraphAsymmErrors()
     for i, mass in enumerate(masses):
@@ -928,7 +931,7 @@ class Fitter(Tools):
     resolution_max = -99.
 
     for icat, category in enumerate(categories):
-      if 'incl' in category.label: continue
+      if 'incl' not in category.label: continue
       if 'Bc' in category.label: continue
       #if '0to50' not in category.label: continue
 
@@ -953,7 +956,7 @@ class Fitter(Tools):
           #parameters, parameters_err = self.performFit(signal_file=signal_file, category=category, model_name='voigtian', sigma_ini=0.001, gamma_ini=0.007, do_fixed=True)
           sigma_ini = 0.007316 * signal_mass + 0.0004758 
           sigma_ini = sigma_ini - 0.35 * sigma_ini
-          parameters, parameters_err = self.performFit(signal_file=signal_file, category=category, model_name='doubleCB', sigma_ini=sigma_ini, alpha_1_ini=-1., alpha_2_ini=1., n_1_ini=4., n_2_ini=4., do_fixed=True)
+          parameters, parameters_err = self.performFit(signal_file=signal_file, category=category, model_name='doubleCB', sigma_ini=sigma_ini, alpha_1_ini=1.5, alpha_2_ini=1.5, n_1_ini=3., n_2_ini=3., do_fixed=True)
           resolution += parameters[0]
           resolution_err += parameters_err[0]
 
@@ -1068,95 +1071,95 @@ if __name__ == '__main__':
     'V13_06Feb23_m2',
     'V13_06Feb23_m3',
     'V13_06Feb23_m4p5',
-    #'V42_06Feb23_m1p02',
-    'V42_06Feb23_m1p04',
-    #'V42_06Feb23_m1p06',
-    #'V42_06Feb23_m1p08',
-    'V42_06Feb23_m1p1',
-    #'V42_06Feb23_m1p12',
-    ##'V42_06Feb23_m1p14',
-    #'V42_06Feb23_m1p16',
-    #'V42_06Feb23_m1p18',
-    'V42_06Feb23_m1p2',
-    #'V42_06Feb23_m1p22',
-    #'V42_06Feb23_m1p24',
-    #'V42_06Feb23_m1p26',
-    ##'V42_06Feb23_m1p28',
-    'V42_06Feb23_m1p3',
-    #'V42_06Feb23_m1p32',
-    #'V42_06Feb23_m1p34',
-    #'V42_06Feb23_m1p36',
-    #'V42_06Feb23_m1p38',
-    'V42_06Feb23_m1p4',
-    #'V42_06Feb23_m1p42',
-    #'V42_06Feb23_m1p44',
-    #'V42_06Feb23_m1p46',
-    #'V42_06Feb23_m1p48',
-    #'V42_06Feb23_m1p53',
-    #'V42_06Feb23_m1p56',
-    'V42_06Feb23_m1p59',
-    ##'V42_06Feb23_m1p62',
-    #'V42_06Feb23_m1p65',
-    ##'V42_06Feb23_m1p68',
-    'V42_06Feb23_m1p71',
-    #'V42_06Feb23_m1p74',
-    #'V42_06Feb23_m1p77',
-    'V42_06Feb23_m1p8',
-    #'V42_06Feb23_m1p83',
-    ##'V42_06Feb23_m1p86',
-    ##'V42_06Feb23_m1p89',
-    'V42_06Feb23_m1p92',
-    #'V42_06Feb23_m1p95',
-    ##'V42_06Feb23_m1p98',
-    ##'V42_06Feb23_m2p05',
-    'V42_06Feb23_m2p1',
-    #'V42_06Feb23_m2p15',
-    ##'V42_06Feb23_m2p2',
-    #'V42_06Feb23_m2p25',
-    'V42_06Feb23_m2p3',
-    #'V42_06Feb23_m2p35',
-    ##'V42_06Feb23_m2p4',
-    #'V42_06Feb23_m2p45',
-    'V42_06Feb23_m2p5',
-    #'V42_06Feb23_m2p55',
-    #'V42_06Feb23_m2p6',
-    #'V42_06Feb23_m2p65',
-    'V42_06Feb23_m2p7',
-    ##'V42_06Feb23_m2p75',
-    #'V42_06Feb23_m2p8',
-    #'V42_06Feb23_m2p85',
-    #'V42_06Feb23_m2p9',
-    #'V42_06Feb23_m2p95',
-    #'V42_06Feb23_m3p05',
-    'V42_06Feb23_m3p1',
-    #'V42_06Feb23_m3p15',
-    'V42_06Feb23_m3p2',
-    #'V42_06Feb23_m3p25',
-    'V42_06Feb23_m3p3',
-    #'V42_06Feb23_m3p35',
-    'V42_06Feb23_m3p4',
-    #'V42_06Feb23_m3p45',
-    'V42_06Feb23_m3p5',
-    #'V42_06Feb23_m3p55',
-    'V42_06Feb23_m3p6',
-    #'V42_06Feb23_m3p65',
-    'V42_06Feb23_m3p7',
-    #'V42_06Feb23_m3p75',
-    'V42_06Feb23_m3p8',
-    #'V42_06Feb23_m3p85',
-    'V42_06Feb23_m3p9',
-    #'V42_06Feb23_m3p95',
-    'V42_06Feb23_m4p0',
-    'V42_06Feb23_m4p1',
-    'V42_06Feb23_m4p2',
-    ##'V42_06Feb23_m4p3',
-    ##'V42_06Feb23_m4p4',
-    #'V42_06Feb23_m4p5',
-    'V42_06Feb23_m4p6',
-    ##'V42_06Feb23_m4p7',
-    ##'V42_06Feb23_m4p8',
+    ##'V42_06Feb23_m1p02',
+    #'V42_06Feb23_m1p04',
+    ##'V42_06Feb23_m1p06',
+    ##'V42_06Feb23_m1p08',
+    #'V42_06Feb23_m1p1',
+    ##'V42_06Feb23_m1p12',
+    ###'V42_06Feb23_m1p14',
+    ##'V42_06Feb23_m1p16',
+    ##'V42_06Feb23_m1p18',
+    #'V42_06Feb23_m1p2',
+    ##'V42_06Feb23_m1p22',
+    ##'V42_06Feb23_m1p24',
+    ##'V42_06Feb23_m1p26',
+    ###'V42_06Feb23_m1p28',
+    #'V42_06Feb23_m1p3',
+    ##'V42_06Feb23_m1p32',
+    ##'V42_06Feb23_m1p34',
+    ##'V42_06Feb23_m1p36',
+    ##'V42_06Feb23_m1p38',
+    #'V42_06Feb23_m1p4',
+    ##'V42_06Feb23_m1p42',
+    ##'V42_06Feb23_m1p44',
+    ##'V42_06Feb23_m1p46',
+    ##'V42_06Feb23_m1p48',
+    ##'V42_06Feb23_m1p53',
+    ##'V42_06Feb23_m1p56',
+    #'V42_06Feb23_m1p59',
+    ###'V42_06Feb23_m1p62',
+    ##'V42_06Feb23_m1p65',
+    ###'V42_06Feb23_m1p68',
+    #'V42_06Feb23_m1p71',
+    ##'V42_06Feb23_m1p74',
+    ##'V42_06Feb23_m1p77',
+    #'V42_06Feb23_m1p8',
+    ##'V42_06Feb23_m1p83',
+    ###'V42_06Feb23_m1p86',
+    ###'V42_06Feb23_m1p89',
+    #'V42_06Feb23_m1p92',
+    ##'V42_06Feb23_m1p95',
+    ###'V42_06Feb23_m1p98',
+    ###'V42_06Feb23_m2p05',
+    #'V42_06Feb23_m2p1',
+    ##'V42_06Feb23_m2p15',
+    ###'V42_06Feb23_m2p2',
+    ##'V42_06Feb23_m2p25',
+    #'V42_06Feb23_m2p3',
+    ##'V42_06Feb23_m2p35',
+    ###'V42_06Feb23_m2p4',
+    ##'V42_06Feb23_m2p45',
+    #'V42_06Feb23_m2p5',
+    ##'V42_06Feb23_m2p55',
+    ##'V42_06Feb23_m2p6',
+    ##'V42_06Feb23_m2p65',
+    #'V42_06Feb23_m2p7',
+    ###'V42_06Feb23_m2p75',
+    ##'V42_06Feb23_m2p8',
+    ##'V42_06Feb23_m2p85',
+    ##'V42_06Feb23_m2p9',
+    ##'V42_06Feb23_m2p95',
+    ##'V42_06Feb23_m3p05',
+    #'V42_06Feb23_m3p1',
+    ##'V42_06Feb23_m3p15',
+    #'V42_06Feb23_m3p2',
+    ##'V42_06Feb23_m3p25',
+    #'V42_06Feb23_m3p3',
+    ##'V42_06Feb23_m3p35',
+    #'V42_06Feb23_m3p4',
+    ##'V42_06Feb23_m3p45',
+    #'V42_06Feb23_m3p5',
+    ##'V42_06Feb23_m3p55',
+    #'V42_06Feb23_m3p6',
+    ##'V42_06Feb23_m3p65',
+    #'V42_06Feb23_m3p7',
+    ##'V42_06Feb23_m3p75',
+    #'V42_06Feb23_m3p8',
+    ##'V42_06Feb23_m3p85',
+    #'V42_06Feb23_m3p9',
+    ##'V42_06Feb23_m3p95',
+    #'V42_06Feb23_m4p0',
+    #'V42_06Feb23_m4p1',
+    #'V42_06Feb23_m4p2',
+    ###'V42_06Feb23_m4p3',
+    ###'V42_06Feb23_m4p4',
+    ##'V42_06Feb23_m4p5',
+    #'V42_06Feb23_m4p6',
+    ###'V42_06Feb23_m4p7',
+    ###'V42_06Feb23_m4p8',
   ]
-  outdirlabel = 'study_signal_parametrisation_V13_06Feb23_category'
+  outdirlabel = 'study_signal_parametrisation_V13_06Feb23_category_doubleCBFast'
 
   fitter = Fitter(signal_labels=signal_labels, baseline_selection=baseline_selection, nbins=150, outdirlabel=outdirlabel)
   #fitter.getResolutionGraph()
@@ -1168,8 +1171,8 @@ if __name__ == '__main__':
   #fitter.getCategoryGraph(categories=categories)
   #fitter.getCategoryAverageCtau(categories=categories)
   #fitter.getFittedResolutionGraph()
-  #fitter.getCategoryResolutionGraph(categories=categories)
-  fitter.studyYieldsParametrisation(categories=categories)
+  fitter.getCategoryResolutionGraph(categories=categories)
+  #fitter.studyYieldsParametrisation(categories=categories)
   
 
   #for category in categories:
