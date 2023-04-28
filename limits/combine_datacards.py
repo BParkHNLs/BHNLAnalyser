@@ -48,7 +48,7 @@ class DatacardCombiner(object):
     self.scenario = opt.scenario
     self.the_mass = opt.mass
     self.categories = categories[opt.categories_label]
-    self.path_to_datacards = self.subdirlabel
+    self.path_to_datacards = './'
     self.datacard_wildcard = opt.wildcard
     self.mass_whitelist = opt.mass_whitelist
     self.mass_blacklist = opt.mass_blacklist

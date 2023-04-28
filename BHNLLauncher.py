@@ -138,7 +138,7 @@ class BHNLLauncher(object):
     return listIds[:len(listIds)-1]
 
 
-  def writeSubmitter(self, command, label):
+  def writeSubmitter(self, command, label, mass=None):
     content = '\n'.join([
         '#!/bin/bash',
         'homedir="$PWD"',
@@ -154,10 +154,9 @@ class BHNLLauncher(object):
         'cp -r ./data $workdir/..',
         '{}'.format('cp -r ./flashgg_plugin $workdir' if self.do_datacards and self.cfg.use_discrete_profiling else ''),
         'cp -r ./scripts/mva/outputs/{} $workdir'.format(self.cfg.training_label),
-        '{}'.format('cp -r {}/outputs/{}/datacards/{}/ $workdir'.format(self.homedir, self.outlabel, self.tag) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
+        '{}'.format('cp -r {}/outputs/{}/datacards/{}/*m_{}* $workdir'.format(self.homedir, self.outlabel, self.tag, str(mass).replace('.', 'p')) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
         '{}'.format('cp -r {}/outputs/{}/datacards_combined/{}/ $workdir'.format(self.homedir, self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
         '{}'.format('cp -r {}/outputs/{}/limits/{}/results* $workdir'.format(self.homedir, self.outlabel, self.tag) if (self.do_limits and self.do_plot_limits) or (self.do_interpretation and self.do_interpretation_plotter) else ''),
-        # end fixme
         'cd $workdir',
         'DATE_START=`date +%s`',
         command,
@@ -355,7 +354,7 @@ class BHNLLauncher(object):
 
     # write the submitter
     label = 'combine_datacards_' + self.outlabel + '_' + self.tag + '_' + str(mass).replace('.', 'p')
-    self.writeSubmitter(command_datacards_combine, label)
+    self.writeSubmitter(command_datacards_combine, label, mass)
 
     # launch submitter
     if not self.submit_batch:
@@ -399,7 +398,7 @@ class BHNLLauncher(object):
 
     # write the submitter
     label = 'limits_producer_' + self.outlabel + '_' + self.tag + '_' + str(mass).replace('.', 'p') + '_' + str(ctau).replace('.', 'p')
-    self.writeSubmitter(command_limits_producer, label)
+    self.writeSubmitter(command_limits_producer, label, mass)
 
     # launch submitter
     if not self.submit_batch:
