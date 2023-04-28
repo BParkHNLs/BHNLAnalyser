@@ -152,6 +152,11 @@ class Plotter(Tools):
     if not plot_data:
       plot_ratio = False
 
+    # set style
+    if do_tdrstyle:
+      ROOT.gStyle.SetPadRightMargin(0.04) 
+      ROOT.gStyle.SetPadLeftMargin(0.12) 
+
     # create the canvas
     canv_name = 'canv_{}_{}_{}_{}'.format(self.quantity.label, outdirlabel.replace('/', '_'), do_log, do_shape)
     canv = self.tools.createTCanvas(name=canv_name, dimx=1200, dimy=1000)
@@ -176,7 +181,7 @@ class Plotter(Tools):
         legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.65, xmax=0.84, ymax=0.83, size=0.027)
       else:
         #legend = self.tools.getRootTLegend(xmin=0.42, ymin=0.57, xmax=0.79, ymax=0.79, size=0.038)
-        legend = self.tools.getRootTLegend(xmin=0.33, ymin=0.57, xmax=0.71, ymax=0.79, size=0.038)
+        legend = self.tools.getRootTLegend(xmin=0.4, ymin=0.63, xmax=0.75, ymax=0.86, size=0.038)
         #legend = self.tools.getRootTLegend(xmin=0.13, ymin=0.2, xmax=0.45, ymax=0.5, size=0.038)
 
     pad_up.cd()
@@ -263,20 +268,22 @@ class Plotter(Tools):
           int_signal = hist_signal.Integral()
           if int_signal != 0: hist_signal.Scale(1/int_signal)
         elif do_luminorm:
-          signal_yields = ComputeYields(signal_label='V12_08Aug22_benchmark', selection=selection_signal).computeSignalYields(mass=signal_file.mass, ctau=signal_file.ctau, lumi=5.302, sigma_B=472.8e9, isBc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid)[0]
+          #signal_yields = ComputeYields(signal_label='V13_06Feb23_preselection', selection=selection_signal).computeSignalYields(mass=signal_file.mass, ctau=signal_file.ctau, lumi=5.3/70., sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid)[0]
+          signal_yields = ComputeYields(signal_label='V13_06Feb23_preselection', selection=selection_signal).computeSignalYields(mass=signal_file.mass, ctau=signal_file.ctau, lumi=40.0, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid)[0]
           if signal_file.mass == 1.:
-            corr = 11e-1 #4e1
-          elif signal_file.mass == 3.:
-            corr = 16e3 #4e4
+            corr = 1e3 #4e1
+          elif signal_file.mass == 2.:
+            corr = 3e3 #4e4
           elif signal_file.mass == 4.5:
-            corr = 4e5 #2e4
+            corr = 8e3 #2e4
           else:
             corr = 1000
 
           hist_signal.Scale(signal_yields/hist_signal.Integral()*corr)
 
         if do_luminorm:
-          legend.AddEntry(hist_signal, 'signal - {} (x {})'.format(signal_file.label, '{:.0e}'.format(corr)))
+          #legend.AddEntry(hist_signal, 'signal - {} (x {})'.format(signal_file.label, '{:.0e}'.format(corr)))
+          legend.AddEntry(hist_signal, 'signal - {} (x {})'.format(signal_file.label, int(corr)))
         else:
           legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
 
@@ -359,21 +366,23 @@ class Plotter(Tools):
     frame.SetTitle('')
     if not plot_ratio: 
       frame.GetXaxis().SetTitle(quantity.title)
-      frame.GetXaxis().SetLabelSize(0.033 if not plot_ratio else 0.037)
-      frame.GetXaxis().SetTitleSize(0.042)
+      frame.GetXaxis().SetLabelSize(0.04 if not plot_ratio else 0.037)
+      frame.GetXaxis().SetTitleSize(0.043)
       frame.GetXaxis().SetTitleOffset(1.1)
     if plot_ratio:
       frame.GetXaxis().SetLabelSize(0.0)
       frame.GetXaxis().SetTitleSize(0.0)
-    frame.GetYaxis().SetTitle('Entries' if not do_shape else 'Normalised to unity')
-    frame.GetYaxis().SetLabelSize(0.033 if not plot_ratio else 0.037)
-    frame.GetYaxis().SetTitleSize(0.042)
-    frame.GetYaxis().SetTitleOffset(1.3 if not plot_ratio else 1.1)
+    frame.GetYaxis().SetTitle('Events / {}'.format(round((quantity.bin_max-quantity.bin_min)/float(quantity.nbins) ,4)) if not do_shape else 'Normalised to unity')
+    frame.GetYaxis().SetLabelSize(0.04 if not plot_ratio else 0.037)
+    frame.GetYaxis().SetTitleSize(0.043)
+    frame.GetYaxis().SetTitleOffset(1.5 if not plot_ratio else 1.1)
     if plot_data and plot_qcd: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_tot, hist_qcd_tot, do_log))
     #elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
     elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
     #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
-    elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
+    elif plot_data and plot_sig and not do_tdrstyle: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
+    elif plot_data and plot_sig and do_tdrstyle and not do_log: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+0.35*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
+    elif plot_data and plot_sig and do_tdrstyle and do_log: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+5000*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e2, 1e7)
 
     #ROOT.gStyle.SetPadLeftMargin(0.16) 
@@ -419,9 +428,13 @@ class Plotter(Tools):
     # add labels
     if not do_tdrstyle:
       self.tools.printLatexBox(0.65, 0.86, title, size=0.04 if plot_ratio else 0.036)
-    else:
-      self.tools.printLatexBox(0.60, 0.84, title, size=0.04 if plot_ratio else 0.038)
-    if add_CMSlabel: self.tools.printCMSTag(pad_up, CMS_tag, size=0.55 if plot_ratio else 0.43)
+    #else:
+    #  self.tools.printLatexBox(0.60, 0.84, title, size=0.04 if plot_ratio else 0.038)
+
+    if add_CMSlabel and not do_tdrstyle: self.tools.printCMSTag(pad_up, CMS_tag, size=0.55 if plot_ratio else 0.43)
+    if add_CMSlabel and do_tdrstyle: self.tools.printInnerCMSTag(pad_up, CMS_tag, True, x_pos=0.15, y_pos=0.83, size=0.55)
+    self.tools.printLumiTag(pad_up, 41.6, size=0.5, offset=0.57)
+
     #if do_luminorm:
     #  scale_text = ROOT.TPaveText(0.15, 0.83, 0.3, 0.88, "brNDC")
     #  scale_text.SetBorderSize(0)

@@ -492,6 +492,25 @@ class Tools(object):
     pad.Update()
 
 
+  def printInnerCMSTag(self, pad, cms_tag, print_tag=False, x_pos=0.15, y_pos=0.83, size=0.55):
+    pad.cd()
+    tag = ROOT.TLatex()
+    tag.SetNDC()
+    # print CMS
+    tag.SetTextFont(61)
+    tag.SetTextAlign(11) 
+    tag.SetTextSize(size*pad.GetTopMargin())    
+    tag.DrawLatex(x_pos, y_pos, 'CMS')
+    ## print CMS tag
+    tag.SetTextFont(52)
+    tag.SetTextSize(0.9*size*pad.GetTopMargin())
+    tag.SetTextAlign(11)
+    x_pos_tag = x_pos
+    y_pos_tag = y_pos - 0.06
+    tag.DrawLatex(x_pos_tag, y_pos_tag, cms_tag)      
+    pad.Update()
+
+
   def printCMSTagInFrame(self, pad, cms_tag, size=0.55, offset=0.11):
     pad.cd()
     tag = ROOT.TLatex()
@@ -633,4 +652,9 @@ class Tools(object):
 if __name__ == '__main__':
   tools = Tools()
   #print tools.getCtau(4.5, 1e-2)
-  print tools.getVV(2., 1)
+  print tools.getVV(4.5, 0.01)
+  #mass = 5.
+  #print tools.gamma_partial(mass=mass, vv=1.) / tools.gamma_total(mass=mass, vv=1.)
+  
+
+

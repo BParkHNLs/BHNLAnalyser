@@ -185,6 +185,43 @@ signal_samples['central_V11_24Apr22_benchmark_loose'] = [
   ]
 
 
+signal_samples['V13_06Feb23_preselection'] = [
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V13_06Feb23/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Feb23_partial.root',
+      label = '1 GeV, 1000 mm',
+      mass = 1.0,
+      ctau = 1000.0,
+      resolution = 0.00888,
+      filter_efficiency = 1.59e-03,
+      muon_rate = 0.47,
+      is_private = False,
+      colour = ROOT.kOrange+0
+      ),
+  SignalSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V13_06Feb23/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL2p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Feb23_partial.root',
+      label = '2 GeV, 100 mm',
+      mass = 2.0,
+      ctau = 100,
+      resolution = 0.0169,
+      filter_efficiency = 5.86e-03,
+      muon_rate = 0.46,
+      is_private = False,
+      colour = ROOT.kRed+1
+      ),
+  SignalSample( # reweighted to 0.01
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V13_06Feb23/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau0p1mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Feb23_partial.root',
+      label = '4.5 GeV, 0.01 mm',
+      mass = 4.5,
+      ctau = 0.01,
+      resolution = 0.0382,
+      filter_efficiency = 2.38e-02,
+      filter_efficiency_Bc = 1.31e-01,
+      muon_rate = 0.49,
+      is_private = False,
+      colour = ROOT.kRed+4
+      ),
+  ]
+
 signal_samples['V13_06Feb23_m1'] = [
   SignalSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V13_06Feb23/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_06Feb23_partial.root',
@@ -9665,6 +9702,14 @@ data_samples['V12_08Aug22_small'] = [
 data_samples['V13_06Feb23'] = [
   DataSample(
       filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_partial.root',
+      label = 'ParkingBPH1_Run2018D (V13_06Feb23)',
+      lumi = 5.302,
+      ),
+  ]
+
+data_samples['V13_06Feb23_small'] = [
+  DataSample(
+      filename = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_06Feb23_partial.root',
       label = 'ParkingBPH1_Run2018D (V13_06Feb23)',
       lumi = 5.302,
       ),
