@@ -29,6 +29,7 @@ do_interpretation = False
 do_combine_datacards = True
 do_produce_limits = True
 do_plot_limits = True
+do_plot_fits = True
 
 ### in do_interpretation
 do_interpretation_limits = True
@@ -45,7 +46,7 @@ scenarios = ['Majorana']
 
 
 class BHNLLauncher(object):
-  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits, do_interpretation, do_interpretation_limits, do_interpretation_plotter, do_check_config, do_standard_queue, memory, scenarios):
+  def __init__(self, cfg_name, outlabel, tag, submit_batch, do_plotter, do_datacards, do_limits, do_combine_datacards, do_produce_limits, do_plot_limits, do_plot_fits, do_interpretation, do_interpretation_limits, do_interpretation_plotter, do_check_config, do_standard_queue, memory, scenarios):
     self.cfg_name = cfg_name
     self.outlabel = outlabel
     self.tag = tag
@@ -56,6 +57,7 @@ class BHNLLauncher(object):
     self.do_combine_datacards = do_combine_datacards
     self.do_produce_limits = do_produce_limits
     self.do_plot_limits = do_plot_limits
+    self.do_plot_fits = do_plot_fits
     self.do_interpretation = do_interpretation
     self.do_interpretation_limits = do_interpretation_limits
     self.do_interpretation_plotter = do_interpretation_plotter
@@ -156,7 +158,7 @@ class BHNLLauncher(object):
         'cp -r ./scripts/mva/outputs/{} $workdir'.format(self.cfg.training_label),
         '{}'.format('cp -r {}/outputs/{}/datacards/{}/*m_{}* $workdir'.format(self.homedir, self.outlabel, self.tag, str(mass).replace('.', 'p')) if self.do_limits and (self.do_combine_datacards or self.do_produce_limits) else ''),
         '{}'.format('cp -r {}/outputs/{}/datacards_combined/{}/ $workdir'.format(self.homedir, self.outlabel, self.tag) if self.do_limits and self.do_produce_limits else ''),
-        '{}'.format('cp -r {}/outputs/{}/limits/{}/results* $workdir'.format(self.homedir, self.outlabel, self.tag) if (self.do_limits and self.do_plot_limits) or (self.do_interpretation and self.do_interpretation_plotter) else ''),
+        '{}'.format('cp -r {}/outputs/{}/limits/{}/results* $workdir'.format(self.homedir, self.outlabel, self.tag) if (self.do_limits and (self.do_plot_limits or self.do_plot_fits)) or (self.do_interpretation and self.do_interpretation_plotter) else ''),
         'cd $workdir',
         'DATE_START=`date +%s`',
         command,
@@ -471,6 +473,46 @@ class BHNLLauncher(object):
     os.system(command_clean)
 
 
+  def launchFitsPlotter(self, mass='', scenario='', do_dependency=False, job_id='', fe=None, fu=None, ft=None):
+    # get the command to run the limits plotter script
+    command_fits_plotter = ' '.join([
+        'python fit_plotter.py',
+        '--scenario {}'.format(scenario),
+        '--mass {}'.format(mass),
+        '--categories_label {}'.format(self.cfg.categories_label),
+        '--homedir {}'.format(self.homedir),
+        '--outdirlabel {}'.format(self.outlabel),
+        '--subdirlabel {}'.format(self.tag),
+        '--fe {}'.format(fe),
+        '--fu {}'.format(fu),
+        '--ft {}'.format(ft),
+        '{}'.format('--do_blind' if self.cfg.do_blind else ''),
+        ])
+
+    # write the submitter
+    label = 'fits_plotter_' + self.outlabel + '_' + self.tag
+    self.writeSubmitter(command_fits_plotter, label)
+
+    # launch submitter
+    if not self.submit_batch:
+      command_submit = 'sh submitter_{}.sh'.format(label)
+      os.system(command_submit)
+    else:
+      command_submit = 'sbatch -p short --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=fitplotter_{lbl} {dpd} submitter_{lbl}.sh'.format(
+          ld = self.logdir_name,
+          lbl = label,
+          dpd = '--dependency=afterany:{}'.format(job_id) if do_dependency else ''
+          ) 
+
+      os.system(command_submit)
+
+      print '--> Fits plotter job has been submitted'
+      print '---> The fits plots will be stored in ./outputs/{}/limits/{}/plots'.format(self.outlabel, self.tag)
+
+    command_clean = 'rm submitter_{}.sh'.format(label)
+    os.system(command_clean)
+
+
   def launchInterpretationLimits(self, mass='', ctau='', fe='', fu='', ft=''):
     # get the command to run the limits producer script
     command_interpretation_limits_producer = ' '.join([
@@ -585,6 +627,16 @@ class BHNLLauncher(object):
           else:
             job_id = self.launchLimitsPlotter(scenario=scenario, do_dependency=False)
 
+      if self.do_plot_fits:
+        for signal_label in self.cfg.signal_labels:
+          for mass in self.getMassList(signal_label):
+            for scenario in self.scenarios:
+              print '\n -> Launching the fits plotter ({})'.format(scenario)
+              if self.submit_batch and self.do_produce_limits:
+                job_id = self.launchFitsPlotter(mass=mass, scenario=scenario, do_dependency=True, job_id=self.getJobIdsList(dependency_limits))
+              else:
+                job_id = self.launchFitsPlotter(mass=mass, scenario=scenario, do_dependency=False)
+
     if self.do_interpretation:
       if self.do_interpretation_limits:
         dependency_interpretation_limits = []
@@ -629,6 +681,7 @@ if __name__ == '__main__':
                           do_combine_datacards=do_combine_datacards, 
                           do_produce_limits=do_produce_limits, 
                           do_plot_limits=do_plot_limits,
+                          do_plot_fits=do_plot_fits,
                           do_interpretation=do_interpretation,
                           do_interpretation_limits=do_interpretation_limits,
                           do_interpretation_plotter=do_interpretation_plotter,
