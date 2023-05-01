@@ -118,7 +118,7 @@ class FitPlotter(object):
     else:
       pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
 
-    fileName = 'result*{}*{}*.txt'.format(self.scenario, self.mass)
+    fileName = 'result*{}*m_{}*.txt'.format(self.scenario, self.mass)
 
     files = [f for f in glob.glob(pathToResults+fileName)]
 
