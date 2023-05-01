@@ -173,7 +173,7 @@ class FitPlotter(object):
     self.setStyle()
 
     signal_mass = str(self.mass).replace('.', 'p')
-    signal_ctau = filename[filename.find('ctau')+5:filename.find('_v2')]
+    signal_ctau = filename[filename.rfind('ctau_')+5:filename.rfind('_v2')]
     ctau = float(signal_ctau.replace('p', '.'))
     signal_v2 = self.tools.getVV(mass=self.mass, ctau=ctau, ismaj=True)
     signal_coupling = self.tools.getCouplingLabel(signal_v2)
