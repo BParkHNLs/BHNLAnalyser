@@ -317,7 +317,7 @@ class DatacardsMaker(Tools):
     fitter.createFTestInputWorkspace(label=label)
 
     # run the F-test and save the output multipdf in a workspace
-    command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins} --cat_index {cidx} --do_veto_SM {veto} --veto_range_min {veto_min} --veto_range_max {veto_max}'.format(
+    command_ftest = './flashgg_plugin/bin/fTest -i {inws} --saveMultiPdf {outws} -D {outdir} --category_label {cat} --mN {m} --mN_label {ml} --resolution {rsl} --fit_window_size {fws} --mass_window_size {mws} --nbins {nbins} --cat_index {cidx}'.format(
         inws = '{}/input_workspace_fTest_m_{}_cat_{}.root'.format(self.outputdir, mass, category.label),
         outws = '{}/workspace_background_multipdf_bhnl_m_{}_cat_{}.root'.format(self.outputdir, str(mass).replace('.', 'p'), category.label),
         outdir = self.outputdir + '/fTest',
@@ -329,9 +329,6 @@ class DatacardsMaker(Tools):
         mws = self.mass_window_size,
         nbins = self.nbins,
         cidx = cat_index,
-        veto = 0, #do_veto_SM, #FIXME to adapt once we apply the vetoes
-        veto_min = veto_SM.range_min,
-        veto_max = veto_SM.range_max,
         )
     command_ftest += ' --blind' # always blind SR region when building the envelope
 
