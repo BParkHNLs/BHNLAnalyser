@@ -742,14 +742,14 @@ int main(int argc, char* argv[]){
 
   // Set up which families of functions you want to test
   vector<string> functionClasses;
-  functionClasses.push_back("Bernstein");
+  //functionClasses.push_back("Bernstein");
   functionClasses.push_back("Exponential");
   functionClasses.push_back("PowerLaw");
   functionClasses.push_back("Laurent");
   //functionClasses.push_back("Chebychev");
   //functionClasses.push_back("Polynomial");
   map<string,string> namingMap;
-  namingMap.insert(pair<string,string>("Bernstein","pol"));
+  //namingMap.insert(pair<string,string>("Bernstein","pol"));
   namingMap.insert(pair<string,string>("Exponential","exp"));
   namingMap.insert(pair<string,string>("PowerLaw","pow"));
   namingMap.insert(pair<string,string>("Laurent","lau"));
