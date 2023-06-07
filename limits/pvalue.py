@@ -108,11 +108,7 @@ class LimitPlotter(object):
 
     fileName = 'pvalue*{}*.txt'.format(self.scenario)
 
-    print pathToResults+fileName
-
     files = [f for f in glob.glob(pathToResults+fileName)]
-    for f in files:
-      print f
    
     # get the list of the masses from the fileNames
     masses = getMassList(files)
@@ -142,11 +138,6 @@ class LimitPlotter(object):
 
       v2s       = []
       obs       = []
-      minus_two = []
-      minus_one = []
-      central   = []
-      plus_one  = []
-      plus_two  = []
 
       for limitFile in files:
         if 'm_{}_'.format(mass) not in limitFile: continue
@@ -168,11 +159,6 @@ class LimitPlotter(object):
           
           # get the necessary information from the result files
           val_obs       = None
-          val_minus_two = None
-          val_minus_one = None
-          val_central   = None
-          val_plus_one  = None
-          val_plus_two  = None
 
           content = thefile.readlines()
           for line in content:
@@ -185,7 +171,6 @@ class LimitPlotter(object):
         except:
           print 'Cannot open {}result_{}_m_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, coupling)
 
-
       graph = zip(v2s, obs)
       graph.sort(key = lambda x : float(x[0])) # sort by coupling
     
@@ -197,16 +182,14 @@ class LimitPlotter(object):
       coupling_label = self.getCouplingLabel(coupling_obs)
 
       # get the corresponding p-value
-      p_value_filename =  glob.glob('{}/outputs/{}/limits/{}/results/pvalue_{}_m_{}_ctau_*_v2_{}.txt'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.scenario, mass, coupling_label))[0]
+      p_value_filename = glob.glob('{}/outputs/{}/limits/{}/results/pvalue_{}_m_{}_ctau_*_v2_{}.txt'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.scenario, mass, coupling_label))[0]
       p_value_file = open(p_value_filename)
       lines = p_value_file.readlines()
       for line in lines:
         if 'p-value of background' not in line: continue
         p_value = line[line.find('p-value of background')+23:len(line)-1]
-      print p_value
       the_masses.append(round(float(mass), 2))
       the_pvalues.append(float(p_value))
-
 
     plt.clf()
     f, ax = plt.subplots(figsize=(9, 8))

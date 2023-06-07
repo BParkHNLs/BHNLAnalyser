@@ -62,7 +62,6 @@ class FitPlotter(object):
     self.plot_exclusion = True
 
 
-
   def getEventLabel(self, axis):
     label = axis.GetTitle()
     idx1 = label.find('(') + 2
@@ -129,7 +128,7 @@ class FitPlotter(object):
    
       # for each mass, get the list of the couplings and ctaus from the file name
       ctau = limitFile[limitFile.find('ctau_')+5:limitFile.find('_', limitFile.find('ctau_')+5)]
-      coupling = limitFile[limitFile.find('v2_')+3:limitFile.find('.txt')]
+      coupling = limitFile[limitFile.rfind('v2_')+3:limitFile.find('.txt')]
       val_coupling = float(coupling)
     
       try:
@@ -260,6 +259,9 @@ class FitPlotter(object):
       filenames = [self.getExclusionPoint()]
     else:
       filenames = glob.glob('{}/fitDiagnostics_{}_m_{}_*.root'.format(self.inputdir, self.scenario, str(self.mass).replace('.', 'p')))
+
+    if len(filenames) == 0:
+      print 'no files found'
 
     for filename in filenames:
       for category in self.categories:
