@@ -32,6 +32,7 @@ from baseline_selection import selection
 from quantity import Quantity as Qte
 from quantity import quantities
 quantities_preselection = quantities['preselection']
+quantities_trackid = quantities['trackId']
 
 
 class TrainingInfo(object):
@@ -119,7 +120,7 @@ class Sample(object):
 
 
 class MVAAnalyser(Tools, MVATools):
-  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_addCutbased=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotScoreCurve=False, do_plotMVAPerformance=False, do_plotWPScan=False, do_plotAUC=False, do_plotAUCvsLifetime=False, do_plotMass=False, do_plotPNNComparison=False, do_plotPreselection=False):
+  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_addCutbased=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotScoreCurve=False, do_plotMVAPerformance=False, do_plotWPScan=False, do_plotAUC=False, do_plotAUCvsLifetime=False, do_plotMass=False, do_plotPNNComparison=False, do_plotPreselection=False, do_plotSignalBackgroundComparison=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_files = signal_files
@@ -141,11 +142,12 @@ class MVAAnalyser(Tools, MVATools):
     self.do_plotAUCvsLifetime = do_plotAUCvsLifetime
     self.do_plotPNNComparison = do_plotPNNComparison 
     self.do_plotPreselection = do_plotPreselection
+    self.do_plotSignalBackgroundComparison = do_plotSignalBackgroundComparison
 
     self.outdir = self.createOutDir()
 
-    self.resolution_p0 = 0.0002747
-    self.resolution_p1 = 0.008302
+    self.resolution_p0 = 6.98338e-04
+    self.resolution_p1 = 7.78382e-03
 
     self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_smalltable_v2'
     #self.weight_hlt = 'weight_hlt_D1_tag_fired_HLT_Mu9_IP6_or_HLT_Mu12_IP6_ptdxysigbs_max5e6_v2_efftable'
@@ -1434,6 +1436,82 @@ class MVAAnalyser(Tools, MVATools):
     canv.SaveAs(name + '.png')
 
 
+  def plotSignalBackgroundComparison(self, training_info, mc_samples, data_samples, category, quantity):
+    '''
+      Plot the quantity distribution for signal and background
+    '''
+    pd.options.mode.chained_assignment = None
+    ROOT.gStyle.SetOptStat(0)
+
+    masses = [1.0, 1.5, 2.0, 3.0, 4.5]
+
+    for mass in masses:
+      canv = self.tools.createTCanvas('canv'+category.label+str(mass), 800, 700) 
+      leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.65, xmax=0.65, ymax=0.83, size=0.04)
+      
+      score = 0.99
+      colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+3]
+
+      resolution = self.resolution_p0 + self.resolution_p1 * mass
+
+      # consider the 10 sigma window around the signal mass
+      window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
+      bkg_label = 'bkg_{}_{}'.format(mass, category.label)
+      extra_branch = [quantity.name_flat]
+      selection_bkg = self.baseline_selection + ' && ' + window + ' && ' + category.definition_flat
+      print selection_bkg
+      #filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=self.baseline_selection + ' && ' + window, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
+      filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=selection_bkg, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
+      file_bkg = self.tools.getRootFile(filename_bkg)
+      tree_bkg = self.tools.getTree(file_bkg, 'signal_tree')
+
+      hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='hist_bkg'+str(score), branchname='flat', selection='score > {}'.format(score))
+      if hist_bkg.Integral() != 0: hist_bkg.Scale(1./hist_bkg.Integral())
+
+      hist_bkg.SetFillColor(ROOT.kBlue-3)
+      hist_bkg.SetFillStyle(3005)
+        
+      hist_bkg.SetTitle(category.title)
+      x_label = quantity.title
+      hist_bkg.GetXaxis().SetTitle(x_label)
+      hist_bkg.GetXaxis().SetLabelSize(0.033)
+      hist_bkg.GetXaxis().SetTitleSize(0.042)
+      hist_bkg.GetXaxis().SetTitleOffset(1.1)
+      hist_bkg.GetYaxis().SetTitle('Normalised to unity')
+      hist_bkg.GetYaxis().SetLabelSize(0.033)
+      hist_bkg.GetYaxis().SetTitleSize(0.042)
+      hist_bkg.GetYaxis().SetTitleOffset(1.1)
+      leg.AddEntry(hist_bkg, 'background')
+
+      # signal
+      hists_sig = []
+      for mc_sample in mc_samples:
+        if mc_sample.mass != mass: continue
+        sig_label = 'sig_{}_{}_{}'.format(mc_sample.mass, mc_sample.ctau, category.label)
+        extra_branch = [quantity.name_flat]
+        filename_sig = self.mva_tools.getFileWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mc_sample.mass, selection=self.baseline_selection, weights=extra_branch+['gen_hnl_ct', self.weight_pusig, self.weight_mu0id, self.weight_muid], label=sig_label, treename='signal_tree', force_overwrite=True) 
+        file_sig = self.tools.getRootFile(filename_sig)
+        tree_sig = self.tools.getTree(file_sig, 'signal_tree')
+
+        hist_sig = self.tools.createHisto(tree_sig, quantity, hist_name='hist_sig'+str(score), branchname='flat', selection='score > {}'.format(score))
+        if hist_sig.Integral() != 0: hist_sig.Scale(1./hist_sig.Integral())
+
+        hist_sig.SetMarkerStyle(20)
+        hist_sig.SetMarkerColor(mc_sample.colour)#colours[iscore])
+        hists_sig.append(hist_sig)
+        leg.AddEntry(hist_sig, 'signal {} GeV {} mm'.format(mc_sample.mass, mc_sample.ctau))
+
+      hist_bkg.Draw('hist')
+      for hist in hists_sig:
+        hist.Draw('same')
+      leg.Draw('same')
+
+      canv.cd()
+      name = '{}/{}_m{}_{}'.format(self.outdir, quantity.label, str(mass).replace('.', 'p'), category.label)
+      canv.SaveAs(name + '.png')
+
+
+
   def createRootFile(self, training_info, samples, name):
     '''
       Add the score to the dataframe and save the root file with all the branches
@@ -1530,7 +1608,7 @@ class MVAAnalyser(Tools, MVATools):
 
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxysiggt150_OS': continue
+      #if category.label != 'lxysiggt150_OS' and category.label != 'lxysig0to50_OS': continue
       #if 'Bc' not in category.label: continue
 
       print '\n -> get the training information'
@@ -1586,9 +1664,15 @@ class MVAAnalyser(Tools, MVATools):
 
       if self.do_plotPreselection:
         #quantitites = quantities['preselection']
-        for quantity in quantities_preselection:
+        #for quantity in quantities_preselection:
+        for quantity in quantities_trackid:
           print quantity.name_flat
           self.plotPreselectionQuantity(training_info=training_info, mc_samples=mc_samples, quantity=quantity, category=category)
+
+      if self.do_plotSignalBackgroundComparison:
+        for quantity in quantities_trackid:
+          print quantity.name_flat
+          self.plotSignalBackgroundComparison(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, quantity=quantity, category=category)
 
 
 
@@ -1644,7 +1728,21 @@ if __name__ == '__main__':
 
   data_files = []
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_partial.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_partial.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_norm.root')
+
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk4_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk5_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk6_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk7_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk10_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk11_n500/flat/flat_bparknano_06Feb23_norm.root')
 
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
@@ -1677,7 +1775,7 @@ if __name__ == '__main__':
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk28_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk29_n500/flat/flat_bparknano_08Aug22_sr.root')
 
-  do_analyseMVA = True    # assess performance of mva
+  do_analyseMVA = False    # assess performance of mva
   do_compareMVA = False   # compare mva performance to that of the cutbased method
 
   if do_analyseMVA:
@@ -1714,6 +1812,7 @@ if __name__ == '__main__':
           do_plotAUC = False,
           do_plotMass = True,
           do_plotPreselection = False,
+          do_plotSignalBackgroundComparison = False,
           )
 
       analyser.process()
@@ -1745,6 +1844,7 @@ if __name__ == '__main__':
         do_plotAUC = False,
         do_plotMass = False,
         do_plotPreselection = False,
+        do_plotSignalBackgroundComparison = False,
         )
 
     analyser.process()
@@ -1762,10 +1862,13 @@ if __name__ == '__main__':
     do_plotMass = False
     do_plotAUCvsLifetime = False
     do_plotPNNComparison = False
-    do_plotPreselection = True
+    do_plotPreselection = False
+    do_plotSignalBackgroundComparison = True
 
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-    signal_labels = ['V12_08Aug22_sensitivity']
+    #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
+    #signal_labels = ['V12_08Aug22_sensitivity']
+    signal_labels = ['V13_06Feb23_trackid']
 
     #signal_labels = [
     #  #'V42_08Aug22_m0p5',
@@ -1889,6 +1992,7 @@ if __name__ == '__main__':
         do_plotAUCvsLifetime = do_plotAUCvsLifetime,
         do_plotPNNComparison = do_plotPNNComparison,
         do_plotPreselection = do_plotPreselection,
+        do_plotSignalBackgroundComparison = do_plotSignalBackgroundComparison,
         )
 
     analyser.process()
