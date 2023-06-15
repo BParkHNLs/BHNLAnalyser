@@ -120,7 +120,7 @@ class Sample(object):
 
 
 class MVAAnalyser(Tools, MVATools):
-  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_addCutbased=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotScoreCurve=False, do_plotMVAPerformance=False, do_plotWPScan=False, do_plotAUC=False, do_plotAUCvsLifetime=False, do_plotMass=False, do_plotPNNComparison=False, do_plotPreselection=False, do_plotSignalBackgroundComparison=False):
+  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_addCutbased=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotScoreCurve=False, do_plotMVAPerformance=False, do_plotWPScan=False, do_plotAUC=False, do_plotAUCvsLifetime=False, do_plotMass=False, do_plotPNNComparison=False, do_plotPreselection=False, do_plotSignalBackgroundComparison=False, do_compareROC=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_files = signal_files
@@ -143,6 +143,7 @@ class MVAAnalyser(Tools, MVATools):
     self.do_plotPNNComparison = do_plotPNNComparison 
     self.do_plotPreselection = do_plotPreselection
     self.do_plotSignalBackgroundComparison = do_plotSignalBackgroundComparison
+    self.do_compareROC = do_compareROC
 
     self.outdir = self.createOutDir()
 
@@ -1511,6 +1512,80 @@ class MVAAnalyser(Tools, MVATools):
       canv.SaveAs(name + '.png')
 
 
+  def compareROCCurve(self, mc_samples, data_samples, category, do_log=False):
+    pd.options.mode.chained_assignment = None
+
+    masses = [1.0, 2.0, 3.0, 4.5, 1.5]
+
+    training_info1 = TrainingInfo('V13_06Feb23_2023Apr06_14h13m31s', category.label)
+    training_info2 = TrainingInfo('V13_06Feb23_2023Jun11_22h15m20s', category.label)
+
+    for mass in masses:
+
+      resolution = self.resolution_p0 + self.resolution_p1 * mass
+
+      # consider the 10 sigma window around the signal mass
+      window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
+      # create dataframe
+      data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
+      if self.do_parametric:
+        data_df['mass_key'] = mass
+      data_df['is_signal'] = 0
+
+      plt.clf()
+      for mc_sample in mc_samples:
+        if mc_sample.mass != mass: continue
+        ctau = mc_sample.ctau
+        v2 = self.tools.getVV(mass=mass, ctau=ctau, ismaj=True)
+        coupling = self.tools.getCouplingLabel(v2)
+
+        mc_df = self.createDataframe([mc_sample])
+        if self.do_parametric:
+          mc_df['mass_key'] = mass
+        mc_df['is_signal'] = 1
+
+        main_df = pd.concat([data_df, mc_df], sort=False)
+        main_df.index = np.array(range(len(main_df)))
+        main_df = main_df.sample(frac=1, replace=False, random_state=1986)
+
+        Y = pd.DataFrame(main_df, columns=['is_signal'])
+
+        score1 = self.predictScore(training_info=training_info1, df=main_df)
+        fpr1, tpr1, thresholds1 = roc_curve(Y, score1) 
+
+        score2 = self.predictScore(training_info=training_info2, df=main_df)
+        fpr2, tpr2, thresholds2 = roc_curve(Y, score2) 
+
+        plt.plot(fpr1, tpr1, linewidth=2, label='training w/o track ID')
+        plt.plot(fpr2, tpr2, linewidth=2, label='training w/ track ID')
+
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+
+        xy = [i*j for i,j in product([10.**i for i in range(-8, 0)], [1,2,4,8])]+[1]
+        plt.plot(xy, xy, color='grey', linestyle='--')
+
+        plt.title(r'{}, {} GeV, {} mm'.format(category.label, mass, ctau))
+        if do_log:
+          plt.xlim(1e-5, 1)
+        else:
+          plt.xlim(0, 1)
+        plt.ylim(0, 1)
+
+        if do_log:
+          plt.xscale('log')
+        plt.yscale('linear')
+
+        if do_log:
+          plt.legend(loc='upper left', framealpha=0.1)
+        else:
+          plt.legend(loc='lower right', framealpha=0.1)
+
+      name = 'comparison_ROC_m{}_{}'.format(str(mass).replace('.', 'p'), category.label)
+      if do_log: name += '_log'
+      self.saveFig(plt, name)
+
+
 
   def createRootFile(self, training_info, samples, name):
     '''
@@ -1608,7 +1683,7 @@ class MVAAnalyser(Tools, MVATools):
 
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxysiggt150_OS' and category.label != 'lxysig0to50_OS': continue
+      if category.label != 'lxysiggt150_SS' and category.label != 'lxysig0to50_SS': continue
       #if 'Bc' not in category.label: continue
 
       print '\n -> get the training information'
@@ -1674,6 +1749,11 @@ class MVAAnalyser(Tools, MVATools):
           print quantity.name_flat
           self.plotSignalBackgroundComparison(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, quantity=quantity, category=category)
 
+      if self.do_compareROC:
+        if category.label == 'incl': continue
+        self.compareROCCurve(mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
+        self.compareROCCurve(mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=True)
+
 
 
 
@@ -1718,7 +1798,8 @@ if __name__ == '__main__':
   #dirname = 'test_2023Jan25_12h38m31s' # test statistics
   #dirname = 'test_Bc_2023Jan25_22h42m38s' # Bc
   #dirname = 'test_2023Jan30_17h10m34s' # test statistics ML review
-  dirname = 'V13_06Feb23_2023Apr06_14h13m31s'
+  #dirname = 'V13_06Feb23_2023Apr06_14h13m31s' # used for unblinding
+  dirname = 'V13_06Feb23_2023Jun11_22h15m20s' # track id
 
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
   #categories = categories['V12_08Aug22_permass']
@@ -1813,6 +1894,7 @@ if __name__ == '__main__':
           do_plotMass = True,
           do_plotPreselection = False,
           do_plotSignalBackgroundComparison = False,
+          do_compareROC = False,
           )
 
       analyser.process()
@@ -1845,6 +1927,7 @@ if __name__ == '__main__':
         do_plotMass = False,
         do_plotPreselection = False,
         do_plotSignalBackgroundComparison = False,
+        do_compareROC = False,
         )
 
     analyser.process()
@@ -1863,7 +1946,8 @@ if __name__ == '__main__':
     do_plotAUCvsLifetime = False
     do_plotPNNComparison = False
     do_plotPreselection = False
-    do_plotSignalBackgroundComparison = True
+    do_plotSignalBackgroundComparison = False
+    do_compareROC = True
 
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
@@ -1993,6 +2077,7 @@ if __name__ == '__main__':
         do_plotPNNComparison = do_plotPNNComparison,
         do_plotPreselection = do_plotPreselection,
         do_plotSignalBackgroundComparison = do_plotSignalBackgroundComparison,
+        do_compareROC = do_compareROC,
         )
 
     analyser.process()
