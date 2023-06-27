@@ -372,7 +372,7 @@ if __name__ == '__main__':
   # nice to haves: impact parameters (?), significance of the displacement
   if doNewFiles:
     b_y = ROOT.RooRealVar('b_y', 'b_y', -10., 10.)
-    weight_hlt = ROOT.RooRealVar('weight_hlt', 'weight_hlt', 0., 1.)
+    weight_hlt = ROOT.RooRealVar('weight_hlt', 'weight_hlt', 0., 10.)
     #weight_hlt = ROOT.RooRealVar('weight_hlt_A1', 'weight_hlt_A1', 0., 100.)
     #matched_b_y = ROOT.RooRealVar('matched_b_y', 'matched_b_y', -10., 10.) # do not uncomment, still need to understand why, FIXME
     #matched_b_pt = ROOT.RooRealVar('matched_b_pt', 'matched_b_pt', 0.,13000.)
