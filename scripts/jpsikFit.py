@@ -328,11 +328,11 @@ if __name__ == '__main__':
 
   if doNewFiles:
     # version of October 
-    file_mc = '/pnfs/psi.ch/cms/trivcat/store/user/mratti/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/merged/flat_bparknano_Oct20_Oct20.root'
-    files_data_periodA = ['/pnfs/psi.ch/cms/trivcat/store/user/mratti/BHNLsGen/data/Control_Oct20/ParkingBPH1_Run2018A/merged/flat_bparknano_Oct20_TEST.root']
+    #file_mc = '/pnfs/psi.ch/cms/trivcat/store/user/mratti/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/merged/flat_bparknano_Oct20_Oct20.root'
+    #files_data_periodA = ['/pnfs/psi.ch/cms/trivcat/store/user/mratti/BHNLsGen/data/Control_Oct20/ParkingBPH1_Run2018A/merged/flat_bparknano_Oct20_TEST.root']
     ## for data 1.61% of the jobs failed
-    #file_mc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/merged/flat_bparknano_06Feb23.root'
-    #files_data_periodA = ['/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018A/merged/flat_bparknano_control.root']
+    file_mc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/merged/flat_bparknano_06Feb23.root'
+    files_data_periodA = ['/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018A/merged/flat_bparknano_control.root']
  
   else:
     # these are the files that were shared with Ludovico
@@ -372,8 +372,8 @@ if __name__ == '__main__':
   # nice to haves: impact parameters (?), significance of the displacement
   if doNewFiles:
     b_y = ROOT.RooRealVar('b_y', 'b_y', -10., 10.)
-    weight_hlt = ROOT.RooRealVar('weight_hlt', 'weight_hlt', 0., 10.)
-    #weight_hlt = ROOT.RooRealVar('weight_hlt_A1', 'weight_hlt_A1', 0., 100.)
+    #weight_hlt = ROOT.RooRealVar('weight_hlt', 'weight_hlt', 0., 10.)
+    weight_hlt = ROOT.RooRealVar('weight_hlt_A1', 'weight_hlt_A1', 0., 100.)
     #matched_b_y = ROOT.RooRealVar('matched_b_y', 'matched_b_y', -10., 10.) # do not uncomment, still need to understand why, FIXME
     #matched_b_pt = ROOT.RooRealVar('matched_b_pt', 'matched_b_pt', 0.,13000.)
     #sv_lxysig = ROOT.RooRealVar('sv_lxysig', 'sv_lxysig', 0., 100.)
@@ -559,10 +559,17 @@ if __name__ == '__main__':
   #RooFFTConvPdf lxg("lxg","landau (X) gauss",t,landau,gauss) ;
   
   # crystal ball
+  # initial (a la MG) values
+  #cb_mean   = ROOT.RooRealVar('cb_mean','cb_mean',  5.0, 4.9, 5.1)
+  #cb_sigma  = ROOT.RooRealVar('cb_sigma','cb_sigma', 0.1, 0., 0.3) 
+  #cb_alpha  = ROOT.RooRealVar('cb_alpha', 'cb_alpha', 0.5, 0., 2.) # alpha: where the Gaussian and exponential connect, at alpha * sigma of the Gaussian (pos)
+  #cb_n      = ROOT.RooRealVar('cb_n', 'cb_n', 1., 0., 10.)         # the slope of the exponential 
+  #cb        = ROOT.RooCBShape('cb', 'cb', mass, cb_mean, cb_sigma, cb_alpha, cb_n)
+
   cb_mean   = ROOT.RooRealVar('cb_mean','cb_mean',  5.0, 4.9, 5.1)
-  cb_sigma  = ROOT.RooRealVar('cb_sigma','cb_sigma', 0.1, 0., 0.3) 
+  cb_sigma  = ROOT.RooRealVar('cb_sigma','cb_sigma', 0.1, 0., 0.15) 
   cb_alpha  = ROOT.RooRealVar('cb_alpha', 'cb_alpha', 0.5, 0., 2.) # alpha: where the Gaussian and exponential connect, at alpha * sigma of the Gaussian (pos)
-  cb_n      = ROOT.RooRealVar('cb_n', 'cb_n', 1., 0., 10.)         # the slope of the exponential 
+  cb_n      = ROOT.RooRealVar('cb_n', 'cb_n', 0.1, 0., 10.)         # the slope of the exponential 
   cb        = ROOT.RooCBShape('cb', 'cb', mass, cb_mean, cb_sigma, cb_alpha, cb_n)
 
   ##erf_xshift = ROOT.RooRealVar('erf_xshift', 'xshift', 6., -1000., 1000.) 
@@ -770,8 +777,8 @@ if __name__ == '__main__':
     BR_JpsiK =    10.20E-04 #pm 0.19  our fit  #Gamma274/Gamma, https://pdglive.lbl.gov/BranchingRatio.action?desig=3&parCode=S041&home=MXXX045, 2021 
     BR_JpsiMuMu = 5.961E-02 #pm 0.033          #Gamma7/Gamma, https://pdglive.lbl.gov/BranchingRatio.action?desig=2&parCode=M070&home=MXXX025, 2021
     ###print ('nSel={}'.format(nSel))
-    #lumi = 0.774 # /fb 
-    lumi = 0.774 * 0.9839 # /fb 
+    lumi = 0.774 # /fb 
+    #lumi = 0.774 * 0.9839 # /fb 
   
     sigmaBpm = nSig / (BR_JpsiK*BR_JpsiMuMu) / totalEffMC / lumi
     statErr_data = 1./ROOT.TMath.Sqrt(nSig)  * sigmaBpm
