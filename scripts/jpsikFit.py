@@ -10,6 +10,8 @@ import sys
 sys.path.append('/work/mratti/plotting/myplotting')
 from spares import *
 from glob import glob
+import os
+from os import path
 #import sys
 #sys.path.append('/work/mratti/plotting/myplotting')
 #from spares import *
@@ -36,13 +38,14 @@ whichCombBkgModel = 'exp' # poly1, exp
 whichPRecBkgModel = opt.whichPRecBkgModel # argus argusPlusGauss argusConvGauss exp cb
 doAddJpsiPi = False
 doNewFiles = True
-doNewSelection = opt.doNewSelection
+doNewSelection = True #opt.doNewSelection
 doHLTWeights = True
 doFiducial = opt.doFiducial
 doFidOneBin = opt.doFidOneBin
 deltaDiMu = 0.05
 doDrawParameters = False
 doDrawLegend = True
+nbins = 100
 
 
 labelmodel={}
@@ -145,13 +148,58 @@ def getChiSquare(fitmodel,RDSet):
 
   return my_chi2,prob
 
+def printCMSTagInFrame(pad, cms_tag, size=0.55, offset=0.11):
+  pad.cd()
+  tag = ROOT.TLatex()
+  tag.SetNDC()
+  # print CMS
+  tag.SetTextFont(61)
+  tag.SetTextAlign(11) 
+  tag.SetTextSize(size*pad.GetTopMargin())    
+  tag.DrawLatex(pad.GetLeftMargin()+0.2*pad.GetLeftMargin(), 1-pad.GetTopMargin()-0.8*pad.GetTopMargin(), 'CMS')
+  # print CMS tag
+  tag.SetTextFont(52)
+  tag.SetTextSize(0.9*size*pad.GetTopMargin())
+  tag.SetTextAlign(11)
+  tag.DrawLatex(pad.GetLeftMargin()+0.2*pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()-0.8*pad.GetTopMargin(), cms_tag)      
+  pad.Update()
+
+def printInnerCMSTag(pad, cms_tag, print_tag=False, x_pos=0.15, y_pos=0.83, size=0.55):
+  pad.cd()
+  tag = ROOT.TLatex()
+  tag.SetNDC()
+  # print CMS
+  tag.SetTextFont(61)
+  tag.SetTextAlign(11) 
+  tag.SetTextSize(size*pad.GetTopMargin())    
+  tag.DrawLatex(x_pos, y_pos, 'CMS')
+  ## print CMS tag
+  tag.SetTextFont(52)
+  tag.SetTextSize(0.9*size*pad.GetTopMargin())
+  tag.SetTextAlign(11)
+  x_pos_tag = x_pos
+  y_pos_tag = y_pos - 0.06
+  tag.DrawLatex(x_pos_tag, y_pos_tag, cms_tag)      
+  pad.Update()
+
+def printLumiTag(pad, lumi, size=0.43, offset=0.57):
+  pad.cd()
+  tag = ROOT.TLatex()
+  tag.SetNDC()
+  lumi_text = str(round(lumi, 2)) + ' fb^{-1} (13 TeV)'
+  tag.SetTextFont(42)
+  tag.SetTextAlign(11) 
+  tag.SetTextSize(0.9*size*pad.GetTopMargin())    
+  tag.DrawLatex(pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), lumi_text)
+  pad.Update()
+
 def drawPlot(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label='',leg=None):
 
   hpull = frame.pullHist()
   hpull.SetMarkerSize(0.7)
   frame2.addPlotable(hpull,'P');
 
-  c = ROOT.TCanvas('', '', 400, 400)
+  c = ROOT.TCanvas('', '', 900, 700)
   c.Draw()
   c.Divide(1,2)
   #ROOT.gPad.SetLeftMargin(0.15)
@@ -194,8 +242,62 @@ def drawPlot(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label='',leg=None
   frame2.GetYaxis().SetTitle('Pulls') 
   frame2.GetXaxis().SetTitle('')      
   frame2.GetXaxis().SetLabelOffset(5)          
+
+  outdir = './myPlots/fit_sigmaBu'
+  if not path.exists(outdir):
+    os.system('mkdir -p {}'.format(outdir))
            
-  c.SaveAs('fit{}.pdf'.format(label))
+  c.SaveAs('{}/fit{}.png'.format(outdir, label))
+  c.SaveAs('{}/fit{}.pdf'.format(outdir, label))
+
+
+def drawPlotCMSStyle(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label='',leg=None):
+
+  canv = ROOT.TCanvas('', '', 1000, 800)
+  canv.Draw()
+  pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
+  pad.Draw()
+  pad.cd()
+  ROOT.gPad.SetLeftMargin(0.15)
+  #ROOT.gPad.SetBottomMargin(0.10)
+  #ROOT.gPad.SetPad(0.01,0.2,0.99,0.99)
+  frame.SetTitle(' ')
+  frame.GetXaxis().SetTitleSize(0.04);
+  frame.GetXaxis().SetTitle('m_{K^{#pm}#mu^{+}#mu^{-}} (GeV)')
+  frame.GetYaxis().SetTitleSize(0.04);
+  frame.GetYaxis().SetTitle('Events / {} GeV'.format(round((6.-5.)/float(nbins) ,4))) 
+  frame.GetYaxis().SetTitleOffset(1.55)
+  max_val = frame.GetMaximum()
+  frame.GetYaxis().SetRangeUser(0, max_val + 0.2*max_val)
+  frame.Draw()
+
+  if doDrawLegend and leg and not doDrawParameters:
+    leg.Draw("same")     
+
+  labelchi2 = '#chi^{{2}}/n_{{dof}} = {:.1f}'.format(chisq)
+  labelprob = '  p-value = {:.3f}'.format(prob)
+  print '#chi^{{2}}/n_{{dof}} = {:.1f}'.format(chisq)
+  print '  p-value = {:.3f}'.format(prob)
+  if sigmaBpm is not None and lumi is not None:
+    labelsigma = '#sigma(B^{{\pm}}) = ({:.1f} #pm {:.1f}) x 10^{{9}} fb ({})'.format(sigmaBpm/1E9,sigmaBpmErr/1E9, 'inclusive' if not doFiducial else 'fiducial')
+    print '#sigma(B^{{\pm}}) = ({:.1f} #pm {:.1f}) x 10^{{9}} fb ({})'.format(sigmaBpm/1E9,sigmaBpmErr/1E9, 'inclusive' if not doFiducial else 'fiducial')
+    labellumi = 'L = {:.3f} fb^{{-1}}'.format(lumi)
+    #defaultLabels([labelchi2+labelprob,labelsigma,labellumi], 0.55, 0.23) #spacing = 0.04, size = 0.027, dx = 0.12)
+    #defaultLabels([labelchi2+labelprob,labelsigma], 0.55, 0.23) #spacing = 0.04, size = 0.027, dx = 0.12)
+    #defaultLabels([labellumi], 0.82,0.93)
+  else: 
+    defaultLabels([labelmodel[whichSignalModel],labelchi2+labelprob], 0.60, 0.25)
+
+  #printCMSTagInFrame(pad, 'Preliminary', size=0.55, offset=0.11)
+  printInnerCMSTag(pad, 'Preliminary', print_tag=True, x_pos=0.19, y_pos=0.83, size=0.55)
+  printLumiTag(pad, 0.774, size=0.43, offset=0.53)
+
+  outdir = './myPlots/fit_sigmaBu'
+  if not path.exists(outdir):
+    os.system('mkdir -p {}'.format(outdir))
+           
+  canv.SaveAs('{}/fit_control_channel.png'.format(outdir, label))
+  canv.SaveAs('{}/fit_control_channel.pdf'.format(outdir, label))
 
 
 
@@ -207,10 +309,11 @@ if __name__ == '__main__':
   ROOT.TH1.SetDefaultSumw2()
   ROOT.TH1.StatOverflows(ROOT.kTRUE) # consider overflows for mean and rms calculation
   #ROOT.gROOT.ProcessLine('.L /work/mratti/CMS_style/tdrstyle.C')
-  ROOT.gROOT.ProcessLine('.L ./tdrstyle.C')
-  ROOT.gROOT.ProcessLine('setTDRStyle()')
+  #ROOT.gROOT.ProcessLine('.L ./tdrstyle.C')
+  #ROOT.gROOT.ProcessLine('setTDRStyle()')
   ROOT.gStyle.SetTitleXOffset(1.1);
   ROOT.gStyle.SetTitleYOffset(1.45);
+
 
 
   #############
@@ -227,7 +330,9 @@ if __name__ == '__main__':
     # version of October 
     file_mc = '/pnfs/psi.ch/cms/trivcat/store/user/mratti/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/merged/flat_bparknano_Oct20_Oct20.root'
     files_data_periodA = ['/pnfs/psi.ch/cms/trivcat/store/user/mratti/BHNLsGen/data/Control_Oct20/ParkingBPH1_Run2018A/merged/flat_bparknano_Oct20_TEST.root']
-    # for data 1.61% of the jobs failed
+    ## for data 1.61% of the jobs failed
+    #file_mc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/merged/flat_bparknano_06Feb23.root'
+    #files_data_periodA = ['/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018A/merged/flat_bparknano_control.root']
  
   else:
     # these are the files that were shared with Ludovico
@@ -268,6 +373,7 @@ if __name__ == '__main__':
   if doNewFiles:
     b_y = ROOT.RooRealVar('b_y', 'b_y', -10., 10.)
     weight_hlt = ROOT.RooRealVar('weight_hlt', 'weight_hlt', 0., 1.)
+    #weight_hlt = ROOT.RooRealVar('weight_hlt_A1', 'weight_hlt_A1', 0., 100.)
     #matched_b_y = ROOT.RooRealVar('matched_b_y', 'matched_b_y', -10., 10.) # do not uncomment, still need to understand why, FIXME
     #matched_b_pt = ROOT.RooRealVar('matched_b_pt', 'matched_b_pt', 0.,13000.)
     #sv_lxysig = ROOT.RooRealVar('sv_lxysig', 'sv_lxysig', 0., 100.)
@@ -421,7 +527,7 @@ if __name__ == '__main__':
   Rdata.plotOn(frametest, RF.MarkerSize(0.5), RF.XErrorSize(0), RF.Name('data'))
   ctest = TCanvas()
   frametest.Draw()
-  ctest.SaveAs('test.pdf')
+  #ctest.SaveAs('test.pdf')
 
   
   #############
@@ -606,7 +712,7 @@ if __name__ == '__main__':
     Rmc.plotOn(frame, RF.MarkerSize(0.5)) # weirdly, it's important to plot Rmc first...
     fitmodel.plotOn(frame, RF.Components('fitmodel_signal'),RF.LineColor(ROOT.kRed), RF.LineStyle(ROOT.kDashed), RF.Name('signal'))
     fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_comb'),RF.LineColor(ROOT.kOrange), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_comb'))
-    fitmodel.plotOn(frame, RF.LineColor(ROOT.kBlue)) # full model at the end !
+    fitmodel.plotOn(frame, RF.Components('fitmodel'), RF.LineColor(ROOT.kBlue)) # full model at the end !
     if doDrawParameters: 
       fitmodel.paramOn(frame, RF.ShowConstants(ROOT.kTRUE),RF.Format('NEU',RF.AutoPrecision()),RF.Layout(0.65,0.93,0.92))
       frame.getAttText().SetTextSize(0.02) #
@@ -614,6 +720,7 @@ if __name__ == '__main__':
     chisq,prob=getChiSquare(fitmodel,Rmc)
     frame2 = mass.frame(RF.Title(' '))
     drawPlot(frame,frame2,chisq,prob,None,None,label='MC_{}'.format(whichSignalModel))
+    drawPlotCMSStyle(frame,frame2,chisq,prob,None,None,label='MC_{}'.format(whichSignalModel))
 
   
   #############
@@ -622,21 +729,24 @@ if __name__ == '__main__':
   if doFullFit:
     results = fitmodel.fitTo(Rdata, RF.Extended(True), RF.Save()) 
     frame = mass.frame(RF.Title(''))
-    Rdata.plotOn(frame, RF.MarkerSize(0.5), RF.XErrorSize(0), RF.Name('data')) 
-    fitmodel.plotOn(frame, RF.Components('fitmodel_signal'),RF.LineColor(ROOT.kRed), RF.LineStyle(ROOT.kDashed), RF.Name('signal'))
-    fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_comb'),RF.LineColor(ROOT.kOrange), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_comb'))
-    fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_prec'),RF.LineColor(ROOT.kGreen), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_prec'))
+    #Rdata.plotOn(frame, RF.MarkerSize(0.5), RF.XErrorSize(0), RF.Name('data'), RF.Binning(Rdata.getSize()) 
+    Rdata.plotOn(frame, RF.MarkerSize(0.5), RF.XErrorSize(0), RF.Name('data'), RF.Binning(nbins)) 
+    fitmodel.plotOn(frame, RF.Components('fitmodel_signal'),RF.LineColor(ROOT.kOrange+7), RF.LineStyle(ROOT.kDashed), RF.Name('signal'))
+    fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_comb'),RF.LineColor(ROOT.kRed+1), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_comb'))
+    fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_prec'),RF.LineColor(ROOT.kGreen-2), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_prec'))
     if doAddJpsiPi: 
       fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_peak'), RF.LineColor(ROOT.kMagenta), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_peak'))
-    fitmodel.plotOn(frame, RF.LineColor(ROOT.kBlue)) # full model at the end !
+    fitmodel.plotOn(frame, RF.Components('fitmodel'), RF.LineColor(ROOT.kBlue), RF.Name('full_fit')) # full model at the end !
+    Rdata.plotOn(frame, RF.MarkerSize(0.5), RF.XErrorSize(0), RF.Name('data'), RF.Binning(nbins)) 
     if doDrawParameters:
       fitmodel.paramOn(frame, RF.ShowConstants(ROOT.kTRUE),RF.Format('NEU',RF.AutoPrecision()),RF.Layout(0.65,0.93,0.92))
       frame.getAttText().SetTextSize(0.02) #
-    leg = defaultLegend(0.50,0.60,0.86,0.86) # ROOT.TLegend(0.65,0.73,0.86,0.87)
-    leg.AddEntry(frame.findObject("Rdata"),"Data", "EP")
-    leg.AddEntry(frame.findObject("fitmodel_signal"),"Signal","L")
-    leg.AddEntry(frame.findObject("fitmodel_bkg_comb"),"Combinatorial bkg", "L")
-    leg.AddEntry(frame.findObject("fitmodel_bkg_prec"),"Partially reconstructed bkg", "L")
+    leg = defaultLegend(0.4,0.50,0.7,0.86) # ROOT.TLegend(0.65,0.73,0.86,0.87)
+    leg.AddEntry(frame.findObject("data"),"Data", "EP")
+    leg.AddEntry(frame.findObject("full_fit"),"Total fit","L")
+    leg.AddEntry(frame.findObject("signal"),"Signal","L")
+    leg.AddEntry(frame.findObject("bkg_prec"),"Partially reconstructed background", "L")
+    leg.AddEntry(frame.findObject("bkg_comb"),"Combinatorial background", "L")
     
     frame2 = mass.frame(RF.Title(' '))
   
@@ -661,6 +771,7 @@ if __name__ == '__main__':
     BR_JpsiMuMu = 5.961E-02 #pm 0.033          #Gamma7/Gamma, https://pdglive.lbl.gov/BranchingRatio.action?desig=2&parCode=M070&home=MXXX025, 2021
     ###print ('nSel={}'.format(nSel))
     lumi = 0.774 # /fb 
+    #lumi = 0.774 * 0.9839 # /fb 
   
     sigmaBpm = nSig / (BR_JpsiK*BR_JpsiMuMu) / totalEffMC / lumi
     statErr_data = 1./ROOT.TMath.Sqrt(nSig)  * sigmaBpm
@@ -679,6 +790,7 @@ if __name__ == '__main__':
       selectionlabel += '_no{}'.format(removed_selection_label) 
     label='data_sig{}_bkg{}_{}{}'.format(whichSignalModel,whichPRecBkgModel,selectionlabel,fiduciallabel) 
     drawPlot(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label,leg)
+    drawPlotCMSStyle(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label,leg)
 
     with open('fit{}.txt'.format(label), 'w') as fout:
       fout.write('Extracted value of sigma (fb) = {:.2e}\n'.format(sigmaBpm))
