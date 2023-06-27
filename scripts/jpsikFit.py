@@ -770,8 +770,8 @@ if __name__ == '__main__':
     BR_JpsiK =    10.20E-04 #pm 0.19  our fit  #Gamma274/Gamma, https://pdglive.lbl.gov/BranchingRatio.action?desig=3&parCode=S041&home=MXXX045, 2021 
     BR_JpsiMuMu = 5.961E-02 #pm 0.033          #Gamma7/Gamma, https://pdglive.lbl.gov/BranchingRatio.action?desig=2&parCode=M070&home=MXXX025, 2021
     ###print ('nSel={}'.format(nSel))
-    lumi = 0.774 # /fb 
-    #lumi = 0.774 * 0.9839 # /fb 
+    #lumi = 0.774 # /fb 
+    lumi = 0.774 * 0.9839 # /fb 
   
     sigmaBpm = nSig / (BR_JpsiK*BR_JpsiMuMu) / totalEffMC / lumi
     statErr_data = 1./ROOT.TMath.Sqrt(nSig)  * sigmaBpm
