@@ -23,61 +23,62 @@ from vetoes import Veto, vetoes
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Script to produce the datacards', add_help=True)
-  parser.add_argument('--homedir'               , type=str, dest='homedir'               , help='name of the homedir'                                           , default=None)
-  parser.add_argument('--outdirlabel'           , type=str, dest='outdirlabel'           , help='name of the outdir'                                            , default=None)
-  parser.add_argument('--subdirlabel'           , type=str, dest='subdirlabel'           , help='name of the subdir'                                            , default=None)
-  #parser.add_argument('--cardlabel'            , type=str, dest='cardlabel'             , help='label of the datacard'                                         , default=None)
-  parser.add_argument('--data_label'            , type=str, dest='data_label'            , help='which data samples to consider?'                               , default='V07_18Aug21')
-  parser.add_argument('--qcd_label'             , type=str, dest='qcd_label'             , help='which qcd samples to consider?'                                , default='V07_18Aug21')
-  parser.add_argument('--signal_label'          , type=str, dest='signal_label'          , help='which signal samples to consider?'                             , default='private')
-  parser.add_argument('--ctau_points_label'     , type=str, dest='ctau_points_label'     , help='which ctau_points to consider?'                                , default='generated')
-  parser.add_argument('--selection_label'       , type=str, dest='selection_label'       , help='apply a baseline selection_label?'                             , default='standard')
-  parser.add_argument('--categories_label '     , type=str, dest='categories_label'      , help='label of the list of categories'                               , default='standard')
-  parser.add_argument('--category_label'        , type=str, dest='category_label'        , help='label of a given category within this list'                    , default=None)
-  parser.add_argument('--training_label'        , type=str, dest='training_label'        , help='label of the mva training'                                     , default=None)
-  parser.add_argument('--cut_score'             , type=str, dest='cut_score'             , help='value of the cut on the mva score'                             , default=None)
-  parser.add_argument('--reweighting_strategy ' , type=str, dest='reweighting_strategy'  , help='lifetime reweighting strategy'                                 , default='inclusive')
-  parser.add_argument('--ABCD_label'            , type=str, dest='ABCD_label'            , help='which ABCD regions?'                                           , default='cos2d_svprob')
-  parser.add_argument('--signal_model_label'    , type=str, dest='signal_model_label'    , help='name of the signal pdf'                                        , default='voigtiant')
-  parser.add_argument('--background_model_label', type=str, dest='background_model_label', help='name of the background pdf'                                    , default='chebychev')
-  parser.add_argument('--mass_window_size'      , type=str, dest='mass_window_size'      , help='sigma multiplier for the mass window'                          , default='2')
-  parser.add_argument('--fit_window_size'       , type=str, dest='fit_window_size'       , help='sigma multiplier for the fit window'                           , default='6')
-  parser.add_argument('--nbins'                 , type=str, dest='nbins'                 , help='number of bins when using shapes'                              , default='40')
-  parser.add_argument('--lumi_target'           , type=str, dest='lumi_target'           , help='which luminosity should the yields be normalised to?'          , default='41.599')
-  parser.add_argument('--sigma_B'               , type=str, dest='sigma_B'               , help='which value of the B cross section?'                           , default='472.8e9')
-  parser.add_argument('--lhe_efficiency'        , type=str, dest='lhe_efficiency'        , help='LHE efficiency'                                                , default='0.08244')
-  parser.add_argument('--sigma_mult'            , type=str, dest='sigma_mult'            , help='size n*sigma of the window around a given mass'                , default='20')
-  parser.add_argument('--resolution_p0'         , type=str, dest='resolution_p0'         , help='p0 of the resolution(mass) linear function'                    , default='0.0002747')
-  parser.add_argument('--resolution_p1'         , type=str, dest='resolution_p1'         , help='p1 of the resolution(mass) linear function'                    , default='0.008302')
-  parser.add_argument('--weight_hlt'            , type=str, dest='weight_hlt'            , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
-  parser.add_argument('--weight_pusig'          , type=str, dest='weight_pusig'          , help='name of the branch of pu sig weight'                           , default='weight_pusig_D')
-  parser.add_argument('--weight_mu0id'          , type=str, dest='weight_mu0id'          , help='name of the branch of mu0id weight'                            , default='weight_mu0_softid')
-  parser.add_argument('--weight_muid'           , type=str, dest='weight_muid'           , help='name of the branch of muid weight'                             , default='weight_mu_looseid')
-  parser.add_argument('--qcd_white_list '       , type=str, dest='qcd_white_list'        , help='pthat range to consider for qcd samples'                       , default='20to300')
-  parser.add_argument('--CMStag '               , type=str, dest='CMStag'                , help='CMS tag to be added if --add_CMSlabel'                         , default='Preliminary')
-  parser.add_argument('--do_cutbased'           ,           dest='do_cutbased'           , help='use cutbased selection method'            , action='store_true', default=False)
-  parser.add_argument('--do_mva'                ,           dest='do_mva'                , help='use mva selection method'                 , action='store_true', default=False)
-  parser.add_argument('--do_parametric'         ,           dest='do_parametric'         , help='use parametric neural network'            , action='store_true', default=False)
-  parser.add_argument('--add_weight_hlt'        ,           dest='add_weight_hlt'        , help='add hlt weight'                           , action='store_true', default=False)
-  parser.add_argument('--add_weight_pu'         ,           dest='add_weight_pu'         , help='add pu weight'                            , action='store_true', default=False)
-  parser.add_argument('--add_weight_muid'       ,           dest='add_weight_muid'       , help='add muid weight'                          , action='store_true', default=False)
-  parser.add_argument('--do_ABCD'               ,           dest='do_ABCD'               , help='compute yields with the ABCD method'      , action='store_true', default=False)
-  parser.add_argument('--do_ABCDHybrid'         ,           dest='do_ABCDHybrid'         , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
-  parser.add_argument('--do_TF'                 ,           dest='do_TF'                 , help='compute yields with the TF method'        , action='store_true', default=False)
-  parser.add_argument('--do_realData'           ,           dest='do_realData'           , help='get the number of data yields'            , action='store_true', default=False)
-  parser.add_argument('--do_counting'           ,           dest='do_counting'           , help='perform counting experiment'              , action='store_true', default=False)
-  parser.add_argument('--do_shape_analysis'     ,           dest='do_shape_analysis'     , help='perform shape-based analysis'             , action='store_true', default=False)
-  parser.add_argument('--do_shape_TH1'          ,           dest='do_shape_TH1'          , help='perform shape-based analysis with histo'  , action='store_true', default=False)
-  parser.add_argument('--use_discrete_profiling',           dest='use_discrete_profiling', help='use discrete profiling method'            , action='store_true', default=False)
-  parser.add_argument('--do_binned_fit'         ,           dest='do_binned_fit'         , help='perform binned fit when shape analysis'   , action='store_true', default=False)
-  parser.add_argument('--do_blind'              ,           dest='do_blind'              , help='perform blind fit when shape analysis'    , action='store_true', default=False)
-  parser.add_argument('--plot_pulls'            ,           dest='plot_pulls'            , help='plot pull distribution'                   , action='store_true', default=False)
-  parser.add_argument('--do_categories'         ,           dest='do_categories'         , help='compute yields in categories'             , action='store_true', default=False)
-  parser.add_argument('--add_Bc'                ,           dest='add_Bc'                , help='add the Bc samples'                       , action='store_true', default=False)
-  parser.add_argument('--plot_prefit'           ,           dest='plot_prefit'           , help='produce prefit plots'                     , action='store_true', default=False)
-  parser.add_argument('--add_CMSlabel'          ,           dest='add_CMSlabel'          , help='add CMS label'                            , action='store_true', default=False)
-  parser.add_argument('--add_lumilabel'         ,           dest='add_lumilabel'         , help='add CMS label'                            , action='store_true', default=False)
-  parser.add_argument('--do_tdrstyle '          ,           dest='do_tdrstyle'           , help='improved style of the plots'              , action='store_true', default=False)
+  parser.add_argument('--homedir'                   , type=str, dest='homedir'                   , help='name of the homedir'                                           , default=None)
+  parser.add_argument('--outdirlabel'               , type=str, dest='outdirlabel'               , help='name of the outdir'                                            , default=None)
+  parser.add_argument('--subdirlabel'               , type=str, dest='subdirlabel'               , help='name of the subdir'                                            , default=None)
+  #parser.add_argument('--cardlabel'                , type=str, dest='cardlabel'                 , help='label of the datacard'                                         , default=None)
+  parser.add_argument('--data_label'                , type=str, dest='data_label'                , help='which data samples to consider?'                               , default='V07_18Aug21')
+  parser.add_argument('--qcd_label'                 , type=str, dest='qcd_label'                 , help='which qcd samples to consider?'                                , default='V07_18Aug21')
+  parser.add_argument('--signal_label'              , type=str, dest='signal_label'              , help='which signal samples to consider?'                             , default='private')
+  parser.add_argument('--ctau_points_label'         , type=str, dest='ctau_points_label'         , help='which ctau_points to consider?'                                , default='generated')
+  parser.add_argument('--selection_label'           , type=str, dest='selection_label'           , help='apply a baseline selection_label?'                             , default='standard')
+  parser.add_argument('--categories_label '         , type=str, dest='categories_label'          , help='label of the list of categories'                               , default='standard')
+  parser.add_argument('--category_label'            , type=str, dest='category_label'            , help='label of a given category within this list'                    , default=None)
+  parser.add_argument('--training_label'            , type=str, dest='training_label'            , help='label of the mva training'                                     , default=None)
+  parser.add_argument('--cut_score'                 , type=str, dest='cut_score'                 , help='value of the cut on the mva score'                             , default=None)
+  parser.add_argument('--reweighting_strategy '     , type=str, dest='reweighting_strategy'      , help='lifetime reweighting strategy'                                 , default='inclusive')
+  parser.add_argument('--ABCD_label'                , type=str, dest='ABCD_label'                , help='which ABCD regions?'                                           , default='cos2d_svprob')
+  parser.add_argument('--signal_model_label'        , type=str, dest='signal_model_label'        , help='name of the signal pdf'                                        , default='voigtiant')
+  parser.add_argument('--background_model_label'    , type=str, dest='background_model_label'    , help='name of the background pdf'                                    , default='chebychev')
+  parser.add_argument('--mass_window_size'          , type=str, dest='mass_window_size'          , help='sigma multiplier for the mass window'                          , default='2')
+  parser.add_argument('--fit_window_size'           , type=str, dest='fit_window_size'           , help='sigma multiplier for the fit window'                           , default='6')
+  parser.add_argument('--nbins'                     , type=str, dest='nbins'                     , help='number of bins when using shapes'                              , default='40')
+  parser.add_argument('--lumi_target'               , type=str, dest='lumi_target'               , help='which luminosity should the yields be normalised to?'          , default='41.599')
+  parser.add_argument('--sigma_B'                   , type=str, dest='sigma_B'                   , help='which value of the B cross section?'                           , default='472.8e9')
+  parser.add_argument('--lhe_efficiency'            , type=str, dest='lhe_efficiency'            , help='LHE efficiency'                                                , default='0.08244')
+  parser.add_argument('--sigma_mult'                , type=str, dest='sigma_mult'                , help='size n*sigma of the window around a given mass'                , default='20')
+  parser.add_argument('--resolution_p0'             , type=str, dest='resolution_p0'             , help='p0 of the resolution(mass) linear function'                    , default='0.0002747')
+  parser.add_argument('--resolution_p1'             , type=str, dest='resolution_p1'             , help='p1 of the resolution(mass) linear function'                    , default='0.008302')
+  parser.add_argument('--weight_hlt'                , type=str, dest='weight_hlt'                , help='name of the branch of hlt weight'                              , default='weight_hlt_A1')
+  parser.add_argument('--weight_pusig'              , type=str, dest='weight_pusig'              , help='name of the branch of pu sig weight'                           , default='weight_pusig_D')
+  parser.add_argument('--weight_mu0id'              , type=str, dest='weight_mu0id'              , help='name of the branch of mu0id weight'                            , default='weight_mu0_softid')
+  parser.add_argument('--weight_muid'               , type=str, dest='weight_muid'               , help='name of the branch of muid weight'                             , default='weight_mu_looseid')
+  parser.add_argument('--qcd_white_list '           , type=str, dest='qcd_white_list'            , help='pthat range to consider for qcd samples'                       , default='20to300')
+  parser.add_argument('--CMStag '                   , type=str, dest='CMStag'                    , help='CMS tag to be added if --add_CMSlabel'                         , default='Preliminary')
+  parser.add_argument('--do_cutbased'               ,           dest='do_cutbased'               , help='use cutbased selection method'            , action='store_true', default=False)
+  parser.add_argument('--do_mva'                    ,           dest='do_mva'                    , help='use mva selection method'                 , action='store_true', default=False)
+  parser.add_argument('--do_parametric'             ,           dest='do_parametric'             , help='use parametric neural network'            , action='store_true', default=False)
+  parser.add_argument('--add_weight_hlt'            ,           dest='add_weight_hlt'            , help='add hlt weight'                           , action='store_true', default=False)
+  parser.add_argument('--add_weight_pu'             ,           dest='add_weight_pu'             , help='add pu weight'                            , action='store_true', default=False)
+  parser.add_argument('--add_weight_muid'           ,           dest='add_weight_muid'           , help='add muid weight'                          , action='store_true', default=False)
+  parser.add_argument('--do_ABCD'                   ,           dest='do_ABCD'                   , help='compute yields with the ABCD method'      , action='store_true', default=False)
+  parser.add_argument('--do_ABCDHybrid'             ,           dest='do_ABCDHybrid'             , help='compute yields with the ABCDHybrid method', action='store_true', default=False)
+  parser.add_argument('--do_TF'                     ,           dest='do_TF'                     , help='compute yields with the TF method'        , action='store_true', default=False)
+  parser.add_argument('--do_realData'               ,           dest='do_realData'               , help='get the number of data yields'            , action='store_true', default=False)
+  parser.add_argument('--do_counting'               ,           dest='do_counting'               , help='perform counting experiment'              , action='store_true', default=False)
+  parser.add_argument('--do_shape_analysis'         ,           dest='do_shape_analysis'         , help='perform shape-based analysis'             , action='store_true', default=False)
+  parser.add_argument('--do_shape_TH1'              ,           dest='do_shape_TH1'              , help='perform shape-based analysis with histo'  , action='store_true', default=False)
+  parser.add_argument('--use_discrete_profiling'    ,           dest='use_discrete_profiling'    , help='use discrete profiling method'            , action='store_true', default=False)
+  parser.add_argument('--do_binned_fit'             ,           dest='do_binned_fit'             , help='perform binned fit when shape analysis'   , action='store_true', default=False)
+  parser.add_argument('--do_blind'                  ,           dest='do_blind'                  , help='perform blind fit when shape analysis'    , action='store_true', default=False)
+  parser.add_argument('--plot_pulls'                ,           dest='plot_pulls'                , help='plot pull distribution'                   , action='store_true', default=False)
+  parser.add_argument('--do_categories'             ,           dest='do_categories'             , help='compute yields in categories'             , action='store_true', default=False)
+  parser.add_argument('--add_Bc'                    ,           dest='add_Bc'                    , help='add the Bc samples'                       , action='store_true', default=False)
+  parser.add_argument('--do_normalisation_inclusive',           dest='do_normalisation_inclusive', help='use old normalisation'                    , action='store_true', default=False)
+  parser.add_argument('--plot_prefit'               ,           dest='plot_prefit'               , help='produce prefit plots'                     , action='store_true', default=False)
+  parser.add_argument('--add_CMSlabel'              ,           dest='add_CMSlabel'              , help='add CMS label'                            , action='store_true', default=False)
+  parser.add_argument('--add_lumilabel'             ,           dest='add_lumilabel'             , help='add CMS label'                            , action='store_true', default=False)
+  parser.add_argument('--do_tdrstyle '              ,           dest='do_tdrstyle'               , help='improved style of the plots'              , action='store_true', default=False)
   #parser.add_argument('--submit_batch', dest='submit_batch', help='submit on the batch?', action='store_true', default=False)
   return parser.parse_args()
 
@@ -111,7 +112,7 @@ def printInfo(opt):
 
 
 class DatacardsMaker(Tools):
-  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', vetoes='', do_cutbased=False, do_mva=False, training_label='', do_parametric=False, cut_score='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, resolution_p0=None, resolution_p1=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, plot_prefit=False, homedir='', outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, data_files='', signal_files='', signal_label='', ctau_points='', qcd_files='', white_list='', baseline_selection='', vetoes='', do_cutbased=False, do_mva=False, training_label='', do_parametric=False, cut_score='', reweighting_strategy='', ABCD_regions='', do_ABCD=True, do_ABCDHybrid=False, do_TF=False, do_realData=False, do_counting=False, do_shape_analysis=False, do_shape_TH1=False, use_discrete_profiling=False, signal_model_label='', background_model_label='', do_binned_fit=True, do_blind=False, mass_window_size='', fit_window_size='', nbins='', plot_pulls=False, do_categories=True, categories=None, category_label=None, lumi_target=None, sigma_B=None, lhe_efficiency=None, sigma_mult=None, resolution_p0=None, resolution_p1=None, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, add_Bc=False, do_normalisation_inclusive=False, plot_prefit=False, homedir='', outdirlabel='', subdirlabel='', add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
     self.tools = Tools()
     self.data_files = data_files
     self.signal_files = signal_files 
@@ -166,6 +167,7 @@ class DatacardsMaker(Tools):
     self.add_weight_pu = add_weight_pu
     self.add_weight_muid = add_weight_muid
     self.add_Bc = add_Bc
+    self.do_normalisation_inclusive = do_normalisation_inclusive
     self.plot_prefit = plot_prefit
     self.homedir = homedir
     self.outputdir = self.homedir + '/outputs/{}/datacards/{}'.format(outdirlabel, subdirlabel)
@@ -280,7 +282,7 @@ class DatacardsMaker(Tools):
 
     # initialise the fitter
     if process == 'signal':
-      fitter = Fitter(signal_label=self.signal_label, data_files=self.data_files, selection=selection, mass=mass, ctau=ctau, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, reweighting_strategy=self.reweighting_strategy, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, is_bc=category.is_bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, add_weight_muid=self.add_weight_muid, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle)
+      fitter = Fitter(signal_label=self.signal_label, data_files=self.data_files, selection=selection, mass=mass, ctau=ctau, resolution_p0=self.resolution_p0, resolution_p1=self.resolution_p1, do_cutbased=self.do_cutbased, do_mva=self.do_mva, training_label=self.training_label, do_parametric=self.do_parametric, reweighting_strategy=self.reweighting_strategy, signal_model_label=self.signal_model_label, background_model_label=self.background_model_label, do_blind=self.do_blind, do_binned_fit=self.do_binned_fit, lumi_target=self.lumi_target, sigma_B=self.sigma_B, is_bc=category.is_bc, mass_window_size=self.mass_window_size, fit_window_size=self.fit_window_size, nbins=self.nbins, outputdir=self.outputdir, category_label=category.label, category_title=category.title, plot_pulls=self.plot_pulls, add_weight_hlt=self.add_weight_hlt, add_weight_pu=self.add_weight_pu, add_weight_muid=self.add_weight_muid, weight_hlt=self.weight_hlt, weight_pusig=weight_pusig, weight_mu0id=self.weight_mu0id, weight_muid=self.weight_muid, add_CMSlabel=self.add_CMSlabel, add_lumilabel=self.add_lumilabel, CMStag=self.CMStag, do_tdrstyle=self.do_tdrstyle, do_normalisation_inclusive=self.do_normalisation_inclusive)
 
       # perform the fits and write the workspaces
       fitter.process_signal(label=label)
@@ -609,8 +611,8 @@ bkg {bkg_yields}
       # loop on the different mass windows
       for window in self.getWindowList():
         # only keep masses > 3 GeV for bc
-        if category.is_bc and float(window['mass']) < 3: continue
-        if not category.is_bc and float(window['mass']) > 4.7: continue #FIXME to be adapted once we run on the full grid
+        if category.is_bc and float(window['mass']) < 3.: continue
+        if not category.is_bc and float(window['mass']) > 5.: continue
 
         # get the category label
         cat_label = self.getCategoryLabel(signal_mass=window['mass'], category=category)
@@ -779,6 +781,8 @@ if __name__ == '__main__':
     resolution_p0 = opt.resolution_p0
     resolution_p1 = opt.resolution_p1
 
+    do_normalisation_inclusive = opt.do_normalisation_inclusive
+
     add_weight_hlt = opt.add_weight_hlt
     weight_hlt = opt.weight_hlt
 
@@ -851,6 +855,7 @@ if __name__ == '__main__':
         add_weight_pu = add_weight_pu,
         add_weight_muid = add_weight_muid,
         add_Bc = add_Bc, 
+        do_normalisation_inclusive = do_normalisation_inclusive,
         plot_prefit = plot_prefit,
         homedir = homedir, 
         outdirlabel = outdirlabel,

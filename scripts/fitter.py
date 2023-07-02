@@ -10,7 +10,7 @@ from samples import signal_samples, data_samples
 
 
 class Fitter(Tools, MVATools):
-  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, resolution_p0=None, resolution_p1=None, do_cutbased=False, do_mva=False, training_label=None, do_parametric=False, reweighting_strategy=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, is_bc=False, file_type='flat', mass_window_size='', fit_window_size='',do_veto_SM=None, veto_SM=None, nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False):
+  def __init__(self, signal_label=None, data_files='', selection='', mass=None, ctau=None, resolution_p0=None, resolution_p1=None, do_cutbased=False, do_mva=False, training_label=None, do_parametric=False, reweighting_strategy=None, signal_model_label=None, background_model_label=None, do_binned_fit=False, do_blind=False, lumi_target=41.6, lhe_efficiency=0.08244, sigma_B=472.8e9, is_bc=False, file_type='flat', mass_window_size='', fit_window_size='',do_veto_SM=None, veto_SM=None, nbins=250, title=' ', outputdir='', outdirlabel='', category_label='', category_title='', plot_pulls=True, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt=None, weight_pusig=None, weight_mu0id=None, weight_muid=None, add_CMSlabel=True, add_lumilabel=True, CMStag='', do_tdrstyle=False, do_normalisation_inclusive=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_label = signal_label
@@ -61,6 +61,7 @@ class Fitter(Tools, MVATools):
     self.add_lumilabel = add_lumilabel
     self.CMStag = CMStag
     self.do_tdrstyle = do_tdrstyle
+    self.do_normalisation_inclusive = do_normalisation_inclusive
     # define window sizes (multiples of sigma)
     self.mass_window_size = mass_window_size
     self.fit_window_size = fit_window_size
@@ -100,10 +101,10 @@ class Fitter(Tools, MVATools):
     return label
 
 
-  def getMCWeight(self, signal_files, lumi, is_bc=False):
+  def getMCWeight(self, signal_files, lumi, is_bu=False, is_bd=False, is_bs=False, is_bc=False):
     weight_sig_list = ['gen_hnl_ct']
-    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=self.signal_ctau, is_bc=is_bc)
-    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=self.signal_mass, ctau=self.signal_ctau, sigma_B=self.sigma_B, lumi=lumi, lhe_efficiency=self.lhe_efficiency, is_bc=is_bc)
+    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=self.signal_ctau, is_bu=is_bu, is_bd=is_bd, is_bs=is_bs, is_bc=is_bc)
+    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=self.signal_mass, ctau=self.signal_ctau, sigma_B=self.sigma_B, lumi=lumi, lhe_efficiency=self.lhe_efficiency, is_bu=is_bu, is_bd=is_bd, is_bs=is_bs, is_bc=is_bc)
     weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
     if self.add_weight_hlt: 
       weight_sig += ' * ({})'.format(self.weight_hlt)
@@ -280,7 +281,7 @@ class Fitter(Tools, MVATools):
       #print '\n\n'
 
       # define signal weights
-      weight_sig, weight_sig_list = self.getMCWeight(signal_files, lumi=self.lumi_true, is_bc=self.is_bc) 
+      weight_sig, weight_sig_list = 1#self.getMCWeight(signal_files, lumi=self.lumi_true, is_bc=self.is_bc) #FIXME to adapt to new norm strategy 
       #TODO do we want to have the prefit plots scaled to the target lumi? In which case, also scale the background
 
       if self.do_cutbased:
@@ -721,7 +722,7 @@ class Fitter(Tools, MVATools):
   #  return n_bkg
 
 
-  def getSignalYieldsFromHist(self):
+  def getSignalYieldsFromHist(self, is_bu=False, is_bd=False, is_bs=False, is_bc=False):
     '''
       Returns the normalised number of signal yields in the fit window
     '''
@@ -735,9 +736,12 @@ class Fitter(Tools, MVATools):
     # define selection
     cond_sig = 'ismatched==1' if self.file_type == 'flat' else 'BToMuMuPi_isMatched==1'
     selection_sig = cond_sig + ' && ' + self.selection #TODO in case we apply gen-matching condition, do it here /self.efficiency_genmatching
+    if is_bu: selection_sig += ' && isbu==1'
+    if is_bd: selection_sig += ' && isbd==1'
+    if is_bs: selection_sig += ' && isbs==1'
     
     # define signal weights
-    weight_sig, weight_sig_list = self.getMCWeight(signal_files, lumi=self.lumi_target, is_bc=self.is_bc)
+    weight_sig, weight_sig_list = self.getMCWeight(signal_files, lumi=self.lumi_target, is_bu=is_bu, is_bd=is_bd, is_bs=is_bs, is_bc=is_bc)
     print 'sel sig before: {}'.format(selection_sig)
 
     # get the tree
@@ -745,11 +749,11 @@ class Fitter(Tools, MVATools):
     if self.do_cutbased:
       tree_sig = ROOT.TChain(treename)
       for signal_file in signal_files:
-        filename = signal_file.filename if not self.is_bc else signal_file.filename_Bc
+        filename = signal_file.filename if is_bc else signal_file.filename_Bc
         tree_sig.Add(filename)
     elif self.do_mva:
       score_label = self.getSignalLabel()
-      filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename, is_bc=self.is_bc) 
+      filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename, is_bc=is_bc, force_overwrite=True) 
       file_sig = self.tools.getRootFile(filename_sig)
       tree_sig = self.tools.getTree(file_sig, treename)
 
@@ -763,13 +767,28 @@ class Fitter(Tools, MVATools):
     # get the number of yields
     n_sig = hist.Integral()
 
-    print 'n_sig = {}'.format(n_sig)
+    if is_bu: print 'n_sig (Bu) = {}'.format(n_sig) 
+    elif is_bd: print 'n_sig (Bd) = {}'.format(n_sig) 
+    elif is_bs: print 'n_sig (Bs) = {}'.format(n_sig) 
+    elif is_bc: print 'n_sig (Bc) = {}'.format(n_sig) 
+    else: print 'n_sig = {}'.format(n_sig)
 
     return n_sig
 
 
   def getSignalYields(self):
-    n_sig = self.getSignalYieldsFromHist()
+    if self.do_normalisation_inclusive:
+      n_sig = self.getSignalYieldsFromHist(is_bc=self.is_bc)
+    else:
+      if not self.is_bc:
+        n_sig_bu = self.getSignalYieldsFromHist(is_bu=True, is_bd=False, is_bs=False)
+        n_sig_bd = self.getSignalYieldsFromHist(is_bu=False, is_bd=True, is_bs=False)
+        n_sig_bs = self.getSignalYieldsFromHist(is_bu=False, is_bd=False, is_bs=True)
+        n_sig = n_sig_bu + n_sig_bd + n_sig_bs
+      else:
+        n_sig = self.getSignalYieldsFromHist(is_bc=self.is_bc)
+
+    print 'n_sig (tot) = {}'.format(n_sig)
 
     return n_sig
 
@@ -976,7 +995,7 @@ class Fitter(Tools, MVATools):
 
   def process_signal(self, label=''):
     self.createFitModels(process='signal')
-    self.performFit(process='signal', label=label)
+    #self.performFit(process='signal', label=label)
     self.createSignalWorkspace(label=label)
 
 

@@ -73,6 +73,7 @@ class Config(object):
                sigma_mult_window=None,
                resolution_p0=None,
                resolution_p1=None,
+               do_normalisation_inclusive=None,
 
                # for limits
                do_blind=None,
@@ -146,6 +147,7 @@ class Config(object):
     self.sigma_mult_window = sigma_mult_window
     self.resolution_p0 = resolution_p0
     self.resolution_p1 = resolution_p1
+    self.do_normalisation_inclusive = do_normalisation_inclusive
     self.do_blind = do_blind
     self.muon_eoslabel = muon_eoslabel
     self.electron_eoslabel = electron_eoslabel
