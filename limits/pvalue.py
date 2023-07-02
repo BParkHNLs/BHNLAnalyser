@@ -182,14 +182,18 @@ class LimitPlotter(object):
       coupling_label = self.getCouplingLabel(coupling_obs)
 
       # get the corresponding p-value
-      p_value_filename = glob.glob('{}/outputs/{}/limits/{}/results/pvalue_{}_m_{}_ctau_*_v2_{}.txt'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.scenario, mass, coupling_label))[0]
-      p_value_file = open(p_value_filename)
-      lines = p_value_file.readlines()
-      for line in lines:
-        if 'p-value of background' not in line: continue
-        p_value = line[line.find('p-value of background')+23:len(line)-1]
-      the_masses.append(round(float(mass), 2))
-      the_pvalues.append(float(p_value))
+      try:
+        p_value_filename = glob.glob('{}/outputs/{}/limits/{}/results/pvalue_{}_m_{}_ctau_*_v2_{}.txt'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.scenario, mass, coupling_label))[0]
+        p_value_file = open(p_value_filename)
+        lines = p_value_file.readlines()
+        for line in lines:
+          if 'p-value of background' not in line: continue
+          p_value = line[line.find('p-value of background')+23:len(line)-1]
+        the_masses.append(round(float(mass), 2))
+        the_pvalues.append(float(p_value))
+      except: 
+        print 'pvalue file for mass {} not found'.format(mass)
+        continue
 
     plt.clf()
     f, ax = plt.subplots(figsize=(9, 8))

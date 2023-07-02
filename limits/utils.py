@@ -11,7 +11,7 @@ def getMassList(files):
   for limitFile in files:
     #signal_mass = getPointGrid(limitFile) 
     #if '{}.{}'.format(signal_mass[0], signal_mass[1]) not in masses:
-    mass = limitFile[limitFile.find('m_')+2:limitFile.find('_', limitFile.find('m_')+2)]
+    mass = limitFile[limitFile.rfind('_m_')+3:limitFile.rfind('_ctau_', limitFile.rfind('_m_')+3)]
     if mass not in masses:
       #masses.append('{}.{}'.format(signal_mass[0], signal_mass[1])) 
       masses.append(mass) 
