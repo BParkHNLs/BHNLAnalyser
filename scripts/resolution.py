@@ -1057,6 +1057,67 @@ class Fitter(Tools):
         canv.SaveAs("{}/{}.C".format(outputdir, name))
 
 
+  def plotAllSignal(self):
+    shapes = []
+    for ifile, signal_label in enumerate(self.signal_labels):
+      signal_file = signal_samples[signal_label][0]
+      mass = signal_file.mass
+      resolution = 6.98338e-04 + mass * 7.78382e-03  
+      #gauss = ROOT.TF1('gauss', 'gaus', 1, 6)
+      gauss = ROOT.TF1('gauss', 'gaus', mass-4*resolution, mass+4*resolution)
+      #if ifile == 0:
+      #  gauss = ROOT.TF1('gauss', 'gaus', 1, 6)
+      #else:
+      #  gauss = ROOT.TF1('gauss', 'gaus', mass-4*resolution, mass+4*resolution)
+      gauss.SetParameters(1, mass, resolution)
+      #gauss.SetLineColor(2)
+      shapes.append(gauss)
+      
+    ROOT.gStyle.SetPalette(55)
+
+    canv = self.tools.createTCanvas(name="canv", dimx=2500, dimy=800)
+
+    gauss = ROOT.TF1('gauss', 'gaus', 1, 6)
+    gauss.SetParameters(1, 0, 0)
+    gauss.SetTitle(' ')
+    gauss.Draw()
+    
+    for i, shape in enumerate(shapes):
+      shape.Draw('same')
+      #if i == 0:
+      #gauss = ROOT.TF1('gauss', 'gaus', 1, 6)
+      #  shape.Draw()
+      #else:
+      #  shape.Draw('same')
+
+      #if ifile==0: gauss.Draw()
+      #else: gauss.Draw('same')
+
+      ##print ifile
+      #inputfile = ROOT.TFile.Open(signal_file.filename)
+      #treename = 'signal_tree'
+      #tree = self.tools.getTree(inputfile, treename)
+      ##tree.Print()
+      ##hist = self.tools.createHisto(tree, 'hnl_mass', hist_name='hist', branchname='flat', weight=-99, selection='')
+      #hist_name = 'hist_{}_{}'.format(signal_file.mass, signal_file.ctau)
+      #hist = ROOT.TH1D(hist_name, hist_name, 300, 1, 6)
+      #tree.Project(hist_name, 'hnl_mass', '')
+      #hist.SetDirectory(0)
+      #hist.Scale(1./hist.Integral())
+      #if ifile == 0:
+      #  print 'ok'
+      #  hist.Draw('hist')
+      #else:
+      #  print 'you see me'
+      #  hist.Draw('hist same')
+
+    outputdir = self.tools.getOutDir('./myPlots', 'signal_parametrisation')
+    name = 'plot_all_signals'
+    canv.SaveAs("{}/{}.png".format(outputdir, name))
+
+      
+      
+
 
 
 if __name__ == '__main__':
@@ -1097,7 +1158,7 @@ if __name__ == '__main__':
     ##'V42_06Feb23_m1p48',
     ##'V42_06Feb23_m1p53',
     ##'V42_06Feb23_m1p56',
-    #'V42_06Feb23_m1p59',
+    'V42_06Feb23_m1p59',
     ###'V42_06Feb23_m1p62',
     ##'V42_06Feb23_m1p65',
     ###'V42_06Feb23_m1p68',
@@ -1131,7 +1192,7 @@ if __name__ == '__main__':
     ##'V42_06Feb23_m2p9',
     ##'V42_06Feb23_m2p95',
     ##'V42_06Feb23_m3p05',
-    #'V42_06Feb23_m3p1',
+    'V42_06Feb23_m3p1',
     ##'V42_06Feb23_m3p15',
     #'V42_06Feb23_m3p2',
     ##'V42_06Feb23_m3p25',
@@ -1171,7 +1232,7 @@ if __name__ == '__main__':
   #fitter.getCategoryGraph(categories=categories)
   #fitter.getCategoryAverageCtau(categories=categories)
   #fitter.getFittedResolutionGraph()
-  fitter.getCategoryResolutionGraph(categories=categories)
+  #fitter.getCategoryResolutionGraph(categories=categories)
   #fitter.studyYieldsParametrisation(categories=categories)
   
 
@@ -1182,6 +1243,12 @@ if __name__ == '__main__':
     
 
   signal_labels = [
+    'V13_06Feb23_m1',
+    'V13_06Feb23_m1p5',
+    'V13_06Feb23_m2',
+    'V13_06Feb23_m3',
+    'V13_06Feb23_m4p5',
+    'V13_06Feb23_m5p5',
     #'V42_06Feb23_m0p5',
     #'V42_06Feb23_m0p6',
     #'V42_06Feb23_m0p7',
@@ -1193,14 +1260,14 @@ if __name__ == '__main__':
     'V42_06Feb23_m1p08',
     'V42_06Feb23_m1p1',
     'V42_06Feb23_m1p12',
-    #'V42_06Feb23_m1p14',
+    'V42_06Feb23_m1p14',
     'V42_06Feb23_m1p16',
     'V42_06Feb23_m1p18',
     'V42_06Feb23_m1p2',
     'V42_06Feb23_m1p22',
     'V42_06Feb23_m1p24',
     'V42_06Feb23_m1p26',
-    #'V42_06Feb23_m1p28',
+    'V42_06Feb23_m1p28',
     'V42_06Feb23_m1p3',
     'V42_06Feb23_m1p32',
     'V42_06Feb23_m1p34',
@@ -1214,34 +1281,34 @@ if __name__ == '__main__':
     'V42_06Feb23_m1p53',
     'V42_06Feb23_m1p56',
     'V42_06Feb23_m1p59',
-    #'V42_06Feb23_m1p62',
+    'V42_06Feb23_m1p62',
     'V42_06Feb23_m1p65',
-    #'V42_06Feb23_m1p68',
+    'V42_06Feb23_m1p68',
     'V42_06Feb23_m1p71',
     'V42_06Feb23_m1p74',
     'V42_06Feb23_m1p77',
     'V42_06Feb23_m1p8',
     'V42_06Feb23_m1p83',
-    #'V42_06Feb23_m1p86',
-    #'V42_06Feb23_m1p89',
+    'V42_06Feb23_m1p86',
+    'V42_06Feb23_m1p89',
     'V42_06Feb23_m1p92',
     'V42_06Feb23_m1p95',
-    #'V42_06Feb23_m1p98',
-    #'V42_06Feb23_m2p05',
+    'V42_06Feb23_m1p98',
+    'V42_06Feb23_m2p05',
     'V42_06Feb23_m2p1',
     'V42_06Feb23_m2p15',
-    #'V42_06Feb23_m2p2',
+    'V42_06Feb23_m2p2',
     'V42_06Feb23_m2p25',
     'V42_06Feb23_m2p3',
     'V42_06Feb23_m2p35',
-    #'V42_06Feb23_m2p4',
+    'V42_06Feb23_m2p4',
     'V42_06Feb23_m2p45',
     'V42_06Feb23_m2p5',
     'V42_06Feb23_m2p55',
     'V42_06Feb23_m2p6',
     'V42_06Feb23_m2p65',
     'V42_06Feb23_m2p7',
-    #'V42_06Feb23_m2p75',
+    'V42_06Feb23_m2p75',
     'V42_06Feb23_m2p8',
     'V42_06Feb23_m2p85',
     'V42_06Feb23_m2p9',
@@ -1268,17 +1335,30 @@ if __name__ == '__main__':
     'V42_06Feb23_m4p0',
     'V42_06Feb23_m4p1',
     'V42_06Feb23_m4p2',
-    #'V42_06Feb23_m4p3',
-    #'V42_06Feb23_m4p4',
+    'V42_06Feb23_m4p3',
+    'V42_06Feb23_m4p4',
     'V42_06Feb23_m4p5',
     'V42_06Feb23_m4p6',
-    #'V42_06Feb23_m4p7',
-    #'V42_06Feb23_m4p8',
+    'V42_06Feb23_m4p7',
+    'V42_06Feb23_m4p8',
+    'V42_06Feb23_m4p9',
+    'V42_06Feb23_m5p0',
+    'V42_06Feb23_m5p1',
+    'V42_06Feb23_m5p2',
+    'V42_06Feb23_m5p3',
+    'V42_06Feb23_m5p4',
+    'V42_06Feb23_m5p5',
+    'V42_06Feb23_m5p6',
+    'V42_06Feb23_m5p7',
+    'V42_06Feb23_m5p8',
+    'V42_06Feb23_m5p9',
+    'V42_06Feb23_m6p0',
   ]
 
-  #fitter = Fitter(signal_labels=signal_labels, baseline_selection=baseline_selection, nbins=150, outdirlabel=outdirlabel)
+  fitter = Fitter(signal_labels=signal_labels, baseline_selection=baseline_selection, nbins=150, outdirlabel=outdirlabel)
   ##fitter.getResolutionGraph()
   ##fitter.getResolutionFit()
+  fitter.plotAllSignal()
 
 
 
