@@ -33,6 +33,7 @@ from quantity import Quantity as Qte
 from quantity import quantities
 quantities_preselection = quantities['preselection']
 quantities_trackid = quantities['trackId']
+quantities_muonid = quantities['muonId']
 
 
 class TrainingInfo(object):
@@ -94,6 +95,7 @@ class Sample(object):
       'sv_lxyz',
       'hnl_charge',
       'sv_lxy',
+      'sv_chi2',
       ]
     if mass != None and ctau != None: 
       self.extra_branches.append('gen_hnl_ct')
@@ -184,6 +186,7 @@ class MVAAnalyser(Tools, MVATools):
     #TODO in case of more complex baseline selection, convert it to a format that is digestable by pandas query
 
     selection = self.baseline_selection + ' && ' + category.definition_flat
+    print selection
     #selection = 'hnl_charge==0'
     #query = self.getPandasQuery(selection)
 
@@ -1517,8 +1520,29 @@ class MVAAnalyser(Tools, MVATools):
 
     masses = [1.0, 2.0, 3.0, 4.5, 1.5]
 
-    training_info1 = TrainingInfo('V13_06Feb23_2023Apr06_14h13m31s', category.label)
-    training_info2 = TrainingInfo('V13_06Feb23_2023Jun11_22h15m20s', category.label)
+    training_info1 = TrainingInfo('V13_06Feb23_2023Apr06_14h13m31s', category.label) # used for unblinding
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jun11_22h15m20s', category.label) # track id
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jun15_23h04m36s', category.label) # displaced mu id
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jun28_12h19m48s', category.label) # pi dcasig, no sv chi2
+    training_info2 = TrainingInfo('V13_06Feb23_2023Jun29_10h53m14s', category.label) # mu0 id
+
+    #leg1 = 'training w/o track ID'
+    #leg2 = 'training w/ track ID'
+
+    #leg1 = 'training w/ track ID'
+    #leg2 = 'training w/ track + muon ID'
+
+    #leg1 = 'training w/o ID'
+    #leg2 = 'training w/ track + muon ID'
+
+    #leg1 = 'training w/o pi dcasig'
+    #leg2 = 'training w/ pi dcasig'
+
+    #leg1 = 'training w/o mu0 ID'
+    #leg2 = 'training w/ mu0 ID'
+
+    leg1 = 'Previous training'
+    leg2 = 'Updated training'
 
     for mass in masses:
 
@@ -1552,12 +1576,22 @@ class MVAAnalyser(Tools, MVATools):
 
         score1 = self.predictScore(training_info=training_info1, df=main_df)
         fpr1, tpr1, thresholds1 = roc_curve(Y, score1) 
+        idx1 = 0
+        for idx, thrs in enumerate(thresholds1):
+          if thrs >= 0.99: idx1 = idx
+          if thrs < 0.99: break
 
         score2 = self.predictScore(training_info=training_info2, df=main_df)
         fpr2, tpr2, thresholds2 = roc_curve(Y, score2) 
+        idx2 = 0
+        for idx, thrs in enumerate(thresholds2):
+          if thrs >= 0.99: idx2 = idx
+          if thrs < 0.99: break
 
-        plt.plot(fpr1, tpr1, linewidth=2, label='training w/o track ID')
-        plt.plot(fpr2, tpr2, linewidth=2, label='training w/ track ID')
+        plt.plot(fpr1, tpr1, linewidth=2, label=leg1)
+        plt.plot(fpr2, tpr2, linewidth=2, label=leg2)
+        plt.plot(fpr1[idx1], tpr1[idx1], '*', markersize=10)
+        plt.plot(fpr2[idx2], tpr2[idx2], '*', markersize=10)
 
         plt.xlabel('False Positive Rate')
         plt.ylabel('True Positive Rate')
@@ -1683,7 +1717,7 @@ class MVAAnalyser(Tools, MVATools):
 
     for category in self.categories:
       if category.label == 'incl': continue
-      if category.label != 'lxysiggt150_SS' and category.label != 'lxysig0to50_SS': continue
+      #if category.label != 'lxysiggt150_SS': continue# and category.label != 'lxysig0to50_SS': continue
       #if 'Bc' not in category.label: continue
 
       print '\n -> get the training information'
@@ -1745,7 +1779,8 @@ class MVAAnalyser(Tools, MVATools):
           self.plotPreselectionQuantity(training_info=training_info, mc_samples=mc_samples, quantity=quantity, category=category)
 
       if self.do_plotSignalBackgroundComparison:
-        for quantity in quantities_trackid:
+        #for quantity in quantities_trackid:
+        for quantity in quantities_muonid:
           print quantity.name_flat
           self.plotSignalBackgroundComparison(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, quantity=quantity, category=category)
 
@@ -1799,7 +1834,10 @@ if __name__ == '__main__':
   #dirname = 'test_Bc_2023Jan25_22h42m38s' # Bc
   #dirname = 'test_2023Jan30_17h10m34s' # test statistics ML review
   #dirname = 'V13_06Feb23_2023Apr06_14h13m31s' # used for unblinding
-  dirname = 'V13_06Feb23_2023Jun11_22h15m20s' # track id
+  #dirname = 'V13_06Feb23_2023Jun11_22h15m20s' # track id
+  #dirname = 'V13_06Feb23_2023Jun15_23h04m36s' # displaced mu id
+  #dirname = 'V13_06Feb23_2023Jun28_12h19m48s' #pi dcasig, no sv_chi2
+  dirname = 'V13_06Feb23_2023Jun29_10h53m14s' # with mu0 id
 
   baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
   #categories = categories['V12_08Aug22_permass']
@@ -1810,20 +1848,21 @@ if __name__ == '__main__':
   data_files = []
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_partial.root')
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_norm.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_15Jun23.root')
 
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk4_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk5_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk6_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk7_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk10_n500/flat/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk11_n500/flat/flat_bparknano_06Feb23_norm.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk4_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk5_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk6_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk7_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk8_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk9_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk10_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk11_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
 
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_08Aug22_sr.root')
@@ -1863,8 +1902,8 @@ if __name__ == '__main__':
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
-    #masses = ['m1p0', 'm1p5', 'm2', 'm3', 'm4p5']
-    masses = ['m4p5']
+    #masses = ['m1', 'm1p5', 'm2', 'm3', 'm4p5']
+    masses = ['m3']
 
     for mass in masses:
       signal_files = []
