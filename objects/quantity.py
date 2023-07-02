@@ -383,17 +383,46 @@ quantities['muonId_study_displacedmuon'] = [
   #Quantity(name_nano='Muon_pfiso04Rel_pu[BToMuMuPi_sel_mu_idx]', name_flat='', label='pfiso04Rel_pu', title='pfiso04Rel_pu', nbins=50, bin_min=0, bin_max=10),
 ]
 
+quantities['muonId'] = [
+  #Quantity(name_nano='Muon_inTimeMuon[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_intimemuon', label='mu0_inTimeMuon', title='inTimeMuon', nbins=2, bin_min=0, bin_max=2),
+  #Quantity(name_nano='Muon_segmentCompatibility[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_segmentcompatibility', label='mu0_segmentCompatibility', title='segmentCompatibility', nbins=50, bin_min=0, bin_max=1.1),
+  #Quantity(name_nano='Muon_validHitFraction[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_validhitfraction', label='mu0_validHitFraction', title='validHitFraction', nbins=50, bin_min=0.5, bin_max=1.01),
+  #Quantity(name_nano='Muon_kinkFinderChi2[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_kinkfinderchi2', label='mu0_kinkFinderChi2', title='kinkFinderChi2', nbins=50, bin_min=0, bin_max=30),
+  #Quantity(name_nano='Muon_globalNormalisedChi2[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_globalnormalisedchi2', label='mu0_globalNormalisedChi2', title='globalNormalisedChi2', nbins=50, bin_min=0, bin_max=10),
+  #Quantity(name_nano='Muon_localPositionChi2[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_localpositionchi2', label='mu0_localPositionChi2', title='localPositionChi2', nbins=50, bin_min=0, bin_max=8),
+  #Quantity(name_nano='Muon_caloCompatibility[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_calocompatibility', label='mu0_caloCompatibility', title='caloCompatibility', nbins=50, bin_min=0, bin_max=1.1),
+  #Quantity(name_nano='Muon_numberOfValidMuonHits[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_numberofvalidmuonhits', label='mu0_numberOfValidMuonHits', title='numberOfValidMuonHits', nbins=55, bin_min=0, bin_max=55),
+  #Quantity(name_nano='Muon_numberOfValidPixelHits[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_numberofvalidpixelhits', label='mu0_numberOfValidPixelHits', title='numberOfValidPixelHits', nbins=10, bin_min=0, bin_max=10),
+  #Quantity(name_nano='Muon_numberOfTrackerLayers[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_numberoftrackerlayers', label='mu0_numberOfTrackerLayers', title='numberOfTrackerLayers', nbins=18, bin_min=0, bin_max=18),
+  #Quantity(name_nano='Muon_numberOfPixelLayers[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_numberofpixellayers', label='mu0_numberOfPixelLayers', title='numberOfPixelLayers', nbins=6, bin_min=0, bin_max=6),
+  #Quantity(name_nano='Muon_trackerHighPurityFlag[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_trackerhighpurityflag', label='mu0_trackerHighPurityFlag', title='trackerHighPurityFlag', nbins=2, bin_min=0, bin_max=2),
+  #Quantity(name_nano='Muon_numberOfStations[BToMuMuPi_sel_mu0_idx]', name_flat='mu0_numberofstations', label='mu0_numberOfStations', title='numberOfStations', nbins=5, bin_min=0, bin_max=5),
+  Quantity(name_nano='Muon_inTimeMuon[BToMuMuPi_sel_mu_idx]', name_flat='mu_intimemuon', label='mu_inTimeMuon', title='inTimeMuon', nbins=2, bin_min=0, bin_max=2),
+  Quantity(name_nano='Muon_segmentCompatibility[BToMuMuPi_sel_mu_idx]', name_flat='mu_segmentcompatibility', label='mu_segmentCompatibility', title='segmentCompatibility', nbins=50, bin_min=0, bin_max=1.1),
+  Quantity(name_nano='Muon_validHitFraction[BToMuMuPi_sel_mu_idx]', name_flat='mu_validhitfraction', label='mu_validHitFraction', title='validHitFraction', nbins=50, bin_min=0.5, bin_max=1.01),
+  Quantity(name_nano='Muon_kinkFinderChi2[BToMuMuPi_sel_mu_idx]', name_flat='mu_kinkfinderchi2', label='mu_kinkFinderChi2', title='kinkFinderChi2', nbins=50, bin_min=0, bin_max=30),
+  Quantity(name_nano='Muon_globalNormalisedChi2[BToMuMuPi_sel_mu_idx]', name_flat='mu_globalnormalisedchi2', label='mu_globalNormalisedChi2', title='globalNormalisedChi2', nbins=50, bin_min=0, bin_max=10),
+  Quantity(name_nano='Muon_localPositionChi2[BToMuMuPi_sel_mu_idx]', name_flat='mu_localpositionchi2', label='mu_localPositionChi2', title='localPositionChi2', nbins=50, bin_min=0, bin_max=8),
+  Quantity(name_nano='Muon_caloCompatibility[BToMuMuPi_sel_mu_idx]', name_flat='mu_calocompatibility', label='mu_caloCompatibility', title='caloCompatibility', nbins=50, bin_min=0, bin_max=1.1),
+  Quantity(name_nano='Muon_numberOfValidMuonHits[BToMuMuPi_sel_mu_idx]', name_flat='mu_numberofvalidmuonhits', label='mu_numberOfValidMuonHits', title='numberOfValidMuonHits', nbins=55, bin_min=0, bin_max=55),
+  Quantity(name_nano='Muon_numberOfValidPixelHits[BToMuMuPi_sel_mu_idx]', name_flat='mu_numberofvalidpixelhits', label='mu_numberOfValidPixelHits', title='numberOfValidPixelHits', nbins=10, bin_min=0, bin_max=10),
+  Quantity(name_nano='Muon_numberOfTrackerLayers[BToMuMuPi_sel_mu_idx]', name_flat='mu_numberoftrackerlayers', label='mu_numberOfTrackerLayers', title='numberOfTrackerLayers', nbins=18, bin_min=0, bin_max=18),
+  Quantity(name_nano='Muon_numberOfPixelLayers[BToMuMuPi_sel_mu_idx]', name_flat='mu_numberofpixellayers', label='mu_numberOfPixelLayers', title='numberOfPixelLayers', nbins=6, bin_min=0, bin_max=6),
+  Quantity(name_nano='Muon_trackerHighPurityFlag[BToMuMuPi_sel_mu_idx]', name_flat='mu_trackerhighpurityflag', label='mu_trackerHighPurityFlag', title='trackerHighPurityFlag', nbins=2, bin_min=0, bin_max=2),
+  Quantity(name_nano='Muon_numberOfStations[BToMuMuPi_sel_mu_idx]', name_flat='mu_numberofstations', label='mu_numberOfStations', title='numberOfStations', nbins=5, bin_min=0, bin_max=5),
+]
+
 quantities['trackId'] = [
   Quantity(name_nano='ProbeTracks_chi2[BToMuMuPi_pi_idx]', name_flat='pi_chi2', label='pi_chi2', title='pi #chi^{2}', nbins=100, bin_min=0, bin_max=30),
   Quantity(name_nano='ProbeTracks_ndof[BToMuMuPi_pi_idx]', name_flat='pi_ndof', label='pi_ndof', title='pi ndof', nbins=40, bin_min=0, bin_max=40),
   Quantity(name_nano='ProbeTracks_normalisedChi2[BToMuMuPi_pi_idx]', name_flat='pi_normalisedchi2', label='pi_normalisedChi2', title='pi #chi^{2}/ndof', nbins=30, bin_min=0, bin_max=5),
   Quantity(name_nano='ProbeTracks_numberOfValidHits[BToMuMuPi_pi_idx]', name_flat='pi_numberofvalidhits', label='pi_numberOfValidHits', title='pi numberOfValidHits', nbins=35, bin_min=0, bin_max=35),
-  Quantity(name_nano='ProbeTracks_numberOfLostHits[BToMuMuPi_pi_idx]', name_flat='pi_numberoflosthits', label='pi_numberOfLostHits', title='pi numberOfLostHits', nbins=3, bin_min=0, bin_max=3),
+  #Quantity(name_nano='ProbeTracks_numberOfLostHits[BToMuMuPi_pi_idx]', name_flat='pi_numberoflosthits', label='pi_numberOfLostHits', title='pi numberOfLostHits', nbins=3, bin_min=0, bin_max=3),
   Quantity(name_nano='ProbeTracks_numberOfValidPixelHits[BToMuMuPi_pi_idx]', name_flat='pi_numberofvalidpixelhits', label='pi_numberOfValidPixelHits', title='pi numberOfValidPixelHit', nbins=10, bin_min=0, bin_max=10),
   Quantity(name_nano='ProbeTracks_numberOfTrackerLayers[BToMuMuPi_pi_idx]', name_flat='pi_numberoftrackerlayers', label='pi_numberOfTrackerLayers', title='pi numberOfTrackerLayers', nbins=21, bin_min=0, bin_max=21),
   Quantity(name_nano='ProbeTracks_numberOfPixelLayers[BToMuMuPi_pi_idx]', name_flat='pi_numberofpixellayers', label='pi_numberOfPixelLayers', title='pi numberOfPixelLayers', nbins=6, bin_min=0, bin_max=6),
-  Quantity(name_nano='ProbeTracks_qualityIndex[BToMuMuPi_pi_idx]', name_flat='pi_qualityindex', label='pi_qualityIndex', title='pi qualityIndex', nbins=6, bin_min=0, bin_max=6),
-  Quantity(name_nano='ProbeTracks_highPurityFlag[BToMuMuPi_pi_idx]', name_flat='pi_highpurityflag', label='pi_highPurityFlag', title='pi highPurityFlag', nbins=2, bin_min=0, bin_max=2),
+  #Quantity(name_nano='ProbeTracks_qualityIndex[BToMuMuPi_pi_idx]', name_flat='pi_qualityindex', label='pi_qualityIndex', title='pi qualityIndex', nbins=6, bin_min=0, bin_max=6),
+  #Quantity(name_nano='ProbeTracks_highPurityFlag[BToMuMuPi_pi_idx]', name_flat='pi_highpurityflag', label='pi_highPurityFlag', title='pi highPurityFlag', nbins=2, bin_min=0, bin_max=2),
   Quantity(name_nano='ProbeTracks_validFraction[BToMuMuPi_pi_idx]', name_flat='pi_validfraction', label='pi_validFraction', title='pi validFraction', nbins=35, bin_min=0.6, bin_max=1),
 ]
 
@@ -423,6 +452,26 @@ quantities['tag_and_probe'] = [
   ##Quantity(name_nano='JPsiToMuMu_lep2_dz_sig', name_flat='probe_dz_sig', label='probe_dz_sig', title='probe #mu |d_{z}| significance', nbins=90, bin_min=0, bin_max=100),
 ]
 
+quantities['control'] = [
+  Quantity(name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=5.1, bin_max=5.5),
+  Quantity(name_flat='b_mass-dimu_mass+3.0969', label='b_mass_reco', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=5.1, bin_max=5.5),
+  Quantity(name_flat='b_pt', label='b_pt', title='#mu#mu#pi p_{T} [GeV]', nbins=80, bin_min=5., bin_max=60.),
+  Quantity(name_flat='b_cos2d', label='b_cos2d', title='cos(#theta_{back-pointing})', nbins=80, bin_min=0.9995, bin_max=1.),
+  Quantity(name_flat='k_pt', label='k_pt', title='#pi p_{T} [GeV]', nbins=80, bin_min=5., bin_max=60.),
+  Quantity(name_flat='l1_pt', label='l1_pt', title='#mu_{1} p_{T} [GeV]', nbins=80, bin_min=5., bin_max=30.),
+  Quantity(name_flat='l2_pt', label='l2_pt', title='#mu_{2} p_{T} [GeV]', nbins=80, bin_min=5., bin_max=30.),
+  Quantity(name_flat='dimu_mass', label='dimu_mass', title='#mu#mu invariant mass [GeV]', nbins=80, bin_min=2.9, bin_max=3.3),
+  Quantity(name_flat='k_numberofvalidpixelhits', label='k_numberOfValidPixelHits', title='k numberOfValidPixelHit', nbins=10, bin_min=0, bin_max=10),
+  Quantity(name_flat='k_numberoftrackerlayers', label='k_numberOfTrackerLayers', title='k numberOfTrackerLayers', nbins=21, bin_min=0, bin_max=21),
+  Quantity(name_flat='k_numberofpixellayers', label='k_numberOfPixelLayers', title='k numberOfPixelLayers', nbins=6, bin_min=0, bin_max=6),
+  Quantity(name_flat='k_dcasig_corr', label='k_dcasig_corr', title='k_dcasig_corr', nbins=50, bin_min=0, bin_max=120),
+  Quantity(name_flat='l1_numberofvalidpixelhits', label='l1_numberOfValidPixelHits', title='l1_numberOfValidPixelHits', nbins=10, bin_min=0, bin_max=10),
+  Quantity(name_flat='l1_numberoftrackerlayers', label='l1_numberOfTrackerLayers', title='l1_numberOfTrackerLayers', nbins=18, bin_min=0, bin_max=18),
+  Quantity(name_flat='l1_numberofpixellayers', label='l1_numberOfPixelLayers', title='l1_numberOfPixelLayers', nbins=6, bin_min=0, bin_max=6),
+  Quantity(name_flat='l2_numberofvalidpixelhits', label='l2_numberOfValidPixelHits', title='l2_numberOfValidPixelHits', nbins=10, bin_min=0, bin_max=10),
+  Quantity(name_flat='l2_numberoftrackerlayers', label='l2_numberOfTrackerLayers', title='l2_numberOfTrackerLayers', nbins=18, bin_min=0, bin_max=18),
+  Quantity(name_flat='l2_numberofpixellayers', label='l2_numberOfPixelLayers', title='l2_numberOfPixelLayers', nbins=6, bin_min=0, bin_max=6),
+]
 
 quantities['control_Bc'] = [
   Quantity(name_flat='b_mass', label='b_mass', title='#mu#mu#pi invariant mass [GeV]', nbins=80, bin_min=4.5, bin_max=8),

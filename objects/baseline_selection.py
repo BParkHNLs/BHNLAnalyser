@@ -11,9 +11,14 @@ class Selection(object):
 
 selection = {}
 selection['none'] = Selection(
-    flat = 'hnl_pt > 0',
+    flat = 'b_pt > 0',
     #flat = 'mu0_triggermatching_dr<0.05',
     nano = 'BToMuMuPi_hnl_pt > 0',
+)
+
+selection['control'] = Selection(
+    #flat = 'b_mass > 5  && b_cos2d > 0.9995  && abs(dimu_mass-3.097) < 0.05  && sv_lxy > 0.035  && sv_prob > 0.08  && k_pt > 1.0  && abs(k_eta) < 1.6  && l2_pt > 2.  && abs(l2_eta) < 1.8  && l1_softid==1'
+    flat = 'abs(b_mass-5.27934)<0.03 && b_cos2d > 0.9995  && abs(dimu_mass-3.097) < 0.05  && sv_lxy > 0.035  && sv_prob > 0.08  && k_pt > 1.0  && abs(k_eta) < 1.6  && l2_pt > 2.  && abs(l2_eta) < 1.8  && l1_softid==1'
 )
 
 selection['control_Bc'] = Selection(

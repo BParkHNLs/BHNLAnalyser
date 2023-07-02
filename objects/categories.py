@@ -25,10 +25,22 @@ categories['control_Bc'] = [
           ),
 ]
 
+categories['control'] = [
+  Category(label = 'incl',
+           title = 'inclusive',
+           definition_flat = 'b_pt > 0',
+           cutbased_selection = 'b_pt > 0',
+          ),
+  Category(label = 'kdcasig_gt50',
+           title = 'inclusive',
+           definition_flat = 'k_dcasig > 50',
+          ),
+]
+
 categories['inclusive'] = [
   Category(label = 'incl',
            title = 'inclusive',
-           definition_flat = 'hnl_pt > 0',
+           definition_flat = 'b_pt > 0',
            definition_nano = 'BToMuMuPi_hnl_pt > 0',
            cutbased_selection = 'hnl_pt > 0',
           ),
