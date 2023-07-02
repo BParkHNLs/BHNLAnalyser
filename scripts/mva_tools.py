@@ -21,10 +21,10 @@ class TrainingInfo(object):
       - scaler
       - features
   '''
-  def __init__(self, training_label, category_label=None):
+  def __init__(self, training_label, path_mva=None, category_label=None):
     self.training_label = training_label
     self.category_label = category_label
-    self.indir = './{}'.format(self.training_label)
+    self.indir = '{}/{}'.format(path_mva, self.training_label)
     self.model = self.loadModel()
     self.qt = self.loadScaler()
     self.features = self.loadFeatures()
@@ -75,6 +75,9 @@ class MVATools(object):
   '''
     This class contains tools to allow the mva selection
   '''
+  def __init__(self, path_mva='./'):
+      self.path_mva = path_mva
+
 
   def getSelection(self, selection):
     '''
@@ -166,7 +169,7 @@ class MVATools(object):
     '''
       Get training information
     '''
-    training_info = TrainingInfo(training_label=training_label, category_label=category_label)
+    training_info = TrainingInfo(training_label=training_label, path_mva=self.path_mva, category_label=category_label)
 
     return training_info
 
