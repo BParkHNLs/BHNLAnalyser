@@ -16,13 +16,13 @@ tools = Tools()
 
 def getSignalYields(line):
   yields = float(line[5:line.rfind('1.0')-1])
-  return '{:.2e}'.format(yields)
+  return '{:.1e}'.format(yields)
 
 
 def getBackgroundYields(workspace, mass, category_label):
   yields = workspace.data("data_obs_bhnl_m_{}_cat_{}".format(str(mass).replace('.', 'p'), category_label)).createHistogram("hnl_mass").Integral()
   yields = yields * 0.2 #(2 sigma / 10 sigma)
-  return '{:.2e}'.format(yields)
+  return '{:.1e}'.format(yields)
 
 
 def getCategoryTitle(category):
@@ -46,15 +46,16 @@ def writeYieldsTable():
       v2 = tools.getVV(mass, ctau)
       coupling = tools.getCouplingLabel(v2)
       if ictau != len(ctaus)-1:
-        coupling_line += ' & {}'.format(coupling)
+        coupling_line += ' & $|$V$^2|$={}'.format(coupling)
       else:
-        coupling_line += ' & {} \\\ '.format(coupling)
+        coupling_line += ' & $|$V$^2|$={} \\\ '.format(coupling)
     table_yields.write('\hline')
     table_yields.write('\n' + coupling_line)
     table_yields.write('\n' + '\hline')
 
     for icat, category in enumerate(categories): 
       if 'incl' in category.label: continue
+      #if 'lxysiggt150_SS' not in category.label: continue
       signal_yields = OrderedDict()
       data_obs_name = 'workspace_data_obs_bhnl_m_{}_cat_{}.root'.format(str(mass).replace('.', 'p'), category.label)
       try:
@@ -200,8 +201,10 @@ if __name__ == '__main__':
 
   masses = [1.0, 1.5, 2.0, 3.0, 4.5]
   #ctaus = [1.0, 10.0, 100.0, 1000.0]
-  ctaus = [0.01, 10.0, 1000.0, 10000.0]
-  categories = categories['categories_0_50_150']
+  #ctaus = [0.01, 10.0, 1000.0, 10000.0]
+  ctaus = [700., 1000., 1500.0, 2000.0]
+  #ctaus = [0.007, 0.01, 0.015, 0.02]
+  categories = categories['categories_0_50_150_Bc']
 
   data_label = 'V13_06Feb23'
   data_sample = data_samples[data_label][0]
