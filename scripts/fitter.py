@@ -767,30 +767,34 @@ class Fitter(Tools, MVATools):
     # get the number of yields
     n_sig = hist.Integral()
 
+    # get the statistics (for statistical uncertainty)
+    stat = hist.GetEntries()
+
     if is_bu: print 'n_sig (Bu) = {}'.format(n_sig) 
     elif is_bd: print 'n_sig (Bd) = {}'.format(n_sig) 
     elif is_bs: print 'n_sig (Bs) = {}'.format(n_sig) 
     elif is_bc: print 'n_sig (Bc) = {}'.format(n_sig) 
     else: print 'n_sig = {}'.format(n_sig)
 
-    return n_sig
+    return n_sig, stat
 
 
   def getSignalYields(self):
     if self.do_normalisation_inclusive:
-      n_sig = self.getSignalYieldsFromHist(is_bc=self.is_bc)
+      n_sig, stat = self.getSignalYieldsFromHist(is_bc=self.is_bc)
     else:
       if not self.is_bc:
-        n_sig_bu = self.getSignalYieldsFromHist(is_bu=True, is_bd=False, is_bs=False)
-        n_sig_bd = self.getSignalYieldsFromHist(is_bu=False, is_bd=True, is_bs=False)
-        n_sig_bs = self.getSignalYieldsFromHist(is_bu=False, is_bd=False, is_bs=True)
+        n_sig_bu, stat_bu = self.getSignalYieldsFromHist(is_bu=True, is_bd=False, is_bs=False)
+        n_sig_bd, stat_bd = self.getSignalYieldsFromHist(is_bu=False, is_bd=True, is_bs=False)
+        n_sig_bs, stat_bs = self.getSignalYieldsFromHist(is_bu=False, is_bd=False, is_bs=True)
         n_sig = n_sig_bu + n_sig_bd + n_sig_bs
+        stat = stat_bu + stat_bd + stat_bs
       else:
-        n_sig = self.getSignalYieldsFromHist(is_bc=self.is_bc)
+        n_sig, stat = self.getSignalYieldsFromHist(is_bc=self.is_bc)
 
     print 'n_sig (tot) = {}'.format(n_sig)
 
-    return n_sig
+    return n_sig, stat
 
 
   def createSignalWorkspace(self, label=''):

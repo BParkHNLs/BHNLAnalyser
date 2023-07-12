@@ -288,7 +288,7 @@ class DatacardsMaker(Tools):
       fitter.process_signal(label=label)
 
       # get the signal yields directly from the histogram
-      yields = fitter.getSignalYields()
+      yields, stat = fitter.getSignalYields()
 
       # produce prefit plots
       if self.plot_prefit:
@@ -310,7 +310,10 @@ class DatacardsMaker(Tools):
       # perform the fits and write the workspaces
       yields = fitter.process_data_obs(label=label)
 
-    return yields
+    if process == 'signal':
+      return yields, stat
+    else:
+      return yields
 
 
   def runFTestRoutine(self, mass, window_size, category, selection, do_veto_SM, veto_SM, label, cat_index):
@@ -453,7 +456,7 @@ class DatacardsMaker(Tools):
     print '--> {}/{} created'.format(self.outputdir, rootfile_name)
 
 
-  def writeCard(self, card_label, cat_label, signal_yields, background_yields, data_obs_yields):
+  def writeCard(self, card_label, cat_label, signal_yields, background_yields, data_obs_yields, signal_stat=None):
     datacard_name = 'datacard_{}.txt'.format(card_label)
 
     # define selection systematics
@@ -464,6 +467,12 @@ class DatacardsMaker(Tools):
       syst_sel = 1.05
     elif 'lxysiggt150' in card_label:
       syst_sel = 1.10
+
+    # define uncertainty on fc
+    if '_Bc' in card_label:
+      syst_fc = 1.24
+    else:
+      syst_fc = 1.0
 
     if self.do_shape_analysis and not self.use_discrete_profiling:
       shape_line = '\n'.join([
@@ -540,6 +549,8 @@ syst_sig_mu_norm                              lnN           1.15                
 syst_sig_mu_track_eff_{lbl}                   lnN           1.05                           -
 syst_sig_mu_sel_{lbl}                         lnN           {syst_sel}                     -    
 syst_sig_mu_shape_{lbl}                       lnN           1.15                           -
+syst_sig_fc                                   lnN           {syst_fc}                      -
+stat_sig_{lbl}                                gmN {evts}    {alpha}                        - 
 {bkg_syst_line}   
 --------------------------------------------------------------------------------------------------------------------------------------------
 {norm_line}
@@ -553,6 +564,9 @@ syst_sig_mu_shape_{lbl}                       lnN           1.15                
             bkg_yields = background_yields,
             bkg_syst_line = bkg_syst_line,
             syst_sel = syst_sel,
+            syst_fc = syst_fc,
+            evts = int(signal_stat),
+            alpha = signal_yields / signal_stat,
             norm_line = norm_line,
             index_line = index_line,
             autostat_line = autostat_line,
@@ -691,6 +705,7 @@ bkg {bkg_yields}
           for ctau_point in ctau_point_list.ctau_list:
             signal_ctau = ctau_point
             signal_coupling = self.getSignalCoupling(signal_mass=signal_mass, signal_ctau=signal_ctau)
+            signal_stat = None # initialisation
 
             # get the process label
             card_label = self.getCardLabel(signal_mass=signal_mass, signal_ctau=signal_ctau, signal_coupling=signal_coupling, category=category)
@@ -700,7 +715,7 @@ bkg {bkg_yields}
               signal_yields = self.getSignalYields(mass=signal_mass, ctau=signal_ctau, category=category, selection=selection)
             # get the model shape and yields for shape analysis
             if self.do_shape_analysis:
-              signal_yields = self.runFitter(process='signal', mass=signal_mass, ctau=signal_ctau, category=category, selection=selection, label=card_label)
+              signal_yields, signal_stat = self.runFitter(process='signal', mass=signal_mass, ctau=signal_ctau, category=category, selection=selection, label=card_label)
 
               # apply correction to the signal yields (hopefully this is only temporary) #TODO create correction class and make it configurable
               corr = 1.
@@ -720,7 +735,7 @@ bkg {bkg_yields}
               self.createDataObsHisto(category=category, mass=window['mass'], selection=selection, label=cat_label)
 
             # create the datacard
-            self.writeCard(card_label=card_label, cat_label=cat_label, signal_yields=signal_yields, background_yields=background_yields, data_obs_yields=data_obs_yields)
+            self.writeCard(card_label=card_label, cat_label=cat_label, signal_yields=signal_yields, background_yields=background_yields, data_obs_yields=data_obs_yields, signal_stat=signal_stat)
 
             # save yields summary
             #self.writeYieldsForPlots(label=card_label, signal_yields=signal_yields, background_yields=background_yields)
