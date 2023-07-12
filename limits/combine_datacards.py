@@ -88,7 +88,7 @@ class DatacardCombiner(object):
     updated_rate_list = []
     for rate in rate_list:
       if rate != 1.:
-        updated_rate = rate * 0.5
+        updated_rate = rate * 2.0
       else:
         # do not modify background rate, keep it to 1
         updated_rate = 1.
