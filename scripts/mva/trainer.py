@@ -2,7 +2,6 @@ import os
 import sys
 from os import path
 
-import glob
 import pickle
 import numpy as np
 import pandas as pd
@@ -13,6 +12,7 @@ from itertools import product
 from time import time 
 from datetime import datetime
 #import seaborn as sns
+import glob
 
 import ROOT
 import root_pandas
@@ -40,9 +40,6 @@ from categories import categories
 
 #TODO add gen-matching
 #TODO make sure that only gen matched events are saved in bc
-
-#FIXME events should be weighted with the trigger SF...
-# remove m4p5 ctau 100 form training?
 
 def getOptions():
   from argparse import ArgumentParser
@@ -73,12 +70,11 @@ class Sample(object):
 
 
 class Trainer(object):
-  def __init__(self, features, epochs, batch_size, learning_rate, number_nodes, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, data_pl, data_tagnano, data_tagflat, nsigma, dirname, baseline_selection, categories, category_batch, outdir):
+  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, data_pl, data_tagnano, data_tagflat, nsigma, dirname, baseline_selection, categories, category_batch, outdir):
     self.features = features
     self.epochs = epochs
     self.batch_size = batch_size
     self.learning_rate = learning_rate
-    self.number_nodes = number_nodes
     self.scaler_type = scaler_type
     self.do_early_stopping = do_early_stopping
     self.do_reduce_lr = do_reduce_lr
@@ -193,7 +189,7 @@ class Trainer(object):
     for ifile, data_filename in enumerate(data_filenames):
       #if ifile<10: continue # those datasets will be used for the validation
       #if ifile<30: continue # those datasets will be used for the validation
-      if max_files != -1 and ifile > max_files: continue
+      if max_files != -1 and ifile > max_files+9: continue
       print data_filename
       data_samples.append(Sample(filename=data_filename, selection=self.baseline_selection + ' && ' + extra_selection))
 
@@ -314,9 +310,9 @@ class Trainer(object):
         # set the mass parameter to the exact value
         the_df['mass_key'] = signal_file.mass
 
-        # weight the mc with the trigger scale factors
-        #the_df = the_df.rename(columns={'weight_hlt_D1': 'weight'})
-        the_df['weight'] = 1.
+        # compute the signal weight (unused for the time being)
+        # lumi set to one as the normalisation does not matter
+        #the_df['weight'] = Tools().getSignalWeight(signal_files=[signal_file], mass=signal_file.mass, ctau=signal_file.ctau, sigma_B=472.8e9, lumi=1, lhe_efficiency=0.08244) #TODO what about isBc?
 
         dfs[signal_file.mass] = dfs[signal_file.mass] + [the_df]
 
@@ -329,6 +325,7 @@ class Trainer(object):
       for mass in masses:
         df_tmp = pd.concat([(idt.sample(statistics/n_ctaus[mass]) if statistics/n_ctaus[mass]<len(idt) else idt) for idt in dfs[mass]], sort=False)
         df = pd.concat([df, df_tmp], sort=False) 
+      
         
     elif data_type == 'data':
       # get the sample
@@ -361,7 +358,7 @@ class Trainer(object):
           df_window['mass_key'] = mass
 
           # set the weight
-          df_window['weight'] = 1.
+          df_window['weight'] = 1
 
           dfs[mass] = dfs[mass] + [df_window]
 
@@ -416,16 +413,12 @@ class Trainer(object):
         xx = qt.transform(X[self.features])
       else:
         if self.do_scale_key:
-          qt.fit(X[self.features + ['mass_key']]) #, 'weight']])
-          xx = qt.transform(X[self.features + ['mass_key']]) #, 'weight']])
+          qt.fit(X[self.features + ['mass_key']])
+          xx = qt.transform(X[self.features + ['mass_key']])
         else:
           qt.fit(X[self.features])
           xx = qt.transform(X[self.features])
           xx = np.insert(xx, (len(self.features)), X['mass_key'], axis=1)
-
-      # do not normalise the weight, but add it back to the vector
-      idx = len(self.features) if not self.do_parametric else len(self.features) + 1
-      xx = np.insert(xx, idx, X['weight'], axis=1)
 
       return xx, qt
 
@@ -451,9 +444,9 @@ class Trainer(object):
 
     # X and Y
     if not self.do_parametric:
-      X = pd.DataFrame(main_df, columns=list(set(self.features)) + ['weight'])
+      X = pd.DataFrame(main_df, columns=list(set(self.features)))
     else:
-      X = pd.DataFrame(main_df, columns=list(set(self.features)) + ['mass_key', 'weight']) # make sure that weight is in last position
+      X = pd.DataFrame(main_df, columns=list(set(self.features)) + ['mass_key'])
     Y = pd.DataFrame(main_df, columns=[self.target_branch])
 
     # scale the features
@@ -487,7 +480,7 @@ class Trainer(object):
     # define the net
     n_input = len(self.features) if not self.do_parametric else len(self.features) + 1 
     input  = Input((n_input,))
-    layer  = Dense(self.number_nodes, activation=activation, name='dense1', kernel_constraint=unit_norm())(input)
+    layer  = Dense(64, activation=activation, name='dense1', kernel_constraint=unit_norm())(input)
     output = Dense(1 , activation='sigmoid' , name='output', )(layer)
 
     # Define outputs of your model
@@ -507,11 +500,9 @@ class Trainer(object):
     # early stopping
     monitor = 'val_loss'
     es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=10)
-    #es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=5, restore_best_weights=True)
     
     # reduce learning rate when at plateau, fine search the minimum
-    #reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=5, min_lr=0.00001, cooldown=10, verbose=True)
-    reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=3, min_lr=0.00001, cooldown=10, verbose=True)
+    reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=5, min_lr=0.00001, cooldown=10, verbose=True)
     
     # save the model every now and then
     # kept only during excecution time and removed afterwards
@@ -534,36 +525,22 @@ class Trainer(object):
       Note: the input xx should arlready be scaled
     '''
 
-    x_train_tot, x_val_tot, y_train, y_val = train_test_split(xx, Y, test_size=0.2, shuffle=True)
+    x_train, x_val, y_train, y_val = train_test_split(xx, Y, test_size=0.2, shuffle=True)
     
-    # name the columns (selected in doScaling) consistently
+    # the x should only contain the features and not all the branches of main_df
     if not self.do_parametric:
-      x_train_tot = pd.DataFrame(x_train_tot, columns=list(set(self.features)) + ['weight'])
-      x_val_tot = pd.DataFrame(x_val_tot, columns=list(set(self.features)) + ['weight'])
+      x_train = pd.DataFrame(x_train, columns=list(set(self.features))) # alternative to X_train[self.features[:]]
+      x_val = pd.DataFrame(x_val, columns=list(set(self.features)))
     else:
-      x_train_tot = pd.DataFrame(x_train_tot, columns=list(set(self.features)) + ['mass_key', 'weight']) # make sure weight is in last position
-      x_val_tot = pd.DataFrame(x_val_tot, columns=list(set(self.features)) + ['mass_key', 'weight'])
-
-    # select training features
-    if not self.do_parametric:
-      x_train = x_train_tot[self.features]
-      x_val = x_val_tot[self.features]
-    else:
-      x_train = x_train_tot[self.features + ['mass_key']]
-      x_val = x_val_tot[self.features + ['mass_key']]
-
-    # select weight
-    weight_train = x_train_tot['weight']
-    weight_val = x_val_tot['weight']
+      x_train = pd.DataFrame(x_train, columns=list(set(self.features)) + ['mass_key'])
+      x_val = pd.DataFrame(x_val, columns=list(set(self.features)) + ['mass_key'])
 
     x_train = x_train.reset_index(drop=True)
     x_val = x_val.reset_index(drop=True)
     y_train = y_train.reset_index(drop=True)
     y_val = y_val.reset_index(drop=True)
-    weight_train = weight_train.reset_index(drop=True)
-    weight_val = weight_val.reset_index(drop=True)
 
-    return x_train, x_val, y_train, y_val, weight_train, weight_val
+    return x_train, x_val, y_train, y_val
 
 
   def prepareScaledInputs(self, main_df, Y, qt):
@@ -583,12 +560,12 @@ class Trainer(object):
     return x_train, x_val, y_train, y_val
 
 
-  def train(self, model, x_train, y_train, x_val, y_val, weight_train, weight_val, callbacks):
+  def train(self, model, x_train, y_train, x_val, y_val, callbacks):
     '''
       Perform the training
     '''
-    #history = model.fit(x_train, y_train, validation_data=(x_val, y_val, weight_val), sample_weight=weight_train, epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)
     history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)
+    #TODO apply weight if any
 
     return history
     
@@ -665,7 +642,7 @@ class Trainer(object):
     '''
     loss_train = history.history['loss']
     loss_val = history.history['val_loss']
-    epochs_range = range(1, len(loss_train)+1)
+    epochs_range = range(1, self.epochs+1)
     epochs = epochs_range
     plt.plot(epochs, loss_train, 'g', label='Training loss')
     plt.plot(epochs, loss_val, 'b', label='Validation loss')
@@ -683,7 +660,7 @@ class Trainer(object):
     '''
     acc_train = history.history['acc']
     acc_val = history.history['val_acc']
-    epochs_range = range(1, len(acc_train)+1)
+    epochs_range = range(1, self.epochs+1)
     epochs = epochs_range
     plt.plot(epochs, acc_train, 'g', label='Training accuracy')
     plt.plot(epochs, acc_val, 'b', label='Validation accuracy')
@@ -747,87 +724,39 @@ class Trainer(object):
     plt.clf()
 
 
-  def plotCorrelations(self, model, df, data_type, label):
-    '''
-      Plot the correlation matrix based on the training set
-    '''
-    if data_type not in ['data', 'mc']:
-      raise RuntimeError('Unknown data_type "{}". Aborting'.format(data_type))
+  #def plotCorrelations(self, model, df, data_type, label):
+  #  '''
+  #    Plot the correlation matrix based on the training set
+  #  '''
+  #  if data_type not in ['data', 'mc']:
+  #    raise RuntimeError('Unknown data_type "{}". Aborting'.format(data_type))
 
-    # get the score for the test dataframe
-    score = self.predictScore(model, df, label)
+  #  # get the score for the test dataframe
+  #  score = self.predictScore(model, df, label)
 
-    # add the score to the dataframes
-    df['score'] = score
+  #  # add the score to the dataframes
+  #  df['score'] = score
 
-    print '\n\n\n'
-    print data_type
+  #  corr = df[self.features + ['score']].corr()
+  #  
+  #  # Set up the matplotlib figure
+  #  f, ax = plt.subplots(figsize=(11, 9))
+  #  
+  #  # Generate a custom diverging colormap
+  #  cmap = sns.diverging_palette(220, 10, as_cmap=True)
 
-    corr = df[self.features + ['score']].corr()
-    print corr
-    #print corr['mu0_pt']
-    print '\n pi pt'
-    print corr['pi_pt']
-    print '\n mu_pt'
-    print corr['mu_pt']
-    print '\n pi_pt'
-    print corr['pi_pt']
-    print '\n mu0_pt'
-    print corr['mu0_pt']
-    print '\n hnl_cos2d'
-    print corr['hnl_cos2d']
-    print '\n sv_lxysig'
-    print corr['sv_lxysig']
-    print '\n pi_dcasig'
-    print corr['pi_dcasig']
-    print '\n sv_prob'
-    print corr['sv_prob']
-    print '\n mu0_mu_mass'
-    print corr['mu0_mu_mass']
-    print '\n mu0_pi_mass'
-    print corr['mu0_pi_mass']
-    print '\n mu0_pfiso03_rel'
-    print corr['mu0_pfiso03_rel']
-    print '\n mu_pfiso03_rel'
-    print corr['mu_pfiso03_rel']
-    #print '\n pi_numberofvalidpixelhits'
-    #print corr['pi_numberofvalidpixelhits']
-    print '\n pi_numberofpixellayers'
-    print corr['pi_numberofpixellayers']
-    print '\n pi_numberoftrackerlayers'
-    print corr['pi_numberoftrackerlayers']
-    #print '\n mu_numberofvalidpixelhits'
-    #print corr['mu_numberofvalidpixelhits']
-    print '\n mu_numberofpixellayers'
-    print corr['mu_numberofpixellayers']
-    print '\n mu_numberoftrackerlayers'
-    print corr['mu_numberoftrackerlayers']
-    #print '\n mu0_numberofvalidpixelhits'
-    #print corr['mu0_numberofvalidpixelhits']
-    print '\n mu0_numberofpixellayers'
-    print corr['mu0_numberofpixellayers']
-    print '\n mu0_numberoftrackerlayers'
-    print corr['mu0_numberoftrackerlayers']
+  #  # Draw the heatmap with the mask and correct aspect ratio
+  #  g = sns.heatmap(corr, cmap=cmap, vmax=1., vmin=-1, center=0, annot=True, fmt='.2f',
+  #                  square=True, linewidths=.8, cbar_kws={"shrink": .8})
 
-    ## Set up the matplotlib figure
-    #f, ax = plt.subplots(figsize=(11, 9))
-    #
-    ## Generate a custom diverging colormap
-    ##cmap = sns.diverging_palette(220, 10, as_cmap=True)
-    #cmap = seaborn.diverging_palette(220, 10, as_cmap=True)
+  #  # rotate axis labels
+  #  g.set_xticklabels(self.features+['score'], rotation='vertical')
+  #  g.set_yticklabels(self.features+['score'], rotation='horizontal')
 
-    ## Draw the heatmap with the mask and correct aspect ratio
-    #g = sns.heatmap(corr, cmap=cmap, vmax=1., vmin=-1, center=0, annot=True, fmt='.2f',
-    #                square=True, linewidths=.8, cbar_kws={"shrink": .8})
-
-    ## rotate axis labels
-    #g.set_xticklabels(self.features+['score'], rotation='vertical')
-    #g.set_yticklabels(self.features+['score'], rotation='horizontal')
-
-    #plt.title('Linear Correlation Matrix - {}'.format(data_type))
-    #plt.tight_layout()
-    #self.saveFig(plt, 'correlations_{}_{}'.format(data_type, label))
-    #plt.clf()
+  #  plt.title('Linear Correlation Matrix - {}'.format(data_type))
+  #  plt.tight_layout()
+  #  self.saveFig(plt, 'correlations_{}_{}'.format(data_type, label))
+  #  plt.clf()
 
 
   def plotKSTest(self, model, x_train, x_val, y_train, y_val, data_type, label):
@@ -893,7 +822,7 @@ class Trainer(object):
         
     for category in self.categories:
       if category.label == 'incl': continue
-      if category.label != 'lxysiggt150_SS': continue
+      #if category.label != 'lxysiggt150_OS_Bc': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
@@ -916,7 +845,7 @@ class Trainer(object):
         #if category.label in ['lxysig0to50_OS', 'lxysig0to50_SS', 'lxysig0to50_OS_Bc', 'lxysig0to50_SS_Bc']: max_files = 10 
         #elif category.label in ['lxysig50to150_OS', 'lxysig50to150_SS', 'lxysig50to150_OS_Bc', 'lxysig50to150_SS_Bc']: max_files = 30 
         #else: max_files = -1
-        max_files = 10#-1 #FIXME
+        max_files = -1
 
         mc_df, statistics = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='mc', is_bc=category.is_bc)
         data_df, data_df_full = self.createParametrisedDataframe(extra_selection=category.definition_flat, data_type='data', statistics=statistics, max_files=max_files, is_bc=category.is_bc)
@@ -946,7 +875,8 @@ class Trainer(object):
       # train and test on. Make sure that the features
       # are scaled
       print '\n -> prepare the inputs' 
-      x_train, x_val, y_train, y_val, weight_train, weight_val = self.prepareInputs(xx, Y)
+      #x_train, x_val, y_train, y_val = self.prepareScaledInputs(main_df, Y, qt)
+      x_train, x_val, y_train, y_val = self.prepareInputs(xx, Y)
 
       # create statistics file
       stat_filename = '{}/statistics_{}.txt'.format(self.outdir, category.label)
@@ -962,7 +892,7 @@ class Trainer(object):
 
       # do the training
       print '\n -> training...' 
-      history = self.train(model, x_train, y_train, x_val, y_val, weight_train, weight_val, callbacks)
+      history = self.train(model, x_train, y_train, x_val, y_val, callbacks)
 
       # save the model
       print '\n -> save the model' 
@@ -978,8 +908,8 @@ class Trainer(object):
       #self.plotScore(model, mc_test_df, data_test_df, category.label)
       #self.plotScore(model, mc_df, data_df, category.label)
       self.plotROC(model, x_train, y_train, x_val, y_val, category.label)
-      self.plotCorrelations(model, data_df, 'data', category.label)
-      self.plotCorrelations(model, mc_df, 'mc', category.label)
+      #self.plotCorrelations(model, data_df, 'data', category.label)
+      #self.plotCorrelations(model, mc_df, 'mc', category.label)
       self.plotKSTest(model, x_train, x_val, y_train, y_val, 'data', category.label)
       self.plotKSTest(model, x_train, x_val, y_train, y_val, 'mc', category.label)
 
@@ -999,8 +929,6 @@ class Trainer(object):
 
     for category in self.categories:
       if category.label == 'incl': continue
-      #if 'gt150' not in category.label: continue
-      #if category.label != 'lxysig0to50_OS': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
@@ -1019,36 +947,29 @@ if __name__ == '__main__':
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu_pi', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_prob']
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'sv_prob'] # remove the deltaRs but keep masses as they can learn about possible sm resonances?
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'pi_dcasig', 'sv_lxysig', 'sv_prob']
-  #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob', 'sv_chi2', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel']
-  #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofvalidpixelhits', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofvalidpixelhits', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofvalidpixelhits', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
-  #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofvalidpixelhits', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofvalidpixelhits', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofvalidpixelhits', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
-  #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofvalidpixelhits', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofvalidpixelhits', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofvalidpixelhits', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
-  #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofvalidpixelhits', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofvalidpixelhits', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofvalidpixelhits', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
-  #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofvalidpixelhits', 'mu_numberofvalidpixelhits', 'mu0_numberofvalidpixelhits']
-  features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
+  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob', 'sv_chi2', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel']
   #features = ['pi_pt', 'pi_dcasig']
-  epochs = 10 #60
+  epochs = 60
   batch_size = 32
   learning_rate = 0.01
-  number_nodes = 32
   scaler_type = 'robust'
   do_early_stopping = False
   do_reduce_lr = True
   dirname = 'V13_06Feb23'
-  baseline_selection = 'hnl_charge==0 && ' + selection['baseline_06Feb23'].flat 
+  baseline_selection = 'hnl_charge==0 && ' + selection['baseline_08Aug22'].flat 
   categories = categories['categories_0_50_150_Bc']
   category_batch = getOptions().category_batch
   outdir = getOptions().outdir
   #NOTE add optimiser, learning rate etc? 
 
-  submit_batch = False
+  submit_batch = True
 
   do_parametric = True
   nsigma = 10
   signal_label = 'V13_06Feb23_training_large'
   data_pl = 'V13_06Feb23'
   data_tagnano = '06Feb23'
-  data_tagflat = '15Jun23'
+  data_tagflat = 'partial'
   #signal_label = 'V12_08Aug22_training_large'
   #data_pl = 'V12_08Aug22'
   #data_tagnano = '08Aug22'
@@ -1059,7 +980,6 @@ if __name__ == '__main__':
       epochs = epochs,
       batch_size = batch_size,
       learning_rate = learning_rate,
-      number_nodes = number_nodes,
       scaler_type = scaler_type,
       do_early_stopping = do_early_stopping,
       do_reduce_lr = do_reduce_lr,
