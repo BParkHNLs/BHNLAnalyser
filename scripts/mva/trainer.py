@@ -41,6 +41,8 @@ from categories import categories
 #TODO add gen-matching
 #TODO make sure that only gen matched events are saved in bc
 
+# remove m4p5 ctau 100 form training?
+
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Script to perform the NN training', add_help=True)
@@ -70,11 +72,12 @@ class Sample(object):
 
 
 class Trainer(object):
-  def __init__(self, features, epochs, batch_size, learning_rate, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, data_pl, data_tagnano, data_tagflat, nsigma, dirname, baseline_selection, categories, category_batch, outdir):
+  def __init__(self, features, epochs, batch_size, learning_rate, number_nodes, scaler_type, do_early_stopping, do_reduce_lr, do_parametric, signal_label, data_pl, data_tagnano, data_tagflat, nsigma, dirname, baseline_selection, categories, category_batch, outdir):
     self.features = features
     self.epochs = epochs
     self.batch_size = batch_size
     self.learning_rate = learning_rate
+    self.number_nodes = number_nodes
     self.scaler_type = scaler_type
     self.do_early_stopping = do_early_stopping
     self.do_reduce_lr = do_reduce_lr
@@ -189,7 +192,7 @@ class Trainer(object):
     for ifile, data_filename in enumerate(data_filenames):
       #if ifile<10: continue # those datasets will be used for the validation
       #if ifile<30: continue # those datasets will be used for the validation
-      if max_files != -1 and ifile > max_files+9: continue
+      if max_files != -1 and ifile > max_files: continue
       print data_filename
       data_samples.append(Sample(filename=data_filename, selection=self.baseline_selection + ' && ' + extra_selection))
 
@@ -310,9 +313,9 @@ class Trainer(object):
         # set the mass parameter to the exact value
         the_df['mass_key'] = signal_file.mass
 
-        # compute the signal weight (unused for the time being)
-        # lumi set to one as the normalisation does not matter
-        #the_df['weight'] = Tools().getSignalWeight(signal_files=[signal_file], mass=signal_file.mass, ctau=signal_file.ctau, sigma_B=472.8e9, lumi=1, lhe_efficiency=0.08244) #TODO what about isBc?
+        # weight the mc with the trigger scale factors
+        the_df = the_df.rename(columns={'weight_hlt_D1': 'weight'})
+        #the_df['weight'] = 1.
 
         dfs[signal_file.mass] = dfs[signal_file.mass] + [the_df]
 
@@ -358,7 +361,7 @@ class Trainer(object):
           df_window['mass_key'] = mass
 
           # set the weight
-          df_window['weight'] = 1
+          df_window['weight'] = 1.
 
           dfs[mass] = dfs[mass] + [df_window]
 
@@ -480,7 +483,7 @@ class Trainer(object):
     # define the net
     n_input = len(self.features) if not self.do_parametric else len(self.features) + 1 
     input  = Input((n_input,))
-    layer  = Dense(64, activation=activation, name='dense1', kernel_constraint=unit_norm())(input)
+    layer  = Dense(self.number_nodes, activation=activation, name='dense1', kernel_constraint=unit_norm())(input)
     output = Dense(1 , activation='sigmoid' , name='output', )(layer)
 
     # Define outputs of your model
@@ -499,10 +502,10 @@ class Trainer(object):
     '''
     # early stopping
     monitor = 'val_loss'
-    es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=10)
+    es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=4)
     
     # reduce learning rate when at plateau, fine search the minimum
-    reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=5, min_lr=0.00001, cooldown=10, verbose=True)
+    reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=3, min_lr=0.00001, cooldown=10, verbose=True)
     
     # save the model every now and then
     # kept only during excecution time and removed afterwards
@@ -525,9 +528,11 @@ class Trainer(object):
       Note: the input xx should arlready be scaled
     '''
 
+    #NOTE this function is not adapted to training with weight; use prepareScaledInputs instead
+
     x_train, x_val, y_train, y_val = train_test_split(xx, Y, test_size=0.2, shuffle=True)
     
-    # the x should only contain the features and not all the branches of main_df
+    # name the columns (selected in doScaling) consistently
     if not self.do_parametric:
       x_train = pd.DataFrame(x_train, columns=list(set(self.features))) # alternative to X_train[self.features[:]]
       x_val = pd.DataFrame(x_val, columns=list(set(self.features)))
@@ -551,21 +556,34 @@ class Trainer(object):
       NB: function not adapted to the parametric case
     '''
 
-    x_train, x_val, y_train, y_val = train_test_split(main_df, Y, test_size=0.2, shuffle=True)
+    x_train_tot, x_val_tot, y_train, y_val = train_test_split(main_df, Y, test_size=0.2, shuffle=True)
+
+    # select training features
+    if not self.do_parametric:
+      x_train = x_train_tot[self.features]
+      x_val = x_val_tot[self.features]
+    else:
+      x_train = x_train_tot[self.features + ['mass_key']]
+      x_val = x_val_tot[self.features + ['mass_key']]
 
     # scale the features
-    x_train = qt.transform(x_train[self.features])
-    x_val = qt.transform(x_val[self.features])
+    x_train = qt.transform(x_train)
+    x_val = qt.transform(x_val)
 
-    return x_train, x_val, y_train, y_val
+    # select weight
+    weight_train = x_train_tot['weight']
+    weight_val = x_val_tot['weight']
+    weight_train = weight_train.reset_index(drop=True)
+    weight_val = weight_val.reset_index(drop=True)
+
+    return x_train, x_val, y_train, y_val, weight_train, weight_val
 
 
-  def train(self, model, x_train, y_train, x_val, y_val, callbacks):
+  def train(self, model, x_train, y_train, x_val, y_val, weight_train, weight_val, callbacks):
     '''
       Perform the training
     '''
-    history = model.fit(x_train, y_train, validation_data=(x_val, y_val), epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)
-    #TODO apply weight if any
+    history = model.fit(x_train, y_train, validation_data=(x_val, y_val, weight_val), sample_weight=weight_train, epochs=self.epochs, callbacks=callbacks, batch_size=self.batch_size, verbose=True)
 
     return history
     
@@ -642,7 +660,7 @@ class Trainer(object):
     '''
     loss_train = history.history['loss']
     loss_val = history.history['val_loss']
-    epochs_range = range(1, self.epochs+1)
+    epochs_range = range(1, len(loss_train)+1)
     epochs = epochs_range
     plt.plot(epochs, loss_train, 'g', label='Training loss')
     plt.plot(epochs, loss_val, 'b', label='Validation loss')
@@ -660,7 +678,7 @@ class Trainer(object):
     '''
     acc_train = history.history['acc']
     acc_val = history.history['val_acc']
-    epochs_range = range(1, self.epochs+1)
+    epochs_range = range(1, len(acc_train)+1)
     epochs = epochs_range
     plt.plot(epochs, acc_train, 'g', label='Training accuracy')
     plt.plot(epochs, acc_val, 'b', label='Validation accuracy')
@@ -767,7 +785,18 @@ class Trainer(object):
     '''
     if data_type not in ['data', 'mc']:
       raise RuntimeError('Unknown data_type "{}". Aborting'.format(data_type))
+    
+    if not self.do_parametric:
+      x_train = pd.DataFrame(x_train, columns=list(set(self.features)))
+      x_val = pd.DataFrame(x_val, columns=list(set(self.features)))
+    else:
+      x_train = pd.DataFrame(x_train, columns=list(set(self.features)) + ['mass_key'])
+      x_val = pd.DataFrame(x_val, columns=list(set(self.features)) + ['mass_key'])
 
+    x_train = x_train.reset_index(drop=True)
+    x_val = x_val.reset_index(drop=True)
+    y_train = y_train.reset_index(drop=True)
+    y_val = y_val.reset_index(drop=True)
 
     # only keep the data or mc components of the features
     # does it mess up with the normalisation?
@@ -822,7 +851,7 @@ class Trainer(object):
         
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxysiggt150_OS_Bc': continue
+      #if category.label != 'lxysiggt150_SS': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
@@ -875,8 +904,8 @@ class Trainer(object):
       # train and test on. Make sure that the features
       # are scaled
       print '\n -> prepare the inputs' 
-      #x_train, x_val, y_train, y_val = self.prepareScaledInputs(main_df, Y, qt)
-      x_train, x_val, y_train, y_val = self.prepareInputs(xx, Y)
+      x_train, x_val, y_train, y_val, weight_train, weight_val = self.prepareScaledInputs(main_df, Y, qt)
+      #x_train, x_val, y_train, y_val = self.prepareInputs(xx, Y)
 
       # create statistics file
       stat_filename = '{}/statistics_{}.txt'.format(self.outdir, category.label)
@@ -892,7 +921,7 @@ class Trainer(object):
 
       # do the training
       print '\n -> training...' 
-      history = self.train(model, x_train, y_train, x_val, y_val, callbacks)
+      history = self.train(model, x_train, y_train, x_val, y_val, weight_train, weight_val, callbacks)
 
       # save the model
       print '\n -> save the model' 
@@ -947,16 +976,19 @@ if __name__ == '__main__':
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu_pi', 'deltar_mu0_mu', 'deltar_mu0_pi', 'sv_prob']
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'mu0_mu_mass', 'mu0_pi_mass', 'sv_prob'] # remove the deltaRs but keep masses as they can learn about possible sm resonances?
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'pi_dcasig', 'sv_lxysig', 'sv_prob']
-  features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob', 'sv_chi2', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel']
+  #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob', 'sv_chi2', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel']
+  #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofvalidpixelhits', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofvalidpixelhits', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofvalidpixelhits', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
+  features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
   #features = ['pi_pt', 'pi_dcasig']
   epochs = 60
   batch_size = 32
   learning_rate = 0.01
+  number_nodes = 64
   scaler_type = 'robust'
-  do_early_stopping = False
+  do_early_stopping = True
   do_reduce_lr = True
   dirname = 'V13_06Feb23'
-  baseline_selection = 'hnl_charge==0 && ' + selection['baseline_08Aug22'].flat 
+  baseline_selection = 'hnl_charge==0 && ' + selection['baseline_06Feb23'].flat 
   categories = categories['categories_0_50_150_Bc']
   category_batch = getOptions().category_batch
   outdir = getOptions().outdir
@@ -969,7 +1001,7 @@ if __name__ == '__main__':
   signal_label = 'V13_06Feb23_training_large'
   data_pl = 'V13_06Feb23'
   data_tagnano = '06Feb23'
-  data_tagflat = 'partial'
+  data_tagflat = '15Jun23'
   #signal_label = 'V12_08Aug22_training_large'
   #data_pl = 'V12_08Aug22'
   #data_tagnano = '08Aug22'
@@ -980,6 +1012,7 @@ if __name__ == '__main__':
       epochs = epochs,
       batch_size = batch_size,
       learning_rate = learning_rate,
+      number_nodes = number_nodes,
       scaler_type = scaler_type,
       do_early_stopping = do_early_stopping,
       do_reduce_lr = do_reduce_lr,
