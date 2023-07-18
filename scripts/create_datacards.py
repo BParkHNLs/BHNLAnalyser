@@ -566,7 +566,7 @@ stat_sig_{lbl}                                gmN {evts}    {alpha}             
             syst_sel = syst_sel,
             syst_fc = syst_fc,
             evts = int(signal_stat),
-            alpha = signal_yields / signal_stat,
+            alpha = signal_yields / signal_stat if signal_stat != 0 else 0.,
             norm_line = norm_line,
             index_line = index_line,
             autostat_line = autostat_line,
