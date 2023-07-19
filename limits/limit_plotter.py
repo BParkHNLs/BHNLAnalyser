@@ -112,8 +112,8 @@ class LimitPlotter(object):
     #signal_type = self.signal_type 
     #lumi =  '41.6 fb'+r'$^{-1}$'
     #lumi =  '5.3 fb'+r'$^{-1}$'+' projected to 41.6 fb'+r'$^{-1}$'
-    lumi =  '40.0 fb'+r'$^{-1}$'
-    #lumi =  '41.5 fb'+r'$^{-1}$'
+    #lumi =  '40.0 fb'+r'$^{-1}$'
+    lumi =  '41.5 fb'+r'$^{-1}$'
 
     # get the files 
     if not self.do_coupling_scenario:
@@ -144,7 +144,7 @@ class LimitPlotter(object):
       if self.mass_blacklist != 'None':
         if mass in self.mass_blacklist.split(','): continue
 
-      #if float(mass) < 3. or float(mass) > 4.: continue
+      #if float(mass) < 4. or float(mass) > 4.5: continue
 
       print '\nmass {}'.format(mass)
 
@@ -511,23 +511,6 @@ class LimitPlotter(object):
     f3 = plt.fill_between(masses_plus_two_sigma, boundary_plus_two, plus_two, color='gold'       , label=r'95% expected')
     f4 = plt.fill_between(masses_plus_one_sigma, boundary_plus_one, plus_one, color='forestgreen', label=r'68% expected')
     p1, = plt.plot(masses_central, central, color='red', label='Median expected', linewidth=2)
-
-    #p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='darkorange', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
-    p2, = plt.plot(db.masses_atlas_lower, db.exp_atlas_lower, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
-    p2_2, = plt.plot(db.masses_atlas_upper, db.exp_atlas_upper, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
-    p3, = plt.plot(db.masses_cmsdisplacedmuon, db.exp_cmsdisplacedmuon, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed')
-    #p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed')
-    p4, = plt.plot(db.masses_lhcb_peskin, db.exp_lhcb_peskin, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed')
-    p5, = plt.plot(db.masses_belle, db.exp_belle, color='magenta', label='Belle', linewidth=1.3, linestyle='dashed')
-
-    #p3, = plt.plot(db.masses_delphiprompt, db.exp_delphiprompt, color='blueviolet', label='Delphi prompt', linewidth=1.3, linestyle='dashed')
-    #if 'mmm' in self.channels or 'mem' in self.channels:
-    #p4, = plt.plot(db.masses_atlasdisplacedmuonLNV, db.exp_atlasdisplacedmuonLNV, color='firebrick', label='Atlas displaced muon LNV', linewidth=1.3, linestyle='dashed')
-    #p5, = plt.plot(db.masses_atlasdisplacedmuonLNC, db.exp_atlasdisplacedmuonLNC, color='darkorange', label='Atlas displaced muon LNC', linewidth=1.3, linestyle='dashed')
-    #p7, = plt.plot(db.masses_cmspromptmuon, db.exp_cmspromptmuon, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
-    #else: 
-    #  p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
-
     if not self.do_blind:
       p8, = plt.plot(masses_obs, obs, color='black', label='Observed', linewidth=2)
 
@@ -537,17 +520,44 @@ class LimitPlotter(object):
     #  first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=18)
     #ax = plt.gca().add_artist(first_legend)
 
-    second_legend = plt.legend(handles=[p2, p3, p4, p5], loc='lower left', fontsize=18)
-    #ax = plt.gca().add_artist(second_legend)
-    #if 'mmm' in self.channels or 'mem' in self.channels:
-    #second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
-    #else: 
-    #  second_legend = plt.legend(handles=[p2, p3, p7], loc='upper left')
+    if self.scenario == 'Majorana':
+      #p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='darkorange', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
+      p2, = plt.plot(db.masses_atlas_lower, db.exp_atlas_lower, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
+      p2_2, = plt.plot(db.masses_atlas_upper, db.exp_atlas_upper, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
+      p3, = plt.plot(db.masses_cmsdisplacedmuon, db.exp_cmsdisplacedmuon, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed')
+      p3_2, = plt.plot(db.masses_cmsdisplacedmuon_upper, db.exp_cmsdisplacedmuon_upper, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed')
+      #p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed')
+      p4, = plt.plot(db.masses_lhcb_peskin, db.exp_lhcb_peskin, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed')
+      p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle', linewidth=1.3, linestyle='dashed')
+      p6, = plt.plot(db.masses_charm, db.exp_charm, color='magenta', label='CHARM', linewidth=1.3, linestyle='dashed')
+
+      #p3, = plt.plot(db.masses_delphiprompt, db.exp_delphiprompt, color='blueviolet', label='Delphi prompt', linewidth=1.3, linestyle='dashed')
+      #if 'mmm' in self.channels or 'mem' in self.channels:
+      #p4, = plt.plot(db.masses_atlasdisplacedmuonLNV, db.exp_atlasdisplacedmuonLNV, color='firebrick', label='Atlas displaced muon LNV', linewidth=1.3, linestyle='dashed')
+      #p5, = plt.plot(db.masses_atlasdisplacedmuonLNC, db.exp_atlasdisplacedmuonLNC, color='darkorange', label='Atlas displaced muon LNC', linewidth=1.3, linestyle='dashed')
+      #p7, = plt.plot(db.masses_cmspromptmuon, db.exp_cmspromptmuon, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
+      #else: 
+      #  p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
+
+
+      second_legend = plt.legend(handles=[p2, p3, p4, p5, p6], loc='lower right', fontsize=18)
+      #ax = plt.gca().add_artist(second_legend)
+      #if 'mmm' in self.channels or 'mem' in self.channels:
+      #second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
+      #else: 
+      #  second_legend = plt.legend(handles=[p2, p3, p7], loc='upper left')
+
+    elif self.scenario == 'Dirac':
+      p2, = plt.plot(db.masses_atlas_lower_dirac, db.exp_atlas_lower_dirac, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
+      #p2_2, = plt.plot(db.masses_atlas_upper_dirac, db.exp_atlas_upper_dirac, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
+      p3, = plt.plot(db.masses_cmsdisplacedmuon_dirac, db.exp_cmsdisplacedmuon_dirac, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed')
+
+      second_legend = plt.legend(handles=[p2, p3], loc='lower left', fontsize=18)
 
     plt.title(lumi + ' (13 TeV)', loc='right', fontsize=23)
     plt.ylabel(r'$|V|^2$', fontsize=23)
     plt.yticks(fontsize=17)
-    plt.ylim(3e-7, 1e-0)
+    plt.ylim(3e-8, 1e-0)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
     #plt.xlim(0, max(masses_central))
