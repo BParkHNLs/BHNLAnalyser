@@ -785,8 +785,16 @@ class Fitter(Tools, MVATools):
     else:
       if not self.is_bc:
         n_sig_bu, stat_bu = self.getSignalYieldsFromHist(is_bu=True, is_bd=False, is_bs=False)
-        n_sig_bd, stat_bd = self.getSignalYieldsFromHist(is_bu=False, is_bd=True, is_bs=False)
-        n_sig_bs, stat_bs = self.getSignalYieldsFromHist(is_bu=False, is_bd=False, is_bs=True)
+        try:
+          n_sig_bd, stat_bd = self.getSignalYieldsFromHist(is_bu=False, is_bd=True, is_bs=False)
+        except:
+          n_sig_bd = 0
+          stat_bd = 0
+        try:
+          n_sig_bs, stat_bs = self.getSignalYieldsFromHist(is_bu=False, is_bd=False, is_bs=True)
+        except:
+          n_sig_bs = 0
+          stat_bs = 0
         n_sig = n_sig_bu + n_sig_bd + n_sig_bs
         stat = stat_bu + stat_bd + stat_bs
       else:
