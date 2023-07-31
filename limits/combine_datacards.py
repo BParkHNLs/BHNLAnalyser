@@ -80,11 +80,38 @@ class DatacardCombiner(object):
     return rate_list
 
 
+  def getAlpha(self, line):
+    '''
+      Get the alpha of the statistical uncertainty from line
+    '''
+    # search where to start fetching for alpha (after the number of events)
+    idx0 = line.find('gmN')+3
+    idx = idx0
+    while idx < len(line) and idx != -1:
+      if line[idx].isdigit():
+        idx1 = idx
+        idx2 = line.find(' ', idx1+1)
+        idx_begin = idx2
+        break
+      else:
+        idx = idx + 1
+
+    for idx in range(idx_begin, len(line)):
+      if line[idx].isdigit():
+        idx1 = idx
+        idx2 = line.find(' ', idx1+1)
+        alpha = line[idx1:idx2]
+        break
+      else:
+        idx = idx + 1
+
+    return alpha
+
+
   def updateRateList(self, rate_list):
     '''
       Update the signal rates according to given coupling scenario
     '''
-
     updated_rate_list = []
     for rate in rate_list:
       if rate != 1.:
@@ -96,6 +123,16 @@ class DatacardCombiner(object):
       updated_rate_list.append(updated_rate)
 
     return updated_rate_list
+
+
+  def updateAlpha(self, alpha):
+    '''
+      Update the value of alpha
+    '''
+    updated_alpha = float(alpha) * 2.0
+    updated_alpha = str(updated_alpha)
+
+    return updated_alpha
 
 
   def updateDatacard(self, datacard_name, updated_rate_list):
@@ -112,6 +149,12 @@ class DatacardCombiner(object):
         for updated_rate in updated_rate_list:
           rate_line += '{}  '.format(updated_rate)    
         updated_datacard.write(rate_line + '\n')
+
+      elif 'gmN' in line:
+        alpha = self.getAlpha(line)
+        updated_alpha = self.updateAlpha(alpha)
+        updated_line = line.replace(alpha, updated_alpha)
+        updated_datacard.write(updated_line + '\n')
 
       else:
         updated_datacard.write(line)
@@ -186,8 +229,6 @@ class DatacardCombiner(object):
           if self.scenario == 'Dirac' and '_SS' in cat: continue
           if cat+'.txt' in idc_ref:
             #print '{} {} {}'.format(signal_mass, signal_coupling, idc_ref)
-
-          # in the dirac scenario, correct the signal rate
             digested_datacards[signal_mass][signal_coupling].append(idc_ref) 
             channel_labels[signal_mass][signal_coupling].append(self.getCategoryLabel(idc_ref)) 
         
