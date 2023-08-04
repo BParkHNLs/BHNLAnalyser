@@ -14,21 +14,21 @@ from categories import categories
 def getOptions():
   from argparse import ArgumentParser
   parser = ArgumentParser(description='Run limit on a single mass/coupling point', add_help=True)
-  parser.add_argument('--homedir'    , type=str, dest='homedir'                , help='name of the homedir'                               , default=None)
-  parser.add_argument('--indirlabel' , type=str , dest='indirlabel'            , help='name of the indir'                                 , default=None)
-  parser.add_argument('--outdirlabel', type=str , dest='outdirlabel'           , help='name of the outdir'                                , default=None)
-  parser.add_argument('--subdirlabel', type=str , dest='subdirlabel'           , help='name of the subdir'                                , default=None)
-  parser.add_argument('--mass'       , type=str , dest='mass'                  , help='mass'                                              , default='1.0')
-  parser.add_argument('--ctau'       , type=str , dest='ctau'                  , help='ctau'                                              , default=None)
-  parser.add_argument('--scenario'   , type=str , dest='scenario'              , help='signal under consideration'                        , default='Majorana', choices=['Majorana', 'Dirac'])
-  parser.add_argument('--categories_label'  , type=str, dest='categories_label'  , help='label of the list of categories'              , default='standard')
-  parser.add_argument('--use_discrete_profiling', dest='use_discrete_profiling', help='use discrete profiling method', action='store_true', default=False)
-  parser.add_argument('--do_blind'              , dest='do_blind'             , help='run blinded?'                 , action='store_true', default=False)
+  parser.add_argument('--homedir'         , type=str, dest='homedir'               , help='name of the homedir'                               , default=None)
+  parser.add_argument('--indirlabel'      , type=str, dest='indirlabel'            , help='name of the indir'                                 , default=None)
+  parser.add_argument('--outdirlabel'     , type=str, dest='outdirlabel'           , help='name of the outdir'                                , default=None)
+  parser.add_argument('--subdirlabel'     , type=str, dest='subdirlabel'           , help='name of the subdir'                                , default=None)
+  parser.add_argument('--mass'            , type=str, dest='mass'                  , help='mass'                                              , default='1.0')
+  parser.add_argument('--ctau'            , type=str, dest='ctau'                  , help='ctau'                                              , default=None)
+  parser.add_argument('--scenario'        , type=str, dest='scenario'              , help='signal under consideration'                        , default='Majorana', choices=['Majorana', 'Dirac'])
+  parser.add_argument('--categories_label', type=str, dest='categories_label'      , help='label of the list of categories'                   , default='standard')
+  parser.add_argument('--use_discrete_profiling'    , dest='use_discrete_profiling', help='use discrete profiling method', action='store_true', default=False)
+  parser.add_argument('--do_blind'                  , dest='do_blind'              , help='run blinded?'                 , action='store_true', default=False)
   return parser.parse_args()
 
 
 class LimitProducer(object):
-  def __init__(self, mass, ctau, scenario, homedir, indirlabel, outdirlabel, subdirlabel, categories_label, do_blind, use_discrete_profiling, fe=None, fu=None, ft=None):
+  def __init__(self, mass, ctau, scenario, homedir, indirlabel, outdirlabel, subdirlabel, do_blind, use_discrete_profiling, categories_label=None, fe=None, fu=None, ft=None, do_fitdiagnostics=True, do_pvalue=True):
     self.tools = Tools()
     self.mass = mass
     self.ctau = ctau
@@ -36,14 +36,17 @@ class LimitProducer(object):
     self.homedir = homedir
     self.outdirlabel = outdirlabel
     self.subdirlabel = subdirlabel
-    self.categories = categories[categories_label]
     self.do_blind = do_blind
     self.use_discrete_profiling = use_discrete_profiling
     self.fe = fe
     self.fu = fu
     self.ft = ft
     self.do_limits_percategory = False
+    if categories_label != None:
+      self.categories = categories[categories_label]
     self.indirlabel = indirlabel if not self.do_limits_percategory else './'
+    self.do_fitdiagnostics = do_fitdiagnostics
+    self.do_pvalue = do_pvalue
 
 
   def getCouplingLabel(self, v2):
@@ -117,22 +120,24 @@ class LimitProducer(object):
           continue
 
     # produce fit diagnostics
-    command_fits = 'combine -M FitDiagnostics {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams'.format(i=self.indirlabel, hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
-    os.system(command_fits)
-    os.system('mv fitDiagnosticsTest.root {hm}/outputs/{out}/limits/{sub}/results/fitDiagnostics_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.root'.format(hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario))
+    if self.do_fitdiagnostics:
+      command_fits = 'combine -M FitDiagnostics {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams'.format(i=self.indirlabel, hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+      os.system(command_fits)
+      os.system('mv fitDiagnosticsTest.root {hm}/outputs/{out}/limits/{sub}/results/fitDiagnostics_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.root'.format(hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario))
 
     # compute p-value
-    command_pvalue = 'combine -M Significance {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --pval'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
-    if self.use_discrete_profiling:
-      command_pvalue += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
-    
-    print '\t\t',command_pvalue
-     
-    results_pvalue = subprocess.check_output(command_pvalue.split())
-    
-    result_pvalue_file_name = '{}/pvalue_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(self.ctau), str(self.coupling)) 
-    with open(result_pvalue_file_name, 'w') as ff:
-        print >> ff, results_pvalue
+    if self.do_pvalue:
+      command_pvalue = 'combine -M Significance {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --pval'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+      if self.use_discrete_profiling:
+        command_pvalue += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
+      
+      print '\t\t',command_pvalue
+       
+      results_pvalue = subprocess.check_output(command_pvalue.split())
+      
+      result_pvalue_file_name = '{}/pvalue_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(self.ctau), str(self.coupling)) 
+      with open(result_pvalue_file_name, 'w') as ff:
+          print >> ff, results_pvalue
 
 
 if __name__ == "__main__":
