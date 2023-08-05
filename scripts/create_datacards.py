@@ -460,13 +460,13 @@ class DatacardsMaker(Tools):
     datacard_name = 'datacard_{}.txt'.format(card_label)
 
     # define selection systematics
-    syst_sel = 1.00 
-    if 'lxysig0to50' in card_label:
-      syst_sel = 1.05
-    elif 'lxysig50to150' in card_label:
-      syst_sel = 1.05
-    elif 'lxysiggt150' in card_label:
-      syst_sel = 1.10
+    syst_sel = 1.15 
+    #if 'lxysig0to50' in card_label:
+    #  syst_sel = 1.05
+    #elif 'lxysig50to150' in card_label:
+    #  syst_sel = 1.05
+    #elif 'lxysiggt150' in card_label:
+    #  syst_sel = 1.10
 
     # define uncertainty on fc
     if '_Bc' in card_label:
@@ -551,7 +551,7 @@ syst_sig_mu_sel_{lbl}                         lnN           {syst_sel}          
 syst_sig_mu_shape_{lbl}                       lnN           1.15                           -
 syst_sig_mu_genmatching_{lbl}                 lnN           1.05                           -
 syst_sig_fc                                   lnN           {syst_fc}                      -
-stat_sig_{lbl}                                gmN {evts}    {alpha}                        - 
+stat_sig_mu_{lbl}                             gmN {evts}    {alpha}                        - 
 {bkg_syst_line}   
 --------------------------------------------------------------------------------------------------------------------------------------------
 {norm_line}
@@ -719,11 +719,11 @@ bkg {bkg_yields}
               signal_yields, signal_stat = self.runFitter(process='signal', mass=signal_mass, ctau=signal_ctau, category=category, selection=selection, label=card_label)
 
               # apply correction to the signal yields (hopefully this is only temporary) #TODO create correction class and make it configurable
-              corr = 1.
-              if category.label in ['lxysig0to50_OS', 'lxysig0to50_SS']: corr = 0.82
-              elif category.label in ['lxysig50to150_OS', 'lxysig50to150_SS']: corr = 0.88
-              elif category.label in ['lxysiggt150_OS', 'lxysiggt150_SS']: corr = 1.
-              signal_yields = signal_yields * corr
+              #corr = 1.
+              #if category.label in ['lxysig0to50_OS', 'lxysig0to50_SS']: corr = 0.82
+              #elif category.label in ['lxysig50to150_OS', 'lxysig50to150_SS']: corr = 0.88
+              #elif category.label in ['lxysiggt150_OS', 'lxysiggt150_SS']: corr = 1.
+              #signal_yields = signal_yields * corr
 
               # apply correction to the gen-matching efficiency
               corr_genmatching = 1.2
