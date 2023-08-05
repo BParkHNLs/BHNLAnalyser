@@ -677,7 +677,8 @@ class Systematics(Tools):
     #ROOT.TH1.SetDefaultSumw2()
 
     #training_label = 'V13_06Feb23_2023Apr06_14h13m31s'
-    training_label = 'V13_06Feb23_2023Jul18_15h36m17s'
+    #training_label = 'V13_06Feb23_2023Jul18_15h36m17s'
+    training_label = 'training_Jul23'
 
     #filename_mc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/Chunk0_n500/flat/flat_bparknano_06Feb23_nj1.root'
     #filename_mc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/Chunk0_n500/flat/flat_bparknano_06Feb23_pNN_nj1.root'
@@ -737,7 +738,7 @@ class Systematics(Tools):
 
     for icat, category in enumerate(categories): 
       if 'incl' in category.label: continue
-      if 'Bc' in category.label: continue
+      #if 'Bc' in category.label: continue
       #if 'SS' in category.label: continue
       #if category.label != 'lxysig0to50_OS': continue
       #if category.label != 'lxysiggt150_SS': continue
@@ -1013,10 +1014,408 @@ class Systematics(Tools):
       #tree_mc_renamed.Print()
       #outfile_mc.Write()
 
+  def createElectronFiles(self):
+    filename_mc = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V15_control/mass999_ctau999/nanoFiles/merged/flat_bparknano_06Feb23_pNN.root'
+    filename_data = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018A/merged/flat_bparknano_control_splot.root'
+
+    f_mc = ROOT.TFile.Open(filename_mc)
+    tree_mc_ini = f_mc.Get('control_tree')
+
+    ourdir_file = '/scratch/anlyon/systematics'
+    if not path.exists(ourdir_file):
+      os.system('mkdir -p {}'.format(ourdir_file))
+
+    outfile_name_mc = '{}/file_electron_mc.root'.format(ourdir_file)
+    outfile_mc = ROOT.TFile(outfile_name_mc, 'RECREATE')
+
+    tree_mc_renamed = tree_mc_ini.CloneTree()
+    tree_mc_renamed.GetBranch('mu0_pt').SetTitle('l0_pt')
+    tree_mc_renamed.GetBranch('mu0_pt').SetName('l0_pt')
+    tree_mc_renamed.GetBranch('mu_pt').SetTitle('l_pt')
+    tree_mc_renamed.GetBranch('mu_pt').SetName('l_pt')
+    tree_mc_renamed.GetBranch('pi_pt').SetTitle('hnl_pi_pt')
+    tree_mc_renamed.GetBranch('pi_pt').SetName('hnl_pi_pt')
+    tree_mc_renamed.GetBranch('b_mass').SetTitle('B_mass')
+    tree_mc_renamed.GetBranch('b_mass').SetName('B_mass')
+    tree_mc_renamed.GetBranch('hnl_cos2d').SetTitle('hnl_cos2D')
+    tree_mc_renamed.GetBranch('hnl_cos2d').SetName('hnl_cos2D')
+    tree_mc_renamed.GetBranch('sv_lxysig').SetTitle('hnl_lxy_sig')
+    tree_mc_renamed.GetBranch('sv_lxysig').SetName('hnl_lxy_sig')
+    tree_mc_renamed.GetBranch('sv_prob').SetTitle('hnl_vtxProb')
+    tree_mc_renamed.GetBranch('sv_prob').SetName('hnl_vtxProb')
+    tree_mc_renamed.GetBranch('b_pt').SetTitle('B_pt')
+    tree_mc_renamed.GetBranch('b_pt').SetName('B_pt')
+    tree_mc_renamed.GetBranch('pi_dcasig').SetTitle('hnl_pi_DCAS')
+    tree_mc_renamed.GetBranch('pi_dcasig').SetName('hnl_pi_DCAS')
+    tree_mc_renamed.GetBranch('mu0_mu_mass').SetTitle('dilepton_mass')
+    tree_mc_renamed.GetBranch('mu0_mu_mass').SetName('dilepton_mass')
+    tree_mc_renamed.GetBranch('mu0_pi_mass').SetTitle('BlepPi_mass')
+    tree_mc_renamed.GetBranch('mu0_pi_mass').SetName('BlepPi_mass')
+    tree_mc_renamed.GetBranch('deltar_mu0_mu').SetTitle('dr_trgMu_lep')
+    tree_mc_renamed.GetBranch('deltar_mu0_mu').SetName('dr_trgMu_lep')
+    tree_mc_renamed.GetBranch('deltar_mu0_pi').SetTitle('dr_Blep_pi')
+    tree_mc_renamed.GetBranch('deltar_mu0_pi').SetName('dr_Blep_pi')
+    tree_mc_renamed.GetBranch('mu0_pfiso03_rel').SetTitle('l0_relIso')
+    tree_mc_renamed.GetBranch('mu0_pfiso03_rel').SetName('l0_relIso')
+    tree_mc_renamed.GetBranch('mu_pfiso03_rel').SetTitle('l_relIso')
+    tree_mc_renamed.GetBranch('mu_pfiso03_rel').SetName('l_relIso')
+    tree_mc_renamed.GetBranch('pi_numberofpixellayers').SetTitle('hnl_pi_PixelLayers')
+    tree_mc_renamed.GetBranch('pi_numberofpixellayers').SetName('hnl_pi_PixelLayers')
+    tree_mc_renamed.GetBranch('pi_numberoftrackerlayers').SetTitle('hnl_pi_TrackerLayers')
+    tree_mc_renamed.GetBranch('pi_numberoftrackerlayers').SetName('hnl_pi_TrackerLayers')
+    tree_mc_renamed.GetBranch('mu_numberofpixellayers').SetTitle('TrgMu_PixelLayers')
+    tree_mc_renamed.GetBranch('mu_numberofpixellayers').SetName('TrgMu_PixelLayers')
+    tree_mc_renamed.GetBranch('mu_numberoftrackerlayers').SetTitle('TrgMu_TrackerLayers')
+    tree_mc_renamed.GetBranch('mu_numberoftrackerlayers').SetName('TrgMu_TrackerLayers')
+
+    outfile_mc.cd()
+    #tree_mc_renamed.Print()
+    outfile_mc.Write()
+    outfile_mc.Close()
+    print '-> {}/file_electron_mc.root created'.format(ourdir_file)
+
+    f_data = ROOT.TFile.Open(filename_data)
+    tree_data_ini = f_data.Get('control_tree')
+
+    ourdir_file = '/scratch/anlyon/systematics'
+    if not path.exists(ourdir_file):
+      os.system('mkdir -p {}'.format(ourdir_file))
+
+    outfile_name_data = '{}/file_electron_data.root'.format(ourdir_file)
+    outfile_data = ROOT.TFile(outfile_name_data, 'RECREATE')
+
+    tree_data_renamed = tree_data_ini.CloneTree()
+    tree_data_renamed.GetBranch('mu0_pt').SetTitle('l0_pt')
+    tree_data_renamed.GetBranch('mu0_pt').SetName('l0_pt')
+    tree_data_renamed.GetBranch('mu_pt').SetTitle('l_pt')
+    tree_data_renamed.GetBranch('mu_pt').SetName('l_pt')
+    tree_data_renamed.GetBranch('pi_pt').SetTitle('hnl_pi_pt')
+    tree_data_renamed.GetBranch('pi_pt').SetName('hnl_pi_pt')
+    tree_data_renamed.GetBranch('b_mass').SetTitle('B_mass')
+    tree_data_renamed.GetBranch('b_mass').SetName('B_mass')
+    tree_data_renamed.GetBranch('hnl_cos2d').SetTitle('hnl_cos2D')
+    tree_data_renamed.GetBranch('hnl_cos2d').SetName('hnl_cos2D')
+    tree_data_renamed.GetBranch('sv_lxysig').SetTitle('hnl_lxy_sig')
+    tree_data_renamed.GetBranch('sv_lxysig').SetName('hnl_lxy_sig')
+    tree_data_renamed.GetBranch('sv_prob').SetTitle('hnl_vtxProb')
+    tree_data_renamed.GetBranch('sv_prob').SetName('hnl_vtxProb')
+    tree_data_renamed.GetBranch('b_pt').SetTitle('B_pt')
+    tree_data_renamed.GetBranch('b_pt').SetName('B_pt')
+    tree_data_renamed.GetBranch('pi_dcasig').SetTitle('hnl_pi_DCAS')
+    tree_data_renamed.GetBranch('pi_dcasig').SetName('hnl_pi_DCAS')
+    tree_data_renamed.GetBranch('mu0_mu_mass').SetTitle('dilepton_mass')
+    tree_data_renamed.GetBranch('mu0_mu_mass').SetName('dilepton_mass')
+    tree_data_renamed.GetBranch('mu0_pi_mass').SetTitle('BlepPi_mass')
+    tree_data_renamed.GetBranch('mu0_pi_mass').SetName('BlepPi_mass')
+    tree_data_renamed.GetBranch('deltar_mu0_mu').SetTitle('dr_trgMu_lep')
+    tree_data_renamed.GetBranch('deltar_mu0_mu').SetName('dr_trgMu_lep')
+    tree_data_renamed.GetBranch('deltar_mu0_pi').SetTitle('dr_Blep_pi')
+    tree_data_renamed.GetBranch('deltar_mu0_pi').SetName('dr_Blep_pi')
+    tree_data_renamed.GetBranch('mu0_pfiso03_rel').SetTitle('l0_relIso')
+    tree_data_renamed.GetBranch('mu0_pfiso03_rel').SetName('l0_relIso')
+    tree_data_renamed.GetBranch('mu_pfiso03_rel').SetTitle('l_relIso')
+    tree_data_renamed.GetBranch('mu_pfiso03_rel').SetName('l_relIso')
+    tree_data_renamed.GetBranch('pi_numberofpixellayers').SetTitle('hnl_pi_PixelLayers')
+    tree_data_renamed.GetBranch('pi_numberofpixellayers').SetName('hnl_pi_PixelLayers')
+    tree_data_renamed.GetBranch('pi_numberoftrackerlayers').SetTitle('hnl_pi_TrackerLayers')
+    tree_data_renamed.GetBranch('pi_numberoftrackerlayers').SetName('hnl_pi_TrackerLayers')
+    tree_data_renamed.GetBranch('mu_numberofpixellayers').SetTitle('TrgMu_PixelLayers')
+    tree_data_renamed.GetBranch('mu_numberofpixellayers').SetName('TrgMu_PixelLayers')
+    tree_data_renamed.GetBranch('mu_numberoftrackerlayers').SetTitle('TrgMu_TrackerLayers')
+    tree_data_renamed.GetBranch('mu_numberoftrackerlayers').SetName('TrgMu_TrackerLayers')
+
+    outfile_data.cd()
+    #tree_data_renamed.Print()
+    outfile_data.Write()
+    outfile_data.Close()
+    print '-> {}/file_electron_data.root created'.format(ourdir_file)
 
 
+  def studySelectionSystElectron(self, categories, baseline_selection):
+    ROOT.gStyle.SetOptStat(0)
+    #ROOT.TH1.SetDefaultSumw2()
 
+    training_label = 'electron_v1'
 
+    filename_mc = '/scratch/anlyon/systematics/file_electron_mc.root'
+    filename_data = '/scratch/anlyon/systematics/file_electron_data.root'
+
+    mass = 3.0
+    resolution_p0 = 6.98338e-04
+    resolution_p1 = 7.78382e-03 
+    resolution = resolution_p0 + mass * resolution_p1
+    window_size = 1000
+    treename = 'control_tree'
+
+    mva_tools = MVATools(path_mva='./mva/outputs')
+
+    outputdir = './myPlots/systematics/selection'
+    if not path.exists(outputdir):
+      os.system('mkdir -p {}'.format(outputdir))
+        
+    hist_efficiency_mc = ROOT.TH1D('hist_efficiency_mc', 'hist_efficiency_mc', len(categories)-1, 0, len(categories)-1) 
+    hist_efficiency_mc.SetTitle(' ')
+    hist_efficiency_mc.SetFillColor(ROOT.kBlue-3)
+    hist_efficiency_mc.SetFillStyle(3005)
+    hist_efficiency_mc.GetXaxis().SetLabelSize(0.0)
+    hist_efficiency_mc.GetXaxis().SetTitleSize(0.0)
+    hist_efficiency_mc.GetYaxis().SetTitle('Efficiency')
+    hist_efficiency_mc.GetYaxis().SetLabelSize(0.037)
+    hist_efficiency_mc.GetYaxis().SetTitleSize(0.043)
+    hist_efficiency_mc.GetYaxis().SetTitleOffset(1.1)
+
+    hist_efficiency_data = ROOT.TH1D('hist_efficiency_data', 'hist_efficiency_data', len(categories)-1, 0, len(categories)-1) 
+    hist_efficiency_data.SetMarkerStyle(20)
+    hist_efficiency_data.SetMarkerSize(2)
+
+    hist_syst = ROOT.TH1D('hist_syst', 'hist_syst', len(categories)-1, 0, len(categories)-1) 
+    hist_syst.SetTitle(' ')
+    #hist_syst.SetMarkerSize(2)
+    #hist_syst.SetMarkerStyle(20)
+    hist_syst.SetMarkerColor(2)
+    hist_syst.SetLineWidth(2)
+    hist_syst.SetMarkerStyle(33)
+    hist_syst.SetMarkerSize(2)
+    hist_syst.SetTitle('')
+    #hist_syst.GetXaxis().SetTitle('pNN score')
+    hist_syst.GetXaxis().SetLabelSize(0.16)
+    hist_syst.GetXaxis().SetTitleSize(0.17)
+    hist_syst.GetXaxis().SetTitleOffset(0.73)
+    hist_syst.GetYaxis().SetTitle('Data/MC')
+    hist_syst.GetYaxis().SetLabelSize(0.1)
+    hist_syst.GetYaxis().SetTitleSize(0.13)
+    hist_syst.GetYaxis().SetTitleOffset(0.345)
+    hist_syst.GetYaxis().SetRangeUser(0.5, 1.5)
+    hist_syst.GetYaxis().SetNdivisions(5)
+
+    leg_syst = self.tools.getRootTLegend(xmin=0.3, ymin=0.55, xmax=0.5, ymax=0.85, size=0.045)
+
+    for icat, category in enumerate(categories): 
+      if 'incl' in category.label: continue
+      #if 'Bc' in category.label: continue
+      #if 'SS' in category.label: continue
+      #if category.label != 'lxysig0to50_OS': continue
+      #if category.label != 'lxysiggt150_SS': continue
+
+      training_info = mva_tools.getTrainingInfo(training_label, category.label)
+
+      selection = baseline_selection + ' && mu_pi_mass > {} && mu_pi_mass < {}'.format(mass-window_size*resolution, mass+window_size*resolution)
+
+      weights_mc = ['weight_hlt_A1']
+      df_mc = self.createDataframe(training_info=training_info, do_parametric=True, mass=mass, samples_filename=[filename_mc], selection=selection, weights=weights_mc, signal_treename=treename)
+      weight_hlt = df_mc['weight_hlt_A1']
+
+      weights_data = ['nsig_sw']
+      df_data = self.createDataframe(training_info=training_info, do_parametric=True, mass=mass, samples_filename=[filename_data], selection=selection, weights=weights_data, signal_treename=treename)
+      sweight = df_data['nsig_sw']
+
+      score_mc = mva_tools.predictScore(training_info=training_info, df=df_mc, do_parametric=True) 
+      score_data = mva_tools.predictScore(training_info=training_info, df=df_data, do_parametric=True) 
+
+      canv_name = 'canv_score_{}'.format(category.label)
+      canv = self.tools.createTCanvas(canv_name)
+      pad_up = ROOT.TPad("pad_up","pad_up",0,0.25,1,1)
+      #pad_up.SetTopMargin(0.13)
+      pad_up.SetBottomMargin(0.03)
+      pad_up.Draw()
+      canv.cd()
+      pad_down = ROOT.TPad("pad_down","pad_down",0,0,1,0.25)
+      pad_down.SetBottomMargin(0.25)
+      pad_down.Draw()
+      leg = self.tools.getRootTLegend(xmin=0.3, ymin=0.55, xmax=0.5, ymax=0.85, size=0.045)
+
+      nbins = 30
+      bin_min = 0.05
+      bin_max = 1
+
+      score_WP = 0.99
+
+      hist_score_mc_full = ROOT.TH1D('hist_score_mc_full_{}'.format(category.label), 'hist_score_mc_full', nbins, 0, 1)
+      hist_score_mc = ROOT.TH1D('hist_score_mc_{}'.format(category.label), 'hist_score_mc', nbins, bin_min, bin_max)
+      hist_score_mc_WP = ROOT.TH1D('hist_score_mc_WP_{}'.format(category.label), 'hist_score_mc_WP', nbins, score_WP, 1)
+      for idx, i in enumerate(score_mc):
+        #hist_score_mc_full.Fill(i[0])
+        #hist_score_mc.Fill(i[0])
+        #hist_score_mc_WP.Fill(i[0])
+        hist_score_mc_full.Fill(i[0], weight_hlt[idx])
+        hist_score_mc.Fill(i[0], weight_hlt[idx])
+        hist_score_mc_WP.Fill(i[0], weight_hlt[idx])
+
+      hist_score_data_full = ROOT.TH1D('hist_score_data_full_{}'.format(category.label), 'hist_score_data_full', nbins, 0, 1)
+      hist_score_data = ROOT.TH1D('hist_score_data_{}'.format(category.label), 'hist_score_data', nbins, bin_min, bin_max)
+      hist_score_data_WP = ROOT.TH1D('hist_score_data_WP_{}'.format(category.label), 'hist_score_data_WP', nbins, score_WP, 1)
+      for idx, i in enumerate(score_data):
+        #hist_score_data_full.Fill(i[0])
+        #hist_score_data.Fill(i[0])
+        #hist_score_data_WP.Fill(i[0])
+        hist_score_data_full.Fill(i[0], sweight[idx])
+        hist_score_data.Fill(i[0], sweight[idx])
+        hist_score_data_WP.Fill(i[0], sweight[idx])
+
+      print hist_score_mc_full.Integral()
+      print hist_score_mc_WP.Integral()
+  
+      err_mc_full = ROOT.double(0.)
+      int_mc_full = hist_score_mc_full.IntegralAndError(0, 10000, err_mc_full)
+
+      err_data_full = ROOT.double(0.)
+      int_data_full = hist_score_data_full.IntegralAndError(0, 100000, err_data_full)
+
+      hist_score_mc.Scale(int_data_full/int_mc_full)
+
+      err_mc_WP = ROOT.double(0.)
+      int_mc_WP = hist_score_mc_WP.IntegralAndError(hist_score_mc_WP.FindBin(score_WP), 100000, err_mc_WP)
+
+      err_data_WP = ROOT.double(0.)
+      int_data_WP = hist_score_data_WP.IntegralAndError(hist_score_data_WP.FindBin(score_WP), 100000, err_data_WP)
+
+      efficiency_mc = int_mc_WP / int_mc_full
+      efficiency_data = int_data_WP / int_data_full
+
+      try:
+        err_mc = efficiency_mc * math.sqrt(math.pow(err_mc_WP/int_mc_WP, 2) + math.pow(err_mc_full/int_mc_full, 2))
+      except:
+        err_mc = 0
+      try:
+        err_data = efficiency_data * math.sqrt(math.pow(err_data_WP/int_data_WP, 2) + math.pow(err_data_full/int_data_full, 2))
+      except:
+        err_data = 0
+
+      hist_efficiency_mc.SetBinContent(icat, efficiency_mc)
+      hist_efficiency_mc.SetBinError(icat, err_mc)
+      hist_efficiency_data.SetBinContent(icat, efficiency_data)
+      hist_efficiency_data.SetBinError(icat, err_data)
+
+      #syst = int_data_WP / int_mc_WP
+      try:
+        syst = efficiency_data / efficiency_mc
+      except:
+        syst = 0
+      try: 
+        err_syst = syst * math.sqrt(math.pow(err_mc/efficiency_mc, 2) + math.pow(err_data/efficiency_data, 2)) 
+      except:
+        err_syst = 0
+      print '{} syst {} / {} = {}'.format(category.label, efficiency_data, efficiency_mc, syst)
+      hist_syst.SetBinContent(icat, syst)
+      hist_syst.SetBinError(icat, err_syst)
+      hist_syst.GetXaxis().SetBinLabel(icat, category.title)
+
+      #hist_score_mc.Scale(1./hist_score_mc.Integral())
+      #hist_score_data.Scale(1./hist_score_data.Integral())
+
+      hist_score_mc.SetTitle(category.title)
+      hist_score_mc.SetFillColor(ROOT.kBlue-3)
+      hist_score_mc.SetFillStyle(3005)
+      hist_score_mc.GetXaxis().SetLabelSize(0.0)
+      hist_score_mc.GetXaxis().SetTitleSize(0.0)
+      hist_score_mc.GetYaxis().SetTitle('Entries')
+      hist_score_mc.GetYaxis().SetLabelSize(0.037)
+      hist_score_mc.GetYaxis().SetTitleSize(0.043)
+      hist_score_mc.GetYaxis().SetTitleOffset(1.1)
+      range_min = min(hist_score_mc.GetMinimum(), hist_score_data.GetMinimum())
+      range_max = max(hist_score_mc.GetMaximum(), hist_score_data.GetMaximum())
+      hist_score_mc.GetYaxis().SetRangeUser(range_min-0.15*range_min, range_max+0.15*range_max)
+
+      hist_score_data.SetMarkerStyle(20)
+      hist_score_data.SetMarkerSize(2)
+
+      hist_score_mc_err = hist_score_mc.Clone('hist_score_mc_err')
+      hist_score_mc_err.SetLineWidth(0)
+      hist_score_mc_err.SetFillStyle(3244)
+      hist_score_mc_err.SetFillColor(ROOT.kGray+2)
+
+      leg.AddEntry(hist_score_data, 'Data')
+      leg.AddEntry(hist_score_mc, 'MC')
+
+      pad_up.cd()
+      hist_score_mc.Draw('hist')
+      hist_score_data.Draw('PE same')
+      hist_score_mc_err.Draw('E2 same')
+
+      leg.Draw()
+
+      pad_down.cd()
+      hist_ratio = self.tools.getRatioHistogram(hist_score_data, hist_score_mc)
+      hist_ratio.SetLineWidth(2)
+      hist_ratio.SetMarkerStyle(20)
+      hist_ratio.SetTitle('')
+      hist_ratio.GetXaxis().SetTitle('pNN score')
+
+      hist_ratio.GetXaxis().SetLabelSize(0.1)
+      hist_ratio.GetXaxis().SetTitleSize(0.13)
+      hist_ratio.GetXaxis().SetTitleOffset(0.73)
+      hist_ratio.GetYaxis().SetTitle('Data/MC')
+      hist_ratio.GetYaxis().SetLabelSize(0.1)
+      hist_ratio.GetYaxis().SetTitleSize(0.13)
+      hist_ratio.GetYaxis().SetTitleOffset(0.345)
+      val_min = hist_ratio.GetBinContent(hist_ratio.GetMinimumBin())
+      val_max = hist_ratio.GetBinContent(hist_ratio.GetMaximumBin())
+      hist_ratio.GetYaxis().SetRangeUser(val_min-0.15*val_min, val_max+0.15*val_max)
+
+      hist_ratio.Draw('P')
+
+      ## draw line at ratio = 1
+      line = ROOT.TLine(bin_min, 1, bin_max, 1)
+      line.SetLineColor(4)
+      line.SetLineWidth(2)
+      line.Draw('same')
+
+      canv.cd()
+      name = 'electron_score_{}'.format(category.label)
+      canv.SaveAs('{}/{}.png'.format(outputdir, name))
+      canv.SaveAs('{}/{}.pdf'.format(outputdir, name))
+
+    canv_name_syst = 'canv_syst'
+    canv_syst = self.tools.createTCanvas(canv_name_syst)
+    pad_up_syst = ROOT.TPad("pad_up_syst","pad_up_syst",0,0.25,1,1)
+    pad_up_syst.SetBottomMargin(0.03)
+    pad_up_syst.Draw()
+    canv_syst.cd()
+    pad_down_syst = ROOT.TPad("pad_down_syst","pad_down_syst",0,0,1,0.25)
+    pad_down_syst.SetBottomMargin(0.35)
+    pad_down_syst.Draw()
+
+    pad_up_syst.cd()
+    range_max = max(hist_efficiency_mc.GetMaximum(), hist_efficiency_data.GetMaximum())
+    #range_min = min(hist_efficiency_mc.GetMinimum(), hist_efficiency_data.GetMinimum())
+    print '{} {} {}'.format(hist_efficiency_mc.GetMaximum(), hist_efficiency_data.GetMaximum(), range_max)
+    #print range_min
+    hist_efficiency_mc.GetYaxis().SetRangeUser(0, range_max + 0.15*range_max)
+    hist_efficiency_mc.Draw('hist')
+    hist_efficiency_data.Draw('PE same')
+
+    leg_syst.AddEntry(hist_efficiency_data, 'Data')
+    leg_syst.AddEntry(hist_efficiency_mc, 'MC')
+    leg.Draw()
+
+    hist_efficiency_mc_err = hist_efficiency_mc.Clone('hist_efficiency_mc_err')
+    hist_efficiency_mc_err.SetLineWidth(0)
+    hist_efficiency_mc_err.SetFillStyle(3244)
+    hist_efficiency_mc_err.SetFillColor(ROOT.kGray+2)
+    hist_efficiency_mc_err.Draw('E2 same')
+
+    pad_down_syst.cd() 
+    hist_syst.Draw('PE')
+
+    ## draw line at ratio = 1
+    line = ROOT.TLine(0, 1, len(categories)-1, 1)
+    line.SetLineColor(1)
+    line.SetLineWidth(2)
+    line.Draw('same')
+    line_up = ROOT.TLine(0, 1.3, len(categories)-1, 1.3)
+    line_up.SetLineColor(1)
+    line_up.SetLineWidth(1)
+    line_up.Draw('same')
+    line_down = ROOT.TLine(0, 0.7, len(categories)-1, 0.7)
+    line_down.SetLineColor(1)
+    line_down.SetLineWidth(1)
+    line_down.Draw('same')
+
+    canv_syst.cd()
+    name_syst = 'electron_systematics'
+    canv_syst.SaveAs('{}/{}.png'.format(outputdir, name_syst))
+    canv_syst.SaveAs('{}/{}.pdf'.format(outputdir, name_syst))
+    
 
 
 if __name__ == '__main__':
@@ -1072,6 +1471,11 @@ if __name__ == '__main__':
   if do_studySelectionSyst:
     categories = categories['categories_0_50_150']
     baseline_selection = selection['control'].flat
+
+    # create files
+    #Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).createElectronFiles()
+    
+    #Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).studySelectionSystElectron(
     Systematics(signal_labels=signal_labels, categories=categories, baseline_selection=baseline_selection, lumi=41.6).studySelectionSyst(
         categories=categories, 
         baseline_selection=baseline_selection,
