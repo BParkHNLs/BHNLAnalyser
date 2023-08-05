@@ -749,7 +749,7 @@ class Fitter(Tools, MVATools):
     if self.do_cutbased:
       tree_sig = ROOT.TChain(treename)
       for signal_file in signal_files:
-        filename = signal_file.filename if is_bc else signal_file.filename_Bc
+        filename = signal_file.filename if not is_bc else signal_file.filename_Bc
         tree_sig.Add(filename)
     elif self.do_mva:
       score_label = self.getSignalLabel()
