@@ -3,6 +3,9 @@ import sys
 from os import path
 sys.path.append('../objects')
 from coupling_scenarios import CouplingScenario
+sys.path.append('../scripts')
+from decays_mod import HNLDecays 
+import math
 
 
 class DatacardReweighter(object):
@@ -12,8 +15,8 @@ class DatacardReweighter(object):
   '''
   def __init__(self, datacard_name, mass, ctau, fe, fu, ft, path_motherdir, indirlabel, outdirlabel, subdirlabel, flavour_channel):
     self.datacard_name = datacard_name
-    self.mass = mass # needed for e- path to worspaces
-    self.ctau = ctau # needed for e- path to worspaces
+    self.mass = mass # needed for e- path to workspaces
+    self.ctau = ctau # needed for e- path to workspaces
     self.fe = float(fe)
     self.fu = float(fu)
     self.ft = float(ft)
@@ -67,15 +70,49 @@ class DatacardReweighter(object):
     return rate_list
 
 
+  def getAlpha(self, line):
+    '''
+      Get the alpha of the statistical uncertainty from line
+    '''
+    # search where to start fetching for alpha (after the number of events)
+    idx0 = line.find('gmN')+3
+    idx = idx0
+    while idx < len(line) and idx != -1:
+      if line[idx].isdigit():
+        idx1 = idx
+        idx2 = line.find(' ', idx1+1)
+        idx_begin = idx2
+        break
+      else:
+        idx = idx + 1
+
+    for idx in range(idx_begin, len(line)):
+      if line[idx].isdigit():
+        idx1 = idx
+        idx2 = line.find(' ', idx1+1)
+        alpha = line[idx1:idx2]
+        break
+      else:
+        idx = idx + 1
+
+    return alpha
+
+
   def updateRateList(self, rate_list):
     '''
       Update the signal rates according to given coupling scenario
     '''
-
     if self.flavour_channel == 'muon':
-      coupling_weight = self.fu * self.fu
+      decay_width_ini = HNLDecays(mass=self.mass, fe=0., fu=1., ft=0.).decay_rate['tot']
+      decay_width_new = HNLDecays(mass=self.mass, fe=self.fe, fu=self.fu, ft=self.ft).decay_rate['tot']
+      coupling_weight = self.fu * self.fu * math.pow(decay_width_ini / decay_width_new, 2) # yields inversely proportional to decay_width
+      #coupling_weight = self.fu * self.fu
     elif self.flavour_channel == 'electron':
-      coupling_weight = self.fu * self.fe
+      decay_width_ini = HNLDecays(mass=self.mass, fe=0., fu=1., ft=0.).decay_rate['tot'] # the approximation that gamma_e = gamma_u is made
+      decay_width_new = HNLDecays(mass=self.mass, fe=self.fe, fu=self.fu, ft=self.ft).decay_rate['tot']
+      coupling_weight = self.fu * self.fe * math.pow(decay_width_ini / decay_width_new, 2) # yields inversely proportional to decay_width
+      coupling_weight = coupling_weight * 0.5 * 0.5 # in the electron datacard, the yields are not normalised to (0.5, 0.5, 0), and this needs to be corrected
+      #coupling_weight = self.fu * self.fe
 
     updated_rate_list = []
     for rate in rate_list:
@@ -89,6 +126,26 @@ class DatacardReweighter(object):
       updated_rate_list.append(updated_rate)
 
     return updated_rate_list
+
+
+  def updateAlpha(self, alpha):
+    '''
+      Update the value of alpha
+    '''
+    if self.flavour_channel == 'muon':
+      decay_width_ini = HNLDecays(mass=self.mass, fe=0., fu=1., ft=0.).decay_rate['tot']
+      decay_width_new = HNLDecays(mass=self.mass, fe=self.fe, fu=self.fu, ft=self.ft).decay_rate['tot']
+      alpha_weight = self.fu * self.fu * math.pow(decay_width_ini / decay_width_new, 2) # yields inversely proportional to decay_width
+    elif self.flavour_channel == 'electron':
+      decay_width_ini = HNLDecays(mass=self.mass, fe=0., fu=1., ft=0.).decay_rate['tot'] # the approximation that gamma_e = gamma_u is made
+      decay_width_new = HNLDecays(mass=self.mass, fe=self.fe, fu=self.fu, ft=self.ft).decay_rate['tot']
+      alpha_weight = self.fu * self.fe * math.pow(decay_width_ini / decay_width_new, 2) # yields inversely proportional to decay_width
+      alpha_weight = alpha_weight * 0.5 * 0.5 # in the electron datacard, the yields are not normalised to (0.5, 0.5, 0), and this needs to be corrected
+
+    updated_alpha = float(alpha) * alpha_weight
+    updated_alpha = str(updated_alpha)
+
+    return updated_alpha
 
 
   def getRootfile(self, line):
@@ -168,6 +225,12 @@ class DatacardReweighter(object):
         for updated_rate in updated_rate_list:
           rate_line += '{}  '.format(updated_rate)    
         updated_datacard.write(rate_line + '\n')
+
+      elif 'gmN' in line:
+        alpha = self.getAlpha(line)
+        updated_alpha = self.updateAlpha(alpha)
+        updated_line = line.replace(alpha, updated_alpha)
+        updated_datacard.write(updated_line + '\n')
 
       else:
         updated_datacard.write(line)
