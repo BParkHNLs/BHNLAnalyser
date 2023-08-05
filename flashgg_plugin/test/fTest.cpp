@@ -31,6 +31,7 @@
 #include "TH1I.h"
 #include "TArrow.h"
 #include "TKey.h"
+#include "TBox.h"
 
 #include "RooCategory.h"
 #include "HiggsAnalysis/CombinedLimit/interface/RooMultiPdf.h"
@@ -484,6 +485,10 @@ void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet
   plot->GetXaxis()->SetTitle("m_{#mu#pi} (GeV)");
   if (BLIND) plot->SetMinimum(0.0001);
   plot->Draw();
+  TBox* SR_box = new TBox(mass_window_min, 0, mass_window_max, plot->GetMaximum()*0.99);
+  SR_box->SetFillStyle(3005);
+  SR_box->SetFillColor(17);
+  SR_box->Draw("same");
   leg->Draw("same");
   CMS_lumi( canv, 0, 0);
   canv->SaveAs(Form("%s.pdf",name.c_str()));
