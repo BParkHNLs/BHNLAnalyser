@@ -230,7 +230,7 @@ class Tools(object):
 
     # production branching ratio
     from decays import Decays 
-    dec = Decays(mass=mass, mixing_angle_square=1) # we factorise the mixing angle 
+    dec = Decays(mass=mass, vv=1., fe=0., fu=1., ft=0.) # we factorise the mixing angle 
     if is_bu:
       BR_prod = dec.BR_B_mu
     elif is_bd:
@@ -243,7 +243,7 @@ class Tools(object):
       BR_prod = dec.BR_tot_mu_fq_weighted
 
     # decay branching ratio
-    BR_NToMuPi = self.gamma_partial(mass=mass, vv=1.) / self.gamma_total(mass=mass, vv=1.) # the coupling cancels in the ratio
+    BR_NToMuPi = self.gamma_partial(mass=mass, vv=1., fe=0., fu=1., ft=0.) / self.gamma_total(mass=mass, vv=1., fe=0., fu=1., ft=0.) # the coupling cancels in the ratio
 
     # number of generated events (= n_gen / filter_efficiency = n_miniaod / filter_efficiency)
     n_gen_tot = 0
@@ -685,25 +685,25 @@ class Tools(object):
     return ctau
 
 
-  def gamma_total(self, mass, vv):
+  def gamma_total(self, mass, vv=1., fe=0., fu=1., ft=0.):
     '''
     Total width for N (Dirac)
     '''
     from decays import HNLDecays
-    gamma_total =  HNLDecays(mass=mass,mixing_angle_square=vv).decay_rate['tot']  # GeV
+    gamma_total = HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['tot']  # GeV
     return gamma_total
 
 
-  def gamma_partial(self, mass, vv):
+  def gamma_partial(self, mass, vv=1., fe=0., fu=1., ft=0.):
     '''
     Partial width for N->mupi (Dirac)
     '''
     from decays import HNLDecays
-    gamma_partial = HNLDecays(mass=mass,mixing_angle_square=vv).decay_rate['mupi'] # GeV
+    gamma_partial = HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['mupi'] # GeV
     return gamma_partial
 
 
-  def getVV(self, mass=-99.,ctau=-99., ismaj=True):
+  def getVV(self, mass=-99.,ctau=-99., fe=0., fu=1., ft=0., ismaj=True):
     '''
     Helper function to go from ctau,m -> vv
     '''
@@ -711,17 +711,17 @@ class Tools(object):
     mult = 2. if ismaj else 1.
     ref_m = 1. # GeV
     ref_vv = 1. 
-    ref_ctau = self.ctau_from_gamma(mult*self.gamma_total(mass=ref_m,vv=ref_vv)) #FIXME! it seems that only the coupling to the muon is considered here! should be correct for the muon channel, but we have to check if the Ualpha^2 in Bondarenko acts as the coupling fraction (if 0, 1, 0, then all contributions from electron and tau are down to 0) 
+    ref_ctau = self.ctau_from_gamma(mult*self.gamma_total(mass=ref_m, vv=ref_vv, fe=fe, fu=fu, ft=ft)) 
     k = ref_ctau * np.power(ref_m,5) * ref_vv
     return k/(np.power(mass, 5) * ctau)
 
 
-  def getCtau(self, mass=-99, vv=-99, ismaj=True):
+  def getCtau(self, mass=-99, vv=-99, fe=0., fu=1., ft=0., ismaj=True):
     '''
     Helper function to go from vv,m(GeV) -> ctau (mm)
     '''
     mult = 2. if ismaj else 1.
-    return self.ctau_from_gamma(mult*self.gamma_total(mass=mass,vv=vv))
+    return self.ctau_from_gamma(mult*self.gamma_total(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft))
 
 
   def getCouplingLabel(self, v2):

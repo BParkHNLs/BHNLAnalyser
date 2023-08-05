@@ -137,17 +137,20 @@ tq                = Particle('tq'              , 'quark',  m_tq_pdg)
 ## DECAYS ##
 
 class Decays(object):
-  def __init__(self, mass, mixing_angle_square): # add model label? 
+  def __init__(self, mass, vv=1, fe=0, fu=0, ft=0): # add model label?
     self.mass = mass
-    self.mixing_angle_square = mixing_angle_square
+    self.vv = vv
+    self.fe = fe
+    self.fu = fu
+    self.ft = ft
 
     # define the HNL
     hnl = Particle('hnl', 'lepton', self.mass)
     
     # get the model
-    V_el_square = self.mixing_angle_square
-    V_mu_square = self.mixing_angle_square
-    V_tau_square = self.mixing_angle_square
+    V_el_square = self.fe * self.vv
+    V_mu_square = self.fu * self.vv
+    V_tau_square = self.ft * self.vv
 
     # list of the decays of interest
     # leptonic
@@ -236,17 +239,20 @@ class Decays(object):
 
 ## HNL DECAYS ##
 class HNLDecays(object):
-  def __init__(self, mass, mixing_angle_square): 
+  def __init__(self, mass, vv=1., fe=0., fu=1., ft=0.): 
     self.mass = mass
-    self.mixing_angle_square = mixing_angle_square
+    self.vv = vv
+    self.fe = fe
+    self.fu = fu
+    self.ft = ft
 
     # define the HNL
     hnl = Particle('hnl', 'lepton', self.mass)
     
     # get the model
-    V_mu_square =  self.mixing_angle_square
-    V_tau_square = 0.#self.mixing_angle_square # uncomment for figure 13 right
-    V_el_square =  0.#self.mixing_angle_square # uncomment for figure 13 right 
+    V_mu_square =  self.fu * self.vv
+    V_tau_square = self.ft * self.vv
+    V_el_square =  self.fe * self.vv
     QCD_corr = QCD_corr_table[mass] if not PESKIN else 0.
     #QCD_corr = 0.18 if not PESKIN else 0.
     special_V_mu_square = V_mu_square if not PESKIN else 0.

@@ -62,7 +62,7 @@ class NormalisationStudy(object):
 
     # production branching ratio
     from decays import Decays 
-    dec = Decays(mass=mass, mixing_angle_square=1) # we factorise the mixing angle 
+    dec = Decays(mass=mass, vv=1., fe=0., fu=1., ft=0.) # we factorise the mixing angle 
     if is_bu:
       BR_prod = dec.BR_B_mu / 0.4
     elif is_bd:
@@ -75,7 +75,7 @@ class NormalisationStudy(object):
       BR_prod = dec.BR_tot_mu  #/ 0.4 #FIXME this is to test closure at high mass
 
     # decay branching ratio
-    BR_NToMuPi = self.tools.gamma_partial(mass=mass, vv=1.) / self.tools.gamma_total(mass=mass, vv=1.) # the coupling cancels in the ratio
+    BR_NToMuPi = self.tools.gamma_partial(mass=mass, vv=1., fe=0., fu=1., ft=0.) / self.tools.gamma_total(mass=mass, vv=1., fe=0., fu=1., ft=0.) # the coupling cancels in the ratio
 
     # number of generated events (= n_gen / filter_efficiency = n_miniaod / filter_efficiency)
     n_gen_tot = 0
