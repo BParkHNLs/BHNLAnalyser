@@ -28,7 +28,7 @@ def getOptions():
 
 
 class LimitProducer(object):
-  def __init__(self, mass, ctau, scenario, homedir, indirlabel, outdirlabel, subdirlabel, do_blind, use_discrete_profiling, categories_label=None, fe=None, fu=None, ft=None, do_fitdiagnostics=True, do_pvalue=True):
+  def __init__(self, mass, ctau, scenario, homedir, indirlabel, outdirlabel, subdirlabel, do_blind, use_discrete_profiling, categories_label=None, fe=None, fu=None, ft=None, do_fitdiagnostics=True, do_pvalue=True, datacard_template=None):
     self.tools = Tools()
     self.mass = mass
     self.ctau = ctau
@@ -47,6 +47,12 @@ class LimitProducer(object):
     self.indirlabel = indirlabel if not self.do_limits_percategory else './'
     self.do_fitdiagnostics = do_fitdiagnostics
     self.do_pvalue = do_pvalue
+    v2 = self.tools.getVV(mass=float(self.mass), ctau=float(self.ctau), ismaj=True)
+    self.coupling = self.getCouplingLabel(v2)
+    if datacard_template == None:
+      self.datacard_template = 'datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+    else:
+      self.datacard_template = datacard_template
 
 
   def getCouplingLabel(self, v2):
@@ -58,9 +64,6 @@ class LimitProducer(object):
 
 
   def process(self):
-    v2 = self.tools.getVV(mass=float(self.mass), ctau=float(self.ctau), ismaj=True)
-    self.coupling = self.getCouplingLabel(v2)
-
     if not self.do_limits_percategory:
       # create outputdir
       if self.fe == None and self.fu == None and self.ft == None:
@@ -74,7 +77,7 @@ class LimitProducer(object):
         os.system('mkdir -p {}'.format(outputdir))    
 
       # produce limits
-      command = 'combine -M AsymptoticLimits {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+      command = 'combine -M AsymptoticLimits {i}/{dc}'.format(i=self.indirlabel, dc=self.datacard_template)
       if self.do_blind:
         command += ' --run blind'
       if self.use_discrete_profiling:
@@ -121,13 +124,13 @@ class LimitProducer(object):
 
     # produce fit diagnostics
     if self.do_fitdiagnostics:
-      command_fits = 'combine -M FitDiagnostics {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams'.format(i=self.indirlabel, hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+      command_fits = 'combine -M FitDiagnostics {i}/{dc} --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams'.format(i=self.indirlabel, dc=self.datacard_template)
       os.system(command_fits)
       os.system('mv fitDiagnosticsTest.root {hm}/outputs/{out}/limits/{sub}/results/fitDiagnostics_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.root'.format(hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario))
 
     # compute p-value
     if self.do_pvalue:
-      command_pvalue = 'combine -M Significance {i}/datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt --pval'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+      command_pvalue = 'combine -M Significance {i}/{dc} --pval'.format(i=self.indirlabel, dc=self.datacard_template)
       if self.use_discrete_profiling:
         command_pvalue += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
       
