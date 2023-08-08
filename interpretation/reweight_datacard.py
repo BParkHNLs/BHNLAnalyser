@@ -4,7 +4,7 @@ from os import path
 sys.path.append('../objects')
 from coupling_scenarios import CouplingScenario
 sys.path.append('../scripts')
-from decays_mod import HNLDecays 
+from decays import HNLDecays 
 import math
 
 
@@ -111,7 +111,6 @@ class DatacardReweighter(object):
       decay_width_ini = HNLDecays(mass=self.mass, fe=0., fu=1., ft=0.).decay_rate['tot'] # the approximation that gamma_e = gamma_u is made
       decay_width_new = HNLDecays(mass=self.mass, fe=self.fe, fu=self.fu, ft=self.ft).decay_rate['tot']
       coupling_weight = self.fu * self.fe * math.pow(decay_width_ini / decay_width_new, 2) # yields inversely proportional to decay_width
-      coupling_weight = coupling_weight * 0.5 * 0.5 # in the electron datacard, the yields are not normalised to (0.5, 0.5, 0), and this needs to be corrected
       #coupling_weight = self.fu * self.fe
 
     updated_rate_list = []
@@ -140,7 +139,6 @@ class DatacardReweighter(object):
       decay_width_ini = HNLDecays(mass=self.mass, fe=0., fu=1., ft=0.).decay_rate['tot'] # the approximation that gamma_e = gamma_u is made
       decay_width_new = HNLDecays(mass=self.mass, fe=self.fe, fu=self.fu, ft=self.ft).decay_rate['tot']
       alpha_weight = self.fu * self.fe * math.pow(decay_width_ini / decay_width_new, 2) # yields inversely proportional to decay_width
-      alpha_weight = alpha_weight * 0.5 * 0.5 # in the electron datacard, the yields are not normalised to (0.5, 0.5, 0), and this needs to be corrected
 
     updated_alpha = float(alpha) * alpha_weight
     updated_alpha = str(updated_alpha)
