@@ -19,7 +19,7 @@ def getOptions():
   parser.add_argument('--outdirlabel'     , type=str, dest='outdirlabel'           , help='name of the outdir'                                , default=None)
   parser.add_argument('--subdirlabel'     , type=str, dest='subdirlabel'           , help='name of the subdir'                                , default=None)
   parser.add_argument('--mass'            , type=str, dest='mass'                  , help='mass'                                              , default='1.0')
-  parser.add_argument('--ctau'            , type=str, dest='ctau'                  , help='ctau'                                              , default=None)
+  parser.add_argument('--ctaus'           , type=str, dest='ctaus'                 , help='ctaus'                                             , default=None)
   parser.add_argument('--scenario'        , type=str, dest='scenario'              , help='signal under consideration'                        , default='Majorana', choices=['Majorana', 'Dirac'])
   parser.add_argument('--categories_label', type=str, dest='categories_label'      , help='label of the list of categories'                   , default='standard')
   parser.add_argument('--use_discrete_profiling'    , dest='use_discrete_profiling', help='use discrete profiling method', action='store_true', default=False)
@@ -28,10 +28,10 @@ def getOptions():
 
 
 class LimitProducer(object):
-  def __init__(self, mass, ctau, scenario, homedir, indirlabel, outdirlabel, subdirlabel, do_blind, use_discrete_profiling, categories_label=None, fe=None, fu=None, ft=None, do_fitdiagnostics=True, do_pvalue=True, datacard_template=None):
+  def __init__(self, mass, ctaus, scenario, homedir, indirlabel, outdirlabel, subdirlabel, do_blind, use_discrete_profiling, categories_label=None, fe=None, fu=None, ft=None, do_fitdiagnostics=True, do_pvalue=True, datacard_template=None):
     self.tools = Tools()
     self.mass = mass
-    self.ctau = ctau
+    self.ctaus = ctaus.split(',')
     self.scenario = scenario
     self.homedir = homedir
     self.outdirlabel = outdirlabel
@@ -47,10 +47,8 @@ class LimitProducer(object):
     self.indirlabel = indirlabel if not self.do_limits_percategory else './'
     self.do_fitdiagnostics = do_fitdiagnostics
     self.do_pvalue = do_pvalue
-    v2 = self.tools.getVV(mass=float(self.mass), ctau=float(self.ctau), ismaj=True)
-    self.coupling = self.getCouplingLabel(v2)
     if datacard_template == None:
-      self.datacard_template = 'datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt'.format(m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+      self.datacard_template = 'datacard_combined_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.txt'
     else:
       self.datacard_template = datacard_template
 
@@ -64,83 +62,94 @@ class LimitProducer(object):
 
 
   def process(self):
-    if not self.do_limits_percategory:
-      # create outputdir
-      if self.fe == None and self.fu == None and self.ft == None:
-        outputdir = '{}/outputs/{}/limits/{}/results'.format(self.homedir, self.outdirlabel, self.subdirlabel)
-      else:
-        fe = str(round(self.fe, 1)).replace('.', 'p')
-        fu = str(round(self.fu, 1)).replace('.', 'p')
-        ft = str(round(self.ft, 1)).replace('.', 'p')
-        outputdir = '{}/outputs/{}/limits/{}/results_{}_{}_{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft)
-      if not path.exists(outputdir):
-        os.system('mkdir -p {}'.format(outputdir))    
+    for ctau in self.ctaus:
+      v2 = self.tools.getVV(mass=float(self.mass), ctau=float(ctau), ismaj=True)
+      coupling = self.getCouplingLabel(v2)
+      # the following gymnastic is to be able to run on the electron datacards
+      datacard_template = self.datacard_template.format(m=float(self.mass), ctau=float(ctau), v2=str(coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario)
+      datacard_template = datacard_template.replace('.', 'p').replace('-', 'm') 
+      datacard_template = datacard_template.replace('ptxt', '.txt')
+      try:
+        if not self.do_limits_percategory:
+          # create outputdir
+          if self.fe == None and self.fu == None and self.ft == None:
+            outputdir = '{}/outputs/{}/limits/{}/results'.format(self.homedir, self.outdirlabel, self.subdirlabel)
+          else:
+            fe = str(round(self.fe, 1)).replace('.', 'p')
+            fu = str(round(self.fu, 1)).replace('.', 'p')
+            ft = str(round(self.ft, 1)).replace('.', 'p')
+            outputdir = '{}/outputs/{}/limits/{}/results_{}_{}_{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft)
+          if not path.exists(outputdir):
+            os.system('mkdir -p {}'.format(outputdir))    
 
-      # produce limits
-      command = 'combine -M AsymptoticLimits {i}/{dc}'.format(i=self.indirlabel, dc=self.datacard_template)
-      if self.do_blind:
-        command += ' --run blind'
-      if self.use_discrete_profiling:
-        command += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
-      
-      print '\t\t',command
-       
-      results = subprocess.check_output(command.split())
-      
-      result_file_name = '{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(self.ctau), str(self.coupling)) 
-      with open(result_file_name, 'w') as ff:
-          print >> ff, results
-
-    else: # do limits per category
-      for category in self.categories:
-        if 'incl' in category.label: continue
-        if self.fe == None and self.fu == None and self.ft == None:
-          outputdir = '{}/outputs/{}/limits/{}/results/{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, category.label)
-        else:
-          fe = str(round(self.fe, 1)).replace('.', 'p')
-          fu = str(round(self.fu, 1)).replace('.', 'p')
-          ft = str(round(self.ft, 1)).replace('.', 'p')
-          outputdir = '{}/outputs/{}/limits/{}/results_{}_{}_{}/{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft, category.label)
-        if not path.exists(outputdir):
-          os.system('mkdir -p {}'.format(outputdir))    
-
-        # produce limits
-        command = 'combine -M AsymptoticLimits {i}/datacard_bhnl_m_{m}_ctau_{ctau}_v2_{v2}_cat_{cat}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario, cat=category.label)
-        if self.do_blind:
-          command += ' --run blind'
-        if self.use_discrete_profiling:
-          command += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
-        
-        print '\t\t',command
-         
-        try:
+          # produce limits
+          command = 'combine -M AsymptoticLimits {i}/{dc}'.format(i=self.indirlabel, dc=datacard_template)
+          if self.do_blind:
+            command += ' --run blind'
+          if self.use_discrete_profiling:
+            command += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
+          
+          print '\t\t',command
+           
           results = subprocess.check_output(command.split())
           
-          result_file_name = '{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(self.ctau), str(self.coupling)) 
+          result_file_name = '{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(ctau), str(coupling)) 
           with open(result_file_name, 'w') as ff:
               print >> ff, results
-        except:
-          continue
 
-    # produce fit diagnostics
-    if self.do_fitdiagnostics:
-      command_fits = 'combine -M FitDiagnostics {i}/{dc} --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams'.format(i=self.indirlabel, dc=self.datacard_template)
-      os.system(command_fits)
-      os.system('mv fitDiagnosticsTest.root {hm}/outputs/{out}/limits/{sub}/results/fitDiagnostics_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.root'.format(hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario))
+        else: # do limits per category
+          for category in self.categories:
+            if 'incl' in category.label: continue
+            if self.fe == None and self.fu == None and self.ft == None:
+              outputdir = '{}/outputs/{}/limits/{}/results/{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, category.label)
+            else:
+              fe = str(round(self.fe, 1)).replace('.', 'p')
+              fu = str(round(self.fu, 1)).replace('.', 'p')
+              ft = str(round(self.ft, 1)).replace('.', 'p')
+              outputdir = '{}/outputs/{}/limits/{}/results_{}_{}_{}/{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft, category.label)
+            if not path.exists(outputdir):
+              os.system('mkdir -p {}'.format(outputdir))    
 
-    # compute p-value
-    if self.do_pvalue:
-      command_pvalue = 'combine -M Significance {i}/{dc} --pval'.format(i=self.indirlabel, dc=self.datacard_template)
-      if self.use_discrete_profiling:
-        command_pvalue += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
-      
-      print '\t\t',command_pvalue
-       
-      results_pvalue = subprocess.check_output(command_pvalue.split())
-      
-      result_pvalue_file_name = '{}/pvalue_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(self.ctau), str(self.coupling)) 
-      with open(result_pvalue_file_name, 'w') as ff:
-          print >> ff, results_pvalue
+            # produce limits
+            command = 'combine -M AsymptoticLimits {i}/datacard_bhnl_m_{m}_ctau_{ctau}_v2_{v2}_cat_{cat}.txt'.format(i=self.indirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(ctau).replace('.', 'p'), v2=str(coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario, cat=category.label)
+            if self.do_blind:
+              command += ' --run blind'
+            if self.use_discrete_profiling:
+              command += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
+            
+            print '\t\t',command
+             
+            try:
+              results = subprocess.check_output(command.split())
+              
+              result_file_name = '{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(ctau), str(coupling)) 
+              with open(result_file_name, 'w') as ff:
+                  print >> ff, results
+            except:
+              continue
+
+        # produce fit diagnostics
+        if self.do_fitdiagnostics:
+          command_fits = 'combine -M FitDiagnostics {i}/{dc} --plots --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams'.format(i=self.indirlabel, dc=datacard_template)
+          os.system(command_fits)
+          os.system('mv fitDiagnosticsTest.root {hm}/outputs/{out}/limits/{sub}/results/fitDiagnostics_{sc}_m_{m}_ctau_{ctau}_v2_{v2}.root'.format(hm=self.homedir, out=self.outdirlabel, sub=self.subdirlabel, m=str(self.mass).replace('.', 'p'), ctau=str(ctau).replace('.', 'p'), v2=str(coupling).replace('.', 'p').replace('-', 'm'), sc=self.scenario))
+
+        # compute p-value
+        if self.do_pvalue:
+          command_pvalue = 'combine -M Significance {i}/{dc} --pval'.format(i=self.indirlabel, dc=datacard_template)
+          if self.use_discrete_profiling:
+            command_pvalue += ' --cminDefaultMinimizerStrategy=0 --X-rtd MINIMIZER_freezeDisassociatedParams' 
+          
+          print '\t\t',command_pvalue
+           
+          results_pvalue = subprocess.check_output(command_pvalue.split())
+          
+          result_pvalue_file_name = '{}/pvalue_{}_m_{}_ctau_{}_v2_{}.txt'.format(outputdir, self.scenario, str(self.mass), str(ctau), str(coupling)) 
+          with open(result_pvalue_file_name, 'w') as ff:
+              print >> ff, results_pvalue
+
+      except:
+        print 'Datacard {} not found'.format(datacard_template)
 
 
 if __name__ == "__main__":
@@ -148,7 +157,7 @@ if __name__ == "__main__":
   opt = getOptions()
   producer = LimitProducer(
       mass = opt.mass,
-      ctau = opt.ctau,
+      ctaus = opt.ctaus,
       scenario = opt.scenario,
       homedir = opt.homedir,
       indirlabel = opt.indirlabel,
