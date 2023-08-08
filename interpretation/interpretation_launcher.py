@@ -18,7 +18,7 @@ def getOptions():
   parser.add_argument('--outdirlabel'   , type=str , dest='outdirlabel'           , help='name of the outdir'                                , default=None)
   parser.add_argument('--subdirlabel'   , type=str , dest='subdirlabel'           , help='name of the subdir'                                , default=None)
   parser.add_argument('--mass'          , type=str , dest='mass'                  , help='mass'                                              , default='1.0')
-  parser.add_argument('--ctau'          , type=str , dest='ctau'                  , help='ctau'                                              , default=None)
+  parser.add_argument('--ctaus'         , type=str , dest='ctaus'                 , help='ctaus'                                             , default=None)
   parser.add_argument('--fe'            , type=str , dest='fe'                    , help='electron coupling fraction'                        , default='1.0')
   parser.add_argument('--fu'            , type=str , dest='fu'                    , help='muon coupling fraction'                            , default='1.0')
   parser.add_argument('--ft'            , type=str , dest='ft'                    , help='tau coupling fraction'                             , default='1.0')
@@ -35,10 +35,11 @@ class InterpretationLauncher(object):
     This class monitors the signal normalisation reweighting to a given coupling scenario,
     the combination of the datacards between the two flavour channels and the limit production
   '''
-  def __init__(self, mass, ctau, fe, fu, ft, scenario, muon_label, electron_label, homedir, outdirlabel, subdirlabel, do_blind, use_discrete_profiling):
+  def __init__(self, mass, ctaus, fe, fu, ft, scenario, muon_label, electron_label, homedir, outdirlabel, subdirlabel, do_blind, use_discrete_profiling):
     self.tools = Tools()
     self.mass = float(mass)
-    self.ctau = float(ctau)
+    self.ctau_list = ctaus
+    self.ctaus = ctaus.split(',')
     self.fe = float(fe)
     self.fu = float(fu)
     self.ft = float(ft)
@@ -56,9 +57,11 @@ class InterpretationLauncher(object):
     #  self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined.txt'
     #else:
     #  self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined_B_Bc.txt'
-    self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined_param.txt'
+    if self.scenario == 'Majorana':
+      self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined_param.txt'
+    elif self.scenario == 'Dirac':
+      self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined_param_dirac.txt'
 
-    #self.path_motherdir = '/eos/home-a/anlyon/BHNLDatacards'
     self.path_motherdir = '/work/anlyon/BHNLDatacards/BHNLDatacards/'
 
 
@@ -99,66 +102,89 @@ class InterpretationLauncher(object):
     fu = str(round(self.fu, 1)).replace('.', 'p')
     ft = str(round(self.ft, 1)).replace('.', 'p')
 
-    self.v2 = self.getSignalCoupling(mass=self.mass, ctau=self.ctau)
+    for ctau in self.ctaus:
+      ctau = float(ctau)
 
-    datacard_name_muon = self.templatename_muon.format(sc=self.scenario, mass=str(self.mass).replace('.', 'p'), ctau=str(self.ctau).replace('.', 'p'), v2=str(self.v2).replace('.', 'p').replace('-', 'm'))
-    if not self.checkDatacard(datacard_name=datacard_name_muon, flavour_channel='muon'):
-      raise RuntimeError('Muon datacard "{}" not found'.format(datacard_name_muon))
+      self.v2 = self.getSignalCoupling(mass=self.mass, ctau=ctau)
 
-    datacard_name_electron = self.templatename_electron.format(mass='{:.2f}'.format(self.mass).replace('.','p'), ctau='{:.3f}'.format(self.ctau).replace('.','p'))
+      datacard_name_muon = self.templatename_muon.format(sc=self.scenario, mass=str(self.mass).replace('.', 'p'), ctau=str(ctau).replace('.', 'p'), v2=str(self.v2).replace('.', 'p').replace('-', 'm'))
+      if not self.checkDatacard(datacard_name=datacard_name_muon, flavour_channel='muon'):
+        raise RuntimeError('Muon datacard "{}" not found'.format(datacard_name_muon))
 
-    if not self.checkDatacard(datacard_name=datacard_name_electron, flavour_channel='electron'):
-      raise RuntimeError('Electron datacard "{}" not found'.format(datacard_name_electron))
+      datacard_name_electron = self.templatename_electron.format(mass='{:.2f}'.format(self.mass).replace('.','p'), ctau='{:.3f}'.format(ctau).replace('.','p'))
 
-    print '\n -> reweight signal rate in the muon datacard'
-    reweighter_muon = DatacardReweighter(
-        datacard_name = datacard_name_muon,
+      print '\n -> reweight signal rate in the muon datacard'
+      reweighter_muon = DatacardReweighter(
+          datacard_name = datacard_name_muon,
+          mass = self.mass,
+          ctau = ctau,
+          fe = self.fe,
+          fu = self.fu,
+          ft = self.ft,
+          path_motherdir = self.path_motherdir,
+          indirlabel = self.muon_label, 
+          outdirlabel = self.outdirlabel,
+          subdirlabel = self.subdirlabel,
+          flavour_channel = 'muon',
+          )
+      reweighter_muon.process()
+
+      if self.checkDatacard(datacard_name=datacard_name_electron, flavour_channel='electron'):
+        print '\n -> reweight signal rate in the electron datacard'
+        reweighter_electron = DatacardReweighter(
+            datacard_name = datacard_name_electron,
+            mass = self.mass,
+            ctau = ctau,
+            fe = self.fe,
+            fu = self.fu,
+            ft = self.ft,
+            path_motherdir = self.path_motherdir,
+            indirlabel = self.electron_label, 
+            outdirlabel = self.outdirlabel,
+            subdirlabel = self.subdirlabel,
+            flavour_channel = 'electron',
+            )
+        reweighter_electron.process()
+
+        print '\n -> combine the datacards between the flavour channels'
+
+        combinator = FlavourChannelsCombinator(
+            datacard_name_muon = datacard_name_muon,
+            datacard_name_electron = datacard_name_electron,
+            fe = self.fe,
+            fu = self.fu,
+            ft = self.ft,
+            outdirlabel = self.outdirlabel,
+            subdirlabel = self.subdirlabel,
+            )
+        combinator.process()
+
+      else:
+        print 'Electron datacard "{}" not found'.format(datacard_name_electron)
+
+    print '\n -> produce the limits for the combined channels'
+    limit_producer = LimitProducer(
         mass = self.mass,
-        ctau = self.ctau,
+        ctaus = self.ctau_list,
         fe = self.fe,
         fu = self.fu,
         ft = self.ft,
-        path_motherdir = self.path_motherdir,
-        indirlabel = self.muon_label, 
+        homedir = self.homedir,
+        indirlabel = './outputs/{}/{}/weighted_datacards/coupling_{}_{}_{}/flavour_combined'.format(self.outdirlabel, self.subdirlabel, fe, fu, ft),
         outdirlabel = self.outdirlabel,
         subdirlabel = self.subdirlabel,
-        flavour_channel = 'muon',
+        do_blind = self.do_blind,
+        use_discrete_profiling = self.use_discrete_profiling,
+        scenario = self.scenario,
+        do_fitdiagnostics = False, 
+        do_pvalue = False, 
         )
-    reweighter_muon.process()
-
-    print '\n -> reweight signal rate in the electron datacard'
-    reweighter_electron = DatacardReweighter(
-        datacard_name = datacard_name_electron,
-        mass = self.mass,
-        ctau = self.ctau,
-        fe = self.fe,
-        fu = self.fu,
-        ft = self.ft,
-        path_motherdir = self.path_motherdir,
-        indirlabel = self.electron_label, 
-        outdirlabel = self.outdirlabel,
-        subdirlabel = self.subdirlabel,
-        flavour_channel = 'electron',
-        )
-    reweighter_electron.process()
-
-    print '\n -> combine the datacards between the flavour channels'
-
-    combinator = FlavourChannelsCombinator(
-        datacard_name_muon = datacard_name_muon,
-        datacard_name_electron = datacard_name_electron,
-        fe = self.fe,
-        fu = self.fu,
-        ft = self.ft,
-        outdirlabel = self.outdirlabel,
-        subdirlabel = self.subdirlabel,
-        )
-    combinator.process()
+    limit_producer.process()
 
     print '\n -> produce the limits for the muon channel only'
     limit_producer_muon = LimitProducer(
         mass = self.mass,
-        ctau = self.ctau,
+        ctaus = self.ctau_list,
         fe = self.fe,
         fu = self.fu,
         ft = self.ft,
@@ -177,7 +203,7 @@ class InterpretationLauncher(object):
     print '\n -> produce the limits for the electron channel only'
     limit_producer_electron = LimitProducer(
         mass = self.mass,
-        ctau = self.ctau,
+        ctaus = self.ctau_list,
         fe = self.fe,
         fu = self.fu,
         ft = self.ft,
@@ -190,28 +216,9 @@ class InterpretationLauncher(object):
         scenario = self.scenario,
         do_fitdiagnostics = False, 
         do_pvalue = False, 
-        datacard_template = datacard_name_electron,
+        datacard_template = 'HNL_m_{m:.2f}_ctau{ctau:.3f}_PF_combined_param.txt',
         )
     limit_producer_electron.process()
-
-    print '\n -> produce the limits for the combined channels'
-    limit_producer = LimitProducer(
-        mass = self.mass,
-        ctau = self.ctau,
-        fe = self.fe,
-        fu = self.fu,
-        ft = self.ft,
-        homedir = self.homedir,
-        indirlabel = './outputs/{}/{}/weighted_datacards/coupling_{}_{}_{}/flavour_combined'.format(self.outdirlabel, self.subdirlabel, fe, fu, ft),
-        outdirlabel = self.outdirlabel,
-        subdirlabel = self.subdirlabel,
-        do_blind = self.do_blind,
-        use_discrete_profiling = self.use_discrete_profiling,
-        scenario = self.scenario,
-        do_fitdiagnostics = False, 
-        do_pvalue = False, 
-        )
-    limit_producer.process()
 
     print '\n -- Done --'
 
@@ -222,7 +229,7 @@ if __name__ == '__main__':
   opt = getOptions()
   launcher = InterpretationLauncher(
       mass = opt.mass,
-      ctau = opt.ctau,
+      ctaus = opt.ctaus,
       fe = opt.fe,
       fu = opt.fu,
       ft = opt.ft,
