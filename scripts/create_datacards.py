@@ -177,6 +177,9 @@ class DatacardsMaker(Tools):
     self.add_lumilabel = add_lumilabel
     self.CMStag = CMStag
     self.do_tdrstyle = do_tdrstyle
+
+    # option to allow the process of additional ctau points without reprocessing the data
+    self.process_signal_only = False
   
     ROOT.gROOT.SetBatch(True)
 
@@ -692,8 +695,18 @@ bkg {bkg_yields}
           data_obs_yields = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label)
 
         elif self.do_shape_analysis and self.use_discrete_profiling:
-          background_yields = self.runFTestRoutine(mass=window['mass'], window_size=self.fit_window_size, category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label, cat_index=icat)
-          data_obs_yields = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label)
+          if not self.process_signal_only:
+            background_yields = self.runFTestRoutine(mass=window['mass'], window_size=self.fit_window_size, category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label, cat_index=icat)
+            data_obs_yields = self.runFitter(process='data_obs', mass=window['mass'], category=category, selection=selection, do_veto_SM=do_veto_SM, veto_SM=veto_SM, label=cat_label)
+          else:
+            background_yields = 1.
+            if self.do_blind:
+              data_obs_yields = -1
+            else:
+             data_obs_workspace_name = '{}/workspace_data_obs_bhnl_m_{}_cat_{}.root'.format(self.outputdir, str(window['mass']).replace('.', 'p'), category.label)
+             data_obs_workspace_file = ROOT.TFile(data_obs_workspace_name)
+             data_obs_workspace = data_obs_workspace_file.Get('workspace')
+             data_obs_yields = data_obs_workspace.data('data_obs_bhnl_m_{}_cat_{}'.format(str(window['mass']).replace('.', 'p'), category.label)).sumEntries()
 
         # loop on the signal points
         for ctau_point_list in self.ctau_points:
