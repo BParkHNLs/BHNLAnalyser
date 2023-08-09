@@ -397,7 +397,7 @@ class LimitPlotter(object):
     for mass in sorted(limits2D.keys(), key=self.sortList):
 
         if self.do_coupling_scenario:
-          exclusion_coupling_filename = '{}/exclusion_m_{}_{}_{}_{}.txt'.format(plotDir, str(mass).replace('.', 'p'), self.fe, self.fu, self.ft)
+          exclusion_coupling_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(plotDir, self.scenario, str(mass).replace('.', 'p'), self.fe, self.fu, self.ft)
           exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
         
         #if len(limits2D[mass]['exp_central'])>0 and len(limits2D[mass]['exp_minus_one'])>0 and len(limits2D[mass]['exp_plus_one' ])>0 and len(limits2D[mass]['exp_minus_two'])>0 and len(limits2D[mass]['exp_plus_two' ])>0:
@@ -412,9 +412,10 @@ class LimitPlotter(object):
         #masses_two_sigma.append(float(mass))
 
         central_value = limits2D[mass]['exp_central']
-        #central.append(limits2D[mass]['exp_central'])
-        central.append(central_value)
-        masses_central.append(float(mass))
+        if central_value != -99.:
+          central.append(central_value)
+          masses_central.append(float(mass))
+
         if limits2D[mass]['exp_plus_one' ] != -99. and limits2D[mass]['exp_plus_two' ] != -99.:
           plus_two_value = limits2D[mass]['exp_plus_two' ]
           plus_one_value = limits2D[mass]['exp_plus_one' ]
@@ -454,8 +455,10 @@ class LimitPlotter(object):
           #masses_one_sigma.append(float(mass))
 
         if not self.do_blind:
-          obs.append(limits2D[mass]['obs'])
-          masses_obs.append(float(mass))
+          obs_value = limits2D[mass]['obs']
+          if obs_value != -99.:
+            obs.append(obs_value)
+            masses_obs.append(float(mass))
 
         if self.do_coupling_scenario:
           exclusion_coupling_file.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['exp_central']))
@@ -532,7 +535,6 @@ class LimitPlotter(object):
         p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle', linewidth=1.3, linestyle='dashed')
         #p6, = plt.plot(db.masses_charm, db.exp_charm, color='magenta', label='CHARM', linewidth=1.3, linestyle='dashed')
 
-        #second_legend = plt.legend(handles=[p2, p3, p4, p5, p6], loc='lower right', fontsize=18)
         second_legend = plt.legend(handles=[p2, p3, p4, p5], loc='lower left', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
       else:
