@@ -250,9 +250,9 @@ class HNLDecays(object):
     hnl = Particle('hnl', 'lepton', self.mass)
     
     # get the model
+    V_el_square =  self.fe * self.vv
     V_mu_square =  self.fu * self.vv
     V_tau_square = self.ft * self.vv
-    V_el_square =  self.fe * self.vv
     QCD_corr = QCD_corr_table[mass] if not PESKIN else 0.
     #QCD_corr = 0.18 if not PESKIN else 0.
     special_V_mu_square = V_mu_square if not PESKIN else 0.
