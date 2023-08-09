@@ -108,26 +108,29 @@ class InterpretationLauncher(object):
       self.v2 = self.getSignalCoupling(mass=self.mass, ctau=ctau)
 
       datacard_name_muon = self.templatename_muon.format(sc=self.scenario, mass=str(self.mass).replace('.', 'p'), ctau=str(ctau).replace('.', 'p'), v2=str(self.v2).replace('.', 'p').replace('-', 'm'))
-      if not self.checkDatacard(datacard_name=datacard_name_muon, flavour_channel='muon'):
-        raise RuntimeError('Muon datacard "{}" not found'.format(datacard_name_muon))
+      #if not self.checkDatacard(datacard_name=datacard_name_muon, flavour_channel='muon'):
+      #  raise RuntimeError('Muon datacard "{}" not found'.format(datacard_name_muon))
 
       datacard_name_electron = self.templatename_electron.format(mass='{:.2f}'.format(self.mass).replace('.','p'), ctau='{:.3f}'.format(ctau).replace('.','p'))
 
-      print '\n -> reweight signal rate in the muon datacard'
-      reweighter_muon = DatacardReweighter(
-          datacard_name = datacard_name_muon,
-          mass = self.mass,
-          ctau = ctau,
-          fe = self.fe,
-          fu = self.fu,
-          ft = self.ft,
-          path_motherdir = self.path_motherdir,
-          indirlabel = self.muon_label, 
-          outdirlabel = self.outdirlabel,
-          subdirlabel = self.subdirlabel,
-          flavour_channel = 'muon',
-          )
-      reweighter_muon.process()
+      if self.checkDatacard(datacard_name=datacard_name_muon, flavour_channel='muon'):
+        print '\n -> reweight signal rate in the muon datacard'
+        reweighter_muon = DatacardReweighter(
+            datacard_name = datacard_name_muon,
+            mass = self.mass,
+            ctau = ctau,
+            fe = self.fe,
+            fu = self.fu,
+            ft = self.ft,
+            path_motherdir = self.path_motherdir,
+            indirlabel = self.muon_label, 
+            outdirlabel = self.outdirlabel,
+            subdirlabel = self.subdirlabel,
+            flavour_channel = 'muon',
+            )
+        reweighter_muon.process()
+      else:
+        print 'Muon datacard "{}" not found'.format(datacard_name_muon)
 
       if self.checkDatacard(datacard_name=datacard_name_electron, flavour_channel='electron'):
         print '\n -> reweight signal rate in the electron datacard'
@@ -145,7 +148,10 @@ class InterpretationLauncher(object):
             flavour_channel = 'electron',
             )
         reweighter_electron.process()
+      else:
+        print 'Electron datacard "{}" not found'.format(datacard_name_electron)
 
+      if self.checkDatacard(datacard_name=datacard_name_muon, flavour_channel='muon') and self.checkDatacard(datacard_name=datacard_name_electron, flavour_channel='electron'):
         print '\n -> combine the datacards between the flavour channels'
 
         combinator = FlavourChannelsCombinator(
@@ -158,9 +164,9 @@ class InterpretationLauncher(object):
             subdirlabel = self.subdirlabel,
             )
         combinator.process()
-
       else:
-        print 'Electron datacard "{}" not found'.format(datacard_name_electron)
+        print 'Datacard combination not run because of missing datacard(s)'
+
 
     print '\n -> produce the limits for the combined channels'
     limit_producer = LimitProducer(
