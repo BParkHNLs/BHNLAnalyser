@@ -7,13 +7,12 @@ sys.path.append('../scripts')
 from decays import HNLDecays 
 import math
 
-
 class DatacardReweighter(object):
   '''
     Class that aims at reweigthing the signal rate in the datacards according to a 
     given coupling scenario
   '''
-  def __init__(self, datacard_name, mass, ctau, fe, fu, ft, path_motherdir, indirlabel, outdirlabel, subdirlabel, flavour_channel):
+  def __init__(self, datacard_name, mass, ctau, fe, fu, ft, path_motherdir, homedir, indirlabel, outdirlabel, subdirlabel, flavour_channel):
     self.datacard_name = datacard_name
     self.mass = mass # needed for e- path to workspaces
     self.ctau = ctau # needed for e- path to workspaces
@@ -21,6 +20,7 @@ class DatacardReweighter(object):
     self.fu = float(fu)
     self.ft = float(ft)
     self.path_motherdir = path_motherdir
+    self.homedir = homedir
     self.indirlabel = indirlabel
     self.outdirlabel = outdirlabel
     self.subdirlabel = subdirlabel
@@ -39,7 +39,7 @@ class DatacardReweighter(object):
     fu = str(round(self.fu, 1)).replace('.', 'p')
     ft = str(round(self.ft, 1)).replace('.', 'p')
 
-    output_dirname = './outputs/{}/{}/weighted_datacards/coupling_{}_{}_{}/{}'.format(self.outdirlabel, self.subdirlabel, fe, fu, ft, self.flavour_channel)
+    output_dirname = '{}/outputs/{}/weighted_datacards/{}/coupling_{}_{}_{}/{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft, self.flavour_channel)
     if not path.exists(output_dirname):
       os.system('mkdir -p {}'.format(output_dirname))
 

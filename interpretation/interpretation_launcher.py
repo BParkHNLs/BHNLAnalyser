@@ -82,7 +82,7 @@ class InterpretationLauncher(object):
       datacard = '{}/electron/{}/{}'.format(self.path_motherdir, self.electron_label, datacard_name)
 
     if not path.exists(datacard):
-      print ' -> Datacard "{}" not found'.format(datacard)
+      print ' -> Datacard in {} channel "{}" not found'.format(flavour_channel, datacard)
       return False
     else:
       return True
@@ -123,14 +123,13 @@ class InterpretationLauncher(object):
             fu = self.fu,
             ft = self.ft,
             path_motherdir = self.path_motherdir,
+            homedir = self.homedir,
             indirlabel = self.muon_label, 
             outdirlabel = self.outdirlabel,
             subdirlabel = self.subdirlabel,
             flavour_channel = 'muon',
             )
         reweighter_muon.process()
-      else:
-        print 'Muon datacard "{}" not found'.format(datacard_name_muon)
 
       if self.checkDatacard(datacard_name=datacard_name_electron, flavour_channel='electron'):
         print '\n -> reweight signal rate in the electron datacard'
@@ -141,6 +140,7 @@ class InterpretationLauncher(object):
             fe = self.fe,
             fu = self.fu,
             ft = self.ft,
+            homedir = self.homedir,
             path_motherdir = self.path_motherdir,
             indirlabel = self.electron_label, 
             outdirlabel = self.outdirlabel,
@@ -148,8 +148,6 @@ class InterpretationLauncher(object):
             flavour_channel = 'electron',
             )
         reweighter_electron.process()
-      else:
-        print 'Electron datacard "{}" not found'.format(datacard_name_electron)
 
       if self.checkDatacard(datacard_name=datacard_name_muon, flavour_channel='muon') and self.checkDatacard(datacard_name=datacard_name_electron, flavour_channel='electron'):
         print '\n -> combine the datacards between the flavour channels'
@@ -160,13 +158,11 @@ class InterpretationLauncher(object):
             fe = self.fe,
             fu = self.fu,
             ft = self.ft,
+            homedir = self.homedir,
             outdirlabel = self.outdirlabel,
             subdirlabel = self.subdirlabel,
             )
         combinator.process()
-      else:
-        print 'Datacard combination not run because of missing datacard(s)'
-
 
     print '\n -> produce the limits for the combined channels'
     limit_producer = LimitProducer(
@@ -176,7 +172,7 @@ class InterpretationLauncher(object):
         fu = self.fu,
         ft = self.ft,
         homedir = self.homedir,
-        indirlabel = './outputs/{}/{}/weighted_datacards/coupling_{}_{}_{}/flavour_combined'.format(self.outdirlabel, self.subdirlabel, fe, fu, ft),
+        indirlabel = '{}/outputs/{}/weighted_datacards/{}/coupling_{}_{}_{}/flavour_combined'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft),
         outdirlabel = self.outdirlabel,
         subdirlabel = self.subdirlabel,
         do_blind = self.do_blind,
@@ -195,7 +191,7 @@ class InterpretationLauncher(object):
         fu = self.fu,
         ft = self.ft,
         homedir = self.homedir,
-        indirlabel = './outputs/{}/{}/weighted_datacards/coupling_{}_{}_{}/muon'.format(self.outdirlabel, self.subdirlabel, fe, fu, ft),
+        indirlabel = '{}/outputs/{}/weighted_datacards/{}/coupling_{}_{}_{}/muon'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft),
         outdirlabel = self.outdirlabel,
         subdirlabel = self.subdirlabel + '/muon',
         do_blind = self.do_blind,
@@ -214,7 +210,7 @@ class InterpretationLauncher(object):
         fu = self.fu,
         ft = self.ft,
         homedir = self.homedir,
-        indirlabel = './outputs/{}/{}/weighted_datacards/coupling_{}_{}_{}/electron'.format(self.outdirlabel, self.subdirlabel, fe, fu, ft),
+        indirlabel = '{}/outputs/{}/weighted_datacards/{}/coupling_{}_{}_{}/electron'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft),
         outdirlabel = self.outdirlabel,
         subdirlabel = self.subdirlabel + '/electron',
         do_blind = self.do_blind,

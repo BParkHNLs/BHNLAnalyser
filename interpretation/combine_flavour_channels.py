@@ -10,13 +10,14 @@ class FlavourChannelsCombinator(object):
   '''
     Class that performs the datacard combination between the electron and muons channels
   '''
-  def __init__(self, datacard_name_muon, datacard_name_electron, fe, fu, ft, outdirlabel, subdirlabel):
+  def __init__(self, datacard_name_muon, datacard_name_electron, fe, fu, ft, homedir, outdirlabel, subdirlabel):
     self.fe = float(fe)
     self.fu = float(fu)
     self.ft = float(ft)
     self.datacard_name_muon = datacard_name_muon
     self.datacard_name_electron = datacard_name_electron
     self.datacard_name_combined = self.datacard_name_muon
+    self.homedir = homedir
     self.outdirlabel = outdirlabel
     self.subdirlabel = subdirlabel
 
@@ -29,7 +30,7 @@ class FlavourChannelsCombinator(object):
     fu = str(round(self.fu, 1)).replace('.', 'p')
     ft = str(round(self.ft, 1)).replace('.', 'p')
 
-    input_dirname = './outputs/{}/{}/weighted_datacards/coupling_{}_{}_{}'.format(self.outdirlabel, self.subdirlabel, fe, fu, ft)
+    input_dirname = '{}/outputs/{}/weighted_datacards/{}/coupling_{}_{}_{}'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft)
     if not path.exists(input_dirname):
       raise RuntimeError('Input directory "{}" not found'.format(input_dirname))
 
