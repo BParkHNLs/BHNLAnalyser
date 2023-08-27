@@ -59,8 +59,10 @@ class InterpretationLauncher(object):
     #  self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined_B_Bc.txt'
     if self.scenario == 'Majorana':
       self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined_param.txt'
+      self.templatename_electron_forlimits = 'HNL_m_{m:.2f}_ctau{ctau:.3f}_PF_combined_param.txt'
     elif self.scenario == 'Dirac':
       self.templatename_electron = 'HNL_m_{mass}_ctau{ctau}_PF_combined_param_dirac.txt'
+      self.templatename_electron_forlimits = 'HNL_m_{m:.2f}_ctau{ctau:.3f}_PF_combined_param_dirac.txt'
 
     self.path_motherdir = '/work/anlyon/BHNLDatacards/BHNLDatacards/'
 
@@ -218,7 +220,7 @@ class InterpretationLauncher(object):
         scenario = self.scenario,
         do_fitdiagnostics = False, 
         do_pvalue = False, 
-        datacard_template = 'HNL_m_{m:.2f}_ctau{ctau:.3f}_PF_combined_param.txt',
+        datacard_template = self.templatename_electron_forlimits,
         )
     limit_producer_electron.process()
 
