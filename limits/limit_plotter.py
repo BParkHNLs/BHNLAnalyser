@@ -14,6 +14,8 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from intersection import intersection
 from utils import getMassList
+sys.path.append('../scripts')
+from decays import HNLDecays 
 
 
 def getOptions():
@@ -63,6 +65,24 @@ class LimitPlotter(object):
     return float(input)
 
 
+  def getCouplingTarget(self, mass, coupling):
+    val_coupling = float(coupling)
+
+    if self.do_coupling_scenario:
+      val_fe = float(self.fe.replace('p', '.'))
+      val_fu = float(self.fu.replace('p', '.'))
+      val_ft = float(self.ft.replace('p', '.'))
+      decay_width_ini = HNLDecays(mass=float(mass), fe=0., fu=1., ft=0.).decay_rate['tot']
+      decay_width_new = HNLDecays(mass=float(mass), fe=val_fe, fu=val_fu, ft=val_ft).decay_rate['tot']
+      corr = decay_width_ini / decay_width_new
+      val_coupling = corr * val_coupling 
+
+    if self.scenario == 'Dirac':
+      val_coupling = 2.0 * val_coupling
+
+    return val_coupling
+
+
   def get_intersection(self, couplings, values, crossing=1):
     '''
       Function that returns the coupling at which the limit intersects with 1 (crossing) in the log-log plane
@@ -110,8 +130,6 @@ class LimitPlotter(object):
 
 
   def process(self):
-    #signal_type = self.signal_type 
-    #lumi =  '41.6 fb'+r'$^{-1}$'
     #lumi =  '5.3 fb'+r'$^{-1}$'+' projected to 41.6 fb'+r'$^{-1}$'
     #lumi =  '40.0 fb'+r'$^{-1}$'
     lumi =  '41.6 fb'+r'$^{-1}$'
@@ -122,7 +140,7 @@ class LimitPlotter(object):
     else:
       pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
       #FIXME
-      #pathToResults = '{}/outputs/{}/limits/{}/electron/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+      #pathToResults = '{}/outputs/{}/limits/{}/muon/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
 
     fileName = 'result*{}*.txt'.format(self.scenario)
 
@@ -166,7 +184,7 @@ class LimitPlotter(object):
         # for each mass, get the list of the couplings and ctaus from the file name
         ctau = limitFile[limitFile.find('ctau_')+5:limitFile.find('_', limitFile.find('ctau_')+5)]
         coupling = limitFile[limitFile.rfind('v2_')+3:limitFile.find('.txt')]
-        val_coupling = float(coupling)
+        val_coupling = self.getCouplingTarget(mass=mass, coupling=coupling)
       
         # get white/black listed coupling
         if self.coupling_whitelist!='None':
@@ -499,8 +517,8 @@ class LimitPlotter(object):
     #print 'the_plus_two = np.array({})'.format(plus_two)
     plt.clf()
     f, ax = plt.subplots(figsize=(9, 8))
-    y_range_min = 1e-5#1e-9
-    y_range_max = 1e-4#1e1
+    y_range_min = 1e-9
+    y_range_max = 1e1
     if not self.do_coupling_scenario:
       self.fe = '0.0'
       self.fu = '1.0'
