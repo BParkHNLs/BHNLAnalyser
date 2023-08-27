@@ -656,6 +656,8 @@ bkg {bkg_yields}
         for veto in self.vetoes:
           if window['mass'] > veto.range_min and window['mass'] < veto.range_max:
             do_skip_mass = True
+
+        do_skip_mass = False #NOTE remove veto
         if do_skip_mass : continue
 
         do_veto_SM = 0 #FIXME remove veto treatment
