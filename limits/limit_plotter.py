@@ -10,6 +10,7 @@ import otherExp_limits as db
 from collections import OrderedDict
 import matplotlib
 matplotlib.use('pdf')
+from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from intersection import intersection
 from utils import getMassList
@@ -120,6 +121,8 @@ class LimitPlotter(object):
       pathToResults = '{}/outputs/{}/limits/{}/results/'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
     else:
       pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+      #FIXME
+      #pathToResults = '{}/outputs/{}/limits/{}/electron/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
 
     fileName = 'result*{}*.txt'.format(self.scenario)
 
@@ -144,8 +147,8 @@ class LimitPlotter(object):
       if self.mass_blacklist != 'None':
         if mass in self.mass_blacklist.split(','): continue
 
-      #if float(mass) < 4. or float(mass) > 4.5: continue
-      #if float(mass) > 3.: continue
+      #if float(mass) < 1.5 or float(mass) > 2.25: continue
+      if float(mass) > 3.: continue
 
       print '\nmass {}'.format(mass)
 
@@ -225,7 +228,6 @@ class LimitPlotter(object):
         except:
           print 'Cannot open {}result_{}_m_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, coupling)
 
-
       print '-> will plot 1D limit for mass {}'.format(mass)
       
       if not self.do_blind:
@@ -262,7 +264,7 @@ class LimitPlotter(object):
 
       #plt.title('HNL m = %s GeV %s' %(mass, signal_type))
       if self.do_coupling_scenario:
-        plt.title(r'Majorana HN, m = %s GeV, %s' %(mass, coupling_scenario))
+        plt.title(r'%s HN, m = %s GeV, %s' %(self.scenario, mass, coupling_scenario))
       else:
         if str(mass) == '1': 
           mass = '1.0'
@@ -271,7 +273,7 @@ class LimitPlotter(object):
         if str(mass) == '3': 
           mass = '3.0'
         #plt.title(r'Majorana HN, m = %s GeV' %(mass,))
-        plt.title('Majorana HN, m = {} GeV'.format(mass))
+        plt.title('{} HN, m = {} GeV'.format(self.scenario, mass))
       plt.legend()
       plt.ticklabel_format(axis='x', style='sci', scilimits=(0,0))
       #ax.text(0.5, 0.5, coupling_scenario, style='normal', bbox={'facecolor': 'white', 'alpha': 1., 'pad': 10}, transform=ax.transAxes)
@@ -497,17 +499,28 @@ class LimitPlotter(object):
     #print 'the_plus_two = np.array({})'.format(plus_two)
     plt.clf()
     f, ax = plt.subplots(figsize=(9, 8))
+    y_range_min = 1e-5#1e-9
+    y_range_max = 1e-4#1e1
     if not self.do_coupling_scenario:
       self.fe = '0.0'
       self.fu = '1.0'
       self.ft = '0.0'
-    coupling_scenario = r'(r$_{e}$={fe}, r$_{mu}$={fu}, r$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
+    if self.fe == '0p5': fe_label = '1/2'
+    elif self.fe == '0p3': fe_label = '1/3'
+    else: fe_label = self.fe.replace('p', '.')
+    if self.fu == '0p5': fu_label = '1/2'
+    elif self.fu == '0p3': fu_label = '1/3'
+    else: fu_label = self.fu.replace('p', '.')
+    if self.ft == '0p5': ft_label = '1/2'
+    elif self.ft == '0p3': ft_label = '1/3'
+    else: ft_label = self.ft.replace('p', '.')
+    coupling_scenario = r'(r$_{e}$={fe}, r$_{mu}$={fu}, r$_{tau}$={ft})'.format(e='e', fe=fe_label, mu=r'\mu', fu=fu_label, tau=r'\tau', ft=ft_label)
     ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
     ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
     ax.text(0.26, 0.75, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
     ax.text(0.25, 0.66, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
     ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
-    plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--')
+    plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--', zorder=10)
     #f1 = plt.fill_between(masses_two_sigma, minus_two, plus_two, color='gold'       , label=r'95% expected')
     #f2 = plt.fill_between(masses_one_sigma, minus_one, plus_one, color='forestgreen', label=r'68% expected')
     f1 = plt.fill_between(masses_minus_two_sigma, minus_two, boundary_minus_two, color='gold'     , label=r'95% expected')
@@ -518,8 +531,12 @@ class LimitPlotter(object):
     if not self.do_blind:
       p8, = plt.plot(masses_obs, obs, color='black', label='Observed', linewidth=2)
 
+    veto_D0 = plt.gca().add_patch(Rectangle((1.74, 1.01e-5), 1.8-1.74, 1e-4-1.01e-5, edgecolor='white', facecolor='white', zorder=3)) 
+    veto_Jpsi = plt.gca().add_patch(Rectangle((3.05, 1.01e-5), 3.15-3.05, 1e-3-1.01e-5, edgecolor='white', facecolor='white', zorder=3)) 
+    veto_Psi2S = plt.gca().add_patch(Rectangle((3.65, 1.01e-5), 3.75-3.65, 9e-2-1.01e-5, edgecolor='white', facecolor='white', zorder=3)) 
+
     if not self.do_blind:
-      first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=18)
+      first_legend = plt.legend(handles=[p8, p1, f1, f2], loc='lower right', fontsize=18)
     else:
       first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=18)
     ax = plt.gca().add_artist(first_legend)
@@ -527,23 +544,23 @@ class LimitPlotter(object):
     if self.scenario == 'Majorana':
       if not self.do_coupling_scenario:
         #p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='darkorange', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
-        p2, = plt.plot(db.masses_atlas_lower, db.exp_atlas_lower, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
-        p2_2, = plt.plot(db.masses_atlas_upper, db.exp_atlas_upper, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
-        p3, = plt.plot(db.masses_cmsdisplacedmuon, db.exp_cmsdisplacedmuon, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed')
+        p2, = plt.plot(db.masses_atlas_lower, db.exp_atlas_lower, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
+        p2_2, = plt.plot(db.masses_atlas_upper, db.exp_atlas_upper, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
+        p3, = plt.plot(db.masses_cmsdisplacedmuon, db.exp_cmsdisplacedmuon, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
         #p3_2, = plt.plot(db.masses_cmsdisplacedmuon_upper, db.exp_cmsdisplacedmuon_upper, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed')
-        p4, = plt.plot(db.masses_lhcb_peskin, db.exp_lhcb_peskin, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed')
-        p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle', linewidth=1.3, linestyle='dashed')
+        p4, = plt.plot(db.masses_lhcb_peskin, db.exp_lhcb_peskin, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed', zorder=10)
+        p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle', linewidth=1.3, linestyle='dashed', zorder=10)
         #p6, = plt.plot(db.masses_charm, db.exp_charm, color='magenta', label='CHARM', linewidth=1.3, linestyle='dashed')
 
         second_legend = plt.legend(handles=[p2, p3, p4, p5], loc='lower left', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
-          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.exp_EXO_21_013_Majorana_0p0_0p5_0p5, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed')
+          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.exp_EXO_21_013_Majorana_0p0_0p5_0p5, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
         elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
-          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.exp_EXO_21_013_Majorana_0p5_0p5_0p0, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed')
+          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.exp_EXO_21_013_Majorana_0p5_0p5_0p0, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
         elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
-          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.exp_EXO_21_013_Majorana_0p3_0p3_0p3, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed')
+          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.exp_EXO_21_013_Majorana_0p3_0p3_0p3, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
 
         second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
@@ -551,18 +568,18 @@ class LimitPlotter(object):
 
     elif self.scenario == 'Dirac':
       if not self.do_coupling_scenario:
-        p2, = plt.plot(db.masses_atlas_lower_dirac, db.exp_atlas_lower_dirac, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
+        p2, = plt.plot(db.masses_atlas_lower_dirac, db.exp_atlas_lower_dirac, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
         #p2_2, = plt.plot(db.masses_atlas_upper_dirac, db.exp_atlas_upper_dirac, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
-        p3, = plt.plot(db.masses_cmsdisplacedmuon_dirac, db.exp_cmsdisplacedmuon_dirac, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed')
+        p3, = plt.plot(db.masses_cmsdisplacedmuon_dirac, db.exp_cmsdisplacedmuon_dirac, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
 
         second_legend = plt.legend(handles=[p2, p3], loc='lower left', fontsize=18)
       else:
         if self.fe == '0.0' and self.fu == '0.5' and self.ft == '0.5':
-          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.exp_EXO_21_013_Dirac_0p0_0p5_0p5, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed')
+          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.exp_EXO_21_013_Dirac_0p0_0p5_0p5, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
         elif self.fe == '0.5' and self.fu == '0.5' and self.ft == '0.0':
-          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.exp_EXO_21_013_Dirac_0p5_0p5_0p0, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed')
+          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.exp_EXO_21_013_Dirac_0p5_0p5_0p0, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
         else: 
-          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.exp_EXO_21_013_Dirac_0p3_0p3_0p3, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed')
+          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.exp_EXO_21_013_Dirac_0p3_0p3_0p3, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
 
         second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
@@ -570,7 +587,8 @@ class LimitPlotter(object):
     plt.title(lumi + ' (13 TeV)', loc='right', fontsize=23)
     plt.ylabel(r'$|V|^2$', fontsize=23)
     plt.yticks(fontsize=17)
-    plt.ylim(1e-9, 1e1)
+    plt.ylim(y_range_min, y_range_max)
+    #plt.ylim(1e-9, 1e1)
     #plt.ylim(1e-6, 1e0)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
