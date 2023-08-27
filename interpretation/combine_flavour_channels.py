@@ -82,6 +82,8 @@ class FlavourChannelsCombinator(object):
 
     combined_datacard = '{outdir}/{cmb}'.format(outdir=self.outdir, cmb=self.datacard_name_combined)
 
+    print '\n [FlavourChannelsCombinator] -> combining {} and {} into {}'.format(muon_datacard, electron_datacard, combined_datacard)
+
     command = 'combineCards.py {mu} {el} > {cmb}'.format(
         mu = muon_datacard,
         el = electron_datacard,
