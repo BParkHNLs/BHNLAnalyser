@@ -126,6 +126,7 @@ class Fitter(Tools, MVATools):
       are defined here
     '''
     quantities = [
+      ROOT.RooRealVar('score', 'score', 0.,1.),
       ROOT.RooRealVar('ismatched', 'ismatched', -2, 2),
       ROOT.RooRealVar('hnl_pt', 'hnl_pt', 0., 13000.),
       ROOT.RooRealVar('sv_lxy', 'sv_lxy', 0., 13000.),
@@ -156,7 +157,7 @@ class Fitter(Tools, MVATools):
     # get the signal region
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
 
-    self.hnl_mass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
+    self.hnl_mass = ROOT.RooRealVar("hnl_mass_muon_channel_m_{}".format(str(self.signal_mass).replace('.', 'p')),"hnl_mass_muon_channel_m_{}".format(str(self.signal_mass).replace('.', 'p')), bin_min, bin_max)
     #self.hnl_mass.setBins(self.nbins)
 
     ### Signal Model ###
@@ -164,28 +165,29 @@ class Fitter(Tools, MVATools):
     if process == 'signal' or process == 'both':
       if self.signal_model_label == 'doubleCB' or self.signal_model_label == 'doubleCBPlusGaussian':
         # energy scale correction applied
-        self.mean_CB  = ROOT.RooRealVar("mean_CB_"+self.category_label,"mean_CB_"+self.category_label, self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
+        quantity_label = 'm_{}_cat_{}'.format(str(self.signal_mass).replace('.', 'p'), self.category_label)
+        self.mean_CB  = ROOT.RooRealVar("mean_CB_"+quantity_label,"mean_CB_"+quantity_label, self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
 
         if not self.do_fixed_shape:
           # parameters to be kept floating
-          self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+self.category_label, "sigma_CB_"+self.category_label, self.resolution, 0.001, 0.15)
-          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, 2, 0, 5) # positive definite when using RooDoubleCBFast
-          self.n_1 = ROOT.RooRealVar("n_1_"+self.category_label, "n_1_"+self.category_label, 0, 5)
-          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 2, 0, 5) # positive definite when using RooDoubleCBFast
-          self.n_2 = ROOT.RooRealVar("n_2_"+self.category_label, "n_2_"+self.category_label, 0, 5)
-          self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB_"+self.category_label,"sigfrac_CB_"+self.category_label, 0.5, 0.0 ,1.0)
+          self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+quantity_label, "sigma_CB_"+quantity_label, self.resolution, 0.001, 0.15)
+          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+quantity_label, "alpha_1_"+quantity_label, 2, 0, 5) # positive definite when using RooDoubleCBFast
+          self.n_1 = ROOT.RooRealVar("n_1_"+quantity_label, "n_1_"+quantity_label, 0, 5)
+          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+quantity_label, "alpha_2_"+quantity_label, 2, 0, 5) # positive definite when using RooDoubleCBFast
+          self.n_2 = ROOT.RooRealVar("n_2_"+quantity_label, "n_2_"+quantity_label, 0, 5)
+          self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB_"+quantity_label,"sigfrac_CB_"+quantity_label, 0.5, 0.0 ,1.0)
         else:
           # parameters fixed
-          self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+self.category_label, "sigma_CB_"+self.category_label, self.resolution)
-          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+self.category_label, "alpha_1_"+self.category_label, 1.5)
-          self.n_1 = ROOT.RooRealVar("n_1_"+self.category_label, "n_1_"+self.category_label, 3.)
-          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+self.category_label, "alpha_2_"+self.category_label, 1.5)
-          self.n_2 = ROOT.RooRealVar("n_2_"+self.category_label, "n_2_"+self.category_label, 3.)
+          self.sigma_CB = ROOT.RooRealVar("sigma_CB_"+quantity_label, "sigma_CB_"+quantity_label, self.resolution)
+          self.alpha_1 = ROOT.RooRealVar("alpha_1_"+quantity_label, "alpha_1_"+quantity_label, 1.5)
+          self.n_1 = ROOT.RooRealVar("n_1_"+quantity_label, "n_1_"+quantity_label, 3.)
+          self.alpha_2 = ROOT.RooRealVar("alpha_2_"+quantity_label, "alpha_2_"+quantity_label, 1.5)
+          self.n_2 = ROOT.RooRealVar("n_2_"+quantity_label, "n_2_"+quantity_label, 3.)
           # defines the relative importance of the two CBs
-          self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB_"+self.category_label,"sigfrac_CB_"+self.category_label, 0.5)
+          self.sigfrac_CB = ROOT.RooRealVar("sigfrac_CB_"+quantity_label,"sigfrac_CB_"+quantity_label, 0.5)
 
-        self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1_"+self.category_label, "CBpdf_1_"+self.category_label, self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
-        self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2_"+self.category_label, "CBpdf_2_"+self.category_label, self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
+        self.CBpdf_1 = ROOT.RooCBShape("CBpdf_1_"+quantity_label, "CBpdf_1_"+quantity_label, self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_1, self.n_1)
+        self.CBpdf_2 = ROOT.RooCBShape("CBpdf_2_"+quantity_label, "CBpdf_2_"+quantity_label, self.hnl_mass, self.mean_CB, self.sigma_CB, self.alpha_2, self.n_2)
 
         if self.signal_model_label == 'doubleCB':
           #self.signal_model = ROOT.RooAddPdf("sig", "sig", self.CBpdf_1, self.CBpdf_2, self.sigfrac_CB)
@@ -204,20 +206,20 @@ class Fitter(Tools, MVATools):
       elif self.signal_model_label == 'voigtian':
         self.mean_voigtian  = ROOT.RooRealVar("mean_voigtian","mean_voigtian", self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
         if not self.do_fixed_shape:
-          self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian_"+self.category_label, "gamma_voigtian_"+self.category_label, 0.01, 0., 5.)
-          self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian_"+self.category_label, "sigma_voigtian_"+self.category_label, 0.01, 0.005, 0.15)
+          self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian_"+quantity_label, "gamma_voigtian_"+quantity_label, 0.01, 0., 5.)
+          self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian_"+quantity_label, "sigma_voigtian_"+quantity_label, 0.01, 0.005, 0.15)
         else:
-          self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian_"+self.category_label, "gamma_voigtian_"+self.category_label, 0.03)
-          self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian_"+self.category_label, "sigma_voigtian_"+self.category_label, self.resolution)
+          self.gamma_voigtian = ROOT.RooRealVar("gamma_voigtian_"+quantity_label, "gamma_voigtian_"+quantity_label, 0.03)
+          self.sigma_voigtian = ROOT.RooRealVar("sigma_voigtian_"+quantity_label, "sigma_voigtian_"+quantity_label, self.resolution)
 
         self.signal_model = ROOT.RooVoigtian('sig', 'sig', self.hnl_mass, self.mean_voigtian, self.gamma_voigtian, self.sigma_voigtian)
 
       elif self.signal_model_label == 'gaussian':
-        self.mean_gauss  = ROOT.RooRealVar("mean_gauss_"+self.category_label,"mean_gauss_"+self.category_label, self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
+        self.mean_gauss  = ROOT.RooRealVar("mean_gauss_"+quantity_label,"mean_gauss_"+quantity_label, self.signal_mass, self.signal_mass-0.001*self.signal_mass, self.signal_mass+0.001*self.signal_mass)
         if not self.do_fixed_shape:
-          self.sigma_gauss = ROOT.RooRealVar("sigma_gauss_"+self.category_label, "sigma_gauss_"+self.category_label, self.resolution, 0.005, 0.15)
+          self.sigma_gauss = ROOT.RooRealVar("sigma_gauss_"+quantity_label, "sigma_gauss_"+quantity_label, self.resolution, 0.005, 0.15)
         else:
-          self.sigma_gauss = ROOT.RooRealVar("sigma_gauss_"+self.category_label, "sigma_gauss_"+self.category_label, self.resolution)
+          self.sigma_gauss = ROOT.RooRealVar("sigma_gauss_"+quantity_label, "sigma_gauss_"+quantity_label, self.resolution)
           
         self.signal_model = ROOT.RooGaussian("sig", "sig", self.hnl_mass, self.mean_gauss, self.sigma_gauss)
 
@@ -817,7 +819,7 @@ class Fitter(Tools, MVATools):
 
     # import model
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size) # sidebands are included
-    workspace.factory('hnl_mass[{}, {}]'.format(bin_min, bin_max))
+    workspace.factory('hnl_mass_muon_channel_m_{}[{}, {}]'.format(str(self.signal_mass).replace('.', 'p'), bin_min, bin_max))
     getattr(workspace, 'import')(self.signal_model)
 
     # make sure that the shape parameters are fixed
@@ -825,7 +827,7 @@ class Fitter(Tools, MVATools):
     all_vars = [it.Next() for _ in range( workspace.allVars().getSize())] 
     for var in all_vars: 
       # keep the mean floating (energy scale correction)
-      if var.GetName() != 'hnl_mass' and 'mean' not in var.GetName():
+      if var.GetName() != 'hnl_mass_muon_channel_m_{}'.format(str(self.signal_mass).replace('.', 'p')) and 'mean' not in var.GetName():
         var.setConstant()
 
     workspace.Write()
@@ -897,31 +899,37 @@ class Fitter(Tools, MVATools):
       file_data = self.tools.getRootFile(filename)
       tree = self.tools.getTree(file_data, treename)
 
-    # create binned dataset
     bin_min, bin_max = self.getRegion(nsigma=self.fit_window_size)
-    hnl_mass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
-    hist_name = 'hist'
-    hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
-    branch_name = 'hnl_mass'
-    tree.Project(hist_name, branch_name, selection_dataobs if self.do_cutbased else self.mva_tools.getScoreSelection(selection_dataobs))
+    hnl_mass = ROOT.RooRealVar("hnl_mass_muon_channel_m_{}".format(str(self.signal_mass).replace('.', 'p')),"hnl_mass_muon_channel_m_{}".format(str(self.signal_mass).replace('.', 'p')), bin_min, bin_max)
 
-    # normalise to the target luminosity
-    hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
-    
-    # get the number of yields
-    data_obs_yields = hist.Integral()
+    if self.do_binned_fit:
+      # create binned dataset
+      hist_name = 'hist'
+      hist = ROOT.TH1D(hist_name, hist_name, self.nbins, bin_min, bin_max)
+      branch_name = 'hnl_mass'
+      tree.Project(hist_name, branch_name, selection_dataobs if self.do_cutbased else self.mva_tools.getScoreSelection(selection_dataobs))
 
-    # create the workspace
-    data_obs_name = 'data_obs_bhnl_m_{}_cat_{}'.format(str(self.signal_mass).replace('.', 'p'), self.category_label)
-    data_obs = ROOT.RooDataHist(data_obs_name, data_obs_name, ROOT.RooArgList(hnl_mass), hist)
+      # normalise to the target luminosity
+      hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
+      
+      # get the number of yields
+      data_obs_yields = hist.Integral()
 
-    # create unbinned dataset
-    #quantity_set = self.getQuantitySet()
-    # add hnl_mass to the RooArgSet
-    #quantity_set.add(hnl_mass)
-    #print '-> creating unbinned dataset'
-    #data_obs = ROOT.RooDataSet('data_obs', 'data_obs', tree, quantity_set, selection_dataobs)
-    #print '-> unbinned dataset created'
+      data_obs_name = 'data_obs_bhnl_m_{}_cat_{}'.format(str(self.signal_mass).replace('.', 'p'), self.category_label)
+      data_obs = ROOT.RooDataHist(data_obs_name, data_obs_name, ROOT.RooArgList(hnl_mass), hist)
+
+    else:
+      tree.GetBranch('hnl_mass').SetTitle('hnl_mass_muon_channel_m_{}'.format(str(self.signal_mass).replace('.', 'p')))
+      tree.GetBranch('hnl_mass').SetName('hnl_mass_muon_channel_m_{}'.format(str(self.signal_mass).replace('.', 'p')))
+
+      data_obs_name = 'data_obs_bhnl_m_{}_cat_{}'.format(str(self.signal_mass).replace('.', 'p'), self.category_label)
+      quantity_set = self.getQuantitySet()
+      quantity_set.add(hnl_mass)
+      print '-> creating unbinned dataset'
+      data_obs = ROOT.RooDataSet(data_obs_name, data_obs_name, tree, quantity_set, selection_dataobs if self.do_cutbased else self.mva_tools.getScoreSelection(selection_dataobs))
+      print '-> unbinned dataset created'
+
+      data_obs_yields = data_obs.sumEntries()
     
     # create workspace
     workspace_filename = '{}/workspace_data_obs_{}.root'.format(self.workspacedir, label)
@@ -975,7 +983,7 @@ class Fitter(Tools, MVATools):
     hist.Scale(self.lumi_target / self.tools.getDataLumi(self.data_files))
 
     # create the binned dataset
-    hnl_mass = ROOT.RooRealVar("hnl_mass","hnl_mass", bin_min, bin_max)
+    hnl_mass = ROOT.RooRealVar("hnl_mass_muon_channel_m_{}".format(str(self.signal_mass).replace('.', 'p')),"hnl_mass_muon_channel_m_{}".format(str(self.signal_mass).replace('.', 'p')), bin_min, bin_max)
     hnl_mass_rdh_name = 'hnl_mass_rdh_bhnl_m_{}_cat_{}'.format(str(self.signal_mass).replace('.', 'p'), self.category_label)
     hnl_mass_rdh = ROOT.RooDataHist(hnl_mass_rdh_name, hnl_mass_rdh_name, ROOT.RooArgList(hnl_mass), hist)
 
