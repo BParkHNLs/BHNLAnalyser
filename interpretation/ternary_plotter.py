@@ -10,8 +10,11 @@ import numpy as np
 
 
 class TernaryPlotter(object):
-  def __init__(self, mass, homedir, outdirlabel, subdirlabel):
+  def __init__(self, mass, scenario, homedir, outdirlabel, subdirlabel):
     self.mass = mass
+    self.scenario = scenario
+    if self.scenario not in ['Majorana', 'Dirac']:
+      raise RuntimeError('Unrecognised scenario "{}"'.format(self.scenario))
     self.homedir = homedir
     self.outdirlabel = outdirlabel
     self.subdirlabel = subdirlabel
@@ -43,7 +46,7 @@ class TernaryPlotter(object):
 
   def heat_function(self, point):
     coupling = 1e9 # default value of the coupling used when exclusion is missing
-    exclusion_filename = '{}/exclusion_m_{}_{}_{}_{}.txt'.format(self.plotdir, str(self.mass).replace('.', 'p'), str(round(point[0], 1)).replace('.', 'p'), str(round(point[1], 1)).replace('.', 'p'), str(round(point[2], 1)).replace('.', 'p'))
+    exclusion_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p'), str(round(point[0], 1)).replace('.', 'p'), str(round(point[1], 1)).replace('.', 'p'), str(round(point[2], 1)).replace('.', 'p'))
     try:
       f = open(exclusion_filename)
       lines = f.readlines()
@@ -67,16 +70,19 @@ class TernaryPlotter(object):
       for j in np.linspace(1, 0, 10):
         for k in np.linspace(1, 0, 10):
           if round(i, 1) + round(j, 1) + round(k, 1) != 1.: continue 
-          exclusion_filename = '{}/exclusion_m_{}_{}_{}_{}.txt'.format(self.plotdir, str(self.mass).replace('.', 'p'), str(round(i, 1)).replace('.', 'p'), str(round(j, 1)).replace('.', 'p'), str(round(k, 1)).replace('.', 'p'))
-          f = open(exclusion_filename)
-          lines = f.readlines()
-          for line in lines:
-            # remove empty lines
-            if len(line) == 1: continue
-            coupling = self.get_exclusion(line) 
-            if coupling < coupling_min and coupling != -99: coupling_min = coupling
-            if coupling > coupling_max and coupling != -99: coupling_max = coupling
-          f.close()
+          try:
+            exclusion_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p'), str(round(i, 1)).replace('.', 'p'), str(round(j, 1)).replace('.', 'p'), str(round(k, 1)).replace('.', 'p'))
+            f = open(exclusion_filename)
+            lines = f.readlines()
+            for line in lines:
+              # remove empty lines
+              if len(line) == 1: continue
+              coupling = self.get_exclusion(line) 
+              if coupling < coupling_min and coupling != -99: coupling_min = coupling
+              if coupling > coupling_max and coupling != -99: coupling_max = coupling
+            f.close()
+          except:
+            continue
 
     print coupling_min
     print coupling_max
@@ -111,8 +117,9 @@ class TernaryPlotter(object):
     plt.clf()
     fig, ax = plt.subplots(figsize=(6.5, 5))
     ax.axis("off")
-    ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold')
-    ax.text(0.15, 0.86, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=15, fontstyle='italic')
+    ax.text(0.1, 0.96, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold')
+    ax.text(0.15, 0.89, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=15, fontstyle='italic')
+    ax.text(0.85, 0.96, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=15, fontweight='bold')
     ax.text(0.85, 0.89, r'$m_{N}$' + ' = {} GeV'.format(self.mass), horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=15)
 
     figure, tax = ternary.figure(ax=ax, scale=self.scale)
@@ -124,18 +131,18 @@ class TernaryPlotter(object):
                  scientific=True,
                  style="hexagonal", 
                  cmap=plt.cm.get_cmap(self.cmap),
-                 cbarlabel=r'$|V|^{2}$ (median expected)',
-                 ##vmin=1e-4,#self.get_boundaries()[0],
-                 ##vmax=5e-4,#self.get_boundaries()[1],
+                 cbarlabel=r'Observed $|V|^{2}$',
+                 #vmin=0.5e-4,#self.get_boundaries()[0],
+                 #vmax=4e-4,#self.get_boundaries()[1],
                  vmin=self.get_boundaries()[0],
                  vmax=self.get_boundaries()[1],
                  )
 
     # define axes and grid
     tax.boundary(linewidth=2.0)
-    tax.left_axis_label("$f_{\\tau}$", fontsize=17, offset=0.16)
-    tax.right_axis_label("$f_{\mu}$", fontsize=17, offset=0.16)
-    tax.bottom_axis_label("$f_{e}$", fontsize=17, offset=0.06)
+    tax.left_axis_label("$r_{\\tau}$", fontsize=17, offset=0.16)
+    tax.right_axis_label("$r_{\mu}$", fontsize=17, offset=0.16)
+    tax.bottom_axis_label("$r_{e}$", fontsize=17, offset=0.06)
 
     tax.gridlines(multiple=1, linewidth=2, color='black')
 
@@ -148,22 +155,23 @@ class TernaryPlotter(object):
     tax._redraw_labels()
     plt.tight_layout()
     #tax.show()
-    tax.savefig('{}/ternary_plot_m_{}.png'.format(self.plotdir, str(self.mass).replace('.', 'p')))
-    tax.savefig('{}/ternary_plot_m_{}.pdf'.format(self.plotdir, str(self.mass).replace('.', 'p')))
+    tax.savefig('{}/ternary_plot_{}_m_{}.png'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p')))
+    tax.savefig('{}/ternary_plot_{}_m_{}.pdf'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p')))
 
-    print ' -> {}/ternary_plot_m_{}.png created'.format(self.plotdir, str(self.mass).replace('.', 'p'))
+    print ' -> {}/ternary_plot_{}_m_{}.png created'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p'))
 
 
 
 if __name__ == '__main__':
 
-  mass = '3.0'
-  #homedir = '/t3home/anlyon/BHNL/BHNLAnalyser/CMSSW_10_2_15/src/HiggsAnalysis/CombinedLimit/BHNLAnalyser'
+  mass = '1.0'
+  scenario = 'Majorana'
   homedir = '/work/anlyon'
   outdirlabel = 'V13_06Feb23'
-  subdirlabel = 'combination_ANv8'
+  subdirlabel = 'paper-v5_ternary'
   plotter = TernaryPlotter(
     mass = mass,
+    scenario = scenario,
     homedir = homedir,
     outdirlabel = outdirlabel,
     subdirlabel = subdirlabel,
