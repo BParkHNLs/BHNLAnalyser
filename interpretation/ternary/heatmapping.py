@@ -186,7 +186,7 @@ def polygon_generator(data, scale, style, permutation=None):
                 yield map(project, vertices), value
 
 
-def heatmap(data, scale, vmin=None, vmax=None, cmap=None, ax=None,
+def heatmap(data, scale, vmin=None, vmax=None, do_log=False, cmap=None, ax=None,
             scientific=False, style='triangular', colorbar=True,
             permutation=None, use_rgba=False, cbarlabel=None, cb_kwargs=None):
     """
@@ -252,7 +252,7 @@ def heatmap(data, scale, vmin=None, vmax=None, cmap=None, ax=None,
         if value is None:
             continue
         if not use_rgba:
-            color = colormapper(value, vmin, vmax, cmap=cmap)
+            color = colormapper(value, vmin, vmax, cmap=cmap, do_log=do_log)
         else:
             color = value  # rgba tuple (r,g,b,a) all in [0,1]
         # Matplotlib wants a list of xs and a list of ys
@@ -263,16 +263,15 @@ def heatmap(data, scale, vmin=None, vmax=None, cmap=None, ax=None,
         cb_kwargs = dict()
     if colorbar:
         colorbar_hack(ax, vmin, vmax, cmap, scientific=scientific,
-                      cbarlabel=cbarlabel, **cb_kwargs)
+                      do_log=do_log, cbarlabel=cbarlabel, **cb_kwargs)
     return ax
 
 
 ## User Convenience Functions ##
 
-
 def heatmapf(func, scale=10, boundary=True, cmap=None, ax=None,
              scientific=False, style='triangular', colorbar=True,
-             permutation=None, vmin=None, vmax=None, cbarlabel=None,
+             permutation=None, vmin=None, vmax=None, do_log=False, cbarlabel=None,
              cb_kwargs=None):
     """
     Computes func on heatmap partition coordinates and plots heatmap. In other
@@ -318,7 +317,7 @@ def heatmapf(func, scale=10, boundary=True, cmap=None, ax=None,
     # Pass everything to the heatmapper
     ax = heatmap(data, scale, cmap=cmap, ax=ax, style=style,
                  scientific=scientific, colorbar=colorbar,
-                 permutation=permutation, vmin=vmin, vmax=vmax, 
+                 permutation=permutation, vmin=vmin, vmax=vmax, do_log=do_log,  
                  cbarlabel=cbarlabel, cb_kwargs=cb_kwargs)
     return ax
 

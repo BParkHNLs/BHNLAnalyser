@@ -1,6 +1,7 @@
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.colors import rgb2hex
+import math
 
 ## Default colormap, other options here: http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 s = matplotlib.__version__.split('.')
@@ -39,7 +40,7 @@ def get_cmap(cmap=None):
     return plt.get_cmap(cmap_name)
 
 
-def colormapper(value, lower=0, upper=1, cmap=None):
+def colormapper(value, lower=0, upper=1, cmap=None, do_log=False):
     """
     Maps values to colors by normalizing within [a,b], obtaining rgba from the
     given matplotlib color map for heatmap polygon coloring.
@@ -62,16 +63,19 @@ def colormapper(value, lower=0, upper=1, cmap=None):
     """
 
     cmap = get_cmap(cmap)
-    if upper - lower == 0:
+    if upper - lower == 0 or value == -99.:
         rgba = cmap(0)
     else:
-        rgba = cmap((value - lower) / float(upper - lower))
+        if not do_log:
+          rgba = cmap((value - lower) / float(upper - lower))
+        else:
+          rgba = cmap((math.log(value) - math.log(lower)) / float(math.log(upper) - math.log(lower)))
     hex_ = rgb2hex(rgba)
     return hex_
 
 
 def colorbar_hack(ax, vmin, vmax, cmap, scientific=False, cbarlabel=None, norm=None,
-                  **kwargs):
+                  do_log=False, **kwargs):
     """
     Colorbar hack to insert colorbar on ternary plot.
 
@@ -89,7 +93,10 @@ def colorbar_hack(ax, vmin, vmax, cmap, scientific=False, cbarlabel=None, norm=N
     """
     # http://stackoverflow.com/questions/8342549/matplotlib-add-colorbar-to-a-sequence-of-line-plots
     if norm is None:
+      if not do_log:
         norm = plt.Normalize(vmin=vmin, vmax=vmax)
+      else:
+        norm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm._A = []
     cb = plt.colorbar(sm, ax=ax, **kwargs)
