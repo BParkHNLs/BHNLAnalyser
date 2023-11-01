@@ -40,7 +40,7 @@ def get_cmap(cmap=None):
     return plt.get_cmap(cmap_name)
 
 
-def colormapper(value, lower=0, upper=1, cmap=None, do_log=False):
+def colormapper(value, lower=0, upper=1, cmap=None, ternary_style=None):
     """
     Maps values to colors by normalizing within [a,b], obtaining rgba from the
     given matplotlib color map for heatmap polygon coloring.
@@ -66,7 +66,7 @@ def colormapper(value, lower=0, upper=1, cmap=None, do_log=False):
     if upper - lower == 0 or value == -99.:
         rgba = cmap(0)
     else:
-        if not do_log:
+        if not ternary_style.log:
           rgba = cmap((value - lower) / float(upper - lower))
         else:
           rgba = cmap((math.log(value) - math.log(lower)) / float(math.log(upper) - math.log(lower)))
@@ -75,7 +75,7 @@ def colormapper(value, lower=0, upper=1, cmap=None, do_log=False):
 
 
 def colorbar_hack(ax, vmin, vmax, cmap, scientific=False, cbarlabel=None, norm=None,
-                  do_log=False, **kwargs):
+                  ternary_style=None, **kwargs):
     """
     Colorbar hack to insert colorbar on ternary plot.
 
@@ -91,19 +91,32 @@ def colorbar_hack(ax, vmin, vmax, cmap, scientific=False, cbarlabel=None, norm=N
         Matplotlib colormap to use
 
     """
+
+    # https://stackoverflow.com/questions/41467616/matplotlib-colorbar-ticks-format-when-using-scientific-notation
+    # https://stackoverflow.com/questions/38577978/matplotlib-any-way-to-use-integers-and-decimals-in-colorbar-ticks
+    # https://stackoverflow.com/questions/45815396/how-to-change-the-the-number-of-colorbar-digits-of-the-mantissa-using-offset-not
+    # https://stackoverflow.com/questions/29188757/specify-format-of-floats-for-tick-labels
+    # https://matplotlib.org/stable/users/explain/colors/colorbar_only.html#extended-colorbar-with-continuous-colorscale
+    # https://stackoverflow.com/questions/73809584/how-to-set-scientific-notation-limits-for-colorbar
+    # https://matplotlib.org/stable/api/ticker_api.html#matplotlib.ticker.ScalarFormatter.set_powerlimits
     # http://stackoverflow.com/questions/8342549/matplotlib-add-colorbar-to-a-sequence-of-line-plots
+
+    if ternary_style.scientific:
+      vmin = vmin * 1./ternary_style.exponent
+      vmax = vmax * 1./ternary_style.exponent
+
     if norm is None:
-      if not do_log:
+      if not ternary_style.log:
         norm = plt.Normalize(vmin=vmin, vmax=vmax)
       else:
         norm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
+
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm._A = []
     cb = plt.colorbar(sm, ax=ax, **kwargs)
     if cbarlabel is not None:
         cb.set_label(cbarlabel)
-    if scientific:
+    if ternary_style.scientific:
         cb.locator = matplotlib.ticker.LinearLocator(numticks=7)
-        cb.formatter = matplotlib.ticker.ScalarFormatter()
-        cb.formatter.set_powerlimits((0, 0))
+        cb.formatter = matplotlib.ticker.FormatStrFormatter("%.1f")
         cb.update_ticks()

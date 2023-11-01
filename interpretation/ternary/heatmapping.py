@@ -186,7 +186,7 @@ def polygon_generator(data, scale, style, permutation=None):
                 yield map(project, vertices), value
 
 
-def heatmap(data, scale, vmin=None, vmax=None, do_log=False, cmap=None, ax=None,
+def heatmap(data, scale, vmin=None, vmax=None, ternary_style=None, cmap=None, ax=None,
             scientific=False, style='triangular', colorbar=True,
             permutation=None, use_rgba=False, cbarlabel=None, cb_kwargs=None):
     """
@@ -252,7 +252,7 @@ def heatmap(data, scale, vmin=None, vmax=None, do_log=False, cmap=None, ax=None,
         if value is None:
             continue
         if not use_rgba:
-            color = colormapper(value, vmin, vmax, cmap=cmap, do_log=do_log)
+            color = colormapper(value, vmin, vmax, cmap=cmap, ternary_style=ternary_style)
         else:
             color = value  # rgba tuple (r,g,b,a) all in [0,1]
         # Matplotlib wants a list of xs and a list of ys
@@ -263,7 +263,7 @@ def heatmap(data, scale, vmin=None, vmax=None, do_log=False, cmap=None, ax=None,
         cb_kwargs = dict()
     if colorbar:
         colorbar_hack(ax, vmin, vmax, cmap, scientific=scientific,
-                      do_log=do_log, cbarlabel=cbarlabel, **cb_kwargs)
+                      ternary_style=ternary_style, cbarlabel=cbarlabel, **cb_kwargs)
     return ax
 
 
@@ -271,7 +271,7 @@ def heatmap(data, scale, vmin=None, vmax=None, do_log=False, cmap=None, ax=None,
 
 def heatmapf(func, scale=10, boundary=True, cmap=None, ax=None,
              scientific=False, style='triangular', colorbar=True,
-             permutation=None, vmin=None, vmax=None, do_log=False, cbarlabel=None,
+             permutation=None, vmin=None, vmax=None, ternary_style=None, cbarlabel=None,
              cb_kwargs=None):
     """
     Computes func on heatmap partition coordinates and plots heatmap. In other
@@ -317,7 +317,7 @@ def heatmapf(func, scale=10, boundary=True, cmap=None, ax=None,
     # Pass everything to the heatmapper
     ax = heatmap(data, scale, cmap=cmap, ax=ax, style=style,
                  scientific=scientific, colorbar=colorbar,
-                 permutation=permutation, vmin=vmin, vmax=vmax, do_log=do_log,  
+                 permutation=permutation, vmin=vmin, vmax=vmax, ternary_style=ternary_style,  
                  cbarlabel=cbarlabel, cb_kwargs=cb_kwargs)
     return ax
 
