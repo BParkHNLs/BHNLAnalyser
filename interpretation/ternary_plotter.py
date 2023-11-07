@@ -1,10 +1,16 @@
 # run within the python-ternary framework (https://github.com/marcharper/python-ternary)
 import os
+import sys
 import ternary
 from ternary.ternary_style import TernaryStyle
 import matplotlib.pyplot as plt
 from os import path
 import numpy as np
+import math
+import glob
+import re
+sys.path.append('../scripts')
+from decays import HNLDecays 
 
 
 # have a look at https://seaborn.pydata.org/tutorial/color_palettes.html for color palettes
@@ -24,9 +30,13 @@ class TernaryPlotter(object):
     self.cmap = 'Blues' #'Oranges'
     self.ternary_style = ternary_style
     self.fontsize = self.ternary_style.fontsize
+    self.tmp_dir = './tmp'
     
 
   def get_points(self, boundary=True):
+    '''
+      Get the list of coupling scenarios
+    '''
     points = []
     start = 0
     if not boundary:
@@ -35,11 +45,152 @@ class TernaryPlotter(object):
       for j in range(start, self.scale + (1 - start) - i):
         k = self.scale - i - j
         points.append([float(i)/self.scale, float(j)/self.scale, float(k)/self.scale])
-        #points.append([i, j, k])
     return points
 
 
+  def create_dir(self):
+    '''
+      Create temporary directory to store the exclusion point
+      per coupling scenario
+    '''
+    if path.exists(self.tmp_dir):
+      os.system('rm -r {}'.format(self.tmp_dir))
+    os.system('mkdir -p {}'.format(self.tmp_dir)) 
+
+
+  def remove_dir(self):
+    '''
+      Delete temporary directory
+    '''
+    if path.exists(self.tmp_dir):
+      os.system('rm -r {}'.format(self.tmp_dir))
+
+
+  def get_intersection(self, couplings, values, crossing=1):
+    '''
+      Function that returns the coupling at which the limit intersects with 1 (crossing) in the log-log plane
+    '''
+    # first, search for couplings whose associated limit is the closest to up and down 1
+    coupling_up = 0
+    coupling_down = 1e9
+    value_up = 0
+    value_down = 0
+    for icoupling, coupling in enumerate(couplings):
+      if icoupling+1 >= len(couplings): continue
+      if values[icoupling] >= crossing and values[icoupling+1] <= crossing:
+        coupling_up = couplings[icoupling+1]
+        value_up = values[icoupling+1]
+        coupling_down = couplings[icoupling]
+        value_down = values[icoupling]
+        break
+
+    # do not proceed if crossing is not found
+    if coupling_up == 0 or coupling_down == 1e9:
+      intersection = -99
+    else:
+      # then, search for the intersection with 1 in the log-log plane
+      # powerlaw y = kx^m behaves as a linear law in the log-log plane: log(y) = mlog(x) + log(k)
+      # get the slope m
+      m = (math.log(value_up) - math.log(value_down)) / (math.log(coupling_up) - math.log(coupling_down))
+
+      # and the coordinate k
+      k = value_up / math.pow(coupling_up, m)
+
+      # to finally compute the coupling where there is the intersection
+      intersection = math.pow(float(crossing)/float(k), 1./float(m)) 
+
+    return intersection
+
+
+  def get_coupling_target(self, mass, coupling, fe, fu, ft):
+    '''
+      Function to convert the value of the coupling
+      to the given scenario
+    '''
+    val_coupling = float(coupling)
+
+    val_fe = float(fe.replace('p', '.'))
+    val_fu = float(fu.replace('p', '.'))
+    val_ft = float(ft.replace('p', '.'))
+    decay_width_ini = HNLDecays(mass=float(mass), fe=0., fu=1., ft=0.).decay_rate['tot']
+    decay_width_new = HNLDecays(mass=float(mass), fe=val_fe, fu=val_fu, ft=val_ft).decay_rate['tot']
+    corr = decay_width_ini / decay_width_new
+    val_coupling = corr * val_coupling 
+
+    if self.scenario == 'Dirac':
+      val_coupling = 2.0 * val_coupling
+
+    return val_coupling
+
+
+  def produce_exclusion_files(self, points):
+    '''
+      Create temporary files reporting the excluded value for
+      each coupling scenario
+    '''
+    count = 1
+    for point in points:
+      if count%10 == 0: print '   ---> {}% completed'.format(round(float(count)/len(points)*100, 0))
+      count += 1
+      # define the coupling fractions
+      fe = str(point[0]).replace('.', 'p')
+      fu = str(point[1]).replace('.', 'p')
+      ft = str(point[2]).replace('.', 'p')
+
+      # get the results files 
+      path_results = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft) 
+      fileName = 'result*{}*.txt'.format(self.scenario)
+      files = [f for f in glob.glob(path_results+fileName)]
+     
+      v2s = []
+      obs = []
+
+      for limit_file in files:
+        if 'm_{}_'.format(self.mass) not in limit_file: continue
+
+        # get the coupling and ctau from the file name
+        ctau = limit_file[limit_file.find('ctau_')+5:limit_file.find('_', limit_file.find('ctau_')+5)]
+        coupling = limit_file[limit_file.rfind('v2_')+3:limit_file.find('.txt')]
+        # correct the value of the coupling for the given scenario
+        val_coupling = self.get_coupling_target(mass=self.mass, coupling=coupling, fe=fe, fu=fu, ft=ft)
+      
+        try:
+          the_file = open('{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(path_results, self.scenario, self.mass, ctau, coupling), 'r')
+          
+          # get the necessary information from the result files
+          val_obs = None
+          content = the_file.readlines()
+          for line in content:
+            if 'Observed' in line:
+              values = re.findall(r'\d+', line)
+              val_obs = values[0] + '.' + values[1]
+         
+          v2s.append(val_coupling)
+          obs.append(float(val_obs))
+
+        except:
+          print 'Cannot open {}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(path_results, self.scenario, self.mass, ctau, coupling)
+
+      # sort by coupling
+      vector = zip(v2s, obs)
+      vector.sort(key = lambda x : float(x[0]))
+      v2s = [i[0] for i in vector]
+      obs = [i[1] for i in vector]
+
+      # find the intersection    
+      x_obs = self.get_intersection(v2s, obs)
+
+      # create exclusion file 
+      exclusion_coupling_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.tmp_dir, self.scenario, str(self.mass).replace('.', 'p'), fe, fu, ft)
+      exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
+      exclusion_coupling_file.write('\n{} {} {} {}'.format(fe.replace('p', '.'), fu.replace('p', '.'), ft.replace('p', '.'), x_obs))
+      exclusion_coupling_file.close()
+
+
   def get_exclusion(self, line):
+    '''
+      Get exclusion from temporary file
+    '''
     idx1 = line.find(' ')+1
     idx2 = line.find(' ', idx1)+1
     idx3 = line.find(' ', idx2)+1
@@ -48,8 +199,11 @@ class TernaryPlotter(object):
 
 
   def heat_function(self, point):
+    '''
+      Associate for each coupling scenario the value of the exclusion
+    '''
     coupling = 1e9 # default value of the coupling used when exclusion is missing
-    exclusion_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p'), str(round(point[0], 1)).replace('.', 'p'), str(round(point[1], 1)).replace('.', 'p'), str(round(point[2], 1)).replace('.', 'p'))
+    exclusion_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.tmp_dir, self.scenario, str(self.mass).replace('.', 'p'), str(round(point[0], 1)).replace('.', 'p'), str(round(point[1], 1)).replace('.', 'p'), str(round(point[2], 1)).replace('.', 'p'))
     try:
       f = open(exclusion_filename)
       lines = f.readlines()
@@ -67,6 +221,9 @@ class TernaryPlotter(object):
 
 
   def get_boundaries(self):
+    '''
+      Get the boundaries of the z-axis (colorbar) range
+    '''
     # search for min and max values
     value_min = 1e9
     value_max = 1e-9
@@ -75,7 +232,7 @@ class TernaryPlotter(object):
         for k in np.linspace(1, 0, 10):
           if round(i, 1) + round(j, 1) + round(k, 1) != 1.: continue 
           try:
-            exclusion_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p'), str(round(i, 1)).replace('.', 'p'), str(round(j, 1)).replace('.', 'p'), str(round(k, 1)).replace('.', 'p'))
+            exclusion_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.tmp_dir, self.scenario, str(self.mass).replace('.', 'p'), str(round(i, 1)).replace('.', 'p'), str(round(j, 1)).replace('.', 'p'), str(round(k, 1)).replace('.', 'p'))
             f = open(exclusion_filename)
             lines = f.readlines()
             for line in lines:
@@ -104,6 +261,9 @@ class TernaryPlotter(object):
 
 
   def missing_points(self):
+    '''
+      Unused function
+    '''
     grid_points = self.get_points()
     missing_points = grid_points
 
@@ -123,10 +283,10 @@ class TernaryPlotter(object):
     return missing_points
 
 
-  def process(self):
-    print '\nMass {} GeV ({})'.format(self.mass, self.scenario)
-
-    # define figure
+  def produce_ternary_plot(self):
+    '''
+      Produce the ternary plot
+    '''
     plt.clf()
     fig, ax = plt.subplots(figsize=(6.5/1.5, 5./1.5))
     ax.axis("off")
@@ -191,6 +351,28 @@ class TernaryPlotter(object):
     print ' -> {}/ternary_plot_{}_m_{}.png created'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p'))
 
 
+  def process(self):
+    print '\nMass {} GeV ({})'.format(self.mass, self.scenario)
+
+    # create temporary directory
+    self.create_dir()
+
+    # get the list of coupling scenarios
+    points = self.get_points()
+
+    # get the exclusion for each scenario and store results
+    # in temporary files
+    print '\n -> Produce exclusion files'
+    self.produce_exclusion_files(points=points)
+
+    # produce ternary plot
+    print '\n -> Produce ternary plot'
+    self.produce_ternary_plot()
+
+    # delete temporary directory
+    self.remove_dir()
+
+
 
 if __name__ == '__main__':
 
@@ -202,7 +384,7 @@ if __name__ == '__main__':
   fontsize = 7.3
   log = True
   scientific = True 
-  fixed_range = True 
+  fixed_range = False 
   range_min = 2.5e-5 #0.5e-4 
   range_max = 0.001 #6.0e-4 
   exponent = 1e-4
@@ -219,7 +401,7 @@ if __name__ == '__main__':
 
   homedir = '/work/anlyon'
   outdirlabel = 'V13_06Feb23'
-  subdirlabel = 'paper-v5_ternary'
+  subdirlabel = 'paper-v6_ternary'
 
   masses = ['1.0', '1.5', '2.0']
   scenarios = ['Majorana', 'Dirac']
