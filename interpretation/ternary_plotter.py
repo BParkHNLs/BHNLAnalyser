@@ -17,11 +17,14 @@ from decays import HNLDecays
 
 
 class TernaryPlotter(object):
-  def __init__(self, mass, scenario, homedir, outdirlabel, subdirlabel, ternary_style):
+  def __init__(self, mass, scenario, flavour, homedir, outdirlabel, subdirlabel, ternary_style):
     self.mass = mass
     self.scenario = scenario
     if self.scenario not in ['Majorana', 'Dirac']:
       raise RuntimeError('Unrecognised scenario "{}"'.format(self.scenario))
+    self.flavour = flavour
+    if self.flavour not in ['combined', 'muon', 'electron']:
+      raise RuntimeError('Unrecognised flavour "{}"'.format(self.flavour))
     self.homedir = homedir
     self.outdirlabel = outdirlabel
     self.subdirlabel = subdirlabel
@@ -138,7 +141,13 @@ class TernaryPlotter(object):
       ft = str(point[2]).replace('.', 'p')
 
       # get the results files 
-      path_results = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft) 
+      if self.flavour == 'combined':
+        path_results = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft) 
+      elif self.flavour == 'muon':
+        path_results = '{}/outputs/{}/limits/{}/muon/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft) 
+      elif self.flavour == 'electron':
+        path_results = '{}/outputs/{}/limits/{}/electron/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, fe, fu, ft) 
+
       fileName = 'result*{}*.txt'.format(self.scenario)
       files = [f for f in glob.glob(path_results+fileName)]
      
@@ -345,14 +354,18 @@ class TernaryPlotter(object):
     tax._redraw_labels()
     plt.tight_layout()
     #tax.show()
-    tax.savefig('{}/ternary_plot_{}_m_{}.png'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p')))
-    tax.savefig('{}/ternary_plot_{}_m_{}.pdf'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p')))
+    plotname = 'ternary_plot_{}_m_{}'.format(self.scenario, str(self.mass).replace('.', 'p'))
+    if self.flavour == 'combined': plotname += '_combined' 
+    elif self.flavour == 'muon': plotname += '_muon' 
+    elif self.flavour == 'electron': plotname += '_electron' 
+    tax.savefig('{}/{}.png'.format(self.plotdir, plotname))
+    tax.savefig('{}/{}.pdf'.format(self.plotdir, plotname))
 
-    print ' -> {}/ternary_plot_{}_m_{}.png created'.format(self.plotdir, self.scenario, str(self.mass).replace('.', 'p'))
+    print ' -> {}/{}.png created'.format(self.plotdir, plotname)
 
 
   def process(self):
-    print '\nMass {} GeV ({})'.format(self.mass, self.scenario)
+    print '\nMass {} GeV ({}, {})'.format(self.mass, self.flavour, self.scenario)
 
     # create temporary directory
     self.create_dir()
@@ -405,18 +418,21 @@ if __name__ == '__main__':
 
   masses = ['1.0', '1.5', '2.0']
   scenarios = ['Majorana', 'Dirac']
+  flavours = ['combined', 'muon', 'electron']
 
-  for scenario in scenarios:
-    for mass in masses:
-      plotter = TernaryPlotter(
-        mass = mass,
-        scenario = scenario,
-        homedir = homedir,
-        outdirlabel = outdirlabel,
-        subdirlabel = subdirlabel,
-        ternary_style = ternary_style,
-        )
-      plotter.process()
+  for mass in masses:
+    for scenario in scenarios:
+      for flavour in flavours:
+        plotter = TernaryPlotter(
+          mass = mass,
+          scenario = scenario,
+          flavour = flavour,
+          homedir = homedir,
+          outdirlabel = outdirlabel,
+          subdirlabel = subdirlabel,
+          ternary_style = ternary_style,
+          )
+        plotter.process()
 
 
 
