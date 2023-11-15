@@ -34,6 +34,8 @@ from quantity import quantities
 quantities_preselection = quantities['preselection']
 quantities_trackid = quantities['trackId']
 quantities_muonid = quantities['muonId']
+quantities_small = quantities['small']
+quantities_pNN = quantities['pNN_features']
 
 
 class TrainingInfo(object):
@@ -90,12 +92,38 @@ class Sample(object):
       'pi_packedcandhashighpurity',
       'mu0_charge',
       'mu_charge',
+      'b_mass',
       'mu0_mu_mass',
       'mu0_pi_mass',
       'sv_lxyz',
       'hnl_charge',
       'sv_lxy',
       'sv_chi2',
+      #'weight_hlt_D1',
+      'mu0_pt', 
+      'mu_pt',
+      'pi_pt',
+      'b_pt',
+      'mu0_mu_mass',
+      'mu0_pi_mass',
+      'deltar_mu0_mu',
+      'deltar_mu0_pi',
+      'hnl_cos2d',
+      'sv_prob',
+      'sv_lxysig',
+      'pi_dcasig',
+      'pi_dcasig_corr',
+      'mu0_pfiso03_rel',
+      'mu_pfiso03_rel',
+      'pi_numberoftrackerlayers',
+      'pi_numberofpixellayers',
+      'mu_numberoftrackerlayers',
+      'mu_numberofpixellayers',
+      'mu0_numberoftrackerlayers',
+      'mu0_numberofpixellayers',
+      'mu0_eta',
+      'mu_eta',
+      'pi_eta',
       ]
     if mass != None and ctau != None: 
       self.extra_branches.append('gen_hnl_ct')
@@ -122,7 +150,7 @@ class Sample(object):
 
 
 class MVAAnalyser(Tools, MVATools):
-  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_addCutbased=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotScoreCurve=False, do_plotMVAPerformance=False, do_plotWPScan=False, do_plotAUC=False, do_plotAUCvsLifetime=False, do_plotMass=False, do_plotPNNComparison=False, do_plotPreselection=False, do_plotSignalBackgroundComparison=False, do_compareROC=False):
+  def __init__(self, signal_files, data_files, dirname, baseline_selection, categories=None, do_parametric=False, do_addCutbased=False, do_plotScore=False, do_createFiles=False, do_plotSigScan=False, do_plotROC=False, do_plotScoreCurve=False, do_plotMVAPerformance=False, do_plotWPScan=False, do_plotAUC=False, do_plotAUCvsLifetime=False, do_plotMass=False, do_plotPNNComparison=False, do_plotPreselection=False, do_plotSignalBackgroundComparison=False, do_plotDistributionComparison=False, do_compareROC=False, do_studyDisplacedTracks=False, do_plotScoreNorm=False):
     self.tools = Tools()
     self.mva_tools = MVATools()
     self.signal_files = signal_files
@@ -145,7 +173,10 @@ class MVAAnalyser(Tools, MVATools):
     self.do_plotPNNComparison = do_plotPNNComparison 
     self.do_plotPreselection = do_plotPreselection
     self.do_plotSignalBackgroundComparison = do_plotSignalBackgroundComparison
+    self.do_plotDistributionComparison = do_plotDistributionComparison
     self.do_compareROC = do_compareROC
+    self.do_studyDisplacedTracks = do_studyDisplacedTracks
+    self.do_plotScoreNorm = do_plotScoreNorm
 
     self.outdir = self.createOutDir()
 
@@ -258,13 +289,13 @@ class MVAAnalyser(Tools, MVATools):
       Return score with scaled input features
     '''
     if self.do_parametric:
-      x = pd.DataFrame(df, columns=training_info.features + ['mass_key'])
+      x = pd.DataFrame(df, columns=training_info.features + ['mass_key'])#, 'weight_hlt_D1'])
     else:
       x = pd.DataFrame(df, columns=training_info.features)
 
     # apply the scaler
     if self.do_parametric:
-      xx = training_info.qt.transform(x[training_info.features + ['mass_key']])
+      xx = training_info.qt.transform(x[training_info.features + ['mass_key']])#, 'weight_hlt_D1']])
     else:
       xx = training_info.qt.transform(x[training_info.features])
 
@@ -311,7 +342,7 @@ class MVAAnalyser(Tools, MVATools):
     leg.AddEntry(hist_bkg, 'data-driven background')
 
     ROOT.gStyle.SetOptStat(0)
-    hist_bkg.SetTitle(category.title)
+    hist_bkg.SetTitle(' ')
     hist_bkg.SetFillColor(ROOT.kAzure-4)
     hist_bkg.SetLineColor(1)
     hist_bkg.GetXaxis().SetTitle('Score')
@@ -356,6 +387,93 @@ class MVAAnalyser(Tools, MVATools):
     canv.SaveAs(name + '.png')
 
 
+  def plotScoreNorm(self, training_info, mc_samples, data_samples, category, do_log):
+    '''
+      Plot the score distributions for signal and background
+    '''
+    pd.options.mode.chained_assignment = None
+
+    masses = []
+    for mc_sample in mc_samples:
+      if mc_sample.mass not in masses: masses.append(mc_sample.mass)
+    #print masses
+    #if len(masses) != 1:
+    #  raise RuntimeError('Please provide signal samples of the same mass')
+
+    for mass in masses:
+      canv = self.tools.createTCanvas('canv'+category.label, 800, 700) 
+      if do_log:
+        canv.SetLogy()
+      leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.65, xmax=0.65, ymax=0.83, size=0.04)
+
+      resolution = self.resolution_p0 + self.resolution_p1 * mass
+
+      # background
+      # consider the 10 sigma window around the signal mass
+      window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
+      data_df = self.createDataframe(data_samples).query(self.getPandasQuery(window))
+      if self.do_parametric:
+        data_df['mass_key'] = mass
+      bkg_score = self.predictScore(training_info, data_df)
+
+      hist_bkg = ROOT.TH1F('bkg', 'bkg', 30, 0, 1)
+      for score in bkg_score:
+        hist_bkg.Fill(score)
+
+      leg.AddEntry(hist_bkg, 'data (5.3 /fb)')
+
+      ROOT.gStyle.SetOptStat(0)
+      hist_bkg.SetTitle(category.title)
+      hist_bkg.SetFillColor(ROOT.kAzure-4)
+      hist_bkg.SetLineColor(1)
+      hist_bkg.GetXaxis().SetTitle('Score')
+      hist_bkg.GetXaxis().SetLabelSize(0.033)
+      hist_bkg.GetXaxis().SetTitleSize(0.042)
+      hist_bkg.GetXaxis().SetTitleOffset(1.1)
+      hist_bkg.GetYaxis().SetTitle('Entries')
+      hist_bkg.GetYaxis().SetLabelSize(0.033) 
+      hist_bkg.GetYaxis().SetTitleSize(0.042)
+      hist_bkg.GetYaxis().SetTitleOffset(1.1)
+      hist_bkg.GetYaxis().SetRangeUser(1e-1, hist_bkg.GetMaximum() + 0.15*hist_bkg.GetMaximum())
+
+      # signals
+      hist_sigs = []
+      for mc_sample in mc_samples:
+        if mc_sample.mass != mass: continue
+        mc_df = self.createDataframe([mc_sample])
+        if self.do_parametric:
+          mc_df['mass_key'] = mass
+        sig_score = self.predictScore(training_info, mc_df)
+
+        hist_name = 'sig_{}_{}'.format(mc_sample.mass, mc_sample.ctau)
+        hist_sig = ROOT.TH1F(hist_name, hist_name, 30, 0, 1)
+        hist_sig.SetDirectory(0)
+        for score in sig_score:
+          hist_sig.Fill(score)
+
+        # previous normalisation strategy
+        weight_signal = self.tools.getSignalWeight(signal_files=[mc_sample], mass=mass, ctau=mc_sample.ctau, sigma_B=572.0e9, lumi=5.302, lhe_efficiency=0.08244, is_bu=False, is_bd=False, is_bs=False, is_bc=False)
+        hist_sig.Scale(weight_signal)
+        #if hist_sig.Integral()!=0: hist_sig.Scale(1./hist_sig.Integral())
+
+        leg.AddEntry(hist_sig, 'signal - mass {} GeV, ctau {} mm'.format(mc_sample.mass, mc_sample.ctau))
+
+        hist_sig.SetLineWidth(3)
+        hist_sig.SetLineColor(mc_sample.colour)
+        hist_sigs.append(hist_sig)
+
+      hist_bkg.Draw('histo')
+      for hist_sig in hist_sigs:
+        hist_sig.Draw('histo_same')
+      leg.Draw('same')
+
+      canv.cd()
+      name = '{}/score_norm_m{}_{}'.format(self.outdir, str(mass).replace('.', 'p'), category.label)
+      if do_log: name += '_log'
+      canv.SaveAs(name + '.png')
+
+
+
   def plotROCCurve(self, training_info, mc_samples, data_samples, category, do_log=False):
     pd.options.mode.chained_assignment = None
 
@@ -382,7 +500,6 @@ class MVAAnalyser(Tools, MVATools):
       ctau = mc_sample.ctau
       v2 = self.tools.getVV(mass=mass, ctau=ctau, ismaj=True)
       coupling = self.tools.getCouplingLabel(v2)
-
 
       mc_df = self.createDataframe([mc_sample])
       if self.do_parametric:
@@ -1440,20 +1557,24 @@ class MVAAnalyser(Tools, MVATools):
     canv.SaveAs(name + '.png')
 
 
-  def plotSignalBackgroundComparison(self, training_info, mc_samples, data_samples, category, quantity):
+  def plotSignalBackgroundComparison(self, training_info, mc_samples, data_samples, category, quantity, score):
     '''
       Plot the quantity distribution for signal and background
     '''
     pd.options.mode.chained_assignment = None
     ROOT.gStyle.SetOptStat(0)
 
-    masses = [1.0, 1.5, 2.0, 3.0, 4.5]
+    masses = [] # [1.0, 1.5, 2.0, 3.0, 4.5]
+    #masses = [3.0]
+    for mc_sample in mc_samples:
+      if mc_sample.mass not in masses:
+        masses.append(mc_sample.mass)
 
     for mass in masses:
       canv = self.tools.createTCanvas('canv'+category.label+str(mass), 800, 700) 
       leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.65, xmax=0.65, ymax=0.83, size=0.04)
       
-      score = 0.99
+      #score = 0.99
       colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+3]
 
       resolution = self.resolution_p0 + self.resolution_p1 * mass
@@ -1461,10 +1582,38 @@ class MVAAnalyser(Tools, MVATools):
       # consider the 10 sigma window around the signal mass
       window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
       bkg_label = 'bkg_{}_{}'.format(mass, category.label)
-      extra_branch = [quantity.name_flat]
+      #extra_branch = [quantity.name_flat]
+      extra_branch = [
+        'hnl_mass',
+        'b_mass',
+        'mu0_pt', 
+        'mu_pt',
+        'pi_pt',
+        'mu0_mu_mass',
+        'mu0_pi_mass',
+        'deltar_mu0_mu',
+        'deltar_mu0_pi',
+        'hnl_cos2d',
+        'sv_prob',
+        'sv_lxysig',
+        'pi_dcasig',
+        'mu0_pfiso03_rel',
+        'mu_pfiso03_rel',
+        'pi_numberoftrackerlayers',
+        'pi_numberofpixellayers',
+        'mu_numberoftrackerlayers',
+        'mu_numberofpixellayers',
+        'mu0_numberoftrackerlayers',
+        'mu0_numberofpixellayers',
+        'sv_lxy',
+        'mu0_eta',
+        'mu_eta',
+        'pi_eta',
+      ]
       selection_bkg = self.baseline_selection + ' && ' + window + ' && ' + category.definition_flat
       print selection_bkg
       #filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=self.baseline_selection + ' && ' + window, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
+      #filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=selection_bkg, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
       filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=selection_bkg, label=bkg_label, treename='signal_tree', force_overwrite=True, weights=extra_branch) 
       file_bkg = self.tools.getRootFile(filename_bkg)
       tree_bkg = self.tools.getTree(file_bkg, 'signal_tree')
@@ -1492,8 +1641,35 @@ class MVAAnalyser(Tools, MVATools):
       for mc_sample in mc_samples:
         if mc_sample.mass != mass: continue
         sig_label = 'sig_{}_{}_{}'.format(mc_sample.mass, mc_sample.ctau, category.label)
-        extra_branch = [quantity.name_flat]
-        filename_sig = self.mva_tools.getFileWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mc_sample.mass, selection=self.baseline_selection, weights=extra_branch+['gen_hnl_ct', self.weight_pusig, self.weight_mu0id, self.weight_muid], label=sig_label, treename='signal_tree', force_overwrite=True) 
+        selection_sig = self.baseline_selection + ' && ' + category.definition_flat
+        #extra_branch = [quantity.name_flat]
+        extra_branch = [
+          'mu0_pt', 
+          'mu_pt',
+          'pi_pt',
+          'mu0_mu_mass',
+          'mu0_pi_mass',
+          'deltar_mu0_mu',
+          'deltar_mu0_pi',
+          'hnl_cos2d',
+          'sv_prob',
+          'sv_lxysig',
+          'pi_dcasig',
+          'mu0_pfiso03_rel',
+          'mu_pfiso03_rel',
+          'pi_numberoftrackerlayers',
+          'pi_numberofpixellayers',
+          'mu_numberoftrackerlayers',
+          'mu_numberofpixellayers',
+          'mu0_numberoftrackerlayers',
+          'mu0_numberofpixellayers',
+          'sv_lxy',
+          'mu0_eta',
+          'mu_eta',
+          'pi_eta',
+        ]
+        #filename_sig = self.mva_tools.getFileWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mc_sample.mass, selection=selection_sig, weights=extra_branch+['gen_hnl_ct', self.weight_pusig, self.weight_mu0id, self.weight_muid], label=sig_label, treename='signal_tree', force_overwrite=True) 
+        filename_sig = self.mva_tools.getFileWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mc_sample.mass, selection=selection_sig, weights=extra_branch+['gen_hnl_ct', self.weight_pusig, self.weight_mu0id, self.weight_muid], label=sig_label, treename='signal_tree', force_overwrite=True) 
         file_sig = self.tools.getRootFile(filename_sig)
         tree_sig = self.tools.getTree(file_sig, 'signal_tree')
 
@@ -1511,20 +1687,218 @@ class MVAAnalyser(Tools, MVATools):
       leg.Draw('same')
 
       canv.cd()
-      name = '{}/{}_m{}_{}'.format(self.outdir, quantity.label, str(mass).replace('.', 'p'), category.label)
+      outputdir = '{}/distributions'.format(self.outdir)
+      if not path.exists(outputdir):
+        os.system('mkdir -p {}'.format(outputdir))
+      name = '{}/{}_m{}_{}_score{}'.format(outputdir, quantity.label, str(mass).replace('.', 'p'), category.label, str(score).replace('.', 'p'))
       canv.SaveAs(name + '.png')
+
+
+  def plotDistributionComparison(self, training_info, mc_samples, data_samples, category, quantity, score):
+    '''
+      Plot the quantity distribution for signal and background
+    '''
+    pd.options.mode.chained_assignment = None
+    ROOT.gStyle.SetOptStat(0)
+
+    #masses = [1.0, 2.0, 4.5]
+    masses = [2.0]
+    #colours = [ROOT.kOrange+0, ROOT.kRed+1, ROOT.kRed+4]
+    colours = [ROOT.kBlue+1]
+    #for mc_sample in mc_samples:
+    #  if mc_sample.mass not in masses:
+    #    masses.append(mc_sample.mass)
+
+    canv = self.tools.createTCanvas('canv'+category.label, 800, 700) 
+    pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
+    pad.Draw()
+    pad.cd()
+    leg = self.tools.getRootTLegend(xmin=0.45, ymin=0.55, xmax=0.75, ymax=0.67, size=0.04)
+
+    hists_sig = []
+    hists_bkg = []
+
+    max_val = -99.
+
+    for imass, mass in enumerate(masses):
+      #canv = self.tools.createTCanvas('canv'+category.label+str(mass), 800, 700) 
+      #leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.65, xmax=0.65, ymax=0.83, size=0.04)
+
+      resolution = self.resolution_p0 + self.resolution_p1 * mass
+
+      # consider the 10 sigma window around the signal mass
+      window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
+      bkg_label = 'bkg_{}_{}'.format(mass, category.label)
+      extra_branch = [
+        'hnl_mass',
+        'b_mass',
+        'mu0_pt', 
+        'mu_pt',
+        'pi_pt',
+        'mu0_mu_mass',
+        'mu0_pi_mass',
+        'deltar_mu0_mu',
+        'deltar_mu0_pi',
+        'hnl_cos2d',
+        'sv_prob',
+        'sv_lxysig',
+        'pi_dcasig',
+        'mu0_pfiso03_rel',
+        'mu_pfiso03_rel',
+        'pi_numberoftrackerlayers',
+        'pi_numberofpixellayers',
+        'mu_numberoftrackerlayers',
+        'mu_numberofpixellayers',
+        'mu0_numberoftrackerlayers',
+        'mu0_numberofpixellayers',
+        'sv_lxy',
+        'mu0_eta',
+        'mu_eta',
+        'pi_eta',
+      ]
+      selection_bkg = self.baseline_selection + ' && ' + window + ' && ' + category.definition_flat
+      filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=selection_bkg, label=bkg_label, treename='signal_tree', weights=extra_branch, force_overwrite=False) 
+      file_bkg = self.tools.getRootFile(filename_bkg)
+      tree_bkg = self.tools.getTree(file_bkg, 'signal_tree')
+
+      hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='hist_bkg'+str(score), branchname='flat', selection='score > {}'.format(score))
+      if hist_bkg.Integral() != 0: hist_bkg.Scale(1./hist_bkg.Integral())
+
+      hist_bkg.SetFillColor(ROOT.kBlue-3)#colours[imass-1])
+      hist_bkg.SetFillStyle(3005)
+
+      if hist_bkg.GetMaximum() > max_val: max_val = hist_bkg.GetMaximum()
+        
+      hist_bkg.SetTitle(' ')
+      x_label = quantity.title
+      hist_bkg.GetXaxis().SetTitle(x_label)
+      hist_bkg.GetXaxis().SetLabelSize(0.033)
+      hist_bkg.GetXaxis().SetTitleSize(0.042)
+      hist_bkg.GetXaxis().SetTitleOffset(1.1)
+      hist_bkg.GetYaxis().SetTitle('Normalised to unity')
+      hist_bkg.GetYaxis().SetLabelSize(0.033)
+      hist_bkg.GetYaxis().SetTitleSize(0.042)
+      hist_bkg.GetYaxis().SetTitleOffset(1.1)
+      leg.AddEntry(hist_bkg, 'data (5.2 fb^{-1})')
+
+      hists_bkg.append(hist_bkg)
+
+      # signal
+      #hists_sig = []
+      for mc_sample in mc_samples:
+        if mc_sample.mass != mass: continue
+        sig_label = 'sig_{}_{}_{}'.format(mc_sample.mass, mc_sample.ctau, category.label)
+        selection_sig = self.baseline_selection + ' && ' + category.definition_flat
+        extra_branch = [
+          'mu0_pt', 
+          'mu_pt',
+          'pi_pt',
+          'b_mass',
+          'mu0_mu_mass',
+          'mu0_pi_mass',
+          'deltar_mu0_mu',
+          'deltar_mu0_pi',
+          'hnl_cos2d',
+          'sv_prob',
+          'sv_lxysig',
+          'pi_dcasig',
+          'mu0_pfiso03_rel',
+          'mu_pfiso03_rel',
+          'pi_numberoftrackerlayers',
+          'pi_numberofpixellayers',
+          'mu_numberoftrackerlayers',
+          'mu_numberofpixellayers',
+          'mu0_numberoftrackerlayers',
+          'mu0_numberofpixellayers',
+          'sv_lxy',
+          'mu0_eta',
+          'mu_eta',
+          'pi_eta',
+        ]
+        filename_sig = self.mva_tools.getFileWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mc_sample.mass, selection=selection_sig, weights=extra_branch+['gen_hnl_ct', self.weight_pusig, self.weight_mu0id, self.weight_muid], label=sig_label, treename='signal_tree', force_overwrite=False) 
+        file_sig = self.tools.getRootFile(filename_sig)
+        tree_sig = self.tools.getTree(file_sig, 'signal_tree')
+
+        hist_sig = self.tools.createHisto(tree_sig, quantity, hist_name='hist_sig'+str(score), branchname='flat', selection='score > {}'.format(score))
+        if hist_sig.Integral() != 0: hist_sig.Scale(1./hist_sig.Integral())
+
+        if hist_sig.GetMaximum() > max_val: max_val = hist_sig.GetMaximum()
+
+        hist_sig.SetMarkerStyle(20)
+        hist_sig.SetMarkerColor(colours[imass])
+        hists_sig.append(hist_sig)
+        leg.AddEntry(hist_sig, 'signal - {} GeV {} mm'.format(mc_sample.mass, mc_sample.ctau))
+
+    do_log = False
+    if quantity.label == 'hnl_cos2d': do_log = True
+    if do_log:
+      pad.SetLogy()
+      pad.SetLogx()
+
+    for i, hist in enumerate(hists_bkg):
+      if i == 0:
+        hist.GetYaxis().SetRangeUser(0, max_val + 0.3*max_val) if not do_log else hist.GetYaxis().SetRangeUser(1e-4, max_val + 30*max_val)
+        hist.Draw('hist')
+      else:
+        hist.Draw('hist same')
+    for hist in hists_sig:
+      hist.Draw('same')
+    leg.Draw('same')
+
+    print_tag = True
+    CMS_tag = 'Preliminary'
+    self.tools.printInnerCMSTag(pad, CMS_tag, print_tag, x_pos=0.15, y_pos=0.83, size=0.55)
+    self.tools.printLatexBox(0.55, 0.83, category.title, size=0.04, pos='left', font=42)
+    if 'Bc' in category.label:
+      b_mass_label = '#mu_{0}#mu#pi mass > 5.7 GeV'
+    else:
+      b_mass_label = '#mu_{0}#mu#pi mass #leq 5.7 GeV'
+    self.tools.printLatexBox(0.55, 0.78, b_mass_label, size=0.04, pos='left', font=42)
+    self.tools.printLatexBox(0.55, 0.73, 'dimuon channel', size=0.04, pos='left', font=42)
+
+    canv.cd()
+    outputdir = '{}/pNN_features'.format(self.outdir)
+    if not path.exists(outputdir):
+      os.system('mkdir -p {}'.format(outputdir))
+    name = '{}/{}_{}_score{}'.format(outputdir, quantity.label, category.label, str(score).replace('.', 'p'))
+    canv.SaveAs(name + '.png')
+    canv.SaveAs(name + '.pdf')
 
 
   def compareROCCurve(self, mc_samples, data_samples, category, do_log=False):
     pd.options.mode.chained_assignment = None
 
-    masses = [1.0, 2.0, 3.0, 4.5, 1.5]
+    masses = [1.0, 2.0, 3.0, 4.5, 1.5, 5.5]
 
-    training_info1 = TrainingInfo('V13_06Feb23_2023Apr06_14h13m31s', category.label) # used for unblinding
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Apr06_14h13m31s', category.label) # used for unblinding
     #training_info2 = TrainingInfo('V13_06Feb23_2023Jun11_22h15m20s', category.label) # track id
     #training_info1 = TrainingInfo('V13_06Feb23_2023Jun15_23h04m36s', category.label) # displaced mu id
     #training_info1 = TrainingInfo('V13_06Feb23_2023Jun28_12h19m48s', category.label) # pi dcasig, no sv chi2
-    training_info2 = TrainingInfo('V13_06Feb23_2023Jun29_10h53m14s', category.label) # mu0 id
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jun29_10h53m14s', category.label) # mu0 id
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul04_19h20m03s', category.label) # no b pt/mass, no deltaR
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul04_19h21m47s', category.label) # no b pt/mass, no invmass
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul04_21h09m09s', category.label) # no b pt/mass, no layers
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jul04_22h10m04s', category.label) # modified patience
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul05_16h43m39s', category.label) # with weight
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jul05_17h29m50s', category.label) # layers instead of hits, 32 nodes
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jul05_21h30m59s', category.label) # scaling weight
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul05_21h30m59s', category.label) # scaling weight
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul12_11h17m28s', category.label) # weight 1
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul12_11h17m59s', category.label) # trigger weight
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul14_16h33m54s', category.label) # on track info on mu, early stopping
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jul14_16h33m54s', category.label) # early stopping, patience 5, period 100
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jul17_21h35m41s', category.label) # early stopping, patience 10, period 100
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul17_23h01m06s', category.label) # no early stopping, period 100
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jul17_23h02m14s', category.label) # no early stopping, period 60
+    #training_info1 = TrainingInfo('V13_06Feb23_2023Jul18_15h36m17s', category.label) # adding back mu layers (used for LLPJul23 talk)
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul24_21h21m38s', category.label) # more Bc stat
+    training_info1 = TrainingInfo('training_Jul23', category.label) # mix of the two above
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul27_22h29m08s', category.label) # removing mu iso
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Jul31_11h57m54s', category.label) # removing mu iso v2
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Aug04_20h56m51s', category.label) # no iso, pi_dcasig_corr
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Aug05_00h06m25s', category.label) # pi_dcasig_corr
+    #training_info2 = TrainingInfo('V13_06Feb23_2023Aug05_00h06m44s', category.label) # pi_dcasig_corr
+    training_info2 = TrainingInfo('V13_06Feb23_2023Aug05_00h07m05s', category.label) # pi_dcasig_corr
 
     #leg1 = 'training w/o track ID'
     #leg2 = 'training w/ track ID'
@@ -1541,8 +1915,23 @@ class MVAAnalyser(Tools, MVATools):
     #leg1 = 'training w/o mu0 ID'
     #leg2 = 'training w/ mu0 ID'
 
-    leg1 = 'Previous training'
+    #leg1 = 'Previous training'
+    #leg2 = 'Updated training'
+
+    leg1 = 'Reference training'
     leg2 = 'Updated training'
+
+    #leg1 = 'Early stopping patience 5'
+    #leg2 = 'Early stopping patience 10'
+
+    #leg1 = 'Early stopping'
+    #leg2 = 'No early stopping'
+
+    #leg1 = 'No early stopping, period 100'
+    #leg2 = 'No early stopping, period 60'
+
+    #leg1 = 'w/o weight'
+    #leg2 = 'w/ weight'
 
     for mass in masses:
 
@@ -1619,6 +2008,105 @@ class MVAAnalyser(Tools, MVATools):
       if do_log: name += '_log'
       self.saveFig(plt, name)
 
+
+  def studyDisplacedTracks(self, training_info, mc_samples, data_samples, category):
+    '''
+      Plot the quantity distribution for signal and background
+    '''
+    pd.options.mode.chained_assignment = None
+    ROOT.gStyle.SetOptStat(0)
+
+    masses = [1.0, 1.5, 2.0, 3.0, 4.5]
+
+    for mass in masses:
+      print 'mass {}'.format(mass)
+
+      canv = self.tools.createTCanvas('canv'+category.label+str(mass), 800, 700) 
+      leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.65, xmax=0.65, ymax=0.83, size=0.04)
+      
+      score = 0.99
+      colours = [ROOT.kBlue, ROOT.kRed, ROOT.kGreen+3]
+
+      resolution = self.resolution_p0 + self.resolution_p1 * mass
+      quantity = Qte(name_nano='BToMuMuPi_hnl_mass', name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=mass-10*resolution, bin_max=mass+10*resolution)
+
+      # consider the 10 sigma window around the signal mass
+      window = 'hnl_mass > {} && hnl_mass < {}'.format(mass-10*resolution, mass+10*resolution)
+      bkg_label = 'bkg_{}_{}'.format(mass, category.label)
+      extra_branch = [
+        'mu0_pt', 
+        'mu_pt',
+        'pi_pt',
+        'mu0_mu_mass',
+        'mu0_pi_mass',
+        'deltar_mu0_mu',
+        'deltar_mu0_pi',
+        'hnl_cos2d',
+        'sv_prob',
+        'sv_lxysig',
+        'pi_dcasig',
+        'mu0_pfiso03_rel',
+        'mu_pfiso03_rel',
+        'pi_numberoftrackerlayers',
+        'pi_numberofpixellayers',
+        'mu_numberoftrackerlayers',
+        'mu_numberofpixellayers',
+        'mu0_numberoftrackerlayers',
+        'mu0_numberofpixellayers',
+        'sv_lxy',
+      ]
+      selection_bkg = self.baseline_selection + ' && ' + window + ' && ' + category.definition_flat
+      filename_bkg = self.mva_tools.getFileWithScore(files=data_samples, training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mass, selection=selection_bkg, label=bkg_label, treename='signal_tree', force_overwrite=False, weights=extra_branch) 
+      file_bkg = self.tools.getRootFile(filename_bkg)
+      tree_bkg = self.tools.getTree(file_bkg, 'signal_tree')
+
+      selection_bkg_pNN_1 = 'score > {}'.format(score)
+      selection_bkg_pNN_2 = '((sv_lxy>18.0 && pi_numberofpixellayers<=0) || sv_lxy<=18) && ((sv_lxy>13.0 && pi_numberofpixellayers<=1) || sv_lxy<=13) && ((sv_lxy>8.0 && pi_numberofpixellayers<=2) || sv_lxy<=8) && ((sv_lxy>5.0 && pi_numberofpixellayers<=3) || sv_lxy<=5) && score > {}'.format(score)
+
+      hist_bkg_1 = self.tools.createHisto(tree_bkg, quantity, hist_name='hist_bkg'+str(score), branchname='flat', selection=selection_bkg_pNN_1)
+      hist_bkg_2 = self.tools.createHisto(tree_bkg, quantity, hist_name='hist_bkg'+str(score), branchname='flat', selection=selection_bkg_pNN_2)
+
+      print 'bkg yields with track sel / without track sel = {} / {} = {}'.format(hist_bkg_2.Integral(), hist_bkg_1.Integral(), hist_bkg_2.Integral()/hist_bkg_1.Integral())
+
+      # signal
+      hists_sig = []
+      for mc_sample in mc_samples:
+        if mc_sample.mass != mass: continue
+        sig_label = 'sig_{}_{}_{}'.format(mc_sample.mass, mc_sample.ctau, category.label)
+        selection_sig = self.baseline_selection + ' && ' + category.definition_flat
+        extra_branch = [
+          'mu0_pt', 
+          'mu_pt',
+          'pi_pt',
+          'mu0_mu_mass',
+          'mu0_pi_mass',
+          'deltar_mu0_mu',
+          'deltar_mu0_pi',
+          'hnl_cos2d',
+          'sv_prob',
+          'sv_lxysig',
+          'pi_dcasig',
+          'mu0_pfiso03_rel',
+          'mu_pfiso03_rel',
+          'pi_numberoftrackerlayers',
+          'pi_numberofpixellayers',
+          'mu_numberoftrackerlayers',
+          'mu_numberofpixellayers',
+          'mu0_numberoftrackerlayers',
+          'mu0_numberofpixellayers',
+          'sv_lxy',
+        ]
+        filename_sig = self.mva_tools.getFileWithScore(files=[mc_sample], training_label='./outputs/'+self.dirname, category_label=category.label, do_parametric=self.do_parametric, mass=mc_sample.mass, selection=selection_sig, weights=extra_branch+['gen_hnl_ct', self.weight_pusig, self.weight_mu0id, self.weight_muid], label=sig_label, treename='signal_tree', force_overwrite=True) 
+        file_sig = self.tools.getRootFile(filename_sig)
+        tree_sig = self.tools.getTree(file_sig, 'signal_tree')
+
+        selection_sig_pNN_1 = 'score > {}'.format(score)
+        selection_sig_pNN_2 = '((sv_lxy>18.0 && pi_numberofpixellayers<=0) || sv_lxy<=18) && ((sv_lxy>13.0 && pi_numberofpixellayers<=1) || sv_lxy<=13) && ((sv_lxy>8.0 && pi_numberofpixellayers<=2) || sv_lxy<=8) && ((sv_lxy>5.0 && pi_numberofpixellayers<=3) || sv_lxy<=5) && score > {}'.format(score)
+
+        hist_sig_1 = self.tools.createHisto(tree_sig, quantity, hist_name='hist_sig'+str(score), branchname='flat', selection=selection_sig_pNN_1)
+        hist_sig_2 = self.tools.createHisto(tree_sig, quantity, hist_name='hist_sig'+str(score), branchname='flat', selection=selection_sig_pNN_2)
+
+        print 'sig yields with track sel / without track sel = {} / {} = {}'.format(hist_sig_2.Integral(), hist_sig_1.Integral(), hist_sig_2.Integral()/hist_sig_1.Integral())
 
 
   def createRootFile(self, training_info, samples, name):
@@ -1717,8 +2205,10 @@ class MVAAnalyser(Tools, MVATools):
 
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxysiggt150_SS': continue# and category.label != 'lxysig0to50_SS': continue
-      #if 'Bc' not in category.label: continue
+      #if category.label != 'lxysiggt150_SS' and category.label != 'lxysig50to150_SS': continue
+      #if category.label != 'lxysig0to50_OS' and category.label != 'lxysig50to150_SS': continue
+      if category.label != 'lxysiggt150_OS': continue# and category.label != 'lxysig0to50_SS': continue
+      #if 'Bc' in category.label: continue
 
       print '\n -> get the training information'
       training_info = TrainingInfo(self.dirname, category.label)
@@ -1767,6 +2257,15 @@ class MVAAnalyser(Tools, MVATools):
       if self.do_plotSigScan:
         self.plotSignificanceDiffScan(category=category, mc_samples=mc_samples, data_samples=data_samples, n_points=30)
 
+      if self.do_plotSignalBackgroundComparison:
+        for quantity in quantities_pNN:
+          #self.plotSignalBackgroundComparison(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, quantity=quantity, category=category, score=0.0)
+          self.plotSignalBackgroundComparison(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, quantity=quantity, category=category, score=0.99)
+
+      if self.do_plotDistributionComparison:
+        for quantity in quantities_pNN:
+          self.plotDistributionComparison(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, quantity=quantity, category=category, score=0.0)
+
       if self.do_plotMass:
         self.plotMass(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, object_mass='hnl_mass')
         self.plotMass(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, object_mass='b_mass')
@@ -1778,16 +2277,19 @@ class MVAAnalyser(Tools, MVATools):
           print quantity.name_flat
           self.plotPreselectionQuantity(training_info=training_info, mc_samples=mc_samples, quantity=quantity, category=category)
 
-      if self.do_plotSignalBackgroundComparison:
-        #for quantity in quantities_trackid:
-        for quantity in quantities_muonid:
-          print quantity.name_flat
-          self.plotSignalBackgroundComparison(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, quantity=quantity, category=category)
-
       if self.do_compareROC:
         if category.label == 'incl': continue
         self.compareROCCurve(mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
         self.compareROCCurve(mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=True)
+
+      if self.do_studyDisplacedTracks:
+        self.studyDisplacedTracks(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category)
+
+      if self.do_plotScoreNorm:
+        print '\n -> plot the score'
+        self.plotScoreNorm(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=False)
+        self.plotScoreNorm(training_info=training_info, mc_samples=mc_samples, data_samples=data_samples, category=category, do_log=True)
+
 
 
 
@@ -1837,9 +2339,27 @@ if __name__ == '__main__':
   #dirname = 'V13_06Feb23_2023Jun11_22h15m20s' # track id
   #dirname = 'V13_06Feb23_2023Jun15_23h04m36s' # displaced mu id
   #dirname = 'V13_06Feb23_2023Jun28_12h19m48s' #pi dcasig, no sv_chi2
-  dirname = 'V13_06Feb23_2023Jun29_10h53m14s' # with mu0 id
+  #dirname = 'V13_06Feb23_2023Jun29_10h53m14s' # with mu0 id
+  #dirname = 'V13_06Feb23_2023Jul05_16h43m39s' # with weight
+  #dirname = 'V13_06Feb23_2023Jul05_22h51m32s' # layers instead of hits, no weight
+  #dirname = 'V13_06Feb23_2023Jul11_08h46m17s' # weight 1
+  #dirname = 'V13_06Feb23_2023Jul12_09h53m40s' # test
+  #dirname = 'V13_06Feb23_2023Jul12_11h17m28s' # weight 1
+  #dirname = 'V13_06Feb23_2023Jul12_11h17m59s' # trigger weight
+  #dirname = 'V13_06Feb23_2023Jul14_16h33m54s' # early stopping, patience 5
+  #dirname = 'V13_06Feb23_2023Jul17_21h35m41s' # early stopping, patience 10
+  #dirname = 'V13_06Feb23_2023Jul17_23h01m06s' # no early stopping, period 100
+  #dirname = 'V13_06Feb23_2023Jul17_23h02m14s' # no early stopping, period 60
+  #dirname = 'V13_06Feb23_2023Jul18_15h36m17s' # adding back mu layers
+  #dirname = 'V13_06Feb23_2023Jul24_21h21m38s' # Bc stat
+  #dirname = 'training_Jul23' # mix of the two previous ones (Bc + gt150 taken from previous one)
+  #dirname = 'V13_06Feb23_2023Aug04_20h56m51s' # no iso, pi_dcasig_corr
+  #dirname = 'V13_06Feb23_2023Aug05_00h06m25s' # pi_dcasig_corr
+  #dirname = 'V13_06Feb23_2023Aug05_00h06m44s' # pi_dcasig_corr
+  #dirname = 'V13_06Feb23_2023Aug05_00h07m05s' # pi_dcasig_corr
+  dirname = 'training_Aug23' # mix of three previous ones
 
-  baseline_selection = selection['baseline_08Aug22'].flat + ' && hnl_charge==0'
+  baseline_selection = selection['baseline_06Feb23'].flat + ' && hnl_charge==0'
   #categories = categories['V12_08Aug22_permass']
   categories = categories['categories_0_50_150_Bc']
 
@@ -1849,9 +2369,12 @@ if __name__ == '__main__':
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_partial.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_norm.root')
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_31Jul23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH2_Run2018D/merged/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH3_Run2018D/merged/flat_bparknano_06Feb23_15Jun23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH4_Run2018D/merged/flat_bparknano_06Feb23_15Jun23.root')
 
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_06Feb23_31Jul23.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
@@ -1903,7 +2426,7 @@ if __name__ == '__main__':
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
     #masses = ['m1', 'm1p5', 'm2', 'm3', 'm4p5']
-    masses = ['m3']
+    masses = ['m2']
 
     for mass in masses:
       signal_files = []
@@ -1986,7 +2509,10 @@ if __name__ == '__main__':
     do_plotPNNComparison = False
     do_plotPreselection = False
     do_plotSignalBackgroundComparison = False
-    do_compareROC = True
+    do_plotDistributionComparison = True
+    do_compareROC = False
+    do_studyDisplacedTracks = False
+    do_plotScoreNorm = False
 
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
@@ -2116,7 +2642,10 @@ if __name__ == '__main__':
         do_plotPNNComparison = do_plotPNNComparison,
         do_plotPreselection = do_plotPreselection,
         do_plotSignalBackgroundComparison = do_plotSignalBackgroundComparison,
+        do_plotDistributionComparison = do_plotDistributionComparison,
         do_compareROC = do_compareROC,
+        do_studyDisplacedTracks = do_studyDisplacedTracks,
+        do_plotScoreNorm = do_plotScoreNorm,
         )
 
     analyser.process()
