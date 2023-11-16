@@ -417,10 +417,6 @@ class LimitPlotter(object):
     # then right to left to catch the upper exclusion bound
     for mass in sorted(limits2D.keys(), key=self.sortList):
 
-        if self.do_coupling_scenario:
-          exclusion_coupling_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(plotDir, self.scenario, str(mass).replace('.', 'p'), self.fe, self.fu, self.ft)
-          exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
-        
         #if len(limits2D[mass]['exp_central'])>0 and len(limits2D[mass]['exp_minus_one'])>0 and len(limits2D[mass]['exp_plus_one' ])>0 and len(limits2D[mass]['exp_minus_two'])>0 and len(limits2D[mass]['exp_plus_two' ])>0:
         #central.append(limits2D[mass]['exp_central'])
         #minus_one.append(limits2D[mass]['exp_minus_one'])
@@ -481,12 +477,6 @@ class LimitPlotter(object):
             obs.append(obs_value)
             masses_obs.append(float(mass))
 
-        if self.do_coupling_scenario:
-          exclusion_coupling_file.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['obs']))
-          exclusion_coupling_file.close()
-          print '--> {} created'.format(exclusion_coupling_filename) 
-
-       
     '''
     for mass in sorted(limits2D.keys(), key=self.sortList, reverse=True):
 
