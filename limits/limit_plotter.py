@@ -139,9 +139,9 @@ class LimitPlotter(object):
     if not self.do_coupling_scenario:
       pathToResults = '{}/outputs/{}/limits/{}/results/'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
     else:
-      pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+      #pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
       #FIXME
-      #pathToResults = '{}/outputs/{}/limits/{}/muon/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+      pathToResults = '{}/outputs/{}/limits/{}/muon/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
 
     fileName = 'result*{}*.txt'.format(self.scenario)
 
@@ -196,9 +196,6 @@ class LimitPlotter(object):
         
         try:
           thefile = open('{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, ctau, coupling), 'r')
-          #print '{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, ctau, coupling)
-          #thefile = open('{}/result_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, mass, ctau, coupling), 'r')
-          #thefile = open('{}/result_m_{}_v2_{}.txt'.format(pathToResults, mass, coupling), 'r')
           
           # get the necessary information from the result files
           val_obs       = None
@@ -283,7 +280,7 @@ class LimitPlotter(object):
 
         #plt.title('HNL m = %s GeV %s' %(mass, signal_type))
         if self.do_coupling_scenario:
-          plt.title(r'%s HN, m = %s GeV, %s' %(self.scenario, mass, coupling_scenario))
+          plt.title(r'%s N, m = %s GeV, %s' %(self.scenario, mass, coupling_scenario))
         else:
           if str(mass) == '1': 
             mass = '1.0'
@@ -291,20 +288,9 @@ class LimitPlotter(object):
             mass = '2.0'
           if str(mass) == '3': 
             mass = '3.0'
-          #plt.title(r'Majorana HN, m = %s GeV' %(mass,))
-          plt.title('{} HN, m = {} GeV'.format(self.scenario, mass))
+          plt.title('{} N, m = {} GeV'.format(self.scenario, mass))
         plt.legend()
         plt.ticklabel_format(axis='x', style='sci', scilimits=(0,0))
-        #ax.text(0.5, 0.5, coupling_scenario, style='normal', bbox={'facecolor': 'white', 'alpha': 1., 'pad': 10}, transform=ax.transAxes)
-        #plt.xlim(1e-5, 3e-4)
-        #plt.ylim(1e-1, 1e4)
-        #plt.yscale('linear')
-        #if self.fe == None and self.fu == None and self.ft == None:
-        #  name_lin = 'limit_m_{}_lin'.format(mass.replace('.', 'p')) 
-        #else:
-        #  name_lin = 'limit_m_{}_scenario_{}_{}_{}_lin'.format(mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
-        #plt.savefig('{}/{}.pdf'.format(plotDir, name_lin))
-        #plt.savefig('{}/{}.png'.format(plotDir, name_lin))
         plt.yscale('log')
         plt.xscale('log')
         if not self.do_coupling_scenario:
@@ -386,7 +372,6 @@ class LimitPlotter(object):
       if not self.do_blind:
         limits2D[mass]['obs'] = x_obs 
 
-      #print '({}, {}, {}): {}'.format(self.fe, self.fu, self.ft, x_central)
 
     print '\nwill plot 2D limits' 
     with open('{}/results.pck'.format(plotDir), 'w') as ff:
@@ -394,8 +379,6 @@ class LimitPlotter(object):
 
     masses_obs       = []
     masses_central   = []
-    #masses_one_sigma = []
-    #masses_two_sigma = []
     masses_plus_one_sigma = []
     masses_minus_one_sigma = []
     masses_plus_two_sigma = []
@@ -417,17 +400,6 @@ class LimitPlotter(object):
     # then right to left to catch the upper exclusion bound
     for mass in sorted(limits2D.keys(), key=self.sortList):
 
-        #if len(limits2D[mass]['exp_central'])>0 and len(limits2D[mass]['exp_minus_one'])>0 and len(limits2D[mass]['exp_plus_one' ])>0 and len(limits2D[mass]['exp_minus_two'])>0 and len(limits2D[mass]['exp_plus_two' ])>0:
-        #central.append(limits2D[mass]['exp_central'])
-        #minus_one.append(limits2D[mass]['exp_minus_one'])
-        #plus_one.append(limits2D[mass]['exp_plus_one' ])
-        #minus_two.append(limits2D[mass]['exp_minus_two'])
-        #plus_two.append(limits2D[mass]['exp_plus_two' ])
-
-        #masses_central.append(float(mass))
-        #masses_one_sigma.append(float(mass))
-        #masses_two_sigma.append(float(mass))
-
         central_value = limits2D[mass]['exp_central']
         if central_value != -99.:
           central.append(central_value)
@@ -439,12 +411,6 @@ class LimitPlotter(object):
 
           minus_two_value = limits2D[mass]['exp_minus_two']
           minus_one_value = limits2D[mass]['exp_minus_one']
-          #if minus_one_value == -99.:
-          #  diff = plus_one_value - central_value
-          #  minus_one_value = abs(central_value - diff)
-          #if minus_two_value == -99.:
-          #  diff = plus_two_value - central_value
-          #  minus_two_value = abs(central_value - diff)
 
           if plus_two_value != -99.:
             plus_two.append(plus_two_value)
@@ -465,11 +431,6 @@ class LimitPlotter(object):
             minus_one.append(minus_one_value)
             boundary_minus_one.append(central_value)
             masses_minus_one_sigma.append(float(mass))
-
-          #minus_one.append(minus_one_value)
-          #plus_one.append(plus_one_value)
-
-          #masses_one_sigma.append(float(mass))
 
         if not self.do_blind:
           obs_value = limits2D[mass]['obs']
@@ -502,10 +463,6 @@ class LimitPlotter(object):
     # plot the 2D limits
     print masses_central
     #print 'the_central = np.array({})'.format(central)
-    #print 'the_minus_two = np.array({})'.format(minus_two)
-    #print 'the_minus_one = np.array({})'.format(minus_one)
-    #print 'the_plus_one = np.array({})'.format(plus_one)
-    #print 'the_plus_two = np.array({})'.format(plus_two)
     plt.clf()
     f, ax = plt.subplots(figsize=(9, 8))
     y_range_min = 1e-9
@@ -530,8 +487,6 @@ class LimitPlotter(object):
     ax.text(0.25, 0.66, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
     ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
     plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--', zorder=10)
-    #f1 = plt.fill_between(masses_two_sigma, minus_two, plus_two, color='gold'       , label=r'95% expected')
-    #f2 = plt.fill_between(masses_one_sigma, minus_one, plus_one, color='forestgreen', label=r'68% expected')
     f1 = plt.fill_between(masses_minus_two_sigma, minus_two, boundary_minus_two, color='gold'     , label=r'95% expected')
     f2 = plt.fill_between(masses_minus_one_sigma, minus_one, boundary_minus_one, color='forestgreen', label=r'68% expected')
     f3 = plt.fill_between(masses_plus_two_sigma, boundary_plus_two, plus_two, color='gold'       , label=r'95% expected')
@@ -598,11 +553,8 @@ class LimitPlotter(object):
     plt.ylabel(r'$|V|^2$', fontsize=23)
     plt.yticks(fontsize=17)
     plt.ylim(y_range_min, y_range_max)
-    #plt.ylim(1e-9, 1e1)
-    #plt.ylim(1e-6, 1e0)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
-    #plt.xlim(0, max(masses_central))
     plt.xlim(min(masses_central), max(masses_central))
     plt.xticks(fontsize=17)
     plt.yscale('log')
