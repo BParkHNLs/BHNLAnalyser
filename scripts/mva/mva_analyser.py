@@ -1698,8 +1698,12 @@ class MVAAnalyser(Tools, MVATools):
     '''
       Plot the quantity distribution for signal and background
     '''
+    #TODO add lumi tag as in preselection plots?
+
     pd.options.mode.chained_assignment = None
     ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetPadLeftMargin(0.13)
+    ROOT.gStyle.SetPadBottomMargin(0.13)
 
     #masses = [1.0, 2.0, 4.5]
     masses = [2.0]
@@ -1713,7 +1717,7 @@ class MVAAnalyser(Tools, MVATools):
     pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
     pad.Draw()
     pad.cd()
-    leg = self.tools.getRootTLegend(xmin=0.45, ymin=0.55, xmax=0.75, ymax=0.67, size=0.04)
+    leg = self.tools.getRootTLegend(xmin=0.44, ymin=0.55, xmax=0.74, ymax=0.67, size=0.04)
 
     hists_sig = []
     hists_bkg = []
@@ -1772,13 +1776,15 @@ class MVAAnalyser(Tools, MVATools):
       hist_bkg.SetTitle(' ')
       x_label = quantity.title
       hist_bkg.GetXaxis().SetTitle(x_label)
-      hist_bkg.GetXaxis().SetLabelSize(0.033)
-      hist_bkg.GetXaxis().SetTitleSize(0.042)
-      hist_bkg.GetXaxis().SetTitleOffset(1.1)
+      hist_bkg.GetXaxis().SetLabelSize(0.04)
+      hist_bkg.GetXaxis().SetTitleSize(0.045)
+      hist_bkg.GetXaxis().SetLabelOffset(0.015)
+      hist_bkg.GetXaxis().SetTitleOffset(1.2)
       hist_bkg.GetYaxis().SetTitle('Normalised to unity')
-      hist_bkg.GetYaxis().SetLabelSize(0.033)
-      hist_bkg.GetYaxis().SetTitleSize(0.042)
-      hist_bkg.GetYaxis().SetTitleOffset(1.1)
+      hist_bkg.GetYaxis().SetLabelSize(0.04)
+      hist_bkg.GetYaxis().SetTitleSize(0.045)
+      hist_bkg.GetYaxis().SetLabelOffset(0.01)
+      hist_bkg.GetYaxis().SetTitleOffset(1.4)
       leg.AddEntry(hist_bkg, 'data (5.2 fb^{-1})')
 
       hists_bkg.append(hist_bkg)
@@ -1833,11 +1839,16 @@ class MVAAnalyser(Tools, MVATools):
     if quantity.label == 'hnl_cos2d': do_log = True
     if do_log:
       pad.SetLogy()
-      pad.SetLogx()
+      #pad.SetLogx()
 
     for i, hist in enumerate(hists_bkg):
       if i == 0:
-        hist.GetYaxis().SetRangeUser(0, max_val + 0.3*max_val) if not do_log else hist.GetYaxis().SetRangeUser(1e-4, max_val + 30*max_val)
+        if quantity.label == 'b_mass': 
+          hist.GetYaxis().SetRangeUser(0, max_val + 1.*max_val)
+        else:
+          hist.GetYaxis().SetRangeUser(0, max_val + 0.3*max_val) if not do_log else hist.GetYaxis().SetRangeUser(1e-4, max_val + 30*max_val)
+        if quantity.label == 'hnl_cos2d': 
+          hist.GetXaxis().SetNdivisions(3)
         hist.Draw('hist')
       else:
         hist.Draw('hist same')
@@ -1847,14 +1858,14 @@ class MVAAnalyser(Tools, MVATools):
 
     print_tag = True
     CMS_tag = 'Preliminary'
-    self.tools.printInnerCMSTag(pad, CMS_tag, print_tag, x_pos=0.15, y_pos=0.83, size=0.55)
-    self.tools.printLatexBox(0.55, 0.83, category.title, size=0.04, pos='left', font=42)
+    self.tools.printInnerCMSTag(pad, CMS_tag, print_tag, x_pos=0.17, y_pos=0.83, size=0.55)
+    self.tools.printLatexBox(0.455, 0.84, category.title, size=0.04, pos='left', font=42)
     if 'Bc' in category.label:
-      b_mass_label = '#mu_{0}#mu#pi mass > 5.7 GeV'
+      b_mass_label = '#mu{P}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
     else:
-      b_mass_label = '#mu_{0}#mu#pi mass #leq 5.7 GeV'
-    self.tools.printLatexBox(0.55, 0.78, b_mass_label, size=0.04, pos='left', font=42)
-    self.tools.printLatexBox(0.55, 0.73, 'dimuon channel', size=0.04, pos='left', font=42)
+      b_mass_label = '#mu_{P}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
+    self.tools.printLatexBox(0.455, 0.78, b_mass_label, size=0.04, pos='left', font=42)
+    self.tools.printLatexBox(0.455, 0.73, 'dimuon channel', size=0.04, pos='left', font=42)
 
     canv.cd()
     outputdir = '{}/pNN_features'.format(self.outdir)
