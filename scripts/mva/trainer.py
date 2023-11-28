@@ -239,7 +239,7 @@ class Trainer(object):
     for signal_file in self.signal_files:
       mass = signal_file.mass
       if mass not in masses:
-        if not is_bc:
+        if not is_bc and mass <= 4.5:
           masses.append(mass)
         elif is_bc and mass >= 3.:
           masses.append(mass)
@@ -298,6 +298,7 @@ class Trainer(object):
         # get sample
         signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
         if is_bc and signal_file.filename_Bc == None: continue # skip points for which there is no Bc sample
+        if not is_bc and signal_file.filename == None: continue # skip mass 5.5 GeV for non-Bc category
         print signal_filename
         sample = Sample(filename=signal_filename, selection=self.baseline_selection + ' && ' + extra_selection)
 
@@ -306,6 +307,8 @@ class Trainer(object):
 
         # get the statistics per mass point
         stats[signal_file.mass] += len(the_df)
+        #print 'mass {} ctau {} stat {}'.format(signal_file.mass, signal_file.ctau, len(the_df))
+        #print 'mass {} += stat {}'.format(signal_file.mass, stats[signal_file.mass])
 
         # get number of ctau samples per mass point
         n_ctaus[signal_file.mass] += 1
@@ -314,19 +317,24 @@ class Trainer(object):
         the_df['mass_key'] = signal_file.mass
 
         # weight the mc with the trigger scale factors
-        the_df = the_df.rename(columns={'weight_hlt_D1': 'weight'})
-        #the_df['weight'] = 1.
+        #the_df = the_df.rename(columns={'weight_hlt_D1': 'weight'})
+        the_df['weight'] = 1.
 
         dfs[signal_file.mass] = dfs[signal_file.mass] + [the_df]
 
+      print stats
       # get the minimum statistics 
       #statistics = min(stats[min(stats, key=stats.get)], 5000)
       #aimed_statistics = stats[min(stats, key=stats.get)]
       statistics = stats[min(stats, key=stats.get)]
+      print 'minimum statistics: {}'.format(statistics)
       
       df = pd.DataFrame()
       for mass in masses:
+        print 'mass {}'.format(mass)
         df_tmp = pd.concat([(idt.sample(statistics/n_ctaus[mass]) if statistics/n_ctaus[mass]<len(idt) else idt) for idt in dfs[mass]], sort=False)
+        for idt in dfs[mass]:
+          print 'saved stat mass {}: {}'.format(mass, statistics/n_ctaus[mass] if statistics/n_ctaus[mass]<len(idt) else len(idt))
         df = pd.concat([df, df_tmp], sort=False) 
       
         
@@ -496,16 +504,18 @@ class Trainer(object):
     return model
 
 
-  def defineCallbacks(self, label):
+  def defineCallbacks(self, label, patience_es, patience_lr):
     '''
       Define the callbacks
     '''
     # early stopping
     monitor = 'val_loss'
-    es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=4)
+    #es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=10)
+    es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=patience_es)
     
     # reduce learning rate when at plateau, fine search the minimum
-    reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=3, min_lr=0.00001, cooldown=10, verbose=True)
+    #reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=5, min_lr=0.00001, cooldown=10, verbose=True)
+    reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=patience_lr, min_lr=0.00001, cooldown=10, verbose=True)
     
     # save the model every now and then
     # kept only during excecution time and removed afterwards
@@ -852,6 +862,7 @@ class Trainer(object):
     for category in self.categories:
       if category.label == 'incl': continue
       #if category.label != 'lxysiggt150_SS': continue
+      #if category.label != 'lxysiggt150_SS' and category.label != 'lxysig0to50_SS' and category.label != 'lxysig50to150_SS': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
@@ -898,7 +909,13 @@ class Trainer(object):
 
       # define the callbacks
       print '\n -> defining the callbacks' 
-      callbacks = self.defineCallbacks(category.label)
+      if statistics < 3000:
+        patience_es = 5
+        patience_lr = 3
+      else:
+        patience_es = 10
+        patience_lr = 5
+      callbacks = self.defineCallbacks(category.label, patience_es, patience_lr)
 
       # out of the main_df, define which data chunks to 
       # train and test on. Make sure that the features
@@ -978,9 +995,13 @@ if __name__ == '__main__':
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'pi_dcasig', 'sv_lxysig', 'sv_prob']
   #features = ['pi_pt','mu_pt', 'mu0_pt','b_mass', 'hnl_cos2d', 'sv_lxysig', 'sv_prob', 'sv_chi2', 'b_pt', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel']
   #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofvalidpixelhits', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofvalidpixelhits', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofvalidpixelhits', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
-  features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
+  #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
+  #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'b_mass','deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers']
+  #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'b_mass','deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
+  #features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'b_mass','deltar_mu0_mu', 'deltar_mu0_pi', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
+  features = ['pi_pt','mu_pt', 'mu0_pt','hnl_cos2d', 'sv_lxysig', 'pi_dcasig_corr', 'sv_prob', 'mu0_mu_mass', 'mu0_pi_mass', 'b_mass','deltar_mu0_mu', 'deltar_mu0_pi', 'mu0_pfiso03_rel', 'mu_pfiso03_rel', 'pi_numberofpixellayers', 'pi_numberoftrackerlayers', 'mu_numberofpixellayers', 'mu_numberoftrackerlayers', 'mu0_numberofpixellayers', 'mu0_numberoftrackerlayers']
   #features = ['pi_pt', 'pi_dcasig']
-  epochs = 60
+  epochs = 100
   batch_size = 32
   learning_rate = 0.01
   number_nodes = 64
@@ -1001,7 +1022,7 @@ if __name__ == '__main__':
   signal_label = 'V13_06Feb23_training_large'
   data_pl = 'V13_06Feb23'
   data_tagnano = '06Feb23'
-  data_tagflat = '15Jun23'
+  data_tagflat = '31Jul23'
   #signal_label = 'V12_08Aug22_training_large'
   #data_pl = 'V12_08Aug22'
   #data_tagnano = '08Aug22'
