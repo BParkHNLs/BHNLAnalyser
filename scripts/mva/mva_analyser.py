@@ -1698,8 +1698,6 @@ class MVAAnalyser(Tools, MVATools):
     '''
       Plot the quantity distribution for signal and background
     '''
-    #TODO add lumi tag as in preselection plots?
-
     pd.options.mode.chained_assignment = None
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPadLeftMargin(0.13)
@@ -1717,7 +1715,7 @@ class MVAAnalyser(Tools, MVATools):
     pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
     pad.Draw()
     pad.cd()
-    leg = self.tools.getRootTLegend(xmin=0.44, ymin=0.55, xmax=0.74, ymax=0.67, size=0.04)
+    leg = self.tools.getRootTLegend(xmin=0.4, ymin=0.55, xmax=0.65, ymax=0.67, size=0.04)
 
     hists_sig = []
     hists_bkg = []
@@ -1785,7 +1783,7 @@ class MVAAnalyser(Tools, MVATools):
       hist_bkg.GetYaxis().SetTitleSize(0.045)
       hist_bkg.GetYaxis().SetLabelOffset(0.01)
       hist_bkg.GetYaxis().SetTitleOffset(1.4)
-      leg.AddEntry(hist_bkg, 'data (5.2 fb^{-1})')
+      leg.AddEntry(hist_bkg, 'data')
 
       hists_bkg.append(hist_bkg)
 
@@ -1833,7 +1831,7 @@ class MVAAnalyser(Tools, MVATools):
         hist_sig.SetMarkerStyle(20)
         hist_sig.SetMarkerColor(colours[imass])
         hists_sig.append(hist_sig)
-        leg.AddEntry(hist_sig, 'signal - {} GeV {} mm'.format(mc_sample.mass, mc_sample.ctau))
+        leg.AddEntry(hist_sig, 'signal - {} GeV, {} mm'.format(round(mc_sample.mass, 1), round(mc_sample.ctau, 1)))
 
     do_log = False
     if quantity.label == 'hnl_cos2d': do_log = True
@@ -1850,22 +1848,26 @@ class MVAAnalyser(Tools, MVATools):
         if quantity.label == 'hnl_cos2d': 
           hist.GetXaxis().SetNdivisions(3)
         hist.Draw('hist')
+        hist.Draw('PE same')
       else:
         hist.Draw('hist same')
+        hist.Draw('PE same')
     for hist in hists_sig:
       hist.Draw('same')
     leg.Draw('same')
 
     print_tag = True
-    CMS_tag = 'Preliminary'
+    #CMS_tag = 'Preliminary'
+    CMS_tag = ''
     self.tools.printInnerCMSTag(pad, CMS_tag, print_tag, x_pos=0.17, y_pos=0.83, size=0.55)
-    self.tools.printLatexBox(0.455, 0.84, category.title, size=0.04, pos='left', font=42)
+    self.tools.printLatexBox(0.465, 0.84, category.title, size=0.04, pos='left', font=42)
     if 'Bc' in category.label:
       b_mass_label = '#mu{P}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
     else:
       b_mass_label = '#mu_{P}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
-    self.tools.printLatexBox(0.455, 0.78, b_mass_label, size=0.04, pos='left', font=42)
-    self.tools.printLatexBox(0.455, 0.73, 'dimuon channel', size=0.04, pos='left', font=42)
+    self.tools.printLatexBox(0.465, 0.78, b_mass_label, size=0.04, pos='left', font=42)
+    self.tools.printLatexBox(0.465, 0.73, 'dimuon channel', size=0.04, pos='left', font=42)
+    self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
 
     canv.cd()
     outputdir = '{}/pNN_features'.format(self.outdir)
@@ -1874,6 +1876,7 @@ class MVAAnalyser(Tools, MVATools):
     name = '{}/{}_{}_score{}'.format(outputdir, quantity.label, category.label, str(score).replace('.', 'p'))
     canv.SaveAs(name + '.png')
     canv.SaveAs(name + '.pdf')
+    canv.SaveAs(name + '.C')
 
 
   def compareROCCurve(self, mc_samples, data_samples, category, do_log=False):
@@ -2380,12 +2383,12 @@ if __name__ == '__main__':
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_partial.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_norm.root')
-  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_31Jul23.root')
+  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/merged/flat_bparknano_06Feb23_31Jul23.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH2_Run2018D/merged/flat_bparknano_06Feb23_15Jun23.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH3_Run2018D/merged/flat_bparknano_06Feb23_15Jun23.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH4_Run2018D/merged/flat_bparknano_06Feb23_15Jun23.root')
 
-  data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_06Feb23_31Jul23.root')
+  #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_06Feb23_31Jul23.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk1_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk2_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V13_06Feb23/ParkingBPH1_Run2018D/Chunk3_n500/flat/flat_bparknano_06Feb23_15Jun23.root')
