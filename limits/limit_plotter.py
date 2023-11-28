@@ -139,9 +139,9 @@ class LimitPlotter(object):
     if not self.do_coupling_scenario:
       pathToResults = '{}/outputs/{}/limits/{}/results/'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
     else:
-      #pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+      pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
       #FIXME
-      pathToResults = '{}/outputs/{}/limits/{}/muon/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+      #pathToResults = '{}/outputs/{}/limits/{}/muon/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
 
     fileName = 'result*{}*.txt'.format(self.scenario)
 
@@ -465,8 +465,8 @@ class LimitPlotter(object):
     #print 'the_central = np.array({})'.format(central)
     plt.clf()
     f, ax = plt.subplots(figsize=(9, 8))
-    y_range_min = 1e-9
-    y_range_max = 1e1
+    y_range_min = 2e-7
+    y_range_max = 1e-2
     if not self.do_coupling_scenario:
       self.fe = '0.0'
       self.fu = '1.0'
@@ -483,10 +483,11 @@ class LimitPlotter(object):
     coupling_scenario = r'(r$_{e}$={fe}, r$_{mu}$={fu}, r$_{tau}$={ft})'.format(e='e', fe=fe_label, mu=r'\mu', fu=fu_label, tau=r'\tau', ft=ft_label)
     ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
     ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
-    ax.text(0.26, 0.75, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.25, 0.66, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
-    ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
-    plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--', zorder=10)
+    #ax.text(0.26, 0.75, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+    ax.text(0.75, 0.85, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+    #ax.text(0.25, 0.66, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
+    ax.text(0.75, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
+    #plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--', zorder=10)
     f1 = plt.fill_between(masses_minus_two_sigma, minus_two, boundary_minus_two, color='gold'     , label=r'95% expected')
     f2 = plt.fill_between(masses_minus_one_sigma, minus_one, boundary_minus_one, color='forestgreen', label=r'68% expected')
     f3 = plt.fill_between(masses_plus_two_sigma, boundary_plus_two, plus_two, color='gold'       , label=r'95% expected')
@@ -512,7 +513,8 @@ class LimitPlotter(object):
         p2_2, = plt.plot(db.masses_atlas_upper, db.exp_atlas_upper, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
         p3, = plt.plot(db.masses_cmsdisplacedmuon, db.exp_cmsdisplacedmuon, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
         #p3_2, = plt.plot(db.masses_cmsdisplacedmuon_upper, db.exp_cmsdisplacedmuon_upper, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed')
-        p4, = plt.plot(db.masses_lhcb_peskin, db.exp_lhcb_peskin, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed', zorder=10)
+        #p4, = plt.plot(db.masses_lhcb_peskin, db.exp_lhcb_peskin, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed', zorder=10)
+        p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed', zorder=10)
         p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle', linewidth=1.3, linestyle='dashed', zorder=10)
         #p6, = plt.plot(db.masses_charm, db.exp_charm, color='magenta', label='CHARM', linewidth=1.3, linestyle='dashed')
         #p7, = plt.plot(db.masses_EXO_22_017_Majorana, db.exp_EXO_22_017_Majorana, color='deepskyblue', label='EXO-22-017', linewidth=1.3, linestyle='dashed', zorder=10)
