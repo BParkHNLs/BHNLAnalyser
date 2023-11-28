@@ -22,10 +22,6 @@ class TernaryStyle(object):
     self.scientific = scientific
     self.exponent = exponent
 
-    exponent_check = '{:.0e}'.format(self.exponent)
-    if '1e-' not in exponent_check:
-      raise RuntimeError('Invalid entry to exponent ("{}"). Please use the format 1e-X. Default value is 1e-04'.format(self.exponent))
-
     if self.log and not self.scientific: 
       print 'WARNING: options log(True) and scientific(False) is not well supported'
 

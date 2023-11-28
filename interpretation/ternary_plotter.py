@@ -11,17 +11,29 @@ import glob
 import re
 sys.path.append('../scripts')
 from decays import HNLDecays 
+from tools import Tools
 
 
 # have a look at https://seaborn.pydata.org/tutorial/color_palettes.html for color palettes
 
+from matplotlib.colors import LinearSegmentedColormap
+my_map3 = LinearSegmentedColormap.from_list('my_gradient', (
+    # Edit this gradient at https://eltos.github.io/gradient/#003072-348DBB-E7DDCA-FFB300-FF7108
+    (0.000, (0.000, 0.188, 0.447)),
+    (0.250, (0.204, 0.553, 0.733)),
+    (0.500, (0.906, 0.867, 0.792)),
+    (0.750, (1.000, 0.702, 0.000)),
+    (1.000, (1.000, 0.443, 0.031))))
 
 class TernaryPlotter(object):
-  def __init__(self, mass, scenario, flavour, homedir, outdirlabel, subdirlabel, ternary_style):
+  def __init__(self, mass, scenario, exclusion, flavour, homedir, outdirlabel, subdirlabel, ternary_style):
     self.mass = mass
     self.scenario = scenario
     if self.scenario not in ['Majorana', 'Dirac']:
       raise RuntimeError('Unrecognised scenario "{}"'.format(self.scenario))
+    self.exclusion = exclusion
+    if self.exclusion not in ['coupling', 'ctau']:
+      raise RuntimeError('Unrecognised exclusion "{}"'.format(self.exclusion))
     self.flavour = flavour
     if self.flavour not in ['combined', 'muon', 'electron']:
       raise RuntimeError('Unrecognised flavour "{}"'.format(self.flavour))
@@ -30,10 +42,20 @@ class TernaryPlotter(object):
     self.subdirlabel = subdirlabel
     self.plotdir = '{}/outputs/{}/limits/{}/plots'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
     self.scale = 10 # monitors the fine graining
-    self.cmap = 'Blues' #'Oranges'
+    self.cmap = 'RdBu_r' #'Spectral'#'PuOr' #'Blues' #'Oranges'
+    #if self.exclusion == 'ctau': self.cmap += '_r' # reverse the map
+    if self.exclusion == 'coupling': 
+      self.default_value = -99.
+      self.z_axis_label = r'Observed $|V|^{2}$'
+      ternary_style.exponent = 1e-4
+    elif self.exclusion == 'ctau': 
+      self.default_value = -99.
+      self.z_axis_label = r'Observed $c\tau$ (mm)'
+      ternary_style.exponent = 1e3
     self.ternary_style = ternary_style
     self.fontsize = self.ternary_style.fontsize
     self.tmp_dir = './tmp'
+    self.tools = Tools()
     
 
   def get_points(self, boundary=True):
@@ -89,7 +111,7 @@ class TernaryPlotter(object):
 
     # do not proceed if crossing is not found
     if coupling_up == 0 or coupling_down == 1e9:
-      intersection = -99
+      intersection = self.default_value
     else:
       # then, search for the intersection with 1 in the log-log plane
       # powerlaw y = kx^m behaves as a linear law in the log-log plane: log(y) = mlog(x) + log(k)
@@ -126,6 +148,26 @@ class TernaryPlotter(object):
     return val_coupling
 
 
+  def get_exclusion_value(self, x, fe, fu, ft):
+    '''
+      Get the value of the exclusion according to the 
+      quantity on the z-axis (colorbar)
+    '''
+    if self.exclusion == 'coupling':
+      exclusion_val = x
+    elif self.exclusion == 'ctau':
+      exclusion_val = x
+      if exclusion_val != self.default_value:
+        # convert the value of the coupling to ctau
+        fe_val = float(fe.replace('p', '.'))
+        fu_val = float(fu.replace('p', '.'))
+        ft_val = float(ft.replace('p', '.'))
+        ismaj = True if self.scenario == 'Majorana' else False
+        exclusion_val = self.tools.getCtau(mass=float(self.mass), vv=float(x), fe=fe_val, fu=fu_val, ft=ft_val, ismaj=ismaj)
+
+    return exclusion_val
+
+
   def produce_exclusion_files(self, points):
     '''
       Create temporary files reporting the excluded value for
@@ -159,12 +201,12 @@ class TernaryPlotter(object):
 
         # get the coupling and ctau from the file name
         ctau = limit_file[limit_file.find('ctau_')+5:limit_file.find('_', limit_file.find('ctau_')+5)]
-        coupling = limit_file[limit_file.rfind('v2_')+3:limit_file.find('.txt')]
+        coupling_ref = limit_file[limit_file.rfind('v2_')+3:limit_file.find('.txt')] # coupling for the Majorana + (0, 1, 0) scenario
         # correct the value of the coupling for the given scenario
-        val_coupling = self.get_coupling_target(mass=self.mass, coupling=coupling, fe=fe, fu=fu, ft=ft)
+        val_coupling = self.get_coupling_target(mass=self.mass, coupling=coupling_ref, fe=fe, fu=fu, ft=ft)
       
         try:
-          the_file = open('{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(path_results, self.scenario, self.mass, ctau, coupling), 'r')
+          the_file = open('{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(path_results, self.scenario, self.mass, ctau, coupling_ref), 'r')
           
           # get the necessary information from the result files
           val_obs = None
@@ -178,7 +220,7 @@ class TernaryPlotter(object):
           obs.append(float(val_obs))
 
         except:
-          print 'Cannot open {}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(path_results, self.scenario, self.mass, ctau, coupling)
+          print 'Cannot open {}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(path_results, self.scenario, self.mass, ctau, coupling_ref)
 
       # sort by coupling
       vector = zip(v2s, obs)
@@ -186,17 +228,20 @@ class TernaryPlotter(object):
       v2s = [i[0] for i in vector]
       obs = [i[1] for i in vector]
 
-      # find the intersection    
+      # find the intersection (in the coupling)   
       x_obs = self.get_intersection(v2s, obs)
 
+      # translate the exclusion to the desired quantity
+      exclusion_val = self.get_exclusion_value(x_obs, fe, fu, ft)
+
       # create exclusion file 
-      exclusion_coupling_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.tmp_dir, self.scenario, str(self.mass).replace('.', 'p'), fe, fu, ft)
-      exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
-      exclusion_coupling_file.write('\n{} {} {} {}'.format(fe.replace('p', '.'), fu.replace('p', '.'), ft.replace('p', '.'), x_obs))
-      exclusion_coupling_file.close()
+      exclusion_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.tmp_dir, self.scenario, str(self.mass).replace('.', 'p'), fe, fu, ft)
+      exclusion_file = open(exclusion_filename, 'w+')
+      exclusion_file.write('\n{} {} {} {}'.format(fe.replace('p', '.'), fu.replace('p', '.'), ft.replace('p', '.'), exclusion_val))
+      exclusion_file.close()
 
 
-  def get_exclusion(self, line):
+  def get_exclusion_from_file(self, line):
     '''
       Get exclusion from temporary file
     '''
@@ -211,7 +256,6 @@ class TernaryPlotter(object):
     '''
       Associate for each coupling scenario the value of the exclusion
     '''
-    coupling = 1e9 # default value of the coupling used when exclusion is missing
     exclusion_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.tmp_dir, self.scenario, str(self.mass).replace('.', 'p'), str(round(point[0], 1)).replace('.', 'p'), str(round(point[1], 1)).replace('.', 'p'), str(round(point[2], 1)).replace('.', 'p'))
     try:
       f = open(exclusion_filename)
@@ -219,14 +263,16 @@ class TernaryPlotter(object):
       for line in lines:
         point_line = '{} {} {}'.format(round(point[0], 1), round(point[1], 1), round(point[2], 1))
         if point_line in line:
-          coupling = self.get_exclusion(line) 
-          if coupling == -99 and '_0p0_' not in exclusion_filename: print '{} missing'.format(exclusion_filename)
+          exclusion = self.get_exclusion_from_file(line) 
+          if exclusion == self.default_value and '_0p0_' not in exclusion_filename: print '{} missing'.format(exclusion_filename)
       f.close()
     except:
-      coupling = -99
+      exclusion = self.default_value
       print '{} missing'.format(exclusion_filename)
 
-    return coupling
+    if exclusion == self.default_value: exclusion = None # do not plot missing points
+
+    return exclusion
 
 
   def get_boundaries(self):
@@ -247,9 +293,9 @@ class TernaryPlotter(object):
             for line in lines:
               # remove empty lines
               if len(line) == 1: continue
-              exclusion_value = self.get_exclusion(line) 
-              if exclusion_value < value_min and exclusion_value != -99: value_min = exclusion_value
-              if exclusion_value > value_max and exclusion_value != -99: value_max = exclusion_value
+              exclusion_value = self.get_exclusion_from_file(line) 
+              if exclusion_value < value_min and exclusion_value != self.default_value: value_min = exclusion_value
+              if exclusion_value > value_max and exclusion_value != self.default_value: value_max = exclusion_value
             f.close()
           except:
             continue
@@ -309,7 +355,10 @@ class TernaryPlotter(object):
     # add exponent on colorbar
     if self.ternary_style.scientific:
       exponent = '{:.0e}'.format(self.ternary_style.exponent)
-      exponent = '-' + exponent[exponent.find('e-')+3]
+      if self.exclusion == 'coupling':
+        exponent = '-' + exponent[exponent.find('e-')+3]
+      elif self.exclusion == 'ctau':
+        exponent = '+' + exponent[exponent.find('e')+3]
       exponent = 'x$10^{e}$'.format(e='{'+exponent+'}')
       ax.text(1.03, 1.02, r'{}'.format(exponent), transform=ax.transAxes, fontsize=1.3*self.fontsize)
 
@@ -324,7 +373,7 @@ class TernaryPlotter(object):
                  scientific = True,
                  style = "hexagonal", 
                  cmap = plt.cm.get_cmap(self.cmap),
-                 cbarlabel = r'Observed $|V|^{2}$',
+                 cbarlabel = self.z_axis_label,
                  vmin = range_min,
                  vmax = range_max,
                  ternary_style = self.ternary_style,
@@ -355,6 +404,8 @@ class TernaryPlotter(object):
     plt.tight_layout()
     #tax.show()
     plotname = 'ternary_plot_{}_m_{}'.format(self.scenario, str(self.mass).replace('.', 'p'))
+    if self.exclusion == 'coupling': plotname += '_v2'
+    elif self.exclusion == 'ctau': plotname += '_ctau'
     if self.flavour == 'combined': plotname += '_combined' 
     elif self.flavour == 'muon': plotname += '_muon' 
     elif self.flavour == 'electron': plotname += '_electron' 
@@ -365,7 +416,7 @@ class TernaryPlotter(object):
 
 
   def process(self):
-    print '\nMass {} GeV ({}, {})'.format(self.mass, self.flavour, self.scenario)
+    print '\nMass {} GeV vs {} ({}, {})'.format(self.mass, self.exclusion, self.flavour, self.scenario)
 
     # create temporary directory
     self.create_dir()
@@ -400,7 +451,6 @@ if __name__ == '__main__':
   fixed_range = False 
   range_min = 2.5e-5 #0.5e-4 
   range_max = 0.001 #6.0e-4 
-  exponent = 1e-4
 
   ternary_style = TernaryStyle(
       fontsize = fontsize,
@@ -409,7 +459,6 @@ if __name__ == '__main__':
       fixed_range = fixed_range,
       range_min = range_min,
       range_max = range_max,
-      exponent = exponent,
       )
 
   homedir = '/work/anlyon'
@@ -419,20 +468,28 @@ if __name__ == '__main__':
   masses = ['1.0', '1.5', '2.0']
   scenarios = ['Majorana', 'Dirac']
   flavours = ['combined', 'muon', 'electron']
+  exclusions = ['coupling', 'ctau']
+
+  #masses = ['1.0']
+  #scenarios = ['Majorana']
+  #flavours = ['combined']
+  #exclusions = ['ctau']
 
   for mass in masses:
     for scenario in scenarios:
-      for flavour in flavours:
-        plotter = TernaryPlotter(
-          mass = mass,
-          scenario = scenario,
-          flavour = flavour,
-          homedir = homedir,
-          outdirlabel = outdirlabel,
-          subdirlabel = subdirlabel,
-          ternary_style = ternary_style,
-          )
-        plotter.process()
+      for exclusion in exclusions:
+        for flavour in flavours:
+          plotter = TernaryPlotter(
+            mass = mass,
+            scenario = scenario,
+            exclusion = exclusion,
+            flavour = flavour,
+            homedir = homedir,
+            outdirlabel = outdirlabel,
+            subdirlabel = subdirlabel,
+            ternary_style = ternary_style,
+            )
+          plotter.process()
 
 
 
