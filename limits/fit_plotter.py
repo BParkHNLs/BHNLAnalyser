@@ -25,6 +25,8 @@ def getOptions():
   parser.add_argument('--ft'                , type=str, dest='ft'                , help='tau coupling fraction'                        , default='1.0')
   return parser.parse_args()
 
+#TODO adapt to Dirac case
+
 
 class FitPlotter(object):
   def __init__(self, mass, categories_label, homedir, outdirlabel, subdirlabel, scenario, fe, fu, ft):
@@ -55,7 +57,7 @@ class FitPlotter(object):
 
     # hardcoded options
     self.print_tag = True
-    self.CMS_tag = 'Preliminary'
+    self.CMS_tag = '' #'Preliminary'
     self.lumi = 41.6
     self.flavour_channel = 'dimuon channel'
     # if true, only plot for the ctau the closest to the exclusion
@@ -179,7 +181,7 @@ class FitPlotter(object):
     signal_coupling = signal_coupling.replace('.', 'p').replace('-', 'm')
 
     f = ROOT.TFile.Open(filename)
-    rooplot_name = '{}_hnl_mass_{}'.format(category.label, fit)
+    rooplot_name = '{}_hnl_mass_muon_channel_m_{}_{}'.format(category.label, str(self.mass).replace('.', 'p'), fit)
 
     try:
       rooplot = f.Get(rooplot_name)
@@ -206,18 +208,19 @@ class FitPlotter(object):
       rooplot.GetXaxis().SetLabelSize(0.04)
       rooplot.GetXaxis().SetTitleSize(0.047)
       rooplot.GetXaxis().SetTitleOffset(1.0)
-      rooplot.GetYaxis().SetTitle(self.getEventLabel(rooplot.GetYaxis()))
+      #rooplot.GetYaxis().SetTitle(self.getEventLabel(rooplot.GetYaxis()))
+      rooplot.GetYaxis().SetTitle('Events / Bin')
       rooplot.GetYaxis().SetLabelSize(0.04)
       rooplot.GetYaxis().SetTitleSize(0.047)
       rooplot.GetYaxis().SetTitleOffset(1.1)
-      rooplot.GetYaxis().SetRangeUser(0, rooplot.GetMaximum() + 0.5*rooplot.GetMaximum())
+      rooplot.GetYaxis().SetRangeUser(0, rooplot.GetMaximum() + 0.7*rooplot.GetMaximum())
       rooplot.Draw()
 
       self.tools.printLatexBox(0.15, 0.7, category.title, size=0.04, pos='left', font=42)
       if 'Bc' in category.label:
-        b_mass_label = '#mu_{0}#mu#pi mass > 5.7 GeV'
+        b_mass_label = '#mu_{P}#mu#pi mass > 5.7 GeV'
       else:
-        b_mass_label = '#mu_{0}#mu#pi mass #leq 5.7 GeV'
+        b_mass_label = '#mu_{P}#mu#pi mass #leq 5.7 GeV'
       self.tools.printLatexBox(0.15, 0.65, b_mass_label, size=0.04, pos='left', font=42)
       self.tools.printLatexBox(0.15, 0.6, self.flavour_channel, size=0.04, pos='left', font=42)
 
@@ -238,7 +241,7 @@ class FitPlotter(object):
         leg = self.tools.getRootTLegend(xmin=0.47, ymin=0.63, xmax=0.83, ymax=0.85, size=0.04)
         leg.AddEntry(rooplot.findObject(rooplot.getObject(0).GetName()), 'data')
         leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_bkg).GetName()), 'background prediction')
-        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_sig).GetName()), 'signal ({} GeV, {} mm)'.format(self.mass, ctau))
+        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_sig).GetName()), 'signal - {} GeV, {} mm'.format(self.mass, ctau))
       leg.Draw()
 
       canv.cd()
@@ -249,6 +252,7 @@ class FitPlotter(object):
         plot_name += '_prefit'
       canv.SaveAs('{}/{}.png'.format(self.outputdir, plot_name))
       canv.SaveAs('{}/{}.pdf'.format(self.outputdir, plot_name))
+      canv.SaveAs('{}/{}.C'.format(self.outputdir, plot_name))
 
     except:
       print 'Rooplot "{}" not found'.format(rooplot_name)
@@ -267,6 +271,7 @@ class FitPlotter(object):
       for category in self.categories:
         if 'incl' in category.label: continue
         if self.mass < 3 and 'Bc' in category.label: continue
+        if 'gt150_OS' not in category.label: continue
 
         self.plot(filename=filename, category=category, fit='prefit')
         self.plot(filename=filename, category=category, fit='fit_s')

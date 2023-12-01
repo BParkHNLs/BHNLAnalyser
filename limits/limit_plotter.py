@@ -371,6 +371,7 @@ class LimitPlotter(object):
       limits2D[mass]['exp_plus_two' ] = x_plus_two 
       if not self.do_blind:
         limits2D[mass]['obs'] = x_obs 
+        print 'obs {}'.format(x_obs)
 
 
     print '\nwill plot 2D limits' 
@@ -459,9 +460,13 @@ class LimitPlotter(object):
         masses_two_sigma.append(float(mass))
     '''
 
+    #for i, the_obs in enumerate(obs):
+    #  if the_obs == min(obs): print 'min obs {} for mass {}'.format(min(obs), masses_obs[i])
+    #  if masses_obs[i] == 1.42: print 'obs for 1.42',the_obs
+    #  if masses_obs[i] == 1.95: print 'obs for 1.95',the_obs
 
     # plot the 2D limits
-    print masses_central
+    #print masses_central
     #print 'the_central = np.array({})'.format(central)
     plt.clf()
     f, ax = plt.subplots(figsize=(9, 8))
@@ -509,25 +514,23 @@ class LimitPlotter(object):
     if self.scenario == 'Majorana':
       if not self.do_coupling_scenario:
         #p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='darkorange', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
-        p2, = plt.plot(db.masses_atlas_lower, db.exp_atlas_lower, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
-        p2_2, = plt.plot(db.masses_atlas_upper, db.exp_atlas_upper, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
-        p3, = plt.plot(db.masses_cmsdisplacedmuon, db.exp_cmsdisplacedmuon, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
-        #p3_2, = plt.plot(db.masses_cmsdisplacedmuon_upper, db.exp_cmsdisplacedmuon_upper, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed')
+        p2, = plt.plot(db.masses_atlas_Majorana, db.obs_atlas_Majorana, color='darkorange', label='ATLAS displaced', linewidth=1.7, linestyle='dashed', zorder=10)
+        p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='blueviolet', label='CMS displaced', linewidth=1.7, linestyle='dashed', zorder=10)
         #p4, = plt.plot(db.masses_lhcb_peskin, db.exp_lhcb_peskin, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed', zorder=10)
-        p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='darkred', label='LHCb', linewidth=1.3, linestyle='dashed', zorder=10)
-        p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle', linewidth=1.3, linestyle='dashed', zorder=10)
+        p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='darkred', label='LHCb', linewidth=1.7, linestyle='dashed', zorder=10)
+        p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle', linewidth=1.7, linestyle='dashed', zorder=10)
         #p6, = plt.plot(db.masses_charm, db.exp_charm, color='magenta', label='CHARM', linewidth=1.3, linestyle='dashed')
-        #p7, = plt.plot(db.masses_EXO_22_017_Majorana, db.exp_EXO_22_017_Majorana, color='deepskyblue', label='EXO-22-017', linewidth=1.3, linestyle='dashed', zorder=10)
+        p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='EXO-22-017', linewidth=1.7, linestyle='dashed', zorder=10)
 
-        second_legend = plt.legend(handles=[p2, p3, p4, p5], loc='lower left', fontsize=18)
+        second_legend = plt.legend(handles=[p2, p3, p6, p4, p5], loc='lower left', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
-          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.exp_EXO_21_013_Majorana_0p0_0p5_0p5, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
+          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.obs_EXO_21_013_Majorana_0p0_0p5_0p5, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
         elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
-          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.exp_EXO_21_013_Majorana_0p5_0p5_0p0, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
+          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.obs_EXO_21_013_Majorana_0p5_0p5_0p0, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
         elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
-          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.exp_EXO_21_013_Majorana_0p3_0p3_0p3, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
+          p1, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.obs_EXO_21_013_Majorana_0p3_0p3_0p3, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
 
         second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
@@ -535,18 +538,19 @@ class LimitPlotter(object):
 
     elif self.scenario == 'Dirac':
       if not self.do_coupling_scenario:
-        p2, = plt.plot(db.masses_atlas_lower_dirac, db.exp_atlas_lower_dirac, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
+        p2, = plt.plot(db.masses_atlas_Dirac, db.obs_atlas_Dirac, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
         #p2_2, = plt.plot(db.masses_atlas_upper_dirac, db.exp_atlas_upper_dirac, color='darkorange', label='ATLAS displaced', linewidth=1.3, linestyle='dashed')
-        p3, = plt.plot(db.masses_cmsdisplacedmuon_dirac, db.exp_cmsdisplacedmuon_dirac, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
+        p3, = plt.plot(db.masses_cmsdisplaced_Dirac, db.obs_cmsdisplaced_Dirac, color='blueviolet', label='CMS displaced', linewidth=1.3, linestyle='dashed', zorder=10)
+        p4, = plt.plot(db.masses_EXO_22_017_Dirac, db.obs_EXO_22_017_Dirac, color='magenta', label='EXO-22-017', linewidth=1.7, linestyle='dashed', zorder=10)
 
-        second_legend = plt.legend(handles=[p2, p3], loc='lower left', fontsize=18)
+        second_legend = plt.legend(handles=[p2, p3, p4], loc='lower left', fontsize=18)
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
-          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.exp_EXO_21_013_Dirac_0p0_0p5_0p5, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
+          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.obs_EXO_21_013_Dirac_0p0_0p5_0p5, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
         elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
-          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.exp_EXO_21_013_Dirac_0p5_0p5_0p0, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
+          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.obs_EXO_21_013_Dirac_0p5_0p5_0p0, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
         elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
-          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.exp_EXO_21_013_Dirac_0p3_0p3_0p3, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
+          p1, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.obs_EXO_21_013_Dirac_0p3_0p3_0p3, color='darkorange', label='EXO-21-013', linewidth=1.3, linestyle='dashed', zorder=10)
 
         second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
