@@ -45,7 +45,7 @@ def getOptions():
 
 
 class Points(object):
-  def __init__(self, masses_1=None, masses_2=None, masses_3=None, masses_tot=None, values_1=None, values_2=None, values_3=None, values_tot=None):
+  def __init__(self, masses_1=None, masses_2=None, masses_3=None, masses_tot=None, values_1=None, values_2=None, values_3=None, values_tot=None, islands_coordinates=None):
     self.masses_1 = [masses_1]
     self.masses_2 = [masses_2]
     self.masses_3 = [masses_3]
@@ -54,54 +54,57 @@ class Points(object):
     self.values_2 = [values_2]
     self.values_3 = [values_3]
     self.values_tot = values_tot
+    self.islands_coordinates = islands_coordinates
 
     #if len(masses_1) == 1: self.masses_1 = [self.masses_1]
     #if len(values_1) == 1: self.values_1 = [self.values_1]
 
 
-  def split_list(self, masses_lists, values_lists):
-    masses_stuecke = []
-    values_stuecke = []
+  #def split_list(self, masses_lists, values_lists):
+  #  masses_stuecke = []
+  #  values_stuecke = []
 
-    for i, masses_list in enumerate(masses_lists):
-      start_idx = 0
-      for j, mass in enumerate(masses_list):
-        ref_idx = self.mass_list.index(mass) # index of mass in reference mass_list
-        if j+1 <= len(masses_list)-1:
-          reverse = False
-          if masses_list[j+1] < masses_list[j]: reverse = True
-          if reverse and masses_list[j+1] != self.mass_list[ref_idx-1] and masses_list[j+1] != masses_list[j]: 
-            masses_stuecke.append(masses_list[start_idx:j+1])
-            values_stuecke.append(values_lists[i][start_idx:j+1])
-            start_idx = j+1
-          elif not reverse and masses_list[j+1] != self.mass_list[ref_idx+1] and masses_list[j+1] != masses_list[j]: 
-            masses_stuecke.append(masses_list[start_idx:j+1])
-            values_stuecke.append(values_lists[i][start_idx:j+1])
-            start_idx = j+1
-        elif j == len(masses_list)-1:
-            masses_stuecke.append(masses_list[start_idx:])
-            values_stuecke.append(values_lists[i][start_idx:])
+  #  if len(masses_lists) == 1: masses_lists = [masses_lists]
 
-    #start_idx = 0
-    #for i, mass in enumerate(masses):
-    #  ref_idx = self.mass_list.index(mass) # index of mass in reference mass_list
-    #  if i+1 <= len(masses)-1:
-    #    reverse = False
-    #    if masses[i+1] < masses[i]: reverse = True
-    #    if reverse and masses[i+1] != self.mass_list[ref_idx-1] and masses[i+1] != masses[i]: 
-    #      masses_stuecke.append(masses[start_idx:i+1])
-    #      values_stuecke.append(values[start_idx:i+1])
-    #      start_idx = i+1
-    #    elif not reverse and masses[i+1] != self.mass_list[ref_idx+1] and masses[i+1] != masses[i]: 
-    #      masses_stuecke.append(masses[start_idx:i+1])
-    #      values_stuecke.append(values[start_idx:i+1])
-    #      start_idx = i+1
-    #  elif i == len(masses)-1:
-    #      masses_stuecke.append(masses[start_idx:])
-    #      values_stuecke.append(values[start_idx:])
+  #  for i, masses_list in enumerate(masses_lists):
+  #    start_idx = 0
+  #    for j, mass in enumerate(masses_list):
+  #      ref_idx = self.mass_list.index(mass) # index of mass in reference mass_list
+  #      if j+1 <= len(masses_list)-1:
+  #        reverse = False
+  #        if masses_list[j+1] < masses_list[j]: reverse = True
+  #        if reverse and masses_list[j+1] != self.mass_list[ref_idx-1] and masses_list[j+1] != masses_list[j]: 
+  #          masses_stuecke.append(masses_list[start_idx:j+1])
+  #          values_stuecke.append(values_lists[i][start_idx:j+1])
+  #          start_idx = j+1
+  #        elif not reverse and masses_list[j+1] != self.mass_list[ref_idx+1] and masses_list[j+1] != masses_list[j]: 
+  #          masses_stuecke.append(masses_list[start_idx:j+1])
+  #          values_stuecke.append(values_lists[i][start_idx:j+1])
+  #          start_idx = j+1
+  #      elif j == len(masses_list)-1:
+  #          masses_stuecke.append(masses_list[start_idx:])
+  #          values_stuecke.append(values_lists[i][start_idx:])
+
+  #  #start_idx = 0
+  #  #for i, mass in enumerate(masses):
+  #  #  ref_idx = self.mass_list.index(mass) # index of mass in reference mass_list
+  #  #  if i+1 <= len(masses)-1:
+  #  #    reverse = False
+  #  #    if masses[i+1] < masses[i]: reverse = True
+  #  #    if reverse and masses[i+1] != self.mass_list[ref_idx-1] and masses[i+1] != masses[i]: 
+  #  #      masses_stuecke.append(masses[start_idx:i+1])
+  #  #      values_stuecke.append(values[start_idx:i+1])
+  #  #      start_idx = i+1
+  #  #    elif not reverse and masses[i+1] != self.mass_list[ref_idx+1] and masses[i+1] != masses[i]: 
+  #  #      masses_stuecke.append(masses[start_idx:i+1])
+  #  #      values_stuecke.append(values[start_idx:i+1])
+  #  #      start_idx = i+1
+  #  #  elif i == len(masses)-1:
+  #  #      masses_stuecke.append(masses[start_idx:])
+  #  #      values_stuecke.append(values[start_idx:])
 
 
-    return masses_stuecke, values_stuecke
+  #  return masses_stuecke, values_stuecke
 
 
 
@@ -127,112 +130,14 @@ class LimitPlotter(object):
       self.fe = str(round(float(fe), 1)).replace('.', 'p')
       self.fu = str(round(float(fu), 1)).replace('.', 'p')
       self.ft = str(round(float(ft), 1)).replace('.', 'p')
-    self.plot_1D = True
-    self.plot_scatter_figure = True
-    self.plot_countour_figure = False
+    self.plot_1D = False
+    self.plot_scatter_figure = False
+    self.plot_countour_figure = True
     self.no_exclusion_value = 2e-5
     #self.mass_list = [2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.1, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.7, 3.75, 3.8, 3.85, 3.9, 3.95, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9]
     #self.mass_list = [2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.75, 3.8, 3.85, 3.9, 3.95, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9]
-    self.mass_list = [1.0, 1.02, 1.04, 1.06, 1.08, 1.1, 1.12, 1.14, 1.16, 1.18, 1.2, 1.22, 1.24, 1.26, 1.28, 1.3, 1.32, 1.34, 1.36, 1.38, 1.4, 1.42, 1.44, 1.46, 1.48, 1.5, 1.53, 1.56, 1.59, 1.62, 1.65, 1.68, 1.71, 1.74, 1.77, 1.8, 1.83, 1.86, 1.89, 1.92, 1.95, 1.98, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.1, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.7, 3.75, 3.8, 3.85, 3.9, 3.95, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0]
-
-
-    #masses = [2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.15, 3.2, 3.25, 3.3, 3.35, 3.35, 3.3, 3.25, 3.2, 3.15, 3.05, 3.0, 2.95, 2.9, 2.85, 2.8, 2.75, 2.7, 2.65, 2.6, 2.55, 2.5, 2.35, 2.3, 2.25, 2.2, 2.15, 2.1, 2.05, 2.0]
-    #start_idx = 0
-    #for i, mass in enumerate(masses):
-    #  ref_idx = self.mass_list.index(mass) # index of mass in reference mass_list
-    #  if i+1 <= len(masses)-1:
-    #    reverse = False
-    #    if masses[i+1] < masses[i]: reverse = True
-    #    if reverse and masses[i+1] != self.mass_list[ref_idx-1] and masses[i+1] != masses[i]: 
-    #      print masses[start_idx:i+1]
-    #      start_idx = i+1
-    #    elif not reverse and masses[i+1] != self.mass_list[ref_idx+1] and masses[i+1] != masses[i]: 
-    #      print masses[start_idx:i+1]
-    #      start_idx = i+1
-    #  elif i == len(masses)-1:
-    #      print masses[start_idx:]
-
-    #masses_1 =[2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.75, 3.9, 3.95]
-    #masses_2 = [3.35, 3.3, 3.25, 3.2, 3.15, 3.05, 3.0, 2.95, 2.9, 2.85, 2.8, 2.75, 2.7, 2.65, 2.6, 2.55, 2.5, 2.35, 2.3, 2.25, 2.2, 2.15, 2.1, 2.05, 2.0]
-    #masses_3 = [3.0, 3.15, 3.2, 3.3, 3.35]
-    #central_1 =[8.285167094634209e-05, 7.269881716046762e-05, 7.38980865550045e-05, 7.27598789444922e-05, 7.865094278461616e-05, 8.129976416183363e-05, 8.534900956985149e-05, 8.906858615782552e-05, 9.3181555785507e-05, 9.675002568920538e-05, 0.00010381556566877787, 9.01121723827393e-05, 0.00012486944563202377, 0.00013134068836221402, 0.0001356780763214012, 0.00015178203496595726, 0.00016902955456942539, 0.00019076005662924152, 0.00021250057410330143, 0.0002326229573804816, 0.00025338203268197846, 0.0002642123664431638, 0.00034965762317725553, 0.0003838163342779868, 0.0004115239066131318, 0.0005335779124314538, 0.0006451678307988079, 0.02583586690131893, 0.024326866511875926, 0.06274351343843303, 0.03582253543989143, 0.04452421835221904, 0.029593104479646564, 0.0751931013714551, 0.03566699029165148, 0.050321346067988576]
-    #central_2 = [0.0010226986854741256, 0.0016929902718423521, 0.0022265502443276756, 0.0026341268718783847, 0.0029795903342881916, 0.004624298630692722, 0.00517875728336955, 0.006463735209292059, 0.006166783146800847, 0.006695417907491095, 0.007454099322105787, 0.008823399143590123, 0.010797657032069146, 0.1068774087557292, 0.032371458406655854, 0.015141675775902693, 0.02009883383463077, 0.03492439500215968, 0.05247430737665606, 0.05798308921401224, 0.06495971427465606, 0.11853927177971275, 0.13761696086357772, 0.11658101683467371, 0.4005247365389599]
-    #central_3 = [0.06818633903139423, 0.058778376871920224, 0.0869582314084902, 0.032383098539866075, 0.06456445774287749]
-
-    #print masses_1
-    #print masses_2
-    #print masses_3
-
-    #masses_tot = []
-    #values_tot = []
-    #masses_tot_part1 = []
-    #values_tot_part1 = []
-
-    #idx_start = 0
-
-    #for i, mass_1 in enumerate(masses_1):
-    #  if mass_1 <= masses_2[0]:
-    #    masses_tot_part1.append(mass_1)
-    #    values_tot_part1.append(central_1[i])
-    #  else:
-    #    idx_start = i
-    #    if central_2[0] < central_1[i+1]:
-    #      for j, mass_2 in enumerate(masses_2):
-    #        masses_tot_part1.append(mass_2)
-    #        values_tot_part1.append(central_2[j])
-    #    break
-    #masses_tot.append(masses_tot_part1)
-    #values_tot.append(values_tot_part1)
-
-    #if idx_start < len(masses_1):
-    #  masses_tot_part2 = []
-    #  values_tot_part2 = []
-    #  for i, mass_1 in enumerate(masses_1):
-    #    if i < idx_start: continue
-    #    masses_tot_part2.append(mass_1)
-    #    values_tot_part2.append(mass_1)
-
-    #masses_tot.append(masses_tot_part2)
-    #values_tot.append(values_tot_part2)
-
-    #print masses_tot
-
-    #masses = [[2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.15, 3.2, 3.25, 3.3, 3.35, 3.35, 3.3, 3.25, 3.2, 3.15, 3.05, 3.0, 2.95, 2.9, 2.85, 2.8, 2.75, 2.7, 2.65, 2.6, 2.55, 2.5, 2.35, 2.3, 2.25, 2.2, 2.15, 2.1, 2.05, 2.0], [3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.75, 3.9, 3.95]]
-    #start_idx = 0
-    #for i, masses_list in enumerate(masses_lists):
-    #  for j, mass in enumerate(masses_list):
-    #    ref_idx = self.mass_list.index(mass) # index of mass in reference mass_list
-    #    if j+1 <= len(masses_list)-1:
-    #      reverse = False
-    #      if masses_list[j+1] < masses_list[j]: reverse = True
-    #      if reverse and masses_list[j+1] != self.mass_list[ref_idx-1] and masses_list[j+1] != masses_list[j]: 
-    #        masses_stuecke.append(masses_list[start_idx:j+1])
-    #        values_stuecke.append(values_lists[i][start_idx:j+1])
-    #        start_idx = j+1
-    #      elif not reverse and masses_list[j+1] != self.mass_list[ref_idx+1] and masses_list[j+1] != masses_list[j]: 
-    #        masses_stuecke.append(masses_list[start_idx:j+1])
-    #        values_stuecke.append(values_lists[i][start_idx:j+1])
-    #        start_idx = j+1
-    #    elif j == len(masses_list)-1:
-    #        masses_stuecke.append(masses_list[start_idx:])
-    #        values_stuecke.append(values_lists[i][start_idx:])
-
-
-    #masses = [2.35, 2.3, 2.25, 2.2, 2.15, 2.1, 2.05, 2.0]
-    #masses_central = [[2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05], [3.15, 3.2, 3.25, 3.3, 3.35, 3.35, 3.3, 3.25, 3.2, 3.15], [3.05, 3.0, 2.95, 2.9, 2.85, 2.8, 2.75, 2.7, 2.65, 2.6, 2.55, 2.5], [2.35, 2.3, 2.25, 2.2, 2.15, 2.1, 2.05, 2.0]]
-    #print masses
-    #print masses.index(2.0)
-    #print masses_central
-
-    #masses_central_all = []
-    #for masses in masses_central:
-    #  masses_central_all += masses
-    #print masses_central_all
-    #masses_central_all_np = np.array(masses_central_all)
-    #indices = list(np.where(masses_central_all_np == 2.0)[0])
-    #print indices
-
-    #print masses_central_all.index(2.0) 
+    self.mass_list = [1.0, 1.02, 1.04, 1.06, 1.08, 1.1, 1.12, 1.14, 1.16, 1.18, 1.2, 1.22, 1.24, 1.26, 1.28, 1.3, 1.32, 1.34, 1.36, 1.38, 1.4, 1.42, 1.44, 1.46, 1.48, 1.5, 1.53, 1.56, 1.59, 1.62, 1.65, 1.68, 1.71, 1.74, 1.77, 1.8, 1.83, 1.86, 1.89, 1.92, 1.95, 1.98, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.75, 3.8, 3.85, 3.9, 3.95, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0]
+    #self.mass_list = [1.0, 1.02, 1.04, 1.06, 1.08, 1.1, 1.12, 1.14, 1.16, 1.18, 1.2, 1.22, 1.24, 1.26, 1.28, 1.3, 1.32, 1.34, 1.36, 1.38, 1.4, 1.42, 1.44, 1.46, 1.48, 1.5, 1.53, 1.56, 1.59, 1.62, 1.65, 1.68, 1.71, 1.74, 1.77, 1.8, 1.83, 1.86, 1.89, 1.92, 1.95, 1.98, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.1, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.7, 3.75, 3.8, 3.85, 3.9, 3.95, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0]
 
 
   def sortList(self, input):
@@ -459,51 +364,6 @@ class LimitPlotter(object):
     return mass_list, exclusion_list
 
 
-  #def get_intersection_up(self, couplings, coupling_start, values, crossing=1):
-  #  '''
-  #    Function that returns the coupling at which the limit intersects with 1 (crossing) in the log-log plane
-  #  '''
-  #  # first, search for couplings whose associated limit is the closest to up and down 1
-  #  coupling_up = 0
-  #  coupling_down = 1e9
-  #  value_up = 0
-  #  value_down = 0
-  #  for icoupling, coupling in enumerate(couplings):
-  #    if coupling < coupling_start: continue
-  #    if icoupling+1 >= len(couplings): continue
-  #    #print '{} {} {} {}'.format(values[icoupling], values[icoupling+1], crossing, values[icoupling] > crossing and values[icoupling+1] < crossing)
-  #    if values[icoupling] <= crossing and values[icoupling+1] >= crossing:
-  #      coupling_up = couplings[icoupling+1]
-  #      value_up = values[icoupling+1]
-  #      coupling_down = couplings[icoupling]
-  #      value_down = values[icoupling]
-  #      break
-
-  #  #print 'coupling up: {} {}'.format(coupling_up, value_up)
-  #  #print 'coupling down: {} {}'.format(coupling_down, value_down)
-
-  #  # do not proceed if crossing is not found
-  #  if coupling_up == 0 or coupling_down == 1e9:
-  #    intersection = -99
-  #  else:
-  #    # then, search for the intersection with 1 in the log-log plane
-  #    # powerlaw y = kx^m behaves as a linear law in the log-log plane: log(y) = mlog(x) + log(k)
-  #    # get the slope m
-  #    m = (math.log(value_up) - math.log(value_down)) / (math.log(coupling_up) - math.log(coupling_down))
-
-  #    # and the coordinate k
-  #    k = value_up / math.pow(coupling_up, m)
-
-  #    # to finally compute the coupling where there is the intersection
-  #    intersection = math.pow(float(crossing)/float(k), 1./float(m)) 
-
-  #  #coupling_right = coupling_up if coupling_up > coupling_down else coupling_down
-  #  coupling_right = intersection
-
-  #  return intersection, coupling_right
-
-
-
   def smooth(self, y, box_pts):
     box = np.ones(box_pts)/box_pts
     y_smooth = np.convolve(y, box, mode='same')
@@ -520,7 +380,7 @@ class LimitPlotter(object):
     masses_3 = []
     masses_missing = []
 
-    cutoff = 1e-1#2e-2
+    cutoff = 1e-1#5e-2
 
     for mass in sorted(limits2D.keys(), key=self.sortList):
       if len(limits2D[mass][list_name]) > 0:
@@ -553,10 +413,110 @@ class LimitPlotter(object):
   def concatenate_lists(self, masses_1, masses_2, masses_3, values_1, values_2, values_3):
     masses_tot = []
     values_tot = []
+
+    is_Sshape = False
+    if len(masses_3) > 1:
+      masses_consecutive = False
+      for i, mass_3 in enumerate(masses_3):
+        ref_idx = self.mass_list.index(mass_3) # index of mass in reference mass_list
+        if i < len(masses_3)-1 and masses_3[i+1] == self.mass_list[ref_idx+1]:
+          masses_consecutive = True
+        elif i < len(masses_3)-1 and masses_3[i+1] != self.mass_list[ref_idx+1]:
+          masses_consecutive = False
+        if masses_consecutive: is_Sshape = True
+
+    if is_Sshape:
+      print 'is s shape'
+      masses_tot_part1 = []
+      values_tot_part1 = []
+
+      min_Sshape = masses_3[0]
+      max_Sshape = masses_3[len(masses_3)-1]
+
+      for i, mass_1 in enumerate(masses_1):
+        if mass_1 <= max_Sshape:
+          masses_tot_part1.append(mass_1)
+          values_tot_part1.append(values_1[i])
+
+      for i, mass_2 in enumerate(masses_2):
+        if mass_2 >= min_Sshape:
+          masses_tot_part1.append(mass_2)
+          values_tot_part1.append(values_2[i])
+
+      for i, mass_3 in enumerate(masses_3):
+        masses_tot_part1.append(mass_3)
+        values_tot_part1.append(values_3[i])
+
+      for i, mass_1 in enumerate(masses_1):
+        if mass_1 > max_Sshape:
+          masses_tot_part1.append(mass_1)
+          values_tot_part1.append(values_1[i])
+
+      masses_tot.append(masses_tot_part1)
+      values_tot.append(values_tot_part1)
+
+      # fill rest of masses_2 
+      masses_tot_part2 = []
+      values_tot_part2 = []
+      for i, mass_2 in enumerate(masses_2):
+        if mass_2 < min_Sshape:
+          masses_tot_part2.append(mass_2)
+          values_tot_part2.append(values_2[i])
+
+      masses_tot.append(masses_tot_part2)
+      values_tot.append(values_tot_part2)
+
+      print masses_tot
+
+    else: # no S-shape
+      masses_tot_part1 = []
+      values_tot_part1 = []
+      for i, mass_1 in enumerate(masses_1):
+        masses_tot_part1.append(mass_1)
+        values_tot_part1.append(values_1[i])
+
+      masses_tot.append(masses_tot_part1)
+      values_tot.append(values_tot_part1)
+
+      masses_tot_part2 = []
+      values_tot_part2 = []
+      for i, mass_2 in enumerate(masses_2):
+        masses_tot_part2.append(mass_2)
+        values_tot_part2.append(values_2[i])
+
+      masses_tot.append(masses_tot_part2)
+      values_tot.append(values_tot_part2)
+
+    # island
+    islands_coordinates = []
+    if len(masses_3) == 1: # does not take into account that there can be more than one island, check for non-consecutive mass 3 instead
+      island_coordinates = self.get_islands_coordinates(masses_2=masses_2, masses_3=masses_3, values_2=values_2, values_3=values_3)
+      islands_coordinates.append(island_coordinates)
+
+    points = Points(
+        masses_1 = masses_1, 
+        masses_2 = masses_2, 
+        masses_3 = masses_3, 
+        masses_tot = masses_tot, 
+        values_1 = values_1, 
+        values_2 = values_2, 
+        values_3 = values_3, 
+        values_tot = values_tot, 
+        islands_coordinates = islands_coordinates,
+        )
+
+    return points
+
+
+  def concatenate_lists_1(self, masses_1, masses_2, masses_3, values_1, values_2, values_3):
+    masses_tot = []
+    values_tot = []
     masses_tot_part1 = []
     values_tot_part1 = []
 
     idx_start = 0
+
+    is_uturn = False
 
     for i, mass_1 in enumerate(masses_1):
       #if mass_1 > 3e-2: continue # remove point above cutoff
@@ -569,6 +529,7 @@ class LimitPlotter(object):
         values_tot_part1.append(values_1[i])
         idx_start = i
         if i+1 < len(masses_1)-1 and values_2[0] < values_1[i+1]:
+          is_uturn = True #TODO correct?
           for j, mass_2 in enumerate(masses_2):
             masses_tot_part1.append(mass_2)
             values_tot_part1.append(values_2[j])
@@ -582,6 +543,7 @@ class LimitPlotter(object):
     masses_tot.append(masses_tot_part1)
     values_tot.append(values_tot_part1)
 
+    #if is_uturn: #TODO correct? 
     if idx_start+1 < len(masses_1):
       masses_tot_part2 = []
       values_tot_part2 = []
@@ -593,6 +555,12 @@ class LimitPlotter(object):
 
       masses_tot.append(masses_tot_part2)
       values_tot.append(values_tot_part2)
+
+    if not is_uturn:
+      print 'you see me'
+      for i, mass_2 in enumerate(masses_2):
+        masses_tot.append(mass_2)
+        values_tot.append(values_2[i])
 
     points = Points(
         masses_1 = masses_1, 
@@ -606,7 +574,6 @@ class LimitPlotter(object):
         )
 
     return points
-    #return masses_tot, values_tot
 
 
   def split_list(self, masses_lists, values_lists):
@@ -654,35 +621,66 @@ class LimitPlotter(object):
     return masses_stuecke, values_stuecke
 
 
-  def get_islands_coordinates(self, masses_2_stuecke, masses_3_stuecke, values_2_stuecke, values_3_stuecke):
-    islands_coordinates = []
-    for i, masses_2 in enumerate(masses_2_stuecke):
-      if len(masses_2) == 1: # single point
-        #print 'single'
-        #print masses_2
-        if masses_2 in masses_3_stuecke: # single point in both the middle and upper limit
-          ref_idx = self.mass_list.index(masses_2[0]) # index of mass in reference mass_list
-          #center = (masses_2[0], (values_3_stuecke[i][0] - values_2_stuecke[i][0]) / 2.)
-          #center_x = masses_2[0]
-          #center_y = (values_3_stuecke[i][0] - values_2_stuecke[i][0]) / 2.
-          #width = self.mass_list[ref_idx+1] - self.mass_list[ref_idx-1]
-          #height = values_3_stuecke[i][0] - values_2_stuecke[i][0]
-          #island_coordinates = [center_x, center_y, width, height]
-          #islands_coordinates.append(island_coordinates)
+  #def get_islands_coordinates(self, masses_2_stuecke, masses_3_stuecke, values_2_stuecke, values_3_stuecke):
+  #def get_islands_coordinates(self, points):
+  def get_islands_coordinates(self, masses_2, masses_3, values_2, values_3):
+    island_mass = masses_3[0]
+    #islands_coordinates = []
+    for i, mass_2 in enumerate(masses_2):
+      if mass_2 != island_mass: continue
+      ref_idx = self.mass_list.index(island_mass) # index of mass in reference mass_list
+      mass_before = (island_mass + self.mass_list[ref_idx-1]) / 2.
+      mass_after = (self.mass_list[ref_idx+1] + island_mass) / 2.
+      print 'before after {} {}'.format(mass_before, mass_after)
+      center_x = island_mass
+      center_y = (values_3[0] + values_2[i]) / 2.
+      height = values_3[0] - values_2[i]
+      width = mass_after - mass_before
+      print '{} {} {} {} {}'.format(island_mass, masses_2[i], values_3[0], values_2[i], center_y)
+      #island_coordinates = [x, y, width, height]
+      island_coordinates = [center_x, center_y, height, width]
+      #islands_coordinates.append(island_coordinates)
+          #if masses_2 in masses_3_stuecke: # single point in both the middle and upper limit
+          #  ref_idx = self.mass_list.index(masses_2[0]) # index of mass in reference mass_list
 
-          x =  self.mass_list[ref_idx-1]
-          #x =  (self.mass_list[ref_idx-1] - masses_2[0]) / 2.
-          y = values_2_stuecke[i][0]
-          #width = ((self.mass_list[ref_idx+1] - masses_2[0]) / 2.) - ((masses_2[0]- self.mass_list[ref_idx-1]) / 2.)
-          width = self.mass_list[ref_idx+1] - self.mass_list[ref_idx-1]
-          height =  values_3_stuecke[i][0] - values_2_stuecke[i][0]
-          #island_coordinates = [center_x, center_y, width, height]
-          island_coordinates = [x, y, width, height]
-          islands_coordinates.append(island_coordinates)
-        else:
-          island_coordinates = None
+          #  x =  self.mass_list[ref_idx-1]
+          #  y = values_2_stuecke[i][0]
+          #  width = self.mass_list[ref_idx+1] - self.mass_list[ref_idx-1]
+          #  height =  values_3_stuecke[i][0] - values_2_stuecke[i][0]
+          #  island_coordinates = [x, y, width, height]
+          #  islands_coordinates.append(island_coordinates)
+          #else:
+          #  island_coordinates = None
 
-    return islands_coordinates
+    #islands_coordinates = []
+    #for i, masses_2 in enumerate(masses_2_stuecke):
+    #  if len(masses_2) == 1: # single point
+    #    #print 'single'
+    #    #print masses_2
+    #    if masses_2 in masses_3_stuecke: # single point in both the middle and upper limit
+    #      ref_idx = self.mass_list.index(masses_2[0]) # index of mass in reference mass_list
+    #      #center = (masses_2[0], (values_3_stuecke[i][0] - values_2_stuecke[i][0]) / 2.)
+    #      #center_x = masses_2[0]
+    #      #center_y = (values_3_stuecke[i][0] - values_2_stuecke[i][0]) / 2.
+    #      #width = self.mass_list[ref_idx+1] - self.mass_list[ref_idx-1]
+    #      #height = values_3_stuecke[i][0] - values_2_stuecke[i][0]
+    #      #island_coordinates = [center_x, center_y, width, height]
+    #      #islands_coordinates.append(island_coordinates)
+
+    #      x =  self.mass_list[ref_idx-1]
+    #      #x =  (self.mass_list[ref_idx-1] - masses_2[0]) / 2.
+    #      y = values_2_stuecke[i][0]
+    #      #width = ((self.mass_list[ref_idx+1] - masses_2[0]) / 2.) - ((masses_2[0]- self.mass_list[ref_idx-1]) / 2.)
+    #      width = self.mass_list[ref_idx+1] - self.mass_list[ref_idx-1]
+    #      height =  values_3_stuecke[i][0] - values_2_stuecke[i][0]
+    #      #island_coordinates = [center_x, center_y, width, height]
+    #      island_coordinates = [x, y, width, height]
+    #      islands_coordinates.append(island_coordinates)
+    #    else:
+    #      island_coordinates = None
+
+    return island_coordinates
+    #return islands_coordinates
 
 
   def find_boundaries(self, masses_tot, masses_stuecke_central, values_tot, values_stuecke_central):
@@ -690,57 +688,57 @@ class LimitPlotter(object):
     #print masses_tot
     #print masses_stuecke_central
 
-    ## aggregate all the chunks
-    #masses_central_all = []
-    #for masses in masses_stuecke_central:
-    #  masses_central_all += masses
+    # aggregate all the chunks
+    masses_central_all = []
+    for masses in masses_stuecke_central:
+      masses_central_all += masses
 
-    #values_central_all = []
-    #for values in values_stuecke_central:
-    #  values_central_all += values
+    values_central_all = []
+    for values in values_stuecke_central:
+      values_central_all += values
 
-    ## needed to search for multiple indices
-    #masses_central_all_np = np.array(masses_central_all)
-
-    #boundaries = []
-    #for i, mass in enumerate(masses_tot):
-    #  print '\n'
-    #  print mass
-    #  print values_tot[i]
-    #  # find indices in central list
-    #  indices = list(np.where(masses_central_all_np == mass)[0])
-    #  if len(indices) == 1:
-    #    print 'len 1'
-    #    value = values_central_all[indices[0]]
-    #    boundaries.append(value)
-    #  elif len(indices) == 2:
-    #    print 'len 2'
-    #    value_1 = values_central_all[indices[0]]
-    #    value_2 = values_central_all[indices[1]]
-    #    print 'val 1: {} val 2: {}'.format(value_1, value_2)
-    #    print 'diff 1:{} diff 2: {}'.format(abs(values_tot[i] - value_1)/value_1, abs(values_tot[i] - value_2)/value_2)
-    #    if abs(values_tot[i] - value_1) /value_1 < abs(values_tot[i] - value_2) / value_2:
-    #      value = value_1
-    #    else:
-    #      value = value_2
-    #    print 'value: {}'.format(value)
-    #    boundaries.append(value)
-    #  else:
-    #    print 'no central value found'
+    # needed to search for multiple indices
+    masses_central_all_np = np.array(masses_central_all)
 
     boundaries = []
     for i, mass in enumerate(masses_tot):
-      central_exists = False
-      for i, mass_stueck_central in enumerate(masses_stuecke_central):
-        for j, mass_central in enumerate(mass_stueck_central):
-          if mass == mass_central:
-            central_exists = True
-            value = values_stuecke_central[i][j]
-            if value not in boundaries:
-              boundaries.append(values_stuecke_central[i][j])
-              #print 'append'
-      #if not central_exists: boundaries.append(values_tot[i])
-      if not central_exists: boundaries.append(2e-2) # or average of adjacent points
+      # find indices in central list
+      indices = list(np.where(masses_central_all_np == mass)[0])
+      if len(indices) == 1:
+        value_central = values_central_all[indices[0]]
+        #print 'mass {} central {} tot {}'.format(mass, value_central, values_tot[i])
+        if values_tot[i] > 1e-2 and values_tot[i]/value_central > 100:
+          value = values_tot[i] # do not fill
+        else:
+          value = value_central
+        boundaries.append(value)
+      elif len(indices) == 2:
+        value_1 = values_central_all[indices[0]]
+        value_2 = values_central_all[indices[1]]
+        if abs(values_tot[i] - value_1) /value_1 < abs(values_tot[i] - value_2) / value_2:
+          value = value_1
+        else:
+          value = value_2
+        boundaries.append(value)
+      else:
+        boundaries.append(2e-2) # or average of adjacent points
+
+    # working
+    #boundaries = []
+    #for i, mass in enumerate(masses_tot):
+    #  print mass
+    #  central_exists = False
+    #  for i, mass_stueck_central in enumerate(masses_stuecke_central):
+    #    for j, mass_central in enumerate(mass_stueck_central):
+    #      if mass == mass_central:
+    #        central_exists = True
+    #        value = values_stuecke_central[i][j]
+    #        #if value not in boundaries:
+    #        boundaries.append(values_stuecke_central[i][j])
+    #        print 'append'
+    #    if central_exists: break
+    #  #if not central_exists: boundaries.append(values_tot[i])
+    #  if not central_exists: boundaries.append(2e-2) # or average of adjacent points
 
     #print boundaries
 
@@ -891,7 +889,7 @@ class LimitPlotter(object):
     if not self.do_coupling_scenario:
       name_2d = 'countour_{}'.format(self.scenario) 
     else:
-      name_2d = 'scatter_all_scenario_{}_{}_{}_{}'.format(self.scenario, self.fe, self.fu, self.ft) 
+      name_2d = 'scatter_scenario_{}_{}_{}_{}_all'.format(self.scenario, self.fe, self.fu, self.ft) 
     plt.savefig('{}/{}.pdf'.format(plotDir, name_2d))
     plt.savefig('{}/{}.png'.format(plotDir, name_2d))
     print '--> {}/{}.png created'.format(plotDir, name_2d)
@@ -919,47 +917,20 @@ class LimitPlotter(object):
     plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--', zorder=10)
     plt.title('{}, {}, {}'.format(label, coupling_scenario, self.scenario), loc='right', fontsize=23)
 
-    #islands_coordinates = self.get_islands_coordinates(masses_2_stuecke, masses_3_stuecke, values_2_stuecke, values_3_stuecke)
-    #for island_coordinates in islands_coordinates:
-    #  #a = island_coordinates[0]
-    #  #b = island_coordinates[1]
-    #  #c = island_coordinates[2]
-    #  #d = island_coordinates[3]
-    #  #center_x = island_coordinates[0]
-    #  #center_y = island_coordinates[1]
-    #  #width = island_coordinates[2]
-    #  #height = island_coordinates[3]
-    #  x = island_coordinates[0]
-    #  y = island_coordinates[1]
-    #  width = island_coordinates[2]
-    #  height = island_coordinates[3]
-    #  #print center_x, center_y, width, height
-
-    #  #from matplotlib.transforms import ScaledTranslation
-    #  ## Ellipse centre coordinates
-    #  ##x, y = 3, 8
-
-    #  ## use the axis scale tform to figure out how far to translate 
-    #  #ell_offset = ScaledTranslation(center_x, center_y, ax.transScale)
-
-    #  ## construct the composite tform
-    #  #ell_tform = ell_offset + ax.transLimits + ax.transAxes
-
-    #  plt.gca().add_patch(Rectangle((x, y), width, height, edgecolor='red', facecolor='white', fill=False, linewidth=2, zorder=3)) 
-    #  #plt.gca().add_patch(FancyBboxPatch((x, y), width, height, edgecolor='red', boxstyle='round', fill=False, mutation_scale=0.1, linewidth=2, zorder=3)) 
-    #  #plt.gca().add_patch(Ellipse((center_x, center_y), width, height, edgecolor='red', facecolor='white')) 
-    #  #plt.gca().add_patch(Ellipse((center_x, center_y), width, height, edgecolor='red', transform=ell_tform)) 
-    #  #ax.add_patch(Ellipse((center_x, center_y), width, 0.1, edgecolor='red', transform=ell_tform)) 
-    #  #ellipse = plt.Ellipse((center_x, center_y), width, 0.1, edgecolor='red', transform=ell_tform)
-    #  #ax.add_artist(ellipse)
-    #  #plt.gca().add_patch(Ellipse((3.5, 1e-3), 1, 0.1, edgecolor='red', facecolor='white')) 
+    if len(points.islands_coordinates) != 0:
+      for island_coordinates in points.islands_coordinates:
+        center_x = island_coordinates[0]
+        center_y = island_coordinates[1]
+        height = island_coordinates[2]
+        width = island_coordinates[3]
+        plt.gca().add_patch(Ellipse((center_x, center_y), width, height, edgecolor='red', facecolor='white', linewidth=2.)) 
 
     masses_tot_chunks, values_tot_chunks = self.split_list(masses_lists=points.masses_tot, values_lists=points.values_tot)
     for i, chunk in enumerate(masses_tot_chunks):
-      plt.plot(masses_tot_chunks[i], values_tot_chunks[i], marker='X', color='red', label='Median expected', linewidth=0)
-      plt.plot(masses_tot_chunks[i], values_tot_chunks[i], color='red', label='Median expected', linewidth=2)
+      plt.plot(masses_tot_chunks[i], values_tot_chunks[i], marker='X', color='red', label=label, linewidth=0)
+      plt.plot(masses_tot_chunks[i], values_tot_chunks[i], color='red', label=label, linewidth=2)
 
-    plt.plot(masses_missing, values_missing, marker='o', color='black', label='Median expected', linewidth=0)
+    plt.plot(masses_missing, values_missing, marker='o', color='black', label=label, linewidth=0)
 
     plt.ylabel(r'$|V|^2$', fontsize=23)
     plt.yticks(fontsize=17)
@@ -968,7 +939,7 @@ class LimitPlotter(object):
     plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
     #masses_tot = masses_1 + masses_2 + masses_3
     #plt.xlim(min(masses_tot), max(masses_tot))
-    plt.xlim(1., 6.)
+    plt.xlim(2., 6.)
     plt.xticks(fontsize=17)
     plt.yscale('log')
     plt.xscale('linear')
@@ -1101,32 +1072,6 @@ class LimitPlotter(object):
     plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--', zorder=10)
     plt.title('{}, {}'.format(coupling_scenario, self.scenario), loc='right', fontsize=23)
 
-    #print '\n'
-    #print masses_stuecke_all_1['plus_two'][1]
-    #print values_stuecke_all_1['plus_two'][1]
-    #print '\n'
-    #print masses_stuecke_all_2['plus_two'][0]
-    #print values_stuecke_all_2['plus_two'][0]
-    #print '\n'
-    #print masses_stuecke_all_3['plus_two'][0]
-    #print values_stuecke_all_3['plus_two'][0]
-
-    #[3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65]
-    #[3.65, 3.6, 3.55, 3.5]
-    #[3.5, 3.55, 3.6, 3.65]
-    #[0.00012034689271124365, 0.00012425505596183535, 0.00012387651316755617, 0.0001357589514113421, 0.00012398053056366553, 0.0001621255964163732, 0.00019170782693026195, 0.00019805437170792586, 0.0006330616450559552, 0.0002532928957738135, 0.0003514183210573947]
-    #[0.0011121770802836684, 0.0019333104686060747, 0.0014249369293746052, 0.002675377363665742]
-    #[0.00551420027591585, 0.010041985319261523, 0.0046999341557779975, 0.004726644830799094]
-
-    #masses_tot = masses_stuecke_all_1['plus_two'][1] + masses_stuecke_all_2['plus_two'][0] + masses_stuecke_all_3['plus_two'][0]
-    #values_tot = values_stuecke_all_1['plus_two'][1] + values_stuecke_all_2['plus_two'][0] + values_stuecke_all_3['plus_two'][0]
-    #masses_tot = [3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.65, 3.6, 3.55, 3.5, 3.5, 3.55, 3.6, 3.65, 3.75, 3.8, 3.85, 3.9, 3.95, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9]
-    #values_tot = [0.00012034689271124365, 0.00012425505596183535, 0.00012387651316755617, 0.0001357589514113421, 0.00012398053056366553, 0.0001621255964163732, 0.00019170782693026195, 0.00019805437170792586, 0.0006330616450559552, 0.0002532928957738135, 0.0003514183210573947, 0.0011121770802836684, 0.0019333104686060747, 0.0014249369293746052, 0.002675377363665742, 0.00551420027591585, 0.010041985319261523, 0.0046999341557779975, 0.004726644830799094, 0.010422340034747238, 0.009992252977129756, 0.009730473592131002, 0.00823294826799931, 0.009853815531909501, 0.010269952092311059, 0.010586853974853856, 0.010166377180102508, 0.009314321439711618, 0.00849178867340154, 0.011485044420968676, 0.00921101394854829, 0.012493053272891188, 0.014662758275220093, 0.02478249047358668]
-    #boundaries = self.find_boundaries(masses_tot, masses_stuecke_all_1['central'], values_stuecke_all_1['central'])
-    #plt.fill_between(masses_tot, values_tot, boundaries, color='gold', label=r'95% expected')
-
-    # readd masses_central_1 and _2 to fill colour inbetween
-
     masses_central_tot_chunks, values_central_tot_chunks = self.split_list(masses_lists=points_all['central'].masses_tot, values_lists=points_all['central'].values_tot)
     masses_central_1_chunks, values_central_1_chunks = self.split_list(masses_lists=points_all['central'].masses_1, values_lists=points_all['central'].values_1)
     masses_central_2_chunks, values_central_2_chunks = self.split_list(masses_lists=points_all['central'].masses_2, values_lists=points_all['central'].values_2)
@@ -1140,10 +1085,8 @@ class LimitPlotter(object):
     for i, chunk in enumerate(masses_plus_two_tot_chunks):
       plt.plot(masses_plus_two_tot_chunks[i], values_plus_two_tot_chunks[i], marker='X', color='gold', label=r'95% expected', linewidth=0)
       plt.plot(masses_plus_two_tot_chunks[i], values_plus_two_tot_chunks[i], color='gold', label=r'95% expected', linewidth=2)
-      #boundaries_plus_two_1 = self.find_boundaries(masses_plus_two_1_chunks[i], masses_central_1_chunks, values_plus_two_1_chunks[i], values_central_1_chunks)
-      #plt.fill_between(masses_plus_two_1_chunks[i], values_plus_two_1_chunks[i], boundaries_plus_two_1, color='gold', label=r'95% expected')
-      #boundaries_plus_two_2 = self.find_boundaries(masses_plus_two_2_chunks[i], masses_central_2_chunks, values_plus_two_2_chunks[i], values_central_2_chunks)
-      #plt.fill_between(masses_plus_two_2_chunks[i], values_plus_two_2_chunks[i], boundaries_plus_two_2, color='gold', label=r'95% expected')
+      boundaries_plus_two = self.find_boundaries(masses_plus_two_tot_chunks[i], masses_central_tot_chunks, values_plus_two_tot_chunks[i], values_central_tot_chunks)
+      plt.fill_between(masses_plus_two_tot_chunks[i], values_plus_two_tot_chunks[i], boundaries_plus_two, color='gold', label=r'95% expected')
 
     masses_plus_one_tot_chunks, values_plus_one_tot_chunks = self.split_list(masses_lists=points_all['plus_one'].masses_tot, values_lists=points_all['plus_one'].values_tot)
     masses_plus_one_1_chunks, values_plus_one_1_chunks = self.split_list(masses_lists=points_all['plus_one'].masses_1, values_lists=points_all['plus_one'].values_1)
@@ -1151,10 +1094,8 @@ class LimitPlotter(object):
     for i, chunk in enumerate(masses_plus_one_tot_chunks):
       plt.plot(masses_plus_one_tot_chunks[i], values_plus_one_tot_chunks[i], marker='X', color='forestgreen', label=r'68% expected', linewidth=0)
       plt.plot(masses_plus_one_tot_chunks[i], values_plus_one_tot_chunks[i], color='forestgreen', label=r'68% expected', linewidth=2)
-      #boundaries_plus_one_1 = self.find_boundaries(masses_plus_one_1_chunks[i], masses_central_1_chunks, values_plus_one_1_chunks[i], values_central_1_chunks)
-      #plt.fill_between(masses_plus_one_1_chunks[i], values_plus_one_1_chunks[i], boundaries_plus_one_1, color='forestgreen', label=r'68% expected')
-      #boundaries_plus_one_2 = self.find_boundaries(masses_plus_one_2_chunks[i], masses_central_2_chunks, values_plus_one_2_chunks[i], values_central_2_chunks)
-      #plt.fill_between(masses_plus_one_2_chunks[i], values_plus_one_2_chunks[i], boundaries_plus_one_2, color='forestgreen', label=r'68% expected')
+      boundaries_plus_one = self.find_boundaries(masses_plus_one_tot_chunks[i], masses_central_tot_chunks, values_plus_one_tot_chunks[i], values_central_tot_chunks)
+      plt.fill_between(masses_plus_one_tot_chunks[i], values_plus_one_tot_chunks[i], boundaries_plus_one, color='forestgreen', label=r'68% expected')
       
     masses_minus_two_tot_chunks, values_minus_two_tot_chunks = self.split_list(masses_lists=points_all['minus_two'].masses_tot, values_lists=points_all['minus_two'].values_tot)
     masses_minus_two_1_chunks, values_minus_two_1_chunks = self.split_list(masses_lists=points_all['minus_two'].masses_1, values_lists=points_all['minus_two'].values_1)
@@ -1162,10 +1103,8 @@ class LimitPlotter(object):
     for i, chunk in enumerate(masses_minus_two_tot_chunks):
       plt.plot(masses_minus_two_tot_chunks[i], values_minus_two_tot_chunks[i], marker='X', color='gold', label=r'95% expected', linewidth=0)
       plt.plot(masses_minus_two_tot_chunks[i], values_minus_two_tot_chunks[i], color='gold', label=r'95% expected', linewidth=2)
-      #boundaries_minus_two_1 = self.find_boundaries(masses_minus_two_1_chunks[i], masses_central_1_chunks, values_minus_two_1_chunks[i], values_central_1_chunks)
-      #plt.fill_between(masses_minus_two_1_chunks[i], values_minus_two_1_chunks[i], boundaries_minus_two_1, color='gold', label=r'95% expected')
-      #boundaries_minus_two_2 = self.find_boundaries(masses_minus_two_2_chunks[i], masses_central_2_chunks, values_minus_two_2_chunks[i], values_central_2_chunks)
-      #plt.fill_between(masses_minus_two_2_chunks[i], values_minus_two_2_chunks[i], boundaries_minus_two_2, color='gold', label=r'95% expected')
+      boundaries_minus_two = self.find_boundaries(masses_minus_two_tot_chunks[i], masses_central_tot_chunks, values_minus_two_tot_chunks[i], values_central_tot_chunks)
+      plt.fill_between(masses_minus_two_tot_chunks[i], values_minus_two_tot_chunks[i], boundaries_minus_two, color='gold', label=r'95% expected')
 
     masses_minus_one_tot_chunks, values_minus_one_tot_chunks = self.split_list(masses_lists=points_all['minus_one'].masses_tot, values_lists=points_all['minus_one'].values_tot)
     masses_minus_one_1_chunks, values_minus_one_1_chunks = self.split_list(masses_lists=points_all['minus_one'].masses_1, values_lists=points_all['minus_one'].values_1)
@@ -1173,12 +1112,46 @@ class LimitPlotter(object):
     for i, chunk in enumerate(masses_minus_one_tot_chunks):
       plt.plot(masses_minus_one_tot_chunks[i], values_minus_one_tot_chunks[i], marker='X', color='forestgreen', label=r'68% expected', linewidth=0)
       plt.plot(masses_minus_one_tot_chunks[i], values_minus_one_tot_chunks[i], color='forestgreen', label=r'68% expected', linewidth=2)
+      boundaries_minus_one = self.find_boundaries(masses_minus_one_tot_chunks[i], masses_central_tot_chunks, values_minus_one_tot_chunks[i], values_central_tot_chunks)
+      plt.fill_between(masses_minus_one_tot_chunks[i], values_minus_one_tot_chunks[i], boundaries_minus_one, color='forestgreen', label=r'68% expected')
 
     if not self.do_blind:
       masses_obs_tot_chunks, values_obs_tot_chunks = self.split_list(masses_lists=points_all['obs'].masses_tot, values_lists=points_all['obs'].values_tot)
       for i, chunk in enumerate(masses_obs_tot_chunks):
         plt.plot(masses_obs_tot_chunks[i], values_obs_tot_chunks[i], marker='X', color='black', label='Observed', linewidth=0)
         plt.plot(masses_obs_tot_chunks[i], values_obs_tot_chunks[i], color='black', label='Observed', linewidth=2)
+
+    # plot islands
+    for key in points_all.keys():
+      print key
+      if len(points_all[key].islands_coordinates) != 0:
+        if key in ['minus_one', 'plus_one']: 
+          edgecolor = 'gold'
+          facecolor = 'gold'
+          linewidth = 0
+          fill = True
+        elif key in ['minus_two', 'plus_two']: 
+          edgecolor = 'gold'
+          facecolor = 'gold'
+          linewidth = 0
+          fill = True
+        elif key in ['obs']: 
+          edgecolor = 'black'
+          facecolor = 'white'
+          linewidth = 2
+          fill = False
+        else: 
+          edgecolor = 'red'
+          facecolor = 'white'
+          linewidth = 2
+          fill = False
+
+        for island_coordinates in points_all[key].islands_coordinates:
+          center_x = island_coordinates[0]
+          center_y = island_coordinates[1]
+          height = island_coordinates[2]
+          width = island_coordinates[3]
+          plt.gca().add_patch(Ellipse((center_x, center_y), width, height, edgecolor=edgecolor, facecolor=facecolor, fill=fill, linewidth=linewidth)) 
 
     #for i, masses in enumerate(masses_stuecke_all['plus_two']):
     #  plt.plot(masses_stuecke_all['plus_two'][i], values_stuecke_all['plus_two'][i], color='gold', label=r'95% expected', marker='X', linewidth=0)
@@ -1305,7 +1278,7 @@ class LimitPlotter(object):
     plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
     #masses_tot = masses_1 + masses_2 + masses_3
     #plt.xlim(min(masses_tot), max(masses_tot))
-    plt.xlim(1., 6.)
+    plt.xlim(2., 6.)
     plt.xticks(fontsize=17)
     plt.yscale('log')
     plt.xscale('linear')
@@ -1542,7 +1515,8 @@ class LimitPlotter(object):
       if self.mass_blacklist != 'None':
         if mass in self.mass_blacklist.split(','): continue
 
-      #if float(mass) < 2. or float(mass) > 5.: continue
+      #if float(mass) < 3.4 or float(mass) > 4.5: continue
+      if float(mass) < 2. or float(mass) > 6.: continue
       #if float(mass) > 3.: continue
 
       print '\nmass {}'.format(mass)
@@ -1825,6 +1799,7 @@ class LimitPlotter(object):
 
     # plot scatter figures
     if self.plot_scatter_figure:
+      print '--> produce scatter plots'
       self.plot_scatter(masses_1=masses_minus_two_1, masses_2=masses_minus_two_2, masses_3=masses_minus_two_3, masses_missing_1=masses_minus_two_missing, values_1=minus_two_1, values_2=minus_two_2, values_3=minus_two_3, values_missing_1=minus_two_missing, label='minus_two', plotDir=plotDir)
       self.plot_scatter(masses_1=masses_minus_one_1, masses_2=masses_minus_one_2, masses_3=masses_minus_one_3, masses_missing_1=masses_minus_one_missing, values_1=minus_one_1, values_2=minus_one_2, values_3=minus_one_3, values_missing_1=minus_one_missing, label='minus_one', plotDir=plotDir)
       self.plot_scatter(masses_1=masses_central_1, masses_2=masses_central_2, masses_3=masses_central_3, masses_missing_1=masses_central_missing, values_1=central_1, values_2=central_2, values_3=central_3, values_missing_1=central_missing, label='central', plotDir=plotDir)
@@ -1904,8 +1879,8 @@ class LimitPlotter(object):
     if not self.do_blind:
       points_all['obs'] = points_obs
 
-    #self.plot_2dlimit(points_all=points_all, plotDir=plotDir)
-    self.plot_scatter_all(points_all=points_all, plotDir=plotDir)
+    self.plot_2dlimit(points_all=points_all, plotDir=plotDir)
+    #self.plot_scatter_all(points_all=points_all, plotDir=plotDir)
 
     #self.plot_2dlimit(masses_stuecke_all=masses_stuecke_all, values_stuecke_all=values_stuecke_all, plotDir=plotDir)
     #self.plot_2dlimit(masses_stuecke_all_1=masses_stuecke_all_1, masses_stuecke_all_2=masses_stuecke_all_2, masses_stuecke_all_3=masses_stuecke_all_3, values_stuecke_all_1=values_stuecke_all_1, values_stuecke_all_2=values_stuecke_all_2, values_stuecke_all_3=values_stuecke_all_3, plotDir=plotDir)
