@@ -701,27 +701,63 @@ class LimitPlotter(object):
     masses_central_all_np = np.array(masses_central_all)
 
     boundaries = []
-    for i, mass in enumerate(masses_tot):
-      # find indices in central list
-      indices = list(np.where(masses_central_all_np == mass)[0])
-      if len(indices) == 1:
-        value_central = values_central_all[indices[0]]
-        #print 'mass {} central {} tot {}'.format(mass, value_central, values_tot[i])
-        if values_tot[i] > 1e-2 and values_tot[i]/value_central > 100:
-          value = values_tot[i] # do not fill
+
+    if self.fu == '1p0' and self.scenario == 'Majorana':
+      for i, mass in enumerate(masses_tot):
+        # find indices in central list
+        indices = list(np.where(masses_central_all_np == mass)[0])
+        if len(indices) == 1:
+          value_central = values_central_all[indices[0]]
+          #print 'mass {} central {} tot {}'.format(mass, value_central, values_tot[i])
+          if values_tot[i] > 1e-2 and values_tot[i]/value_central > 100:
+            value = values_tot[i] # do not fill
+          else:
+            value = value_central
+          boundaries.append(value)
+        elif len(indices) == 2:
+          value_1 = values_central_all[indices[0]]
+          value_2 = values_central_all[indices[1]]
+          if abs(values_tot[i] - value_1) /value_1 < abs(values_tot[i] - value_2) / value_2:
+            value = value_1
+          else:
+            value = value_2
+          boundaries.append(value)
         else:
-          value = value_central
-        boundaries.append(value)
-      elif len(indices) == 2:
-        value_1 = values_central_all[indices[0]]
-        value_2 = values_central_all[indices[1]]
-        if abs(values_tot[i] - value_1) /value_1 < abs(values_tot[i] - value_2) / value_2:
-          value = value_1
+          boundaries.append(2e-2) # or average of adjacent points
+
+    else:
+      for i, mass in enumerate(masses_tot):
+        # find indices in central list
+        indices = list(np.where(masses_central_all_np == mass)[0])
+        if len(indices) == 1:
+          value_central = values_central_all[indices[0]]
+          #if mass > 3.7 or len(list(np.where(np.array(masses_tot) == mass)[0])) > 2:
+          if mass > 3.7:
+            value = value_central
+          else: # apply stronger constraints
+            #print 'len 1 mass {} central {} tot {}'.format(mass, value_central, values_tot[i])
+            if values_tot[i] > 1e-2 and values_tot[i]/value_central > 50:
+              value = values_tot[i] # do not fill
+            elif values_tot[i] < 1e-2 and values_tot[i]/value_central > 10:
+              value = 2e-2
+            else:
+              value = value_central
+          boundaries.append(value)
+        elif len(indices) == 2:
+          value_central_1 = values_central_all[indices[0]]
+          value_central_2 = values_central_all[indices[1]]
+          ratio_1 = values_tot[i] / value_central_1 if values_tot[i] > value_central_1 else value_central_1 / values_tot[i]
+          ratio_2 = values_tot[i] / value_central_2 if values_tot[i] > value_central_2 else value_central_2 / values_tot[i]
+          value = value_central_1 if ratio_1 < ratio_2 else value_central_2
+          #if mass > 2.9:
+          #  print 'len 2 mass {} central1 {} central2 {} tot {}'.format(mass, value_1, value_2, values_tot[i])
+          #if abs(values_tot[i] - value_1) /value_1 < abs(values_tot[i] - value_2) / value_2:
+          #  value = value_1
+          #else:
+          #  value = value_2
+          boundaries.append(value)
         else:
-          value = value_2
-        boundaries.append(value)
-      else:
-        boundaries.append(2e-2) # or average of adjacent points
+          boundaries.append(2e-2) # or average of adjacent points
 
     # working
     #boundaries = []
