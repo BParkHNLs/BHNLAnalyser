@@ -131,7 +131,7 @@ class LimitPlotter(object):
       self.fu = str(round(float(fu), 1)).replace('.', 'p')
       self.ft = str(round(float(ft), 1)).replace('.', 'p')
     self.plot_1D = False
-    self.plot_scatter_figure = False
+    self.plot_scatter_figure = True
     self.plot_countour_figure = True
     self.no_exclusion_value = 2e-5
     #self.mass_list = [2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.1, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.7, 3.75, 3.8, 3.85, 3.9, 3.95, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9]
@@ -418,40 +418,40 @@ class LimitPlotter(object):
     # search for islands
     islands_coordinates = []
     for i, mass_3 in enumerate(masses_3):
-      print mass_3
       ref_idx = self.mass_list.index(mass_3) # index of mass in reference mass_list
-      if i < len(masses_3)-1 and (masses_3[i+1] != self.mass_list[ref_idx+1] or self.mass_list[ref_idx+1] > 7e-3) and values_3[i] < 7e-3:
-        print 'there is an island'
-        #island_coordinates = self.get_islands_coordinates(masses_2=masses_2, masses_3=masses_3, values_2=values_2, values_3=values_3)
-        island_coordinates = self.get_islands_coordinates(masses_2=masses_2, mass_3=mass_3, values_2=values_2, value_3=values_3[i])
-        islands_coordinates.append(island_coordinates)
-
-        # remove point from masses_2
-        idx_2 = masses_2.index(masses_3[i])
-        masses_2.remove(masses_2[idx_2])
-        values_2.remove(values_2[idx_2])
-
-        # remove point from masses_3
-        idx_3 = masses_3.index(masses_3[i])
-        masses_3.remove(masses_3[idx_3])
-        values_3.remove(values_3[idx_3])
-        
-        if i+1 == len(masses_3)-1 and values_3[i+1] < 7e-3:
-          print 'there is another island'
-          island_coordinates = self.get_islands_coordinates(masses_2=masses_2, mass_3=masses_3[i+1], values_2=values_2, value_3=values_3[i+1])
+      if i < len(masses_3)-1 and values_3[i] < 1.1e-2:
+        if masses_3[i+1] != self.mass_list[ref_idx+1] or (masses_3[i+1] == self.mass_list[ref_idx+1] and values_3[i] < 7e-3 and values_3[i+1] > 1.1e-2):
+          print 'there is an island'
+          #island_coordinates = self.get_islands_coordinates(masses_2=masses_2, masses_3=masses_3, values_2=values_2, values_3=values_3)
+          island_coordinates = self.get_islands_coordinates(masses_2=masses_2, mass_3=mass_3, values_2=values_2, value_3=values_3[i])
           islands_coordinates.append(island_coordinates)
 
           # remove point from masses_2
-          idx_2 = masses_2.index(masses_3[i+1])
+          idx_2 = masses_2.index(masses_3[i])
           masses_2.remove(masses_2[idx_2])
           values_2.remove(values_2[idx_2])
 
           # remove point from masses_3
-          idx_3 = masses_3.index(masses_3[i+1])
+          idx_3 = masses_3.index(masses_3[i])
           masses_3.remove(masses_3[idx_3])
           values_3.remove(values_3[idx_3])
+        
+      #if i+1 == len(masses_3)-1 and values_3[i+1] < 1.2e-2:
+      #  print 'there is another island'
+      #  island_coordinates = self.get_islands_coordinates(masses_2=masses_2, mass_3=masses_3[i+1], values_2=values_2, value_3=values_3[i+1])
+      #  islands_coordinates.append(island_coordinates)
 
-          break
+      #  # remove point from masses_2
+      #  idx_2 = masses_2.index(masses_3[i+1])
+      #  masses_2.remove(masses_2[idx_2])
+      #  values_2.remove(values_2[idx_2])
+
+      #  # remove point from masses_3
+      #  idx_3 = masses_3.index(masses_3[i+1])
+      #  masses_3.remove(masses_3[idx_3])
+      #  values_3.remove(values_3[idx_3])
+
+      #  break
 
     is_Sshape = False
     if len(masses_3) > 1:
@@ -463,13 +463,12 @@ class LimitPlotter(object):
         elif i < len(masses_3)-1 and masses_3[i+1] != self.mass_list[ref_idx+1]:
           masses_consecutive = False
       idx_2 = masses_2.index(masses_3[0])
-      if masses_consecutive and values_3[0] < values_2[idx_2-1]: is_Sshape = True
+      if masses_consecutive and values_3[0] < values_2[idx_2+1]: is_Sshape = True
 
     is_Ushape = False
     if not is_Sshape:
       for i, mass_1 in enumerate(masses_1):
         if mass_1 != masses_2[0]: continue
-        print '{} {}'.format(values_2[0], values_1[i+1])
         try:
           if values_2[0] < values_1[i+1]: is_Ushape = True
         except:
@@ -1620,21 +1619,22 @@ class LimitPlotter(object):
     #lumi =  '40.0 fb'+r'$^{-1}$'
     lumi =  '41.6 fb'+r'$^{-1}$'
 
-    # get the files 
-    if not self.do_coupling_scenario:
-      pathToResults = '{}/outputs/{}/limits/{}/results/'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
-    else:
-      pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
-      #FIXME
-      #pathToResults = '{}/outputs/{}/limits/{}/electron/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+    ## get the files 
+    #if not self.do_coupling_scenario:
+    #  pathToResults = '{}/outputs/{}/limits/{}/results/'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
+    #else:
+    #  pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+    #  #FIXME
+    #  #pathToResults = '{}/outputs/{}/limits/{}/electron/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
 
-    fileName = 'result*{}*.txt'.format(self.scenario)
+    #fileName = 'result*{}*.txt'.format(self.scenario)
 
-    files = [f for f in glob.glob(pathToResults+fileName)]
+    #files = [f for f in glob.glob(pathToResults+fileName)]
    
     # get the list of the masses from the fileNames
-    masses = getMassList(files)
-    masses.sort(key=self.sortList)
+    #masses = getMassList(files)
+    #masses.sort(key=self.sortList)
+    masses = self.mass_list
    
     # needed for the 2D limit plot
     limits2D = OrderedDict()
@@ -1651,11 +1651,24 @@ class LimitPlotter(object):
       if self.mass_blacklist != 'None':
         if mass in self.mass_blacklist.split(','): continue
 
-      #if float(mass) < 3.4 or float(mass) > 4.5: continue
-      if float(mass) < 2. or float(mass) > 6.: continue
+      if float(mass) < 2.5 or float(mass) > 3.9: continue
+      #if float(mass) < 2. or float(mass) > 6.: continue
       #if float(mass) > 3.: continue
 
       print '\nmass {}'.format(mass)
+
+      # get the files 
+      if not self.do_coupling_scenario:
+        pathToResults = '{}/outputs/{}/limits/{}/results/'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
+      else:
+        if float(mass) < 4.:
+          pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+        else:
+          pathToResults = '{}/outputs/{}/limits/{}/muon/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+
+      fileName = 'result*{}*.txt'.format(self.scenario)
+
+      files = [f for f in glob.glob(pathToResults+fileName)]
 
       v2s       = []
       obs       = []
