@@ -399,7 +399,8 @@ class LimitPlotter(object):
       if len(limits2D[mass][list_name]) > 2:
         # do not consider third exclusion above 1e-2
         #if limits2D[mass][list_name][2] <= 1e-2: 
-        if limits2D[mass][list_name][2] > cutoff: continue 
+        #if limits2D[mass][list_name][2] > cutoff: continue 
+        #if limits2D[mass][list_name][2] > 1.5e-2: continue 
         quantity_3.append(limits2D[mass][list_name][2])
         masses_3.append(float(mass))
 
@@ -414,6 +415,44 @@ class LimitPlotter(object):
     masses_tot = []
     values_tot = []
 
+    # search for islands
+    islands_coordinates = []
+    for i, mass_3 in enumerate(masses_3):
+      print mass_3
+      ref_idx = self.mass_list.index(mass_3) # index of mass in reference mass_list
+      if i < len(masses_3)-1 and (masses_3[i+1] != self.mass_list[ref_idx+1] or self.mass_list[ref_idx+1] > 7e-3) and values_3[i] < 7e-3:
+        print 'there is an island'
+        #island_coordinates = self.get_islands_coordinates(masses_2=masses_2, masses_3=masses_3, values_2=values_2, values_3=values_3)
+        island_coordinates = self.get_islands_coordinates(masses_2=masses_2, mass_3=mass_3, values_2=values_2, value_3=values_3[i])
+        islands_coordinates.append(island_coordinates)
+
+        # remove point from masses_2
+        idx_2 = masses_2.index(masses_3[i])
+        masses_2.remove(masses_2[idx_2])
+        values_2.remove(values_2[idx_2])
+
+        # remove point from masses_3
+        idx_3 = masses_3.index(masses_3[i])
+        masses_3.remove(masses_3[idx_3])
+        values_3.remove(values_3[idx_3])
+        
+        if i+1 == len(masses_3)-1 and values_3[i+1] < 7e-3:
+          print 'there is another island'
+          island_coordinates = self.get_islands_coordinates(masses_2=masses_2, mass_3=masses_3[i+1], values_2=values_2, value_3=values_3[i+1])
+          islands_coordinates.append(island_coordinates)
+
+          # remove point from masses_2
+          idx_2 = masses_2.index(masses_3[i+1])
+          masses_2.remove(masses_2[idx_2])
+          values_2.remove(values_2[idx_2])
+
+          # remove point from masses_3
+          idx_3 = masses_3.index(masses_3[i+1])
+          masses_3.remove(masses_3[idx_3])
+          values_3.remove(values_3[idx_3])
+
+          break
+
     is_Sshape = False
     if len(masses_3) > 1:
       masses_consecutive = False
@@ -423,7 +462,18 @@ class LimitPlotter(object):
           masses_consecutive = True
         elif i < len(masses_3)-1 and masses_3[i+1] != self.mass_list[ref_idx+1]:
           masses_consecutive = False
-        if masses_consecutive: is_Sshape = True
+      idx_2 = masses_2.index(masses_3[0])
+      if masses_consecutive and values_3[0] < values_2[idx_2-1]: is_Sshape = True
+
+    is_Ushape = False
+    if not is_Sshape:
+      for i, mass_1 in enumerate(masses_1):
+        if mass_1 != masses_2[0]: continue
+        print '{} {}'.format(values_2[0], values_1[i+1])
+        try:
+          if values_2[0] < values_1[i+1]: is_Ushape = True
+        except:
+          is_Ushape = True
 
     if is_Sshape:
       print 'is s shape'
@@ -468,7 +518,43 @@ class LimitPlotter(object):
 
       print masses_tot
 
-    else: # no S-shape
+    elif is_Ushape:
+      print 'is u shape'
+      masses_tot_part1 = []
+      values_tot_part1 = []
+
+      max_Ushape = masses_2[0]
+      for i, mass_1 in enumerate(masses_1):
+        if mass_1 <= max_Ushape:
+          masses_tot_part1.append(mass_1)
+          values_tot_part1.append(values_1[i])
+
+      for i, mass_2 in enumerate(masses_2):
+        masses_tot_part1.append(mass_2)
+        values_tot_part1.append(values_2[i])
+
+      masses_tot.append(masses_tot_part1)
+      values_tot.append(values_tot_part1)
+
+      # fill rest of masses_1 
+      masses_tot_part2 = []
+      values_tot_part2 = []
+      for i, mass_3 in enumerate(masses_3):
+        if mass_3 <= max_Ushape:
+          masses_tot_part2.append(mass_3)
+          values_tot_part2.append(values_3[i])
+
+      for i, mass_1 in enumerate(masses_1):
+        if mass_1 > max_Ushape:
+          masses_tot_part2.append(mass_1)
+          values_tot_part2.append(values_1[i])
+
+      masses_tot.append(masses_tot_part2)
+      values_tot.append(values_tot_part2)
+    
+      print masses_tot
+
+    else: # no S/U-shape
       masses_tot_part1 = []
       values_tot_part1 = []
       for i, mass_1 in enumerate(masses_1):
@@ -487,11 +573,11 @@ class LimitPlotter(object):
       masses_tot.append(masses_tot_part2)
       values_tot.append(values_tot_part2)
 
-    # island
-    islands_coordinates = []
-    if len(masses_3) == 1: # does not take into account that there can be more than one island, check for non-consecutive mass 3 instead
-      island_coordinates = self.get_islands_coordinates(masses_2=masses_2, masses_3=masses_3, values_2=values_2, values_3=values_3)
-      islands_coordinates.append(island_coordinates)
+    ## island
+    #islands_coordinates = []
+    #if len(masses_3) == 1: # does not take into account that there can be more than one island, check for non-consecutive mass 3 instead
+    #  island_coordinates = self.get_islands_coordinates(masses_2=masses_2, masses_3=masses_3, values_2=values_2, values_3=values_3)
+    #  islands_coordinates.append(island_coordinates)
 
     points = Points(
         masses_1 = masses_1, 
@@ -623,22 +709,36 @@ class LimitPlotter(object):
 
   #def get_islands_coordinates(self, masses_2_stuecke, masses_3_stuecke, values_2_stuecke, values_3_stuecke):
   #def get_islands_coordinates(self, points):
-  def get_islands_coordinates(self, masses_2, masses_3, values_2, values_3):
-    island_mass = masses_3[0]
-    #islands_coordinates = []
+  #def get_islands_coordinates(self, masses_2, masses_3, values_2, values_3):
+  def get_islands_coordinates(self, masses_2, mass_3, values_2, value_3):
+    island_mass = mass_3
     for i, mass_2 in enumerate(masses_2):
       if mass_2 != island_mass: continue
       ref_idx = self.mass_list.index(island_mass) # index of mass in reference mass_list
       mass_before = (island_mass + self.mass_list[ref_idx-1]) / 2.
       mass_after = (self.mass_list[ref_idx+1] + island_mass) / 2.
-      print 'before after {} {}'.format(mass_before, mass_after)
       center_x = island_mass
-      center_y = (values_3[0] + values_2[i]) / 2.
-      height = values_3[0] - values_2[i]
+      center_y = (value_3 + values_2[i]) / 2.
+      height = value_3 - values_2[i]
       width = mass_after - mass_before
-      print '{} {} {} {} {}'.format(island_mass, masses_2[i], values_3[0], values_2[i], center_y)
-      #island_coordinates = [x, y, width, height]
+      print '{} {} {} {} {}'.format(island_mass, masses_2[i], value_3, values_2[i], center_y)
       island_coordinates = [center_x, center_y, height, width]
+
+    #island_mass = masses_3[0]
+    ##islands_coordinates = []
+    #for i, mass_2 in enumerate(masses_2):
+    #  if mass_2 != island_mass: continue
+    #  ref_idx = self.mass_list.index(island_mass) # index of mass in reference mass_list
+    #  mass_before = (island_mass + self.mass_list[ref_idx-1]) / 2.
+    #  mass_after = (self.mass_list[ref_idx+1] + island_mass) / 2.
+    #  print 'before after {} {}'.format(mass_before, mass_after)
+    #  center_x = island_mass
+    #  center_y = (values_3[0] + values_2[i]) / 2.
+    #  height = values_3[0] - values_2[i]
+    #  width = mass_after - mass_before
+    #  print '{} {} {} {} {}'.format(island_mass, masses_2[i], values_3[0], values_2[i], center_y)
+    #  #island_coordinates = [x, y, width, height]
+    #  island_coordinates = [center_x, center_y, height, width]
       #islands_coordinates.append(island_coordinates)
           #if masses_2 in masses_3_stuecke: # single point in both the middle and upper limit
           #  ref_idx = self.mass_list.index(masses_2[0]) # index of mass in reference mass_list
