@@ -50,8 +50,8 @@ class TernaryPlotter(object):
       ternary_style.exponent = 1e-4
     elif self.exclusion == 'ctau': 
       self.default_value = -99.
-      self.z_axis_label = r'Observed $c\tau$ (mm)'
-      ternary_style.exponent = 1e3
+      self.z_axis_label = r'Observed $c\tau$ (m)'
+      ternary_style.exponent = 1#1e3
     self.ternary_style = ternary_style
     self.fontsize = self.ternary_style.fontsize
     self.tmp_dir = './tmp'
@@ -164,6 +164,8 @@ class TernaryPlotter(object):
         ft_val = float(ft.replace('p', '.'))
         ismaj = True if self.scenario == 'Majorana' else False
         exclusion_val = self.tools.getCtau(mass=float(self.mass), vv=float(x), fe=fe_val, fu=fu_val, ft=ft_val, ismaj=ismaj)
+        # convert to meters
+        exclusion_val = exclusion_val * 1e-3
 
     return exclusion_val
 
@@ -238,6 +240,10 @@ class TernaryPlotter(object):
       exclusion_filename = '{}/exclusion_{}_m_{}_{}_{}_{}.txt'.format(self.tmp_dir, self.scenario, str(self.mass).replace('.', 'p'), fe, fu, ft)
       exclusion_file = open(exclusion_filename, 'w+')
       exclusion_file.write('\n{} {} {} {}'.format(fe.replace('p', '.'), fu.replace('p', '.'), ft.replace('p', '.'), exclusion_val))
+      #if exclusion_val != -99.:
+      #  print '{} & {} & {} & {} \\\ '.format(fe.replace('p', '.'), fu.replace('p', '.'), ft.replace('p', '.'), '{:.1e}'.format(exclusion_val))
+      #else:
+      #  print '{} & {} & {} & {} \\\ '.format(fe.replace('p', '.'), fu.replace('p', '.'), ft.replace('p', '.'), exclusion_val)
       exclusion_file.close()
 
 
@@ -347,10 +353,13 @@ class TernaryPlotter(object):
     ax.axis("off")
 
     # add labels
-    ax.text(0.1, 0.96, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=2.0*self.fontsize, fontweight='bold')
-    ax.text(0.15, 0.89, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.5*self.fontsize, fontstyle='italic')
-    ax.text(0.85, 0.96, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.4*self.fontsize, fontweight='bold')
-    ax.text(0.85, 0.89, r'$m_{N}$' + ' = {} GeV'.format(self.mass), horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.4*self.fontsize)
+    plt.title(' ', loc='right')
+    ax.text(0.09, 1.05, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=2.0*self.fontsize, fontweight='bold')
+    #ax.text(0.15, 0.91, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.5*self.fontsize, fontstyle='italic')
+    lumi = '41.6 fb'+r'$^{-1}$'
+    ax.text(1.1, 1.07, lumi + ' (13 TeV)', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.3*self.fontsize)
+    ax.text(0.85, 0.97, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.4*self.fontsize, fontweight='bold')
+    ax.text(0.85, 0.9, r'$m_{N}$' + ' = {} GeV'.format(self.mass), horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.4*self.fontsize)
 
     # add exponent on colorbar
     if self.ternary_style.scientific:
@@ -360,7 +369,7 @@ class TernaryPlotter(object):
       elif self.exclusion == 'ctau':
         exponent = '+' + exponent[exponent.find('e')+3]
       exponent = 'x$10^{e}$'.format(e='{'+exponent+'}')
-      ax.text(1.03, 1.02, r'{}'.format(exponent), transform=ax.transAxes, fontsize=1.3*self.fontsize)
+      #ax.text(1.03, 1.02, r'{}'.format(exponent), transform=ax.transAxes, fontsize=1.3*self.fontsize)
 
     # define ternary figure
     figure, tax = ternary.figure(ax=ax, scale=self.scale)
@@ -448,9 +457,9 @@ if __name__ == '__main__':
   fontsize = 7.3
   log = True
   scientific = True 
-  fixed_range = False 
-  range_min = 2.5e-5 #0.5e-4 
-  range_max = 0.001 #6.0e-4 
+  fixed_range = False
+  range_min = 0.1#e3
+  range_max = 10.6#e3
 
   ternary_style = TernaryStyle(
       fontsize = fontsize,
@@ -472,8 +481,8 @@ if __name__ == '__main__':
 
   #masses = ['1.0']
   #scenarios = ['Majorana']
-  #flavours = ['combined']
-  #exclusions = ['ctau']
+  flavours = ['combined']
+  exclusions = ['coupling']
 
   for mass in masses:
     for scenario in scenarios:
