@@ -243,7 +243,7 @@ class Tools(object):
       BR_prod = dec.BR_tot_mu_fq_weighted
 
     # decay branching ratio
-    BR_NToMuPi = self.gamma_partial(mass=mass, vv=1., fe=0., fu=1., ft=0.) / self.gamma_total(mass=mass, vv=1., fe=0., fu=1., ft=0.) # the coupling cancels in the ratio
+    BR_NToMuPi = self.gamma_partial(mass=mass, vv=1., fe=0., fu=1., ft=0.) / self.gamma_total(mass=mass, vv=1., fe=0., fu=1., ft=0.) # the coupling cancels in the ratio, valid for Majorana and Dirac
 
     # number of generated events (= n_gen / filter_efficiency = n_miniaod / filter_efficiency)
     n_gen_tot = 0
@@ -691,6 +691,13 @@ class Tools(object):
     '''
     from decays import HNLDecays
     gamma_total = HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['tot']  # GeV
+    #gamma_total_e = 2*HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['tot_el'] / (float(fe) * vv) if float(fe) != 0. else 0. # GeV
+    #gamma_total_u = 2*HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['tot_mu'] / (float(fu) * vv) if float(fu) != 0. else 0. # GeV
+    #gamma_total_t = 2*HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['tot_tau'] / (float(ft) * vv) if float(ft) != 0. else 0. # GeV
+    #if fu == 0.5:
+    #  print 'vv * (fe * gamma_total_e + fu * gamma_total_u + ft * gamma_total_t) = {} * ({} * {} + {} * {} + {} * {}) = {}'.format(vv, fe, gamma_total_e, fu, gamma_total_u, ft, gamma_total_t, 2*gamma_total)
+    #  print 'gamm_tilde tot = {}'.format(2*gamma_total  / vv)
+    #print gamma_total - vv * (fe * gamma_total_e + fu * gamma_total_u + ft * gamma_total_t)
     return gamma_total
 
 
@@ -711,6 +718,7 @@ class Tools(object):
     mult = 2. if ismaj else 1.
     ref_m = 1. # GeV
     ref_vv = 1. 
+    #print '1/ct = maj * gamma_tot = {} * {}'.format(mult, self.gamma_total(mass=ref_m, vv=ref_vv, fe=fe, fu=fu, ft=ft))
     ref_ctau = self.ctau_from_gamma(mult*self.gamma_total(mass=ref_m, vv=ref_vv, fe=fe, fu=fu, ft=ft)) 
     k = ref_ctau * np.power(ref_m,5) * ref_vv
     return k/(np.power(mass, 5) * ctau)
@@ -721,6 +729,8 @@ class Tools(object):
     Helper function to go from vv,m(GeV) -> ctau (mm)
     '''
     mult = 2. if ismaj else 1.
+    #if fu == 0.5:
+    #  print '1/ct = mult * gamma_tot = {} * {}'.format(mult, self.gamma_total(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft))
     return self.ctau_from_gamma(mult*self.gamma_total(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft))
 
 
@@ -734,10 +744,12 @@ class Tools(object):
 
 if __name__ == '__main__':
   tools = Tools()
-  #print tools.getCtau(4.5, 1e-2)
-  print tools.getVV(4.5, 0.01)
-  #mass = 5.
+  #print tools.getCtau(2.5, 1e-1)
+  #print tools.getCtau(1.0, 6e-5, fe=0., fu=1., ft=0., ismaj=True)
+  print tools.getVV(3., 1)
+  #mass = 6.
   #print tools.gamma_partial(mass=mass, vv=1.) / tools.gamma_total(mass=mass, vv=1.)
+  #print tools.gamma_partial(mass=mass, vv=1., fe=0., fu=1., ft=0.) / tools.gamma_total(mass=mass, vv=1., fe=0., fu=1., ft=0.) * 100.
   
 
 
