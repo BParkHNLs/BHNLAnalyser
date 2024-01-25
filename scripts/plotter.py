@@ -96,12 +96,13 @@ def printInfo(opt):
 
 
 class Plotter(Tools):
-  def __init__(self, quantity='', data_files='', qcd_files='', signal_files='', white_list=''):
+  def __init__(self, quantity='', data_files='', qcd_files='', signal_files='', signal_label='', white_list=''):
     self.tools = Tools()
     self.quantity = quantity
     self.data_files = data_files
     self.qcd_files = qcd_files
     self.signal_files = signal_files
+    self.signal_label = signal_label
     self.white_list = white_list
 
 
@@ -154,8 +155,11 @@ class Plotter(Tools):
 
     # set style
     if do_tdrstyle:
-      ROOT.gStyle.SetPadRightMargin(0.04) 
-      ROOT.gStyle.SetPadLeftMargin(0.12) 
+      #ROOT.gStyle.SetPadRightMargin(0.04) 
+      #ROOT.gStyle.SetPadLeftMargin(0.12) 
+      ROOT.gStyle.SetPadLeftMargin(0.13)
+      ROOT.gStyle.SetPadBottomMargin(0.13)
+
 
     # create the canvas
     canv_name = 'canv_{}_{}_{}_{}'.format(self.quantity.label, outdirlabel.replace('/', '_'), do_log, do_shape)
@@ -181,7 +185,7 @@ class Plotter(Tools):
         legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.65, xmax=0.84, ymax=0.83, size=0.027)
       else:
         #legend = self.tools.getRootTLegend(xmin=0.42, ymin=0.57, xmax=0.79, ymax=0.79, size=0.038)
-        legend = self.tools.getRootTLegend(xmin=0.4, ymin=0.63, xmax=0.75, ymax=0.86, size=0.038)
+        legend = self.tools.getRootTLegend(xmin=0.37, ymin=0.58, xmax=0.63, ymax=0.81, size=0.038)
         #legend = self.tools.getRootTLegend(xmin=0.13, ymin=0.2, xmax=0.45, ymax=0.5, size=0.038)
 
     pad_up.cd()
@@ -229,7 +233,7 @@ class Plotter(Tools):
       if not do_tdrstyle:
         legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label, version_label) if len(self.data_files)>1 else data_file.label))
       else:
-        legend.AddEntry(hist_data_tot, 'data-driven background')
+        legend.AddEntry(hist_data_tot, 'data')
 
       ## set the style
       if plot_data and plot_qcd:
@@ -254,6 +258,7 @@ class Plotter(Tools):
         if add_weight_hlt : weight_sig += ' * ({})'.format(weight_hlt)
         if add_weight_pu : weight_sig += ' * ({})'.format(weight_pusig)
         if add_weight_muid : weight_sig += ' * ({}) *({})'.format(weight_mu0id, weight_muid)
+        #print weight_sig
 
         hist_signal = self.tools.createHisto(tree_sig, self.quantity, hist_name=hist_signal_name, branchname=branchname, selection=selection_signal, weight=weight_sig)
         hist_signal.Sumw2()
@@ -268,14 +273,22 @@ class Plotter(Tools):
           int_signal = hist_signal.Integral()
           if int_signal != 0: hist_signal.Scale(1/int_signal)
         elif do_luminorm:
-          #signal_yields = ComputeYields(signal_label='V13_06Feb23_preselection', selection=selection_signal).computeSignalYields(mass=signal_file.mass, ctau=signal_file.ctau, lumi=5.3/70., sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid)[0]
-          signal_yields = ComputeYields(signal_label='V13_06Feb23_preselection', selection=selection_signal).computeSignalYields(mass=signal_file.mass, ctau=signal_file.ctau, lumi=40.0, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid)[0]
+          # define target ctau
           if signal_file.mass == 1.:
-            corr = 1e3 #4e1
-          elif signal_file.mass == 2.:
-            corr = 3e3 #4e4
+            ctau = 1000.0
+          if signal_file.mass == 2.:
+            ctau = 100.0
           elif signal_file.mass == 4.5:
-            corr = 8e3 #2e4
+            ctau = 0.01
+          # previous normalisation
+          #signal_yields = ComputeYields(signal_label=self.signal_label, selection=selection_signal).computeSignalYields(mass=signal_file.mass, ctau=signal_file.ctau, lumi=40.0, sigma_B=472.8e9, is_bc=False, add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid)[0]
+          signal_yields = ComputeYields(signal_label=self.signal_label, selection=selection_signal).getSignalYields(mass=signal_file.mass, ctau=ctau, lumi=41.6, sigma_B=572.0e9, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, add_weight_muid=add_weight_muid, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid, strategy='inclusive', is_bc=False)
+          if signal_file.mass == 1.:
+            corr = 700#1e3 #4e1
+          elif signal_file.mass == 2.:
+            corr = 5000#3e3 #4e4
+          elif signal_file.mass == 4.5:
+            corr = 6500#8e3 #2e4
           else:
             corr = 1000
 
@@ -366,23 +379,24 @@ class Plotter(Tools):
     frame.SetTitle('')
     if not plot_ratio: 
       frame.GetXaxis().SetTitle(quantity.title)
-      frame.GetXaxis().SetLabelSize(0.04 if not plot_ratio else 0.037)
-      frame.GetXaxis().SetTitleSize(0.043)
+      frame.GetXaxis().SetLabelSize(0.04)
+      frame.GetXaxis().SetTitleSize(0.047)
       frame.GetXaxis().SetTitleOffset(1.1)
     if plot_ratio:
       frame.GetXaxis().SetLabelSize(0.0)
       frame.GetXaxis().SetTitleSize(0.0)
-    frame.GetYaxis().SetTitle('Events / {}'.format(round((quantity.bin_max-quantity.bin_min)/float(quantity.nbins) ,4)) if not do_shape else 'Normalised to unity')
+    #frame.GetYaxis().SetTitle('Events / {}'.format(round((quantity.bin_max-quantity.bin_min)/float(quantity.nbins) ,4)) if not do_shape else 'Normalised to unity')
+    frame.GetYaxis().SetTitle('Events / Bin' if not do_shape else 'Normalised to unity')
     frame.GetYaxis().SetLabelSize(0.04 if not plot_ratio else 0.037)
-    frame.GetYaxis().SetTitleSize(0.043)
+    frame.GetYaxis().SetTitleSize(0.047)
     frame.GetYaxis().SetTitleOffset(1.5 if not plot_ratio else 1.1)
     if plot_data and plot_qcd: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(hist_data_tot, hist_qcd_tot, do_log))
     #elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
     elif plot_qcd and plot_sig: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_qcd_stack, do_log, use_sig=True))
     #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     elif plot_data and plot_sig and not do_tdrstyle: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
-    elif plot_data and plot_sig and do_tdrstyle and not do_log: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+0.35*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
-    elif plot_data and plot_sig and do_tdrstyle and do_log: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+5000*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
+    elif plot_data and plot_sig and do_tdrstyle and not do_log: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+0.7*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
+    elif plot_data and plot_sig and do_tdrstyle and do_log: frame.GetYaxis().SetRangeUser(1000, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+20000*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e2, 1e7)
 
     #ROOT.gStyle.SetPadLeftMargin(0.16) 
@@ -401,7 +415,9 @@ class Plotter(Tools):
     
     
     if plot_data and plot_qcd: hist_data_tot.Draw('same')
-    if plot_data and not plot_qcd: hist_data_tot.Draw('histo same')
+    if plot_data and not plot_qcd: 
+      hist_data_tot.Draw('histo same')
+      hist_data_tot.Draw('PE same')
     if plot_qcd: 
       hist_qcd_tot.Draw('histo same')
       if do_stack:
@@ -412,6 +428,7 @@ class Plotter(Tools):
     if plot_sig: 
       for hist_sig in signal_hists:
         hist_sig.Draw('histo same')
+        hist_sig.Draw('PE same')
     #hist_data_pu.Draw('same')
 
     # draw error bars
@@ -431,9 +448,11 @@ class Plotter(Tools):
     #else:
     #  self.tools.printLatexBox(0.60, 0.84, title, size=0.04 if plot_ratio else 0.038)
 
+    if do_tdrstyle: self.tools.printLatexBox(0.38, 0.85, 'dimuon channel', size=0.04, pos='left', font=40)
+    #legend = self.tools.getRootTLegend(xmin=0.4, ymin=0.63, xmax=0.75, ymax=0.86, size=0.038)
     if add_CMSlabel and not do_tdrstyle: self.tools.printCMSTag(pad_up, CMS_tag, size=0.55 if plot_ratio else 0.43)
-    if add_CMSlabel and do_tdrstyle: self.tools.printInnerCMSTag(pad_up, CMS_tag, True, x_pos=0.15, y_pos=0.83, size=0.55)
-    self.tools.printLumiTag(pad_up, 41.6, size=0.5, offset=0.57)
+    if add_CMSlabel and do_tdrstyle: self.tools.printInnerCMSTag(pad_up, CMS_tag, True, x_pos=0.17, y_pos=0.83, size=0.55)
+    self.tools.printLumiTag(pad_up, 41.6, size=0.5, offset=0.507)
 
     #if do_luminorm:
     #  scale_text = ROOT.TPaveText(0.15, 0.83, 0.3, 0.88, "brNDC")
@@ -498,6 +517,7 @@ class Plotter(Tools):
     
     canv.SaveAs('{}/{}.png'.format(outputdir, self.quantity.label))
     canv.SaveAs('{}/{}.pdf'.format(outputdir, self.quantity.label))
+    canv.SaveAs('{}/{}.C'.format(outputdir, self.quantity.label))
 
 
   def plotTwoSamples(file1, file2, branchname, tree1, tree2, selection1='', selection2='', legend1='legend1', legend2='legend2', do_printstat=False):
@@ -575,7 +595,8 @@ if __name__ == '__main__':
     categories = categories[opt.categories_label]
     data_files = data_samples[opt.data_label]
     qcd_files = qcd_samples[opt.qcd_label]
-    signal_files = signal_samples[opt.signal_label]
+    signal_label = opt.signal_label
+    signal_files = signal_samples[signal_label]
 
     baseline_selection = selection[opt.selection_label].flat if opt.sample_type == 'flat' else selection[opt.selection_label].nano
     
@@ -587,7 +608,7 @@ if __name__ == '__main__':
       category_cutbased_selection = category.cutbased_selection
 
       for quantity in quantities:
-        plotter = Plotter(quantity=quantity, data_files=data_files, qcd_files=qcd_files, signal_files=signal_files, white_list=white_list)
+        plotter = Plotter(quantity=quantity, data_files=data_files, qcd_files=qcd_files, signal_files=signal_files, signal_label=signal_label, white_list=white_list)
         if opt.plot_CR:
           title = 'Control Region, {}'.format(category.title)
           plotdirlabel = 'CR/{}'.format(category.label)
