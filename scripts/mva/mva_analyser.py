@@ -628,6 +628,8 @@ class MVAAnalyser(Tools, MVATools):
 
   def plotAUCvsLifetimeGraph(self, training_info, mc_samples, data_samples, category):
     pd.options.mode.chained_assignment = None
+    ROOT.gStyle.SetPadLeftMargin(0.13)
+    ROOT.gStyle.SetPadBottomMargin(0.13)
 
     #masses = []
     #for mc_sample in mc_samples:
@@ -685,7 +687,7 @@ class MVAAnalyser(Tools, MVATools):
         #graph.SetMarkerSize(2)
 
         if ctau not in used_ctaus:
-          leg.AddEntry(graph, 'c#tau = {} mm'.format(ctau))
+          leg.AddEntry(graph, '{c} = {ctau} mm'.format(c='#it{c}#tau_{N}', ctau=ctau))
           used_ctaus.append(ctau)
 
         #graph.GetXaxis().SetTitle('Signal mass [GeV]')
@@ -701,16 +703,19 @@ class MVAAnalyser(Tools, MVATools):
         graphs.append(graph)
 
     frame = ROOT.TGraph()
-    frame.SetPoint(0, 0.85, 0.9)
-    frame.SetPoint(1, 4.7, 1)
-    frame.GetXaxis().SetTitle('m_{N} (GeV)')
+    range_min = 1.
+    #range_max = 4.5
+    range_max = 3.
+    frame.SetPoint(0, range_min, 0.94)
+    frame.SetPoint(1, range_max, 1.012)
+    frame.GetXaxis().SetTitle('#it{m}_{N} (GeV)')
     frame.GetXaxis().SetLabelSize(0.04)
     frame.GetXaxis().SetTitleSize(0.047)
     frame.GetXaxis().SetTitleOffset(1.)
     frame.GetYaxis().SetTitle('AUC')
     frame.GetYaxis().SetLabelSize(0.04)
     frame.GetYaxis().SetTitleSize(0.047)
-    frame.GetYaxis().SetTitleOffset(1.)
+    frame.GetYaxis().SetTitleOffset(1.4)
       
     canv = self.tools.createTCanvas('canv', 800, 700) 
     pad = ROOT.TPad("pad","pad",0,0,1,1)
@@ -721,7 +726,16 @@ class MVAAnalyser(Tools, MVATools):
     for igraph, graph in enumerate(graphs):
       graph.Draw('PL same')
 
-    self.tools.printCMSTagInFrame(pad, 'Preliminary', size=0.55)
+    line = ROOT.TLine(frame.GetXaxis().GetXmin(), 1, frame.GetXaxis().GetXmax(), 1)
+    line.SetLineColor(1)
+    line.SetLineWidth(2)
+    line.SetLineStyle(9)
+    line.Draw('same')
+
+    #self.tools.printCMSTagInFrame(pad, 'Preliminary', size=0.55)
+    self.tools.printLatexBox(0.22, 0.82, 'CMS', size=0.06, font=61)
+    #self.tools.printLatexBox(0.4, 0.817, 'Preliminary', size=0.055, font=52)
+    self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
     self.tools.printLatexBox(0.66, 0.4, category.title, size=0.05, font=22)
 
     leg.Draw()
@@ -729,22 +743,39 @@ class MVAAnalyser(Tools, MVATools):
     name = 'AUC_vs_lifetime_{}'.format(category.label)
     canv.cd()
     canv.SaveAs('{}/{}.png'.format(self.outdir, name))
+    canv.SaveAs('{}/{}.pdf'.format(self.outdir, name))
+    canv.SaveAs('{}/{}.C'.format(self.outdir, name))
 
 
   def plotPNNComparisonGraph(self, mc_samples, data_samples, category):
     pd.options.mode.chained_assignment = None
+    ROOT.gStyle.SetPadLeftMargin(0.13)
+    ROOT.gStyle.SetPadBottomMargin(0.13)
 
-    dirname_1 = 'test_2022Nov29_09h26m28s' # adding muon isolation
-    dirname_2 = 'test_2022Oct12_15h12m37s' # mass 3 only (without muon isolation)
+    #dirname_1 = 'test_2022Nov29_09h26m28s' # adding muon isolation
+    #dirname_2 = 'test_2022Oct12_15h12m37s' # mass 3 only (without muon isolation)
+    dirname_1 = 'training_Aug23'
+    dirname_2 = 'V13_06Feb23_m3_2023Nov28_20h32m09s'
       
     training_info_1 = TrainingInfo(dirname_1, category.label)
     training_info_2 = TrainingInfo(dirname_2, category.label)
 
-    signal_labels_trained_1 = ['V42_08Aug22_m1p0', 'V42_08Aug22_m1p5', 'V42_08Aug22_m2p0', 'V42_08Aug22_m3p0', 'V42_08Aug22_m4p5']
-    signal_labels_nottrained_1 = ['V42_08Aug22_m1p26', 'V42_08Aug22_m1p77', 'V42_08Aug22_m2p5', 'V42_08Aug22_m3p4', 'V42_08Aug22_m4p1']
-    signal_labels_trained_2 = ['V42_08Aug22_m3p0']
-    signal_labels_nottrained_2 = ['V42_08Aug22_m1p0', 'V42_08Aug22_m1p5', 'V42_08Aug22_m2p0', 'V42_08Aug22_m4p5', 'V42_08Aug22_m1p26', 'V42_08Aug22_m1p77', 'V42_08Aug22_m2p5', 'V42_08Aug22_m3p4', 'V42_08Aug22_m4p1']
-    signal_labels_tot = ['V42_08Aug22_m1p0', 'V42_08Aug22_m1p26', 'V42_08Aug22_m1p5', 'V42_08Aug22_m1p77', 'V42_08Aug22_m2p0', 'V42_08Aug22_m2p5', 'V42_08Aug22_m3p0', 'V42_08Aug22_m3p4', 'V42_08Aug22_m4p1', 'V42_08Aug22_m4p5']
+    #signal_labels_trained_1 = ['V42_08Aug22_m1p0', 'V42_08Aug22_m1p5', 'V42_08Aug22_m2p0', 'V42_08Aug22_m3p0', 'V42_08Aug22_m4p5']
+    #signal_labels_nottrained_1 = ['V42_08Aug22_m1p26', 'V42_08Aug22_m1p77', 'V42_08Aug22_m2p5', 'V42_08Aug22_m3p4', 'V42_08Aug22_m4p1']
+    #signal_labels_trained_2 = ['V42_08Aug22_m3p0']
+    #signal_labels_nottrained_2 = ['V42_08Aug22_m1p0', 'V42_08Aug22_m1p5', 'V42_08Aug22_m2p0', 'V42_08Aug22_m4p5', 'V42_08Aug22_m1p26', 'V42_08Aug22_m1p77', 'V42_08Aug22_m2p5', 'V42_08Aug22_m3p4', 'V42_08Aug22_m4p1']
+    #signal_labels_tot = ['V42_08Aug22_m1p0', 'V42_08Aug22_m1p26', 'V42_08Aug22_m1p5', 'V42_08Aug22_m1p77', 'V42_08Aug22_m2p0', 'V42_08Aug22_m2p5', 'V42_08Aug22_m3p0', 'V42_08Aug22_m3p4', 'V42_08Aug22_m4p1', 'V42_08Aug22_m4p5']
+
+    #signal_labels_trained_1 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m3p0', 'V42_06Feb23_m4p5']
+    #signal_labels_nottrained_1 = ['V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p4', 'V42_06Feb23_m4p1']
+    #signal_labels_trained_2 = ['V42_06Feb23_m3p0']
+    #signal_labels_nottrained_2 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m4p5', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p4', 'V42_06Feb23_m4p1']
+    #signal_labels_tot = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p5', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p0', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p0', 'V42_06Feb23_m3p4', 'V42_06Feb23_m4p1', 'V42_06Feb23_m4p5']
+    signal_labels_trained_1 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m3p0']
+    signal_labels_nottrained_1 = ['V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5']
+    signal_labels_trained_2 = ['V42_06Feb23_m3p0']
+    signal_labels_nottrained_2 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m4p5', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5']
+    signal_labels_tot = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p5', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p0', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p0']
 
     signal_files_trained_1 = []
     for signal_label in signal_labels_trained_1:
@@ -898,16 +929,19 @@ class MVAAnalyser(Tools, MVATools):
         graphs_merged.append(graph)
 
     frame = ROOT.TGraph()
-    frame.SetPoint(0, 0.85, 0.7)
-    frame.SetPoint(1, 4.7, 1)
-    frame.GetXaxis().SetTitle('m_{N} (GeV)')
+    range_min = 1.
+    #range_max = 4.5
+    range_max = 3.
+    frame.SetPoint(0, range_min, 0.77)
+    frame.SetPoint(1, range_max, 1.05)
+    frame.GetXaxis().SetTitle('#it{m}_{N} (GeV)')
     frame.GetXaxis().SetLabelSize(0.04)
     frame.GetXaxis().SetTitleSize(0.047)
     frame.GetXaxis().SetTitleOffset(1.)
     frame.GetYaxis().SetTitle('AUC')
     frame.GetYaxis().SetLabelSize(0.04)
     frame.GetYaxis().SetTitleSize(0.047)
-    frame.GetYaxis().SetTitleOffset(1.)
+    frame.GetYaxis().SetTitleOffset(1.4)
       
     canv = self.tools.createTCanvas('canv', 800, 700) 
     pad = ROOT.TPad("pad","pad",0,0,1,1)
@@ -921,13 +955,18 @@ class MVAAnalyser(Tools, MVATools):
     for graph in graphs_merged:
       graph.Draw('L same')
 
-    self.tools.printCMSTagInFrame(pad, 'Preliminary', size=0.55)
+    #self.tools.printCMSTagInFrame(pad, 'Preliminary', size=0.55)
+    self.tools.printLatexBox(0.22, 0.82, 'CMS', size=0.06, font=61)
+    #self.tools.printLatexBox(0.4, 0.817, 'Preliminary', size=0.055, font=52)
+    self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
     self.tools.printLatexBox(0.66, 0.4, category.title, size=0.05, font=22)
 
     leg.Draw()
 
     name = 'pNN_comparison_{}'.format(category.label)
     canv.SaveAs('{}/{}.png'.format(self.outdir, name))
+    canv.SaveAs('{}/{}.pdf'.format(self.outdir, name))
+    canv.SaveAs('{}/{}.C'.format(self.outdir, name))
 
 
   def plotScoreCurve(self, training_info, mc_samples, data_samples, category, do_log=False):
@@ -1860,13 +1899,13 @@ class MVAAnalyser(Tools, MVATools):
     #CMS_tag = 'Preliminary'
     CMS_tag = ''
     self.tools.printInnerCMSTag(pad, CMS_tag, print_tag, x_pos=0.17, y_pos=0.83, size=0.55)
-    self.tools.printLatexBox(0.465, 0.84, category.title, size=0.04, pos='left', font=42)
+    self.tools.printLatexBox(0.41, 0.84, category.title, size=0.04, pos='left', font=42)
     if 'Bc' in category.label:
       b_mass_label = '#mu{P}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
     else:
       b_mass_label = '#mu_{P}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
-    self.tools.printLatexBox(0.465, 0.78, b_mass_label, size=0.04, pos='left', font=42)
-    self.tools.printLatexBox(0.465, 0.73, 'dimuon channel', size=0.04, pos='left', font=42)
+    self.tools.printLatexBox(0.41, 0.78, b_mass_label, size=0.04, pos='left', font=42)
+    self.tools.printLatexBox(0.41, 0.73, 'dimuon channel', size=0.04, pos='left', font=42)
     self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
 
     canv.cd()
@@ -2520,18 +2559,19 @@ if __name__ == '__main__':
     do_plotAUC = False
     do_plotMass = False
     do_plotAUCvsLifetime = False
-    do_plotPNNComparison = False
+    do_plotPNNComparison = True
     do_plotPreselection = False
     do_plotSignalBackgroundComparison = False
-    do_plotDistributionComparison = True
+    do_plotDistributionComparison = False
     do_compareROC = False
     do_studyDisplacedTracks = False
     do_plotScoreNorm = False
 
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
+    signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3']
     #signal_labels = ['V12_08Aug22_sensitivity']
-    signal_labels = ['V13_06Feb23_trackid']
+    #signal_labels = ['V13_06Feb23_trackid']
 
     #signal_labels = [
     #  #'V42_08Aug22_m0p5',
