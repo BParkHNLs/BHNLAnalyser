@@ -463,8 +463,8 @@ class LimitPlotter(object):
         masses_two_sigma.append(float(mass))
     '''
 
-    #for i, the_obs in enumerate(obs):
-    #  if the_obs == min(obs): print 'min obs {} for mass {}'.format(min(obs), masses_obs[i])
+    for i, the_obs in enumerate(obs):
+      if the_obs == min(obs): print 'min obs {} for mass {}'.format(min(obs), masses_obs[i])
     #  if masses_obs[i] == 1.42: print 'obs for 1.42',the_obs
     #  if masses_obs[i] == 1.95: print 'obs for 1.95',the_obs
 
@@ -527,11 +527,11 @@ class LimitPlotter(object):
 
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
-          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.obs_EXO_21_013_Majorana_0p0_0p5_0p5, color='brown', label='CMS \nPAS-EXO-21-013', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.obs_EXO_21_013_Majorana_0p0_0p5_0p5, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
         elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
-          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.obs_EXO_21_013_Majorana_0p5_0p5_0p0, color='brown', label='CMS \nPAS-EXO-21-013', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.obs_EXO_21_013_Majorana_0p5_0p5_0p0, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
         elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
-          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.obs_EXO_21_013_Majorana_0p3_0p3_0p3, color='brown', label='CMS \nPAS-EXO-21-013', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.obs_EXO_21_013_Majorana_0p3_0p3_0p3, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
 
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
@@ -554,11 +554,11 @@ class LimitPlotter(object):
 
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
-          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.obs_EXO_21_013_Dirac_0p0_0p5_0p5, color='brown', label='CMS \nPAS-EXO-21-013', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.obs_EXO_21_013_Dirac_0p0_0p5_0p5, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
         elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
-          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.obs_EXO_21_013_Dirac_0p5_0p5_0p0, color='brown', label='CMS \nPAS-EXO-21-013', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.obs_EXO_21_013_Dirac_0p5_0p5_0p0, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
         elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
-          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.obs_EXO_21_013_Dirac_0p3_0p3_0p3, color='brown', label='CMS \nPAS-EXO-21-013', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.obs_EXO_21_013_Dirac_0p3_0p3_0p3, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
 
         #second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
         box = ax.get_position()
