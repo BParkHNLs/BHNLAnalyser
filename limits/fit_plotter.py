@@ -204,7 +204,7 @@ class FitPlotter(object):
         idx_sig_plus_bkg = 4
 
       rooplot.SetTitle('')
-      rooplot.GetXaxis().SetTitle('m(#mu^{#pm}#pi^{#mp}) (GeV)')
+      rooplot.GetXaxis().SetTitle('#it{m}(#mu^{#pm}#pi^{#mp}) (GeV)')
       rooplot.GetXaxis().SetLabelSize(0.04)
       rooplot.GetXaxis().SetTitleSize(0.047)
       rooplot.GetXaxis().SetTitleOffset(1.0)
@@ -216,13 +216,13 @@ class FitPlotter(object):
       rooplot.GetYaxis().SetRangeUser(0, rooplot.GetMaximum() + 0.7*rooplot.GetMaximum())
       rooplot.Draw()
 
-      self.tools.printLatexBox(0.15, 0.7, category.title, size=0.04, pos='left', font=42)
+      self.tools.printLatexBox(0.15, 0.75, category.title, size=0.04, pos='left', font=42)
       if 'Bc' in category.label:
-        b_mass_label = '#mu_{P}#mu#pi mass > 5.7 GeV'
+        b_mass_label = '#mu_{P}#mu^{#pm}#pi^{#mu} mass > 5.7 GeV'
       else:
-        b_mass_label = '#mu_{P}#mu#pi mass #leq 5.7 GeV'
-      self.tools.printLatexBox(0.15, 0.65, b_mass_label, size=0.04, pos='left', font=42)
-      self.tools.printLatexBox(0.15, 0.6, self.flavour_channel, size=0.04, pos='left', font=42)
+        b_mass_label = '#mu_{P}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
+      self.tools.printLatexBox(0.15, 0.7, b_mass_label, size=0.04, pos='left', font=42)
+      self.tools.printLatexBox(0.15, 0.65, self.flavour_channel, size=0.04, pos='left', font=42)
 
       # print the CMS tag
       self.tools.printInnerCMSTag(pad, self.CMS_tag, self.print_tag, x_pos=0.15, y_pos=0.83, size=0.55)
@@ -238,7 +238,7 @@ class FitPlotter(object):
         leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_bkg).GetName()), 'background fit')
         leg.AddEntry(rooplot.findObject(rooplot.getObject(4).GetName()), 'signal+background fit')
       else:
-        leg = self.tools.getRootTLegend(xmin=0.47, ymin=0.63, xmax=0.83, ymax=0.85, size=0.04)
+        leg = self.tools.getRootTLegend(xmin=0.49, ymin=0.61, xmax=0.8, ymax=0.81, size=0.04)
         leg.AddEntry(rooplot.findObject(rooplot.getObject(0).GetName()), 'data')
         leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_bkg).GetName()), 'background prediction')
         leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_sig).GetName()), 'signal - {} GeV, {} mm'.format(self.mass, ctau))
