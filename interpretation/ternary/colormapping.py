@@ -1,6 +1,7 @@
 import matplotlib
 from matplotlib import pyplot as plt
 from matplotlib.colors import rgb2hex
+import numpy as np
 import math
 
 ## Default colormap, other options here: http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
@@ -117,6 +118,22 @@ def colorbar_hack(ax, vmin, vmax, cmap, scientific=False, cbarlabel=None, norm=N
     if cbarlabel is not None:
         cb.set_label(cbarlabel)
     if ternary_style.scientific:
-        cb.locator = matplotlib.ticker.LinearLocator(numticks=7)
+        if ternary_style.fixed_range and ternary_style.exponent == 1e3:
+          cb.locator = matplotlib.ticker.FixedLocator([0.1, 1.0, 10.0])
+          full_range = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.])
+          minorticks = norm(full_range)
+          cb.ax.yaxis.set_ticks(minorticks, minor=True)
+        elif ternary_style.fixed_range and ternary_style.exponent == 1:
+          #cb.locator = matplotlib.ticker.FixedLocator([100.0, 1000.0, 10000.0])
+          #full_range = np.array([100., 200., 300., 400., 500., 600., 700., 800., 900., 1000., 2000., 3000., 4000., 5000., 6000., 7000., 8000., 9000., 10000.])
+          cb.locator = matplotlib.ticker.FixedLocator([0.1, 1.0, 10.0])
+          full_range = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.])
+          minorticks = norm(full_range)
+          cb.ax.yaxis.set_ticks(minorticks, minor=True)
+        else:
+          cb.locator = matplotlib.ticker.LinearLocator(numticks=7)
         cb.formatter = matplotlib.ticker.FormatStrFormatter("%.1f")
         cb.update_ticks()
+
+
+

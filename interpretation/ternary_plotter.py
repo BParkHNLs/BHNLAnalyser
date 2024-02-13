@@ -46,11 +46,11 @@ class TernaryPlotter(object):
     #if self.exclusion == 'ctau': self.cmap += '_r' # reverse the map
     if self.exclusion == 'coupling': 
       self.default_value = -99.
-      self.z_axis_label = r'Observed $|V|^{2}$'
+      self.z_axis_label = r'Observed $|V_\mathrm{N}|^{2}$ limit'
       ternary_style.exponent = 1e-4
     elif self.exclusion == 'ctau': 
       self.default_value = -99.
-      self.z_axis_label = r'Observed $c\tau$ (m)'
+      self.z_axis_label = r'Observed $c\tau_\mathrm{N}$ limit (m)'
       ternary_style.exponent = 1#1e3
     self.ternary_style = ternary_style
     self.fontsize = self.ternary_style.fontsize
@@ -354,11 +354,20 @@ class TernaryPlotter(object):
 
     # add labels
     plt.title(' ', loc='right')
-    ax.text(0.09, 1.05, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=2.0*self.fontsize, fontweight='bold')
-    #ax.text(0.15, 0.91, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.5*self.fontsize, fontstyle='italic')
+    if self.exclusion == 'coupling': 
+      ax.text(0.09, 1.08, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=2.0*self.fontsize, fontweight='bold')
+      #ax.text(0.15, 0.91, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.5*self.fontsize, fontstyle='italic')
+    else:
+      ax.text(0.09, 1.05, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=2.0*self.fontsize, fontweight='bold')
+      #ax.text(0.15, 0.91, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.5*self.fontsize, fontstyle='italic')
     lumi = '41.6 fb'+r'$^{-1}$'
-    ax.text(1.1, 1.07, lumi + ' (13 TeV)', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.3*self.fontsize)
-    ax.text(0.85, 0.97, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.4*self.fontsize, fontweight='bold')
+    if self.exclusion == 'coupling': 
+      ax.text(1.1, 1.1, lumi + ' (13 TeV)', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.3*self.fontsize)
+    else:
+      ax.text(1.1, 1.07, lumi + ' (13 TeV)', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.3*self.fontsize)
+    if self.scenario == 'Dirac': scenario_label = 'Dirac-like' 
+    else: scenario_label = 'Majorana'
+    ax.text(0.85, 0.97, scenario_label, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.4*self.fontsize, fontweight='bold')
     ax.text(0.85, 0.9, r'$m_{N}$' + ' = {} GeV'.format(self.mass), horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.4*self.fontsize)
 
     # add exponent on colorbar
@@ -369,7 +378,8 @@ class TernaryPlotter(object):
       elif self.exclusion == 'ctau':
         exponent = '+' + exponent[exponent.find('e')+3]
       exponent = 'x$10^{e}$'.format(e='{'+exponent+'}')
-      #ax.text(1.03, 1.02, r'{}'.format(exponent), transform=ax.transAxes, fontsize=1.3*self.fontsize)
+      if self.exclusion == 'coupling': 
+        ax.text(1.03, 1.02, r'{}'.format(exponent), transform=ax.transAxes, fontsize=1.3*self.fontsize)
 
     # define ternary figure
     figure, tax = ternary.figure(ax=ax, scale=self.scale)
