@@ -472,28 +472,39 @@ class LimitPlotter(object):
     #print masses_central
     #print 'the_central = np.array({})'.format(central)
     plt.clf()
-    f, ax = plt.subplots(figsize=(13, 9))
-    y_range_min = 1e-6
+    #f, ax = plt.subplots(figsize=(13, 9))
+    f, ax = plt.subplots(figsize=(12, 10.5))
+    ax.tick_params(axis='y',direction='in', which='both', pad=7) # both means major and minor
+    ax.tick_params(axis='x',direction='in', which='both', pad=7)
+    y_range_min = 1e-7
     y_range_max = 1e-2
     if not self.do_coupling_scenario:
-      self.fe = '0.0'
-      self.fu = '1.0'
-      self.ft = '0.0'
+      self.fe = '0' #'0.0'
+      self.fu = '1' #'1.0'
+      self.ft = '0' #'0.0'
     if self.fe == '0p5': fe_label = '1/2'
     elif self.fe == '0p3': fe_label = '1/3'
+    elif self.fe == '0p0': fe_label = '0'
+    elif self.fe == '1p0': fe_label = '1'
     else: fe_label = self.fe.replace('p', '.')
     if self.fu == '0p5': fu_label = '1/2'
     elif self.fu == '0p3': fu_label = '1/3'
+    elif self.fu == '0p0': fu_label = '0'
+    elif self.fu == '1p0': fu_label = '1'
     else: fu_label = self.fu.replace('p', '.')
     if self.ft == '0p5': ft_label = '1/2'
     elif self.ft == '0p3': ft_label = '1/3'
+    elif self.ft == '0p0': ft_label = '0'
+    elif self.ft == '1p0': ft_label = '1'
     else: ft_label = self.ft.replace('p', '.')
-    coupling_scenario = r'($r_{e}$={fe}, $r_{mu}$={fu}, $r_{tau}$={ft})'.format(e='e', fe=fe_label, mu=r'\mu', fu=fu_label, tau=r'\tau', ft=ft_label)
+    #coupling_scenario = r'($r_{e}$={fe}, $r_{mu}$={fu}, $r_{tau}$={ft})'.format(e='e', fe=fe_label, mu=r'\mu', fu=fu_label, tau=r'\tau', ft=ft_label)
+    coupling_scenario = r'($r_{e}$, $r_{mu}$, $r_{tau}$) = ({fe}, {fu}, {ft})'.format(e='e', fe=fe_label, mu=r'\mu', fu=fu_label, tau=r'\tau', ft=ft_label)
     ax.text(0.1, 0.89, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=33, fontweight='bold')
     #ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
-    ax.text(0.75, 0.85, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=22)
+    ax.text(0.75, 0.85, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25)
     #ax.text(0.25, 0.66, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
-    ax.text(0.75, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=25, fontweight='bold')
+    scenario_label = 'Dirac-like' if self.scenario == 'Dirac' else 'Majorana'
+    ax.text(0.75, 0.93, scenario_label, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=25, fontweight='bold')
     #plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--', zorder=10)
     f1 = plt.fill_between(masses_minus_two_sigma, minus_two, boundary_minus_two, color='gold'     , label=r'95% expected', zorder=0.5)
     f2 = plt.fill_between(masses_minus_one_sigma, minus_one, boundary_minus_one, color='forestgreen', label=r'68% expected', zorder=0.5)
@@ -514,28 +525,39 @@ class LimitPlotter(object):
 
     if self.scenario == 'Majorana':
       if not self.do_coupling_scenario:
-        p2, = plt.plot(db.masses_atlas_Majorana, db.obs_atlas_Majorana, color='darkorange', label='ATLAS \nPhys. Rev. Lett.\n(2023)', linewidth=2., linestyle='dashed', zorder=10)
-        p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='darkmagenta', label='CMS \nJHEP (2022)', linewidth=2., linestyle='dashed', zorder=10)
-        p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='blue', label='LHCb \nPhys. Rev. Lett.\n(2014)', linewidth=2., linestyle='dashed', zorder=10)
-        p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle \nPhys. Rev. D\n(2013)', linewidth=2., linestyle='dashed', zorder=10)
-        p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='CMS \nPAS-EXO-22-017', linewidth=2., linestyle='dashed', zorder=10)
+        #p2, = plt.plot(db.masses_atlas_Majorana, db.obs_atlas_Majorana, color='darkorange', label='ATLAS \nPhys. Rev. Lett.\n(2023)', linewidth=2., linestyle='dashed', zorder=10)
+        #p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='darkmagenta', label='CMS \nJHEP (2022)', linewidth=2., linestyle='dashed', zorder=10)
+        #p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='blue', label='LHCb \nPhys. Rev. Lett.\n(2014)', linewidth=2., linestyle='dashed', zorder=10)
+        #p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle \nPhys. Rev. D\n(2013)', linewidth=2., linestyle='dashed', zorder=10)
+        #p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='CMS \nPAS-EXO-22-017', linewidth=2., linestyle='dashed', zorder=10)
+        p2, = plt.plot(db.masses_atlas_Majorana, db.obs_atlas_Majorana, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=2., linestyle='dashed', zorder=10)
+        p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='darkmagenta', label='CMS, JHEP (2022) 081', linewidth=2., linestyle='dashed', zorder=10)
+        p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='blue', label='LHCb, Phys. Rev. Lett. (2014) 131802', linewidth=2., linestyle='dashed', zorder=10)
+        p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle, Phys. Rev. D (2013) 071102', linewidth=2., linestyle='dashed', zorder=10)
+        p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='CMS, PAS-EXO-22-017', linewidth=2., linestyle='dashed', zorder=10)
 
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        second_legend = ax.legend(handles=[p3, p6, p2, p4, p5], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend outside of frame
+        #box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        #second_legend = ax.legend(handles=[p3, p6, p2, p4, p5], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend inside of frame
+        second_legend = ax.legend(handles=[p3, p6, p2, p4, p5], loc='lower right', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
 
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
-          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.obs_EXO_21_013_Majorana_0p0_0p5_0p5, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.obs_EXO_21_013_Majorana_0p0_0p5_0p5, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
         elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
-          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.obs_EXO_21_013_Majorana_0p5_0p5_0p0, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.obs_EXO_21_013_Majorana_0p5_0p5_0p0, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
         elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
-          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.obs_EXO_21_013_Majorana_0p3_0p3_0p3, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.obs_EXO_21_013_Majorana_0p3_0p3_0p3, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
 
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        second_legend = ax.legend(handles=[p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend outside of frame
+        #box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        #second_legend = ax.legend(handles=[p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend inside of frame
+        second_legend = ax.legend(handles=[p2], loc='lower right', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
 
         #second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
@@ -543,27 +565,34 @@ class LimitPlotter(object):
 
     elif self.scenario == 'Dirac':
       if not self.do_coupling_scenario:
-        p2, = plt.plot(db.masses_atlas_Dirac, db.obs_atlas_Dirac, color='darkorange', label='ATLAS \nPhys. Rev. Lett.\n(2023)', linewidth=2., linestyle='dashed', zorder=10)
-        p3, = plt.plot(db.masses_cmsdisplaced_Dirac, db.obs_cmsdisplaced_Dirac, color='blueviolet', label='CMS \nJHEP (2022)', linewidth=2., linestyle='dashed', zorder=10)
-        p4, = plt.plot(db.masses_EXO_22_017_Dirac, db.obs_EXO_22_017_Dirac, color='magenta', label='CMS \nPAS-EXO-22-017', linewidth=2., linestyle='dashed', zorder=10)
+        p2, = plt.plot(db.masses_atlas_Dirac, db.obs_atlas_Dirac, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=2., linestyle='dashed', zorder=10)
+        p3, = plt.plot(db.masses_cmsdisplaced_Dirac, db.obs_cmsdisplaced_Dirac, color='blueviolet', label='CMS, JHEP (2022) 081', linewidth=2., linestyle='dashed', zorder=10)
+        p4, = plt.plot(db.masses_EXO_22_017_Dirac, db.obs_EXO_22_017_Dirac, color='magenta', label='CMS, PAS-EXO-22-017', linewidth=2., linestyle='dashed', zorder=10)
 
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        second_legend = ax.legend(handles=[p3, p4, p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend outside of frame
+        #box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        #second_legend = ax.legend(handles=[p3, p4, p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend inside of frame
+        second_legend = ax.legend(handles=[p3, p4, p2], loc='lower right', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
 
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
-          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.obs_EXO_21_013_Dirac_0p0_0p5_0p5, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.obs_EXO_21_013_Dirac_0p0_0p5_0p5, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
         elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
-          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.obs_EXO_21_013_Dirac_0p5_0p5_0p0, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.obs_EXO_21_013_Dirac_0p5_0p5_0p0, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
         elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
-          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.obs_EXO_21_013_Dirac_0p3_0p3_0p3, color='brown', label='CMS \n2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.obs_EXO_21_013_Dirac_0p3_0p3_0p3, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
 
         #second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
-        box = ax.get_position()
-        ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-        second_legend = ax.legend(handles=[p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+
+        # legend outside of frame
+        #box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        #second_legend = ax.legend(handles=[p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend inside of frame
+        second_legend = ax.legend(handles=[p2], loc='lower right', fontsize=18)
         ax = plt.gca().add_artist(second_legend)
 
     if not self.do_blind:
@@ -578,11 +607,11 @@ class LimitPlotter(object):
     veto_Psi2S = plt.gca().add_patch(Rectangle((3.65, 1.01e-5), 3.75-3.65, 9e-2-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
 
     plt.title(lumi + ' (13 TeV)', loc='right', fontsize=25)
-    plt.ylabel(r'$|V|^2$', fontsize=25)
+    plt.ylabel(r'$|V_\mathrm{N}|^2$', fontsize=25)
     plt.yticks(fontsize=21)
     plt.ylim(y_range_min, y_range_max)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-    plt.xlabel(r'$m_{N}$ (GeV)', fontsize=25)
+    plt.xlabel(r'$m_{\mathrm{N}}$ (GeV)', fontsize=25)
     plt.xlim(min(masses_central), max(masses_central))
     plt.xticks(fontsize=21)
     plt.yscale('log')
