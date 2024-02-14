@@ -637,12 +637,14 @@ class MVAAnalyser(Tools, MVATools):
 
     #graph = ROOT.TGraph()
 
-    ctaus = [1, 10, 100, 1000]
-    colours = [ROOT.kRed-9, ROOT.kRed-7, ROOT.kRed+2, ROOT.kRed+4]
+    #ctaus = [1, 10, 100, 1000]
+    ctaus = [10, 100, 1000]
+    #colours = [ROOT.kRed-9, ROOT.kRed-7, ROOT.kRed+2, ROOT.kRed+4]
+    colours = [ROOT.kRed-7, ROOT.kRed+2, ROOT.kRed+4]
 
     graphs = []
 
-    leg = self.tools.getRootTLegend(xmin=0.5, ymin=0.15, xmax=0.82, ymax=0.35, size=0.05)
+    leg = self.tools.getRootTLegend(xmin=0.55, ymin=0.15, xmax=0.8, ymax=0.35, size=0.041)
 
     used_ctaus = []
     for ictau, ctau in enumerate(ctaus):
@@ -684,7 +686,7 @@ class MVAAnalyser(Tools, MVATools):
         graph.SetPoint(point, mass, auc)
         graph.SetMarkerColor(colours[ictau])
         graph.SetMarkerStyle(20)
-        #graph.SetMarkerSize(2)
+        graph.SetMarkerSize(2)
 
         if ctau not in used_ctaus:
           leg.AddEntry(graph, '{c} = {ctau} mm'.format(c='#it{c}#tau_{N}', ctau=ctau))
@@ -706,8 +708,8 @@ class MVAAnalyser(Tools, MVATools):
     range_min = 1.
     #range_max = 4.5
     range_max = 3.
-    frame.SetPoint(0, range_min, 0.94)
-    frame.SetPoint(1, range_max, 1.012)
+    frame.SetPoint(0, range_min, 0.7)
+    frame.SetPoint(1, range_max, 1.05)
     frame.GetXaxis().SetTitle('#it{m}_{N} (GeV)')
     frame.GetXaxis().SetLabelSize(0.04)
     frame.GetXaxis().SetTitleSize(0.047)
@@ -717,7 +719,7 @@ class MVAAnalyser(Tools, MVATools):
     frame.GetYaxis().SetTitleSize(0.047)
     frame.GetYaxis().SetTitleOffset(1.4)
       
-    canv = self.tools.createTCanvas('canv', 800, 700) 
+    canv = self.tools.createTCanvas('canv', 870, 700) 
     pad = ROOT.TPad("pad","pad",0,0,1,1)
     pad.Draw()
     pad.cd()
@@ -735,8 +737,15 @@ class MVAAnalyser(Tools, MVATools):
     #self.tools.printCMSTagInFrame(pad, 'Preliminary', size=0.55)
     self.tools.printLatexBox(0.22, 0.82, 'CMS', size=0.06, font=61)
     #self.tools.printLatexBox(0.4, 0.817, 'Preliminary', size=0.055, font=52)
-    self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
-    self.tools.printLatexBox(0.66, 0.4, category.title, size=0.05, font=22)
+    self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.54)
+    self.tools.printLatexBox(0.17, 0.31, category.title, size=0.041, pos='left', font=42)
+    if 'Bc' in category.label:
+      b_mass_label = '#mu{B}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
+    else:
+      b_mass_label = '#mu_{B}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
+    self.tools.printLatexBox(0.17, 0.25, b_mass_label, size=0.041, pos='left', font=42)
+    #self.tools.printLatexBox(0.17, 0.19, '#it{dimuon} channel', size=0.041, pos='left', font=42)
+    self.tools.printLatexBox(0.17, 0.19, 'dimuon channel', size=0.041, pos='left', font=42)
 
     leg.Draw()
 
@@ -755,7 +764,11 @@ class MVAAnalyser(Tools, MVATools):
     #dirname_1 = 'test_2022Nov29_09h26m28s' # adding muon isolation
     #dirname_2 = 'test_2022Oct12_15h12m37s' # mass 3 only (without muon isolation)
     dirname_1 = 'training_Aug23'
-    dirname_2 = 'V13_06Feb23_m3_2023Nov28_20h32m09s'
+    #dirname_2 = 'V13_06Feb23_m3_2023Nov28_20h32m09s'
+    #dirname_2 = 'V13_06Feb23_m2_2024Jan28_10h01m21s'
+    #dirname_2 = 'V13_06Feb23_m2_2024Jan28_10h01m33s'
+    dirname_2 = 'V13_06Feb23_m2_2024Jan28_10h00m21s'
+    #dirname_2 = 'V13_06Feb23_m2_2024Jan30_11h37m02s'
       
     training_info_1 = TrainingInfo(dirname_1, category.label)
     training_info_2 = TrainingInfo(dirname_2, category.label)
@@ -771,11 +784,14 @@ class MVAAnalyser(Tools, MVATools):
     #signal_labels_trained_2 = ['V42_06Feb23_m3p0']
     #signal_labels_nottrained_2 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m4p5', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p4', 'V42_06Feb23_m4p1']
     #signal_labels_tot = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p5', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p0', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p0', 'V42_06Feb23_m3p4', 'V42_06Feb23_m4p1', 'V42_06Feb23_m4p5']
-    signal_labels_trained_1 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m3p0']
-    signal_labels_nottrained_1 = ['V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5']
-    signal_labels_trained_2 = ['V42_06Feb23_m3p0']
-    signal_labels_nottrained_2 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m4p5', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5']
-    signal_labels_tot = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p5', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p0', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p0']
+    signal_labels_trained_1 = ['V42_06Feb23_m1p0_pNN', 'V42_06Feb23_m1p5_pNN', 'V42_06Feb23_m2p0_pNN', 'V42_06Feb23_m3p0_pNN']
+    signal_labels_nottrained_1 = ['V42_06Feb23_m1p26_pNN', 'V42_06Feb23_m1p77_pNN', 'V42_06Feb23_m2p3_pNN', 'V42_06Feb23_m2p7_pNN']
+    #signal_labels_trained_2 = ['V42_06Feb23_m3p0']
+    #signal_labels_nottrained_2 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m4p5', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5']
+    #signal_labels_tot = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p5', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p0', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p0']
+    signal_labels_trained_2 = ['V42_06Feb23_m2p0_pNN']
+    signal_labels_nottrained_2 = ['V42_06Feb23_m1p0_pNN', 'V42_06Feb23_m1p5_pNN', 'V42_06Feb23_m3p0_pNN', 'V42_06Feb23_m4p5_pNN', 'V42_06Feb23_m1p26_pNN', 'V42_06Feb23_m1p77_pNN', 'V42_06Feb23_m2p3_pNN', 'V42_06Feb23_m2p7_pNN']
+    signal_labels_tot = ['V42_06Feb23_m1p0_pNN', 'V42_06Feb23_m1p26_pNN', 'V42_06Feb23_m1p5_pNN', 'V42_06Feb23_m1p77_pNN', 'V42_06Feb23_m2p0_pNN', 'V42_06Feb23_m2p3_pNN', 'V42_06Feb23_m2p7_pNN', 'V42_06Feb23_m3p0_pNN']
 
     signal_files_trained_1 = []
     for signal_label in signal_labels_trained_1:
@@ -820,7 +836,7 @@ class MVAAnalyser(Tools, MVATools):
     graphs = []
     legends = []
 
-    leg = self.tools.getRootTLegend(xmin=0.3, ymin=0.15, xmax=0.8, ymax=0.35, size=0.05)
+    leg = self.tools.getRootTLegend(xmin=0.48, ymin=0.15, xmax=0.8, ymax=0.35, size=0.041)
 
     for itraining, training_info in enumerate([training_info_1, training_info_2]):
       if itraining == 0:
@@ -932,8 +948,9 @@ class MVAAnalyser(Tools, MVATools):
     range_min = 1.
     #range_max = 4.5
     range_max = 3.
-    frame.SetPoint(0, range_min, 0.77)
+    frame.SetPoint(0, range_min, 0.7)
     frame.SetPoint(1, range_max, 1.05)
+    frame.SetMarkerSize(0)
     frame.GetXaxis().SetTitle('#it{m}_{N} (GeV)')
     frame.GetXaxis().SetLabelSize(0.04)
     frame.GetXaxis().SetTitleSize(0.047)
@@ -943,7 +960,7 @@ class MVAAnalyser(Tools, MVATools):
     frame.GetYaxis().SetTitleSize(0.047)
     frame.GetYaxis().SetTitleOffset(1.4)
       
-    canv = self.tools.createTCanvas('canv', 800, 700) 
+    canv = self.tools.createTCanvas('canv', 870, 700) 
     pad = ROOT.TPad("pad","pad",0,0,1,1)
     pad.Draw()
     pad.cd()
@@ -955,11 +972,22 @@ class MVAAnalyser(Tools, MVATools):
     for graph in graphs_merged:
       graph.Draw('L same')
 
-    #self.tools.printCMSTagInFrame(pad, 'Preliminary', size=0.55)
+    line = ROOT.TLine(frame.GetXaxis().GetXmin(), 1, frame.GetXaxis().GetXmax(), 1)
+    line.SetLineColor(1)
+    line.SetLineWidth(2)
+    line.SetLineStyle(9)
+    line.Draw('same')
+
     self.tools.printLatexBox(0.22, 0.82, 'CMS', size=0.06, font=61)
     #self.tools.printLatexBox(0.4, 0.817, 'Preliminary', size=0.055, font=52)
-    self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
-    self.tools.printLatexBox(0.66, 0.4, category.title, size=0.05, font=22)
+    self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.54)
+    self.tools.printLatexBox(0.17, 0.31, category.title, size=0.041, pos='left', font=42)
+    if 'Bc' in category.label:
+      b_mass_label = '#mu{B}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
+    else:
+      b_mass_label = '#mu_{B}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
+    self.tools.printLatexBox(0.17, 0.25, b_mass_label, size=0.041, pos='left', font=42)
+    self.tools.printLatexBox(0.17, 0.19, 'dimuon channel', size=0.041, pos='left', font=42)
 
     leg.Draw()
 
@@ -1743,18 +1771,15 @@ class MVAAnalyser(Tools, MVATools):
     ROOT.gStyle.SetPadBottomMargin(0.13)
 
     #masses = [1.0, 2.0, 4.5]
-    masses = [2.0]
     #colours = [ROOT.kOrange+0, ROOT.kRed+1, ROOT.kRed+4]
+    masses = [2.0]
     colours = [ROOT.kBlue+1]
-    #for mc_sample in mc_samples:
-    #  if mc_sample.mass not in masses:
-    #    masses.append(mc_sample.mass)
 
     canv = self.tools.createTCanvas('canv'+category.label, 800, 700) 
     pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
     pad.Draw()
     pad.cd()
-    leg = self.tools.getRootTLegend(xmin=0.4, ymin=0.55, xmax=0.65, ymax=0.67, size=0.04)
+    leg = self.tools.getRootTLegend(xmin=0.36, ymin=0.52, xmax=0.61, ymax=0.65, size=0.042)
 
     hists_sig = []
     hists_bkg = []
@@ -1762,9 +1787,6 @@ class MVAAnalyser(Tools, MVATools):
     max_val = -99.
 
     for imass, mass in enumerate(masses):
-      #canv = self.tools.createTCanvas('canv'+category.label+str(mass), 800, 700) 
-      #leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.65, xmax=0.65, ymax=0.83, size=0.04)
-
       resolution = self.resolution_p0 + self.resolution_p1 * mass
 
       # consider the 10 sigma window around the signal mass
@@ -1805,8 +1827,8 @@ class MVAAnalyser(Tools, MVATools):
       hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='hist_bkg'+str(score), branchname='flat', selection='score > {}'.format(score))
       if hist_bkg.Integral() != 0: hist_bkg.Scale(1./hist_bkg.Integral())
 
-      hist_bkg.SetFillColor(ROOT.kBlue-3)#colours[imass-1])
-      hist_bkg.SetFillStyle(3005)
+      hist_bkg.SetFillColor(ROOT.kBlue-3) # same as for preselection plots
+      hist_bkg.SetFillStyle(3005) # same as for preselection plots
 
       if hist_bkg.GetMaximum() > max_val: max_val = hist_bkg.GetMaximum()
         
@@ -1817,7 +1839,7 @@ class MVAAnalyser(Tools, MVATools):
       hist_bkg.GetXaxis().SetTitleSize(0.045)
       hist_bkg.GetXaxis().SetLabelOffset(0.015)
       hist_bkg.GetXaxis().SetTitleOffset(1.2)
-      hist_bkg.GetYaxis().SetTitle('Normalised to unity')
+      hist_bkg.GetYaxis().SetTitle('Normalized to unity')
       hist_bkg.GetYaxis().SetLabelSize(0.04)
       hist_bkg.GetYaxis().SetTitleSize(0.045)
       hist_bkg.GetYaxis().SetLabelOffset(0.01)
@@ -1867,8 +1889,11 @@ class MVAAnalyser(Tools, MVATools):
 
         if hist_sig.GetMaximum() > max_val: max_val = hist_sig.GetMaximum()
 
-        hist_sig.SetMarkerStyle(20)
-        hist_sig.SetMarkerColor(colours[imass])
+        #hist_sig.SetMarkerStyle(20)
+        #hist_sig.SetMarkerColor(colours[imass])
+        hist_sig.SetLineColor(colours[imass]) # same as for preselection plots
+        hist_sig.SetLineWidth(3) # same as for preselection plots
+        hist_sig.SetFillColorAlpha(0, 0) # same as for preselection plots
         hists_sig.append(hist_sig)
         leg.AddEntry(hist_sig, 'signal - {} GeV, {} mm'.format(round(mc_sample.mass, 1), round(mc_sample.ctau, 1)))
 
@@ -1881,7 +1906,7 @@ class MVAAnalyser(Tools, MVATools):
     for i, hist in enumerate(hists_bkg):
       if i == 0:
         if quantity.label == 'b_mass': 
-          hist.GetYaxis().SetRangeUser(0, max_val + 1.*max_val)
+          hist.GetYaxis().SetRangeUser(0, max_val + 1.3*max_val)
         else:
           hist.GetYaxis().SetRangeUser(0, max_val + 0.3*max_val) if not do_log else hist.GetYaxis().SetRangeUser(1e-4, max_val + 30*max_val)
         if quantity.label == 'hnl_cos2d': 
@@ -1892,20 +1917,22 @@ class MVAAnalyser(Tools, MVATools):
         hist.Draw('hist same')
         hist.Draw('PE same')
     for hist in hists_sig:
-      hist.Draw('same')
+      #hist.Draw('same')
+      hist.Draw('histo same')
+      hist.Draw('PE same')
     leg.Draw('same')
 
     print_tag = True
     #CMS_tag = 'Preliminary'
     CMS_tag = ''
     self.tools.printInnerCMSTag(pad, CMS_tag, print_tag, x_pos=0.17, y_pos=0.83, size=0.55)
-    self.tools.printLatexBox(0.41, 0.84, category.title, size=0.04, pos='left', font=42)
+    self.tools.printLatexBox(0.37, 0.84, category.title, size=0.042, pos='left', font=42)
     if 'Bc' in category.label:
-      b_mass_label = '#mu{P}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
+      b_mass_label = '#mu{B}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
     else:
-      b_mass_label = '#mu_{P}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
-    self.tools.printLatexBox(0.41, 0.78, b_mass_label, size=0.04, pos='left', font=42)
-    self.tools.printLatexBox(0.41, 0.73, 'dimuon channel', size=0.04, pos='left', font=42)
+      b_mass_label = '#mu_{B}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
+    self.tools.printLatexBox(0.37, 0.77, b_mass_label, size=0.042, pos='left', font=42)
+    self.tools.printLatexBox(0.37, 0.71, 'dimuon channel', size=0.042, pos='left', font=42)
     self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
 
     canv.cd()
@@ -2258,10 +2285,11 @@ class MVAAnalyser(Tools, MVATools):
 
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxysiggt150_SS' and category.label != 'lxysig50to150_SS': continue
+      #if category.label != 'lxysiggt150_OS' and category.label != 'lxysig50to150_OS': continue
       #if category.label != 'lxysig0to50_OS' and category.label != 'lxysig50to150_SS': continue
-      if category.label != 'lxysiggt150_OS': continue# and category.label != 'lxysig0to50_SS': continue
-      #if 'Bc' in category.label: continue
+      if category.label != 'lxysiggt150_OS': continue
+      #if category.label != 'lxysig50to150_OS': continue
+      #if 'OS' not in category.label: continue
 
       print '\n -> get the training information'
       training_info = TrainingInfo(self.dirname, category.label)
@@ -2411,6 +2439,11 @@ if __name__ == '__main__':
   #dirname = 'V13_06Feb23_2023Aug05_00h06m44s' # pi_dcasig_corr
   #dirname = 'V13_06Feb23_2023Aug05_00h07m05s' # pi_dcasig_corr
   dirname = 'training_Aug23' # mix of three previous ones
+  #dirname = 'V13_06Feb23_m2_2024Jan28_10h00m21s'
+  #dirname = 'V13_06Feb23_m2_2024Jan28_10h01m21s'
+  #dirname = 'V13_06Feb23_m2_2024Jan28_10h01m33s'
+  #dirname = 'V13_06Feb23_m1p5_2024Jan28_11h15m21s'
+  #dirname = 'V13_06Feb23_m2_2024Jan30_11h37m02s'
 
   baseline_selection = selection['baseline_06Feb23'].flat + ' && hnl_charge==0'
   #categories = categories['V12_08Aug22_permass']
@@ -2559,19 +2592,19 @@ if __name__ == '__main__':
     do_plotAUC = False
     do_plotMass = False
     do_plotAUCvsLifetime = False
-    do_plotPNNComparison = True
+    do_plotPNNComparison = False
     do_plotPreselection = False
     do_plotSignalBackgroundComparison = False
-    do_plotDistributionComparison = False
+    do_plotDistributionComparison = True
     do_compareROC = False
     do_studyDisplacedTracks = False
     do_plotScoreNorm = False
 
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
-    signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3']
+    #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3']
     #signal_labels = ['V12_08Aug22_sensitivity']
-    #signal_labels = ['V13_06Feb23_trackid']
+    signal_labels = ['V13_06Feb23_trackid']
 
     #signal_labels = [
     #  #'V42_08Aug22_m0p5',
