@@ -61,7 +61,7 @@ class FitPlotter(object):
     self.lumi = 41.6
     self.flavour_channel = 'dimuon channel'
     # if true, only plot for the ctau the closest to the exclusion
-    self.plot_exclusion = False
+    self.plot_exclusion = True
 
 
   def getEventLabel(self, axis):
@@ -272,6 +272,13 @@ class FitPlotter(object):
       canv.SaveAs('{}/{}.png'.format(self.outputdir, plot_name))
       canv.SaveAs('{}/{}.pdf'.format(self.outputdir, plot_name))
       canv.SaveAs('{}/{}.C'.format(self.outputdir, plot_name))
+
+      # create outfile
+      outfile = ROOT.TFile('{}/{}.root'.format(self.outputdir, plot_name), 'RECREATE')
+      roohist = rooplot.findObject(rooplot.getObject(0).GetName())
+      for i in roohist.GetEntries():
+        print roohist.GetX(i)
+      outfile.Close()
 
 
   def process(self):
