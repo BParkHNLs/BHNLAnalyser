@@ -1824,7 +1824,7 @@ class MVAAnalyser(Tools, MVATools):
       file_bkg = self.tools.getRootFile(filename_bkg)
       tree_bkg = self.tools.getTree(file_bkg, 'signal_tree')
 
-      hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='hist_bkg'+str(score), branchname='flat', selection='score > {}'.format(score))
+      hist_bkg = self.tools.createHisto(tree_bkg, quantity, hist_name='hist_bkg'+str(score).replace('.', 'p'), branchname='flat', selection='score > {}'.format(score))
       if hist_bkg.Integral() != 0: hist_bkg.Scale(1./hist_bkg.Integral())
 
       hist_bkg.SetFillColor(ROOT.kBlue-3) # same as for preselection plots
@@ -1844,7 +1844,7 @@ class MVAAnalyser(Tools, MVATools):
       hist_bkg.GetYaxis().SetTitleSize(0.045)
       hist_bkg.GetYaxis().SetLabelOffset(0.01)
       hist_bkg.GetYaxis().SetTitleOffset(1.4)
-      leg.AddEntry(hist_bkg, 'data')
+      leg.AddEntry(hist_bkg, 'data', 'elpf')
 
       hists_bkg.append(hist_bkg)
 
@@ -1884,7 +1884,7 @@ class MVAAnalyser(Tools, MVATools):
         file_sig = self.tools.getRootFile(filename_sig)
         tree_sig = self.tools.getTree(file_sig, 'signal_tree')
 
-        hist_sig = self.tools.createHisto(tree_sig, quantity, hist_name='hist_sig'+str(score), branchname='flat', selection='score > {}'.format(score))
+        hist_sig = self.tools.createHisto(tree_sig, quantity, hist_name='hist_sig'+str(score).replace('.', 'p'), branchname='flat', selection='score > {}'.format(score))
         if hist_sig.Integral() != 0: hist_sig.Scale(1./hist_sig.Integral())
 
         if hist_sig.GetMaximum() > max_val: max_val = hist_sig.GetMaximum()
@@ -1895,7 +1895,7 @@ class MVAAnalyser(Tools, MVATools):
         hist_sig.SetLineWidth(3) # same as for preselection plots
         hist_sig.SetFillColorAlpha(0, 0) # same as for preselection plots
         hists_sig.append(hist_sig)
-        leg.AddEntry(hist_sig, 'signal - {} GeV, {} mm'.format(round(mc_sample.mass, 1), round(mc_sample.ctau, 1)))
+        leg.AddEntry(hist_sig, 'signal - {} GeV, {} mm'.format(round(mc_sample.mass, 1), round(mc_sample.ctau, 1)), 'el')
 
     do_log = False
     if quantity.label == 'hnl_cos2d': do_log = True
@@ -1910,7 +1910,7 @@ class MVAAnalyser(Tools, MVATools):
         else:
           hist.GetYaxis().SetRangeUser(0, max_val + 0.3*max_val) if not do_log else hist.GetYaxis().SetRangeUser(1e-4, max_val + 30*max_val)
         if quantity.label == 'hnl_cos2d': 
-          hist.GetXaxis().SetNdivisions(3)
+          hist.GetXaxis().SetNdivisions(6)
         hist.Draw('hist')
         hist.Draw('PE same')
       else:
@@ -1943,6 +1943,15 @@ class MVAAnalyser(Tools, MVATools):
     canv.SaveAs(name + '.png')
     canv.SaveAs(name + '.pdf')
     canv.SaveAs(name + '.C')
+
+    # create outfile
+    outfile = ROOT.TFile(name + '.root', 'RECREATE')
+    hists_bkg[0].Write()
+    hists_sig[0].Write()
+    outfile.Close()
+
+
+
 
 
   def compareROCCurve(self, mc_samples, data_samples, category, do_log=False):
