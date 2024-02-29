@@ -740,12 +740,12 @@ class MVAAnalyser(Tools, MVATools):
     self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.54)
     self.tools.printLatexBox(0.17, 0.31, category.title, size=0.041, pos='left', font=42)
     if 'Bc' in category.label:
-      b_mass_label = '#mu{B}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
+      b_mass_label = '#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass > 5.7 GeV'
     else:
-      b_mass_label = '#mu_{B}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
+      b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass #leq 5.7 GeV'
     self.tools.printLatexBox(0.17, 0.25, b_mass_label, size=0.041, pos='left', font=42)
     #self.tools.printLatexBox(0.17, 0.19, '#it{dimuon} channel', size=0.041, pos='left', font=42)
-    self.tools.printLatexBox(0.17, 0.19, 'dimuon channel', size=0.041, pos='left', font=42)
+    self.tools.printLatexBox(0.17, 0.19, 'Dimuon channel', size=0.041, pos='left', font=42)
 
     leg.Draw()
 
@@ -983,11 +983,11 @@ class MVAAnalyser(Tools, MVATools):
     self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.54)
     self.tools.printLatexBox(0.17, 0.31, category.title, size=0.041, pos='left', font=42)
     if 'Bc' in category.label:
-      b_mass_label = '#mu{B}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
+      b_mass_label = '#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass > 5.7 GeV'
     else:
-      b_mass_label = '#mu_{B}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
+      b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass #leq 5.7 GeV'
     self.tools.printLatexBox(0.17, 0.25, b_mass_label, size=0.041, pos='left', font=42)
-    self.tools.printLatexBox(0.17, 0.19, 'dimuon channel', size=0.041, pos='left', font=42)
+    self.tools.printLatexBox(0.17, 0.19, 'Dimuon channel', size=0.041, pos='left', font=42)
 
     leg.Draw()
 
@@ -1844,7 +1844,7 @@ class MVAAnalyser(Tools, MVATools):
       hist_bkg.GetYaxis().SetTitleSize(0.045)
       hist_bkg.GetYaxis().SetLabelOffset(0.01)
       hist_bkg.GetYaxis().SetTitleOffset(1.4)
-      leg.AddEntry(hist_bkg, 'data', 'elpf')
+      leg.AddEntry(hist_bkg, 'Data', 'elpf')
 
       hists_bkg.append(hist_bkg)
 
@@ -1895,7 +1895,7 @@ class MVAAnalyser(Tools, MVATools):
         hist_sig.SetLineWidth(3) # same as for preselection plots
         hist_sig.SetFillColorAlpha(0, 0) # same as for preselection plots
         hists_sig.append(hist_sig)
-        leg.AddEntry(hist_sig, 'signal - {} GeV, {} mm'.format(round(mc_sample.mass, 1), round(mc_sample.ctau, 1)), 'el')
+        leg.AddEntry(hist_sig, 'Signal - {} GeV, {} mm'.format(round(mc_sample.mass, 1), round(mc_sample.ctau, 1)), 'el')
 
     do_log = False
     if quantity.label == 'hnl_cos2d': do_log = True
@@ -1919,7 +1919,7 @@ class MVAAnalyser(Tools, MVATools):
     for hist in hists_sig:
       #hist.Draw('same')
       hist.Draw('histo same')
-      hist.Draw('PE same')
+      hist.Draw('PE1 same')
     leg.Draw('same')
 
     print_tag = True
@@ -1928,11 +1928,11 @@ class MVAAnalyser(Tools, MVATools):
     self.tools.printInnerCMSTag(pad, CMS_tag, print_tag, x_pos=0.17, y_pos=0.83, size=0.55)
     self.tools.printLatexBox(0.37, 0.84, category.title, size=0.042, pos='left', font=42)
     if 'Bc' in category.label:
-      b_mass_label = '#mu{B}#mu^{#pm}#pi^{#mp} mass > 5.7 GeV'
+      b_mass_label = '#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass > 5.7 GeV'
     else:
-      b_mass_label = '#mu_{B}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
+      b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass #leq 5.7 GeV'
     self.tools.printLatexBox(0.37, 0.77, b_mass_label, size=0.042, pos='left', font=42)
-    self.tools.printLatexBox(0.37, 0.71, 'dimuon channel', size=0.042, pos='left', font=42)
+    self.tools.printLatexBox(0.37, 0.71, 'Dimuon channel', size=0.042, pos='left', font=42)
     self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
 
     canv.cd()
@@ -2296,8 +2296,8 @@ class MVAAnalyser(Tools, MVATools):
       if category.label == 'incl': continue
       #if category.label != 'lxysiggt150_OS' and category.label != 'lxysig50to150_OS': continue
       #if category.label != 'lxysig0to50_OS' and category.label != 'lxysig50to150_SS': continue
-      if category.label != 'lxysiggt150_OS': continue
-      #if category.label != 'lxysig50to150_OS': continue
+      #if category.label != 'lxysiggt150_OS': continue
+      if category.label != 'lxysig50to150_OS': continue
       #if 'OS' not in category.label: continue
 
       print '\n -> get the training information'
@@ -2600,20 +2600,20 @@ if __name__ == '__main__':
     do_plotROC = False
     do_plotAUC = False
     do_plotMass = False
-    do_plotAUCvsLifetime = False
-    do_plotPNNComparison = False
+    do_plotAUCvsLifetime = True
+    do_plotPNNComparison = True
     do_plotPreselection = False
     do_plotSignalBackgroundComparison = False
-    do_plotDistributionComparison = True
+    do_plotDistributionComparison = False
     do_compareROC = False
     do_studyDisplacedTracks = False
     do_plotScoreNorm = False
 
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
-    #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3']
+    signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3']
     #signal_labels = ['V12_08Aug22_sensitivity']
-    signal_labels = ['V13_06Feb23_trackid']
+    #signal_labels = ['V13_06Feb23_trackid']
 
     #signal_labels = [
     #  #'V42_08Aug22_m0p5',
