@@ -16,6 +16,7 @@ from intersection import intersection
 from utils import getMassList
 sys.path.append('../scripts')
 from decays import HNLDecays 
+from line_effects import TickedStroke, Normal
 
 
 def getOptions():
@@ -442,6 +443,8 @@ class LimitPlotter(object):
             obs.append(obs_value)
             masses_obs.append(float(mass))
 
+        #print '{} {} {} {} {} {} {}'.format(mass, minus_two_value, minus_one_value, central_value, plus_one_value, plus_two_value, obs_value)
+
     '''
     for mass in sorted(limits2D.keys(), key=self.sortList, reverse=True):
 
@@ -525,16 +528,11 @@ class LimitPlotter(object):
 
     if self.scenario == 'Majorana':
       if not self.do_coupling_scenario:
-        #p2, = plt.plot(db.masses_atlas_Majorana, db.obs_atlas_Majorana, color='darkorange', label='ATLAS \nPhys. Rev. Lett.\n(2023)', linewidth=2., linestyle='dashed', zorder=10)
-        #p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='darkmagenta', label='CMS \nJHEP (2022)', linewidth=2., linestyle='dashed', zorder=10)
-        #p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='blue', label='LHCb \nPhys. Rev. Lett.\n(2014)', linewidth=2., linestyle='dashed', zorder=10)
-        #p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle \nPhys. Rev. D\n(2013)', linewidth=2., linestyle='dashed', zorder=10)
-        #p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='CMS \nPAS-EXO-22-017', linewidth=2., linestyle='dashed', zorder=10)
-        p2, = plt.plot(db.masses_atlas_Majorana, db.obs_atlas_Majorana, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=2., linestyle='dashed', zorder=10)
-        p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='darkmagenta', label='CMS, JHEP (2022) 081', linewidth=2., linestyle='dashed', zorder=10)
-        p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='blue', label='LHCb, Phys. Rev. Lett. (2014) 131802', linewidth=2., linestyle='dashed', zorder=10)
-        p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle, Phys. Rev. D (2013) 071102', linewidth=2., linestyle='dashed', zorder=10)
-        p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='CMS, PAS-EXO-22-017', linewidth=2., linestyle='dashed', zorder=10)
+        p2, = plt.plot(db.masses_atlas_Majorana, db.obs_atlas_Majorana, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='darkmagenta', label='CMS, JHEP (2022) 081', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='blue', label='LHCb, Phys. Rev. Lett. (2014) 131802', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle, Phys. Rev. D (2013) 071102', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='CMS, PAS-EXO-22-017', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
 
         # legend outside of frame
         #box = ax.get_position()
@@ -546,11 +544,11 @@ class LimitPlotter(object):
 
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
-          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.obs_EXO_21_013_Majorana_0p0_0p5_0p5, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.obs_EXO_21_013_Majorana_0p0_0p5_0p5, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
-          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.obs_EXO_21_013_Majorana_0p5_0p5_0p0, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.obs_EXO_21_013_Majorana_0p5_0p5_0p0, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
-          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.obs_EXO_21_013_Majorana_0p3_0p3_0p3, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.obs_EXO_21_013_Majorana_0p3_0p3_0p3, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
 
         # legend outside of frame
         #box = ax.get_position()
@@ -565,9 +563,9 @@ class LimitPlotter(object):
 
     elif self.scenario == 'Dirac':
       if not self.do_coupling_scenario:
-        p2, = plt.plot(db.masses_atlas_Dirac, db.obs_atlas_Dirac, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=2., linestyle='dashed', zorder=10)
-        p3, = plt.plot(db.masses_cmsdisplaced_Dirac, db.obs_cmsdisplaced_Dirac, color='blueviolet', label='CMS, JHEP (2022) 081', linewidth=2., linestyle='dashed', zorder=10)
-        p4, = plt.plot(db.masses_EXO_22_017_Dirac, db.obs_EXO_22_017_Dirac, color='magenta', label='CMS, PAS-EXO-22-017', linewidth=2., linestyle='dashed', zorder=10)
+        p2, = plt.plot(db.masses_atlas_Dirac, db.obs_atlas_Dirac, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p3, = plt.plot(db.masses_cmsdisplaced_Dirac, db.obs_cmsdisplaced_Dirac, color='blueviolet', label='CMS, JHEP (2022) 081', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p4, = plt.plot(db.masses_EXO_22_017_Dirac, db.obs_EXO_22_017_Dirac, color='magenta', label='CMS, PAS-EXO-22-017', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
 
         # legend outside of frame
         #box = ax.get_position()
@@ -579,11 +577,11 @@ class LimitPlotter(object):
 
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
-          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.obs_EXO_21_013_Dirac_0p0_0p5_0p5, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.obs_EXO_21_013_Dirac_0p0_0p5_0p5, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
-          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.obs_EXO_21_013_Dirac_0p5_0p5_0p0, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.obs_EXO_21_013_Dirac_0p5_0p5_0p0, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
-          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.obs_EXO_21_013_Dirac_0p3_0p3_0p3, color='brown', label='CMS, arXiv:2312.07484', linewidth=2., linestyle='dashed', zorder=10)
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.obs_EXO_21_013_Dirac_0p3_0p3_0p3, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
 
         #second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
 
