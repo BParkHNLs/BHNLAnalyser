@@ -477,8 +477,8 @@ class LimitPlotter(object):
     plt.clf()
     #f, ax = plt.subplots(figsize=(13, 9))
     f, ax = plt.subplots(figsize=(12, 10.5))
-    ax.tick_params(axis='y',direction='in', which='both', pad=7) # both means major and minor
-    ax.tick_params(axis='x',direction='in', which='both', pad=7)
+    ax.tick_params(axis='y',direction='in', which='both', pad=7, left=True, right=True) # both means major and minor
+    ax.tick_params(axis='x',direction='in', which='both', pad=7, bottom=True, top=True)
     y_range_min = 1e-7
     y_range_max = 1e-2
     if not self.do_coupling_scenario:
@@ -605,17 +605,17 @@ class LimitPlotter(object):
     veto_Psi2S = plt.gca().add_patch(Rectangle((3.65, 1.01e-5), 3.75-3.65, 9e-2-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
 
     plt.title(lumi + ' (13 TeV)', loc='right', fontsize=25)
-    plt.ylabel(r'$|V_\mathrm{N}|^2$', fontsize=25)
+    plt.ylabel(r'$|V_\mathrm{N}|^2$', fontsize=27)
     plt.yticks(fontsize=21)
     plt.ylim(y_range_min, y_range_max)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-    plt.xlabel(r'$m_{\mathrm{N}}$ (GeV)', fontsize=25)
+    plt.xlabel(r'$m_{\mathrm{N}}$ (GeV)', fontsize=27)
     plt.xlim(min(masses_central), max(masses_central))
     plt.xticks(fontsize=21)
     plt.yscale('log')
     plt.xscale('linear')
     #ax.set_zorder(1000)
-    plt.grid(True, color='dimgrey', linewidth=0.1, zorder=3)
+    #plt.grid(True, color='dimgrey', linewidth=0.1, zorder=3)
     if not self.do_coupling_scenario:
       name_2d = '2d_hnl_limit_{}'.format(self.scenario) 
     else:
