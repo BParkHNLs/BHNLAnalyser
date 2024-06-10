@@ -159,6 +159,8 @@ class Plotter(Tools):
       #ROOT.gStyle.SetPadLeftMargin(0.12) 
       ROOT.gStyle.SetPadLeftMargin(0.13)
       ROOT.gStyle.SetPadBottomMargin(0.13)
+      ROOT.gStyle.SetPadTickX(1)
+      ROOT.gStyle.SetPadTickY(1)
 
 
     # create the canvas
@@ -187,7 +189,7 @@ class Plotter(Tools):
         legend = self.tools.getRootTLegend(xmin=0.47, ymin=0.65, xmax=0.84, ymax=0.83, size=0.027)
       else:
         #legend = self.tools.getRootTLegend(xmin=0.42, ymin=0.57, xmax=0.79, ymax=0.79, size=0.038)
-        legend = self.tools.getRootTLegend(xmin=0.35, ymin=0.61, xmax=0.61, ymax=0.82, size=0.038)
+        legend = self.tools.getRootTLegend(xmin=0.33, ymin=0.61, xmax=0.59, ymax=0.82, size=0.038)
         #legend = self.tools.getRootTLegend(xmin=0.13, ymin=0.2, xmax=0.45, ymax=0.5, size=0.038)
 
     pad_up.cd()
@@ -233,9 +235,9 @@ class Plotter(Tools):
       if do_shape and int_data_tot != 0.: hist_data_tot.Scale(1./int_data_tot)
 
       if not do_tdrstyle:
-        legend.AddEntry(hist_data_tot, 'data - {}'.format(self.getDataLabel(data_label, version_label) if len(self.data_files)>1 else data_file.label))
+        legend.AddEntry(hist_data_tot, 'Data - {}'.format(self.getDataLabel(data_label, version_label) if len(self.data_files)>1 else data_file.label))
       else:
-        legend.AddEntry(hist_data_tot, 'data')
+        legend.AddEntry(hist_data_tot, 'Data', 'elpf')
 
       ## set the style
       if plot_data and plot_qcd:
@@ -247,7 +249,7 @@ class Plotter(Tools):
     # draw veto
     if do_tdrstyle and quantity.label == 'hnl_mass':
       veto = ROOT.TBox(1.74, 0, 1.8, 500e3)
-      entry = legend.AddEntry(veto, 'D^{0} veto')
+      entry = legend.AddEntry(veto, 'Region excluded by veto on D^{0} #rightarrow K#it{#pi}')
       entry.SetMarkerSize(0)
       veto.SetLineWidth(0)
       veto.SetFillStyle(3444)
@@ -307,9 +309,9 @@ class Plotter(Tools):
 
         if do_luminorm:
           #legend.AddEntry(hist_signal, 'signal - {} (x {})'.format(signal_file.label, '{:.0e}'.format(corr)))
-          legend.AddEntry(hist_signal, 'signal - {} (x {})'.format(signal_file.label, int(corr)))
+          legend.AddEntry(hist_signal, 'Signal - {} (x {})'.format(signal_file.label, int(corr)), 'el')
         else:
-          legend.AddEntry(hist_signal, 'signal - {}'.format(signal_file.label))
+          legend.AddEntry(hist_signal, 'Signal - {}'.format(signal_file.label))
 
         hist_signal.SetLineWidth(3)
         hist_signal.SetLineColor(signal_file.colour)
@@ -439,7 +441,7 @@ class Plotter(Tools):
     if plot_sig: 
       for hist_sig in signal_hists:
         hist_sig.Draw('histo same')
-        hist_sig.Draw('PE same')
+        hist_sig.Draw('PE1 same')
     #hist_data_pu.Draw('same')
 
     # draw error bars
@@ -450,6 +452,12 @@ class Plotter(Tools):
       hist_qcd_tot_err.SetFillColor(ROOT.kGray+2)
       hist_qcd_tot_err.Draw('E2 same')
 
+    # draw bottom line
+    line = ROOT.TLine(self.quantity.bin_min, 0, self.quantity.bin_max, 0)
+    line.SetLineColor(1)
+    line.SetLineWidth(4)
+    #line.Draw('same')
+
     # draw veto
     if do_tdrstyle and quantity.label == 'hnl_mass':
       veto.Draw('same')
@@ -457,14 +465,20 @@ class Plotter(Tools):
     # draw the legend
     legend.Draw('same')
 
+    pad_up.cd()
+    pad_up.RedrawAxis()
+
+    canv.cd()
+    canv.RedrawAxis()
+
     # add labels
     if not do_tdrstyle:
       self.tools.printLatexBox(0.65, 0.86, title, size=0.04 if plot_ratio else 0.036)
     #else:
     #  self.tools.printLatexBox(0.60, 0.84, title, size=0.04 if plot_ratio else 0.038)
 
-    if do_tdrstyle: self.tools.printLatexBox(0.36, 0.85, 'dimuon channel', size=0.038, pos='left', font=42)
-    if do_tdrstyle: self.tools.printLatexBox(0.413, 0.575, '(#it{r}_{e}, #it{r}_{#mu}, #it{r}_{#tau}) = (0, 1, 0), Majorana', size=0.038, pos='left', font=42)
+    if do_tdrstyle: self.tools.printLatexBox(0.36, 0.85, 'Dimuon channel', size=0.038, pos='left', font=42)
+    if do_tdrstyle: self.tools.printLatexBox(0.405, 0.575, '(#it{r}_{e}, #it{r}_{#mu}, #it{r}_{#tau}) = (0, 1, 0), Majorana', size=0.038, pos='left', font=42)
     #self.tools.printLatexBox(0.38, 0.535, '(#it{r}_{e}, #it{r}_{#mu}, #it{r}_{#tau}) = (0, 1, 0), Majorana', size=0.041, pos='left', font=42)
     #legend = self.tools.getRootTLegend(xmin=0.4, ymin=0.63, xmax=0.75, ymax=0.86, size=0.038)
     if add_CMSlabel and not do_tdrstyle: self.tools.printCMSTag(pad_up, CMS_tag, size=0.55 if plot_ratio else 0.43)
