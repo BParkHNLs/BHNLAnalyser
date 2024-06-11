@@ -192,7 +192,7 @@ class Plotter(Tools):
         if not do_shape:
           legend = self.tools.getRootTLegend(xmin=0.33, ymin=0.61, xmax=0.59, ymax=0.82, size=0.038)
         else:
-          legend = self.tools.getRootTLegend(xmin=0.4, ymin=0.61, xmax=0.66, ymax=0.82, size=0.038)
+          legend = self.tools.getRootTLegend(xmin=0.36, ymin=0.65, xmax=0.62, ymax=0.82, size=0.038)
         #legend = self.tools.getRootTLegend(xmin=0.13, ymin=0.2, xmax=0.45, ymax=0.5, size=0.038)
 
     pad_up.cd()
@@ -239,8 +239,8 @@ class Plotter(Tools):
 
       if not do_tdrstyle:
         legend.AddEntry(hist_data_tot, 'Data - {}'.format(self.getDataLabel(data_label, version_label) if len(self.data_files)>1 else data_file.label))
-      else:
-        legend.AddEntry(hist_data_tot, 'Data', 'elpf')
+      #else:
+      #  legend.AddEntry(hist_data_tot, 'Data', 'elpf')
 
       ## set the style
       if plot_data and plot_qcd:
@@ -412,7 +412,7 @@ class Plotter(Tools):
     #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e-9, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     elif plot_data and plot_sig and not do_tdrstyle: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     elif plot_data and plot_sig and do_tdrstyle and not do_log and not do_shape: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+0.7*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
-    elif plot_data and plot_sig and do_tdrstyle and not do_log and do_shape: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+0.2*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
+    elif plot_data and plot_sig and do_tdrstyle and not do_log and do_shape: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+0.4*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     elif plot_data and plot_sig and do_tdrstyle and do_log and not do_shape: frame.GetYaxis().SetRangeUser(1000, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+1000*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     elif plot_data and plot_sig and do_tdrstyle and do_log and do_shape: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+10*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e2, 1e7)
@@ -422,6 +422,8 @@ class Plotter(Tools):
 
     # draw the distributions
     frame.Draw()
+    frame.SetLineColor(0)
+    frame.SetFillColor(0)
     # tmp
     f1 = ROOT.TFile.Open('/t3home/anlyon/BHNL/BHNLNano/CMSSW_10_2_15/src/PhysicsTools/BParkingNano/data/pileup/profiles/pileup_data_2018.root', 'READ')
     hist_data_pu = f1.Get('pileup_2018A')
@@ -432,17 +434,17 @@ class Plotter(Tools):
     #hist_data_pu.Draw('same')
     
     
-    if plot_data and plot_qcd: hist_data_tot.Draw('same')
-    if plot_data and not plot_qcd: 
-      hist_data_tot.Draw('histo same')
-      hist_data_tot.Draw('PE same')
+    #if plot_data and plot_qcd: hist_data_tot.Draw('same')
+    #if plot_data and not plot_qcd: 
+    #  hist_data_tot.Draw('histo same')
+    #  hist_data_tot.Draw('PE same')
     if plot_qcd: 
       hist_qcd_tot.Draw('histo same')
       if do_stack:
         hist_qcd_stack.Draw('histo same')
       else:
         hist_qcd_tot.Draw('histo same')
-    if plot_data and plot_qcd: hist_data_tot.Draw('same') # making sure data points are always visible
+    #if plot_data and plot_qcd: hist_data_tot.Draw('same') # making sure data points are always visible
     if plot_sig: 
       for hist_sig in signal_hists:
         hist_sig.Draw('histo same')
@@ -482,8 +484,8 @@ class Plotter(Tools):
     #else:
     #  self.tools.printLatexBox(0.60, 0.84, title, size=0.04 if plot_ratio else 0.038)
 
-    if do_tdrstyle and not do_shape: self.tools.printLatexBox(0.36, 0.85, 'Dimuon channel', size=0.038, pos='left', font=42)
-    if do_tdrstyle and do_shape: self.tools.printLatexBox(0.43, 0.85, 'Dimuon channel', size=0.038, pos='left', font=42)
+    if do_tdrstyle and not do_shape: self.tools.printLatexBox(0.33, 0.85, 'Dimuon channel', size=0.038, pos='left', font=42)
+    if do_tdrstyle and do_shape: self.tools.printLatexBox(0.39, 0.85, 'Dimuon channel', size=0.038, pos='left', font=42)
     if not do_shape and do_tdrstyle: self.tools.printLatexBox(0.405, 0.575, '(#it{r}_{e}, #it{r}_{#mu}, #it{r}_{#tau}) = (0, 1, 0), Majorana', size=0.038, pos='left', font=42)
     #self.tools.printLatexBox(0.38, 0.535, '(#it{r}_{e}, #it{r}_{#mu}, #it{r}_{#tau}) = (0, 1, 0), Majorana', size=0.041, pos='left', font=42)
     #legend = self.tools.getRootTLegend(xmin=0.4, ymin=0.63, xmax=0.75, ymax=0.86, size=0.038)
