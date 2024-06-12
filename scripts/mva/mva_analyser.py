@@ -630,6 +630,8 @@ class MVAAnalyser(Tools, MVATools):
     pd.options.mode.chained_assignment = None
     ROOT.gStyle.SetPadLeftMargin(0.13)
     ROOT.gStyle.SetPadBottomMargin(0.13)
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
 
     #masses = []
     #for mc_sample in mc_samples:
@@ -760,6 +762,8 @@ class MVAAnalyser(Tools, MVATools):
     pd.options.mode.chained_assignment = None
     ROOT.gStyle.SetPadLeftMargin(0.13)
     ROOT.gStyle.SetPadBottomMargin(0.13)
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
 
     #dirname_1 = 'test_2022Nov29_09h26m28s' # adding muon isolation
     #dirname_2 = 'test_2022Oct12_15h12m37s' # mass 3 only (without muon isolation)
@@ -1769,6 +1773,8 @@ class MVAAnalyser(Tools, MVATools):
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetPadLeftMargin(0.13)
     ROOT.gStyle.SetPadBottomMargin(0.13)
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
 
     #masses = [1.0, 2.0, 4.5]
     #colours = [ROOT.kOrange+0, ROOT.kRed+1, ROOT.kRed+4]
