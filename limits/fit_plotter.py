@@ -59,7 +59,7 @@ class FitPlotter(object):
     self.print_tag = True
     self.CMS_tag = '' #'Preliminary'
     self.lumi = 41.6
-    self.flavour_channel = 'dimuon channel'
+    self.flavour_channel = 'Dimuon channel'
     # if true, only plot for the ctau the closest to the exclusion
     self.plot_exclusion = True
 
@@ -79,6 +79,8 @@ class FitPlotter(object):
     #ROOT.gStyle.SetPadBottomMargin(0.13) 
     ROOT.gStyle.SetPadRightMargin(0.04) 
     ROOT.gStyle.SetPadLeftMargin(0.11) 
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
 
 
   def getCoupling(self, couplings, values, crossing=1):
@@ -212,7 +214,7 @@ class FitPlotter(object):
         rooplot.getObject(1).SetLineWidth(0)
 
       rooplot.SetTitle('')
-      rooplot.GetXaxis().SetTitle('#it{m}(#mu^{#pm}#pi^{#mp}) (GeV)')
+      rooplot.GetXaxis().SetTitle('#it{m}(#it{#mu}^{#pm}#it{#pi}^{#mp}) (GeV)')
       rooplot.GetXaxis().SetLabelSize(0.04)
       rooplot.GetXaxis().SetTitleSize(0.047)
       rooplot.GetXaxis().SetTitleOffset(1.0)
@@ -229,9 +231,9 @@ class FitPlotter(object):
 
       self.tools.printLatexBox(0.15, 0.76, category.title, size=0.037, pos='left', font=42)
       if 'Bc' in category.label:
-        b_mass_label = '#mu_{B}#mu^{#pm}#pi^{#mu} mass > 5.7 GeV'
+        b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mu} mass > 5.7 GeV'
       else:
-        b_mass_label = '#mu_{B}#mu^{#pm}#pi^{#mp} mass #leq 5.7 GeV'
+        b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass #leq 5.7 GeV'
       self.tools.printLatexBox(0.15, 0.7, b_mass_label, size=0.037, pos='left', font=42)
       self.tools.printLatexBox(0.15, 0.645, self.flavour_channel, size=0.037, pos='left', font=42)
       if fit == 'prefit':
@@ -240,7 +242,7 @@ class FitPlotter(object):
         #if ctau == 10000.0: ctau_label = '10^{4}'
         #else: ctau_label = ctau
         ctau_label = ctau
-        self.tools.printLatexBox(0.52, 0.56, '{m} = {mass} GeV, {c} = {ctau} mm'.format(m='#it{m}_{N}', c='#it{c}#tau_{N}', mass=self.mass, ctau=ctau_label), size=0.037, pos='left', font=42)
+        self.tools.printLatexBox(0.51, 0.56, '{m} = {mass} GeV, {c} = {ctau} mm'.format(m='#it{m}_{N}', c='#it{c}#tau_{N}', mass=self.mass, ctau=ctau_label), size=0.037, pos='left', font=42)
 
       # print the CMS tag
       self.tools.printInnerCMSTag(pad, self.CMS_tag, self.print_tag, x_pos=0.15, y_pos=0.83, size=0.55)
@@ -250,17 +252,17 @@ class FitPlotter(object):
           
       # print the legend
       if fit == 'fit_s':
-        leg = self.tools.getRootTLegend(xmin=0.5, ymin=0.6, xmax=0.84, ymax=0.88, size=0.037)
-        leg.AddEntry(rooplot.findObject(rooplot.getObject(0).GetName()), 'data')
-        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_sig).GetName()), 'fitted signal')
-        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_bkg).GetName()), 'fitted background')
-        leg.AddEntry(rooplot.findObject(rooplot.getObject(4).GetName()), 'signal+background fit')
-        leg.AddEntry(rooplot.findObject(rooplot.getObject(1).GetName()), 'total uncertainty', 'f')
+        leg = self.tools.getRootTLegend(xmin=0.49, ymin=0.6, xmax=0.83, ymax=0.88, size=0.037)
+        leg.AddEntry(rooplot.findObject(rooplot.getObject(0).GetName()), 'Data')
+        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_sig).GetName()), 'Signal contribution')
+        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_bkg).GetName()), 'Background contribution')
+        leg.AddEntry(rooplot.findObject(rooplot.getObject(4).GetName()), 'Signal+background fit')
+        leg.AddEntry(rooplot.findObject(rooplot.getObject(1).GetName()), 'Total uncertainty', 'f')
       else:
         leg = self.tools.getRootTLegend(xmin=0.48, ymin=0.64, xmax=0.79, ymax=0.84, size=0.037)
-        leg.AddEntry(rooplot.findObject(rooplot.getObject(0).GetName()), 'data')
-        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_bkg).GetName()), 'background prediction')
-        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_sig).GetName()), 'signal - {} GeV, {} mm'.format(self.mass, ctau))
+        leg.AddEntry(rooplot.findObject(rooplot.getObject(0).GetName()), 'Data')
+        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_bkg).GetName()), 'Background prediction')
+        leg.AddEntry(rooplot.findObject(rooplot.getObject(idx_sig).GetName()), 'Signal - {} GeV, {} mm'.format(self.mass, ctau))
       leg.Draw()
 
       canv.cd()
@@ -272,13 +274,6 @@ class FitPlotter(object):
       canv.SaveAs('{}/{}.png'.format(self.outputdir, plot_name))
       canv.SaveAs('{}/{}.pdf'.format(self.outputdir, plot_name))
       canv.SaveAs('{}/{}.C'.format(self.outputdir, plot_name))
-
-      # create outfile
-      outfile = ROOT.TFile('{}/{}.root'.format(self.outputdir, plot_name), 'RECREATE')
-      roohist = rooplot.findObject(rooplot.getObject(0).GetName())
-      for i in roohist.GetEntries():
-        print roohist.GetX(i)
-      outfile.Close()
 
 
   def process(self):
