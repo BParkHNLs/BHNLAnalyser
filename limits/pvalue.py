@@ -98,7 +98,7 @@ class LimitPlotter(object):
 
   def process(self):
     #lumi =  '5.3 fb'+r'$^{-1}$'+' projected to 41.6 fb'+r'$^{-1}$'
-    lumi =  '40.0 fb'+r'$^{-1}$'
+    lumi =  '41.6 fb'+r'$^{-1}$'
 
     # get the files 
     if not self.do_coupling_scenario:
@@ -191,6 +191,7 @@ class LimitPlotter(object):
           p_value = line[line.find('p-value of background')+23:len(line)-1]
         the_masses.append(round(float(mass), 2))
         the_pvalues.append(float(p_value))
+        print float(p_value)
       except: 
         print 'pvalue file for mass {} not found'.format(mass)
         continue
@@ -203,11 +204,12 @@ class LimitPlotter(object):
     plt.axhline(y=2.1e-2, color='red', linestyle='-')
     plt.axhline(y=1.1e-3, color='red', linestyle='-')
 
-    ax.text(0.97, 0.84, r'$1\sigma$', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold', color='red')
-    ax.text(0.97, 0.56, r'$2\sigma$', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold', color='red')
-    ax.text(0.97, 0.15, r'$3\sigma$', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold', color='red')
+    ax.text(0.97, 0.81, r'$1\sigma$', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold', color='red')
+    ax.text(0.97, 0.57, r'$2\sigma$', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold', color='red')
+    ax.text(0.97, 0.27, r'$3\sigma$', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20, fontweight='bold', color='red')
+    ax.text(0.15, 0.15, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=23, fontweight='bold', color='black')
 
-    plt.ylim(5e-4, 0.6)
+    plt.ylim(5e-5, 0.6)
 
     plt.yticks(fontsize=17)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
