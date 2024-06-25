@@ -171,7 +171,7 @@ class LimitPlotter(object):
         if mass in self.mass_blacklist.split(','): continue
 
       #if float(mass) < 1.5 or float(mass) > 2.25: continue
-      if float(mass) > 3.: continue
+      #if float(mass) > 3.: continue
 
       print '\nmass {}'.format(mass)
 
@@ -479,7 +479,7 @@ class LimitPlotter(object):
     f, ax = plt.subplots(figsize=(12, 10.5))
     ax.tick_params(axis='y',direction='in', which='both', pad=7, left=True, right=True) # both means major and minor
     ax.tick_params(axis='x',direction='in', which='both', pad=7, bottom=True, top=True)
-    y_range_min = 1e-7
+    y_range_min = 1e-6
     y_range_max = 1e-2
     if not self.do_coupling_scenario:
       self.fe = '0' #'0.0'
@@ -529,6 +529,7 @@ class LimitPlotter(object):
     if self.scenario == 'Majorana':
       if not self.do_coupling_scenario:
         p2, = plt.plot(db.masses_atlas_Majorana, db.obs_atlas_Majorana, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        #p2_2, = plt.plot(db.masses_atlas_upper, db.exp_atlas_upper, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='darkmagenta', label='CMS, JHEP (2022) 081', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='blue', label='LHCb, Phys. Rev. Lett. (2014) 131802', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle, Phys. Rev. D (2013) 071102', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
@@ -539,8 +540,8 @@ class LimitPlotter(object):
         #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         #second_legend = ax.legend(handles=[p3, p6, p2, p4, p5], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
         # legend inside of frame
-        second_legend = ax.legend(handles=[p3, p6, p2, p4, p5], loc='lower right', fontsize=18)
-        ax = plt.gca().add_artist(second_legend)
+        #second_legend = ax.legend(handles=[p3, p6, p2, p4, p5], loc='lower right', fontsize=18)
+        #ax = plt.gca().add_artist(second_legend)
 
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
@@ -555,8 +556,8 @@ class LimitPlotter(object):
         #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         #second_legend = ax.legend(handles=[p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
         # legend inside of frame
-        second_legend = ax.legend(handles=[p2], loc='lower right', fontsize=18)
-        ax = plt.gca().add_artist(second_legend)
+        #second_legend = ax.legend(handles=[p2], loc='lower right', fontsize=18)
+        #ax = plt.gca().add_artist(second_legend)
 
         #second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
         #ax = plt.gca().add_artist(second_legend)
@@ -572,8 +573,8 @@ class LimitPlotter(object):
         #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         #second_legend = ax.legend(handles=[p3, p4, p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
         # legend inside of frame
-        second_legend = ax.legend(handles=[p3, p4, p2], loc='lower right', fontsize=18)
-        ax = plt.gca().add_artist(second_legend)
+        #second_legend = ax.legend(handles=[p3, p4, p2], loc='lower right', fontsize=18)
+        #ax = plt.gca().add_artist(second_legend)
 
       else:
         if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
@@ -590,15 +591,15 @@ class LimitPlotter(object):
         #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
         #second_legend = ax.legend(handles=[p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
         # legend inside of frame
-        second_legend = ax.legend(handles=[p2], loc='lower right', fontsize=18)
-        ax = plt.gca().add_artist(second_legend)
+        #second_legend = ax.legend(handles=[p2], loc='lower right', fontsize=18)
+        #ax = plt.gca().add_artist(second_legend)
 
-    if not self.do_blind:
-      first_legend = plt.legend(handles=[p8, p1, f1, f2], loc='lower left', fontsize=18)
-    else:
-      first_legend = plt.legend(handles=[p1, f2, f1], loc='lower left', fontsize=18)
-    ax = plt.gca().add_artist(first_legend)
-    #plt.gca().add_artist(first_legend)
+    #if not self.do_blind:
+    #  first_legend = plt.legend(handles=[p8, p1, f1, f2], loc='lower left', fontsize=18)
+    #else:
+    #  first_legend = plt.legend(handles=[p1, f2, f1], loc='lower left', fontsize=18)
+    #ax = plt.gca().add_artist(first_legend)
+    ##plt.gca().add_artist(first_legend)
 
     veto_D0 = plt.gca().add_patch(Rectangle((1.74, 1.01e-5), 1.8-1.74, 9e-4-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
     veto_Jpsi = plt.gca().add_patch(Rectangle((3.05, 1.01e-5), 3.15-3.05, 1e-3-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
