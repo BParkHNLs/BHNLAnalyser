@@ -532,7 +532,7 @@ class LimitPlotter(object):
         p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='darkmagenta', label='CMS, JHEP (2022) 081', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='blue', label='LHCb, Phys. Rev. Lett. (2014) 131802', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle, Phys. Rev. D (2013) 071102', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
-        p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='CMS, PAS-EXO-22-017', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='CMS, arXiv:2402.18658', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
 
         # legend outside of frame
         #box = ax.get_position()
@@ -565,7 +565,7 @@ class LimitPlotter(object):
       if not self.do_coupling_scenario:
         p2, = plt.plot(db.masses_atlas_Dirac, db.obs_atlas_Dirac, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
         p3, = plt.plot(db.masses_cmsdisplaced_Dirac, db.obs_cmsdisplaced_Dirac, color='blueviolet', label='CMS, JHEP (2022) 081', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
-        p4, = plt.plot(db.masses_EXO_22_017_Dirac, db.obs_EXO_22_017_Dirac, color='magenta', label='CMS, PAS-EXO-22-017', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p4, = plt.plot(db.masses_EXO_22_017_Dirac, db.obs_EXO_22_017_Dirac, color='magenta', label='CMS, arXiv:2402.18658', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
 
         # legend outside of frame
         #box = ax.get_position()
