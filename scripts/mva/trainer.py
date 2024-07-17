@@ -299,7 +299,6 @@ class Trainer(object):
         signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
         if is_bc and signal_file.filename_Bc == None: continue # skip points for which there is no Bc sample
         if not is_bc and signal_file.filename == None: continue # skip mass 5.5 GeV for non-Bc category
-        print signal_filename
         sample = Sample(filename=signal_filename, selection=self.baseline_selection + ' && ' + extra_selection)
 
         # get dataframe
@@ -307,8 +306,6 @@ class Trainer(object):
 
         # get the statistics per mass point
         stats[signal_file.mass] += len(the_df)
-        #print 'mass {} ctau {} stat {}'.format(signal_file.mass, signal_file.ctau, len(the_df))
-        #print 'mass {} += stat {}'.format(signal_file.mass, stats[signal_file.mass])
 
         # get number of ctau samples per mass point
         n_ctaus[signal_file.mass] += 1
@@ -322,19 +319,14 @@ class Trainer(object):
 
         dfs[signal_file.mass] = dfs[signal_file.mass] + [the_df]
 
-      print stats
       # get the minimum statistics 
       #statistics = min(stats[min(stats, key=stats.get)], 5000)
       #aimed_statistics = stats[min(stats, key=stats.get)]
       statistics = stats[min(stats, key=stats.get)]
-      print 'minimum statistics: {}'.format(statistics)
       
       df = pd.DataFrame()
       for mass in masses:
-        print 'mass {}'.format(mass)
         df_tmp = pd.concat([(idt.sample(statistics/n_ctaus[mass]) if statistics/n_ctaus[mass]<len(idt) else idt) for idt in dfs[mass]], sort=False)
-        for idt in dfs[mass]:
-          print 'saved stat mass {}: {}'.format(mass, statistics/n_ctaus[mass] if statistics/n_ctaus[mass]<len(idt) else len(idt))
         df = pd.concat([df, df_tmp], sort=False) 
       
         
@@ -510,11 +502,9 @@ class Trainer(object):
     '''
     # early stopping
     monitor = 'val_loss'
-    #es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=10)
     es = EarlyStopping(monitor=monitor, mode='auto', verbose=1, patience=patience_es)
     
     # reduce learning rate when at plateau, fine search the minimum
-    #reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=5, min_lr=0.00001, cooldown=10, verbose=True)
     reduce_lr = ReduceLROnPlateau(monitor=monitor, mode='auto', factor=0.2, patience=patience_lr, min_lr=0.00001, cooldown=10, verbose=True)
     
     # save the model every now and then
@@ -861,8 +851,8 @@ class Trainer(object):
         
     for category in self.categories:
       if category.label == 'incl': continue
-      #if category.label != 'lxysiggt150_SS': continue
-      #if category.label != 'lxysiggt150_SS' and category.label != 'lxysig0to50_SS' and category.label != 'lxysig50to150_SS': continue
+      #if category.label != 'lxysiggt150_OS': continue
+      if category.label != 'lxysig50to150_OS': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
@@ -975,6 +965,7 @@ class Trainer(object):
 
     for category in self.categories:
       if category.label == 'incl': continue
+      if category.label != 'lxysig50to150_OS': continue
       print '\n-.-.-'
       print 'category: {}'.format(category.label)
       print '-.-.-'
@@ -1008,7 +999,7 @@ if __name__ == '__main__':
   scaler_type = 'robust'
   do_early_stopping = True
   do_reduce_lr = True
-  dirname = 'V13_06Feb23'
+  dirname = 'V13_06Feb23_m2'
   baseline_selection = 'hnl_charge==0 && ' + selection['baseline_06Feb23'].flat 
   categories = categories['categories_0_50_150_Bc']
   category_batch = getOptions().category_batch
@@ -1019,7 +1010,8 @@ if __name__ == '__main__':
 
   do_parametric = True
   nsigma = 10
-  signal_label = 'V13_06Feb23_training_large'
+  #signal_label = 'V13_06Feb23_training_large'
+  signal_label = 'V13_06Feb23_m2'
   data_pl = 'V13_06Feb23'
   data_tagnano = '06Feb23'
   data_tagflat = '31Jul23'
