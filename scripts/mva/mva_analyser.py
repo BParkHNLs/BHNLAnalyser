@@ -310,10 +310,20 @@ class MVAAnalyser(Tools, MVATools):
       Plot the score distributions for signal and background
     '''
     pd.options.mode.chained_assignment = None
+
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetPadLeftMargin(0.13)
+    ROOT.gStyle.SetPadBottomMargin(0.13)
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
+
     canv = self.tools.createTCanvas('canv'+category.label, 800, 700) 
+    pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
     if do_log:
-      canv.SetLogy()
-    leg = self.tools.getRootTLegend(xmin=0.2, ymin=0.65, xmax=0.65, ymax=0.83, size=0.04)
+      pad.SetLogy()
+    pad.Draw()
+    pad.cd() 
+    leg = self.tools.getRootTLegend(xmin=0.36, ymin=0.46, xmax=0.61, ymax=0.65, size=0.042)
 
     masses = []
     for mc_sample in mc_samples:
@@ -339,20 +349,24 @@ class MVAAnalyser(Tools, MVATools):
 
     if hist_bkg.Integral()!=0: hist_bkg.Scale(1./hist_bkg.Integral())
 
-    leg.AddEntry(hist_bkg, 'data-driven background')
+    leg.AddEntry(hist_bkg, 'Data', 'elpf')
 
     ROOT.gStyle.SetOptStat(0)
     hist_bkg.SetTitle(' ')
-    hist_bkg.SetFillColor(ROOT.kAzure-4)
-    hist_bkg.SetLineColor(1)
-    hist_bkg.GetXaxis().SetTitle('Score')
-    hist_bkg.GetXaxis().SetLabelSize(0.033)
-    hist_bkg.GetXaxis().SetTitleSize(0.042)
-    hist_bkg.GetXaxis().SetTitleOffset(1.1)
+    hist_bkg.SetFillColor(ROOT.kBlue-3)
+    hist_bkg.SetFillStyle(3005)
+    #hist_bkg.SetLineColor(1)
+    hist_bkg.GetXaxis().SetTitle('pNN score')
+    hist_bkg.GetXaxis().SetLabelSize(0.04)
+    hist_bkg.GetXaxis().SetTitleSize(0.045)
+    hist_bkg.GetXaxis().SetLabelOffset(0.015)
+    hist_bkg.GetXaxis().SetTitleOffset(1.2)
     hist_bkg.GetYaxis().SetTitle('Normalised to unity')
-    hist_bkg.GetYaxis().SetLabelSize(0.033) 
-    hist_bkg.GetYaxis().SetTitleSize(0.042)
-    hist_bkg.GetYaxis().SetTitleOffset(1.1)
+    hist_bkg.GetYaxis().SetLabelSize(0.04) 
+    hist_bkg.GetYaxis().SetTitleSize(0.045)
+    hist_bkg.GetYaxis().SetLabelOffset(0.01)
+    hist_bkg.GetYaxis().SetTitleOffset(1.4)
+    hist_bkg.GetYaxis().SetRangeUser(1e-3, 5)
 
     # signals
     hist_sigs = []
@@ -370,7 +384,7 @@ class MVAAnalyser(Tools, MVATools):
 
       if hist_sig.Integral()!=0: hist_sig.Scale(1./hist_sig.Integral())
 
-      leg.AddEntry(hist_sig, 'signal - mass {} GeV, ctau {} mm'.format(mc_sample.mass, mc_sample.ctau))
+      leg.AddEntry(hist_sig, 'Signal - {} GeV, {} mm'.format(mc_sample.mass, mc_sample.ctau))
 
       hist_sig.SetLineWidth(3)
       hist_sig.SetLineColor(mc_sample.colour)
@@ -378,13 +392,27 @@ class MVAAnalyser(Tools, MVATools):
 
     hist_bkg.Draw('histo')
     for hist_sig in hist_sigs:
-      hist_sig.Draw('histo_same')
+      hist_sig.Draw('histo same')
+      #hist_sig.Draw('PE same')
     leg.Draw('same')
+
+    print_tag = True
+    CMS_tag = ''
+    self.tools.printInnerCMSTag(pad, CMS_tag, print_tag, x_pos=0.17, y_pos=0.83, size=0.55)
+    self.tools.printLatexBox(0.37, 0.84, category.title, size=0.042, pos='left', font=42)
+    if 'Bc' in category.label:
+      b_mass_label = '#it{m}(#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp}) > 5.7 GeV'
+    else:
+      b_mass_label = '#it{m}(#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp}) < 5.7 GeV'
+    self.tools.printLatexBox(0.37, 0.77, b_mass_label, size=0.042, pos='left', font=42)
+    self.tools.printLatexBox(0.37, 0.71, 'Dimuon channel', size=0.042, pos='left', font=42)
+    self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
 
     canv.cd()
     name = '{}/score_m{}_{}'.format(self.outdir, str(mass).replace('.', 'p'), category.label)
     if do_log: name += '_log'
     canv.SaveAs(name + '.png')
+    canv.SaveAs(name + '.pdf')
 
 
   def plotScoreNorm(self, training_info, mc_samples, data_samples, category, do_log):
@@ -495,6 +523,14 @@ class MVAAnalyser(Tools, MVATools):
     data_df['is_signal'] = 0
 
     plt.clf()
+    f, ax = plt.subplots(figsize=(8, 7))
+    ax.tick_params(axis='y',direction='in', which='both', pad=7, left=True, right=True) # both means major and minor
+    ax.tick_params(axis='x',direction='in', which='both', pad=7, bottom=True, top=True)
+    plt.yticks(fontsize=17)
+    plt.xticks(fontsize=17)
+    plt.xlabel('Background efficiency', fontsize=20)
+    plt.ylabel('Signal efficiency', fontsize=20)
+
     for mc_sample in mc_samples:
       mass = mc_sample.mass
       ctau = mc_sample.ctau
@@ -513,10 +549,20 @@ class MVAAnalyser(Tools, MVATools):
       Y = pd.DataFrame(main_df, columns=['is_signal'])
       score = self.predictScore(training_info=training_info, df=main_df)
       fpr, tpr, thresholds = roc_curve(Y, score) 
-
+      
       plt.plot(fpr, tpr, linewidth=2, label='mva - ({}GeV, {}mm, {})'.format(mass, ctau, coupling))
-      plt.xlabel('False Positive Rate')
-      plt.ylabel('True Positive Rate')
+
+      #optimal_idx = np.argmax(tpr - fpr)
+      #optimal_score = thresholds[optimal_idx]
+      #optimal_performance = tpr[optimal_idx] - fpr[optimal_idx]
+      idx = 0
+      for thr in thresholds:
+        idx = idx + 1
+        if thr > 0.99: continue
+        else: break
+      print thresholds[idx-2]
+      print '{} {}'.format(fpr[idx-2], tpr[idx-2])
+      plt.plot(fpr[idx-2], tpr[idx-2], '*', markersize=10, label='pNN score = 0.99')
 
       # get cutbased performance
       if self.do_addCutbased:
@@ -546,13 +592,13 @@ class MVAAnalyser(Tools, MVATools):
         plt.plot(false_positive_rate, true_positive_rate, 'o', markersize=10, label='cutbased - ({}GeV, {}mm, {})'.format(mass, ctau, coupling))
 
       xy = [i*j for i,j in product([10.**i for i in range(-8, 0)], [1,2,4,8])]+[1]
-      plt.plot(xy, xy, color='grey', linestyle='--')
+      #plt.plot(xy, xy, color='grey', linestyle='--')
 
       plt.title(r'{}'.format(category.label))
       if do_log:
-        plt.xlim(1e-5, 1)
+        plt.xlim(1e-4, 1)
       else:
-        plt.xlim(0, 1)
+        plt.xlim(-0.01, 1)
       plt.ylim(0, 1)
 
       if do_log:
@@ -566,7 +612,8 @@ class MVAAnalyser(Tools, MVATools):
 
     name = 'ROC_m{}_{}'.format(str(mc_samples[0].mass).replace('.', 'p'), category.label)
     if do_log: name += '_log'
-    self.saveFig(plt, name)
+    self.saveFig(plt, name + '.png')
+    self.saveFig(plt, name + '.pdf')
 
 
   def plotAUCGraph(self, training_info, mc_samples, data_samples, category):
@@ -742,9 +789,9 @@ class MVAAnalyser(Tools, MVATools):
     self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.54)
     self.tools.printLatexBox(0.17, 0.31, category.title, size=0.041, pos='left', font=42)
     if 'Bc' in category.label:
-      b_mass_label = '#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass > 5.7 GeV'
+      b_mass_label = '#it{m}(#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp}) > 5.7 GeV'
     else:
-      b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass #leq 5.7 GeV'
+      b_mass_label = '#it{m}(#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp}) < 5.7 GeV'
     self.tools.printLatexBox(0.17, 0.25, b_mass_label, size=0.041, pos='left', font=42)
     #self.tools.printLatexBox(0.17, 0.19, '#it{dimuon} channel', size=0.041, pos='left', font=42)
     self.tools.printLatexBox(0.17, 0.19, 'Dimuon channel', size=0.041, pos='left', font=42)
@@ -987,9 +1034,9 @@ class MVAAnalyser(Tools, MVATools):
     self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.54)
     self.tools.printLatexBox(0.17, 0.31, category.title, size=0.041, pos='left', font=42)
     if 'Bc' in category.label:
-      b_mass_label = '#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass > 5.7 GeV'
+      b_mass_label = '#it{m}(#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp}) > 5.7 GeV'
     else:
-      b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass #leq 5.7 GeV'
+      b_mass_label = '#it{m}(#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp}) < 5.7 GeV'
     self.tools.printLatexBox(0.17, 0.25, b_mass_label, size=0.041, pos='left', font=42)
     self.tools.printLatexBox(0.17, 0.19, 'Dimuon channel', size=0.041, pos='left', font=42)
 
@@ -1845,7 +1892,7 @@ class MVAAnalyser(Tools, MVATools):
       hist_bkg.GetXaxis().SetTitleSize(0.045)
       hist_bkg.GetXaxis().SetLabelOffset(0.015)
       hist_bkg.GetXaxis().SetTitleOffset(1.2)
-      hist_bkg.GetYaxis().SetTitle('Normalized to unity')
+      hist_bkg.GetYaxis().SetTitle('Normalised to unity')
       hist_bkg.GetYaxis().SetLabelSize(0.04)
       hist_bkg.GetYaxis().SetTitleSize(0.045)
       hist_bkg.GetYaxis().SetLabelOffset(0.01)
@@ -1934,9 +1981,9 @@ class MVAAnalyser(Tools, MVATools):
     self.tools.printInnerCMSTag(pad, CMS_tag, print_tag, x_pos=0.17, y_pos=0.83, size=0.55)
     self.tools.printLatexBox(0.37, 0.84, category.title, size=0.042, pos='left', font=42)
     if 'Bc' in category.label:
-      b_mass_label = '#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass > 5.7 GeV'
+      b_mass_label = '#it{m}(#it{#mu}{B}#it{#mu}^{#pm}#it{#pi}^{#mp}) > 5.7 GeV'
     else:
-      b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass #leq 5.7 GeV'
+      b_mass_label = '#it{m}(#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp}) < 5.7 GeV'
     self.tools.printLatexBox(0.37, 0.77, b_mass_label, size=0.042, pos='left', font=42)
     self.tools.printLatexBox(0.37, 0.71, 'Dimuon channel', size=0.042, pos='left', font=42)
     self.tools.printLumiTag(pad, 5.2, size=0.5, offset=0.52)
@@ -2302,8 +2349,8 @@ class MVAAnalyser(Tools, MVATools):
       if category.label == 'incl': continue
       #if category.label != 'lxysiggt150_OS' and category.label != 'lxysig50to150_OS': continue
       #if category.label != 'lxysig0to50_OS' and category.label != 'lxysig50to150_SS': continue
-      #if category.label != 'lxysiggt150_OS': continue
-      if category.label != 'lxysig50to150_OS': continue
+      if category.label != 'lxysiggt150_OS': continue
+      #if category.label != 'lxysig50to150_OS': continue
       #if 'OS' not in category.label: continue
 
       print '\n -> get the training information'
@@ -2519,7 +2566,7 @@ if __name__ == '__main__':
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk28_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk29_n500/flat/flat_bparknano_08Aug22_sr.root')
 
-  do_analyseMVA = False    # assess performance of mva
+  do_analyseMVA = True    # assess performance of mva
   do_compareMVA = False   # compare mva performance to that of the cutbased method
 
   if do_analyseMVA:
@@ -2527,7 +2574,7 @@ if __name__ == '__main__':
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
     signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
     #masses = ['m1', 'm1p5', 'm2', 'm3', 'm4p5']
-    masses = ['m2']
+    masses = ['m1']
 
     for mass in masses:
       signal_files = []
@@ -2554,7 +2601,7 @@ if __name__ == '__main__':
           do_plotMVAPerformance = False,
           do_plotWPScan = False,
           do_plotAUC = False,
-          do_plotMass = True,
+          do_plotMass = False,#True,
           do_plotPreselection = False,
           do_plotSignalBackgroundComparison = False,
           do_compareROC = False,
@@ -2607,7 +2654,7 @@ if __name__ == '__main__':
     do_plotAUC = False
     do_plotMass = False
     do_plotAUCvsLifetime = True
-    do_plotPNNComparison = True
+    do_plotPNNComparison = False
     do_plotPreselection = False
     do_plotSignalBackgroundComparison = False
     do_plotDistributionComparison = False
@@ -2616,8 +2663,8 @@ if __name__ == '__main__':
     do_plotScoreNorm = False
 
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-    #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
-    signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3']
+    signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
+    #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3']
     #signal_labels = ['V12_08Aug22_sensitivity']
     #signal_labels = ['V13_06Feb23_trackid']
 
