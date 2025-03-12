@@ -835,11 +835,12 @@ class MVAAnalyser(Tools, MVATools):
     #signal_labels_trained_2 = ['V42_06Feb23_m3p0']
     #signal_labels_nottrained_2 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m4p5', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p4', 'V42_06Feb23_m4p1']
     #signal_labels_tot = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p5', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p0', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p0', 'V42_06Feb23_m3p4', 'V42_06Feb23_m4p1', 'V42_06Feb23_m4p5']
-    signal_labels_trained_1 = ['V42_06Feb23_m1p0_pNN', 'V42_06Feb23_m1p5_pNN', 'V42_06Feb23_m2p0_pNN', 'V42_06Feb23_m3p0_pNN']
-    signal_labels_nottrained_1 = ['V42_06Feb23_m1p26_pNN', 'V42_06Feb23_m1p77_pNN', 'V42_06Feb23_m2p3_pNN', 'V42_06Feb23_m2p7_pNN']
     #signal_labels_trained_2 = ['V42_06Feb23_m3p0']
     #signal_labels_nottrained_2 = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p5', 'V42_06Feb23_m2p0', 'V42_06Feb23_m4p5', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p5']
     #signal_labels_tot = ['V42_06Feb23_m1p0', 'V42_06Feb23_m1p26', 'V42_06Feb23_m1p5', 'V42_06Feb23_m1p77', 'V42_06Feb23_m2p0', 'V42_06Feb23_m2p5', 'V42_06Feb23_m3p0']
+
+    signal_labels_trained_1 = ['V42_06Feb23_m1p0_pNN', 'V42_06Feb23_m1p5_pNN', 'V42_06Feb23_m2p0_pNN', 'V42_06Feb23_m3p0_pNN']
+    signal_labels_nottrained_1 = ['V42_06Feb23_m1p26_pNN', 'V42_06Feb23_m1p77_pNN', 'V42_06Feb23_m2p3_pNN', 'V42_06Feb23_m2p7_pNN']
     signal_labels_trained_2 = ['V42_06Feb23_m2p0_pNN']
     signal_labels_nottrained_2 = ['V42_06Feb23_m1p0_pNN', 'V42_06Feb23_m1p5_pNN', 'V42_06Feb23_m3p0_pNN', 'V42_06Feb23_m4p5_pNN', 'V42_06Feb23_m1p26_pNN', 'V42_06Feb23_m1p77_pNN', 'V42_06Feb23_m2p3_pNN', 'V42_06Feb23_m2p7_pNN']
     signal_labels_tot = ['V42_06Feb23_m1p0_pNN', 'V42_06Feb23_m1p26_pNN', 'V42_06Feb23_m1p5_pNN', 'V42_06Feb23_m1p77_pNN', 'V42_06Feb23_m2p0_pNN', 'V42_06Feb23_m2p3_pNN', 'V42_06Feb23_m2p7_pNN', 'V42_06Feb23_m3p0_pNN']
@@ -2349,8 +2350,8 @@ class MVAAnalyser(Tools, MVATools):
       if category.label == 'incl': continue
       #if category.label != 'lxysiggt150_OS' and category.label != 'lxysig50to150_OS': continue
       #if category.label != 'lxysig0to50_OS' and category.label != 'lxysig50to150_SS': continue
-      if category.label != 'lxysiggt150_OS': continue
-      #if category.label != 'lxysig50to150_OS': continue
+      #if category.label != 'lxysiggt150_OS': continue
+      if category.label != 'lxysig50to150_OS': continue
       #if 'OS' not in category.label: continue
 
       print '\n -> get the training information'
@@ -2566,7 +2567,7 @@ if __name__ == '__main__':
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk28_n500/flat/flat_bparknano_08Aug22_sr.root')
   #data_files.append('/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk29_n500/flat/flat_bparknano_08Aug22_sr.root')
 
-  do_analyseMVA = True    # assess performance of mva
+  do_analyseMVA = False    # assess performance of mva
   do_compareMVA = False   # compare mva performance to that of the cutbased method
 
   if do_analyseMVA:
@@ -2653,8 +2654,8 @@ if __name__ == '__main__':
     do_plotROC = False
     do_plotAUC = False
     do_plotMass = False
-    do_plotAUCvsLifetime = True
-    do_plotPNNComparison = False
+    do_plotAUCvsLifetime = False
+    do_plotPNNComparison = True
     do_plotPreselection = False
     do_plotSignalBackgroundComparison = False
     do_plotDistributionComparison = False
@@ -2663,8 +2664,8 @@ if __name__ == '__main__':
     do_plotScoreNorm = False
 
     #signal_labels = ['V12_08Aug22_m1', 'V12_08Aug22_m1p5', 'V12_08Aug22_m2', 'V12_08Aug22_m3', 'V12_08Aug22_m4p5']
-    signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
-    #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3']
+    #signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3', 'V13_06Feb23_m4p5']
+    signal_labels = ['V13_06Feb23_m1', 'V13_06Feb23_m1p5', 'V13_06Feb23_m2', 'V13_06Feb23_m3']
     #signal_labels = ['V12_08Aug22_sensitivity']
     #signal_labels = ['V13_06Feb23_trackid']
 
