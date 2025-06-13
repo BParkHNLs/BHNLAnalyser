@@ -17,41 +17,8 @@ from tools import Tools
 #"----------------User's decision board-----------------"
 
 output_label = 'V13_06Feb23'
-#tag = 'unblinding_Bc_fullscan_nobernstein_v2'
-#tag = 'blindSR_withBernstein'
-#tag = 'study_normalisation_v1'
-#tag = 'investigations_selection'
-#tag = 'study_statistics_v2'
-#tag = 'study_track_id'
-#tag = 'training_track_id_previoustraining'
-#tag = 'study_id_training_trackmuon_v2'
-#tag = 'study_modeling_control'
-#tag = 'newnorm_training_mu0id_v1'
-#tag = 'statistical_uncertainty_v1'
-#tag = 'test_dirac'
-#tag = 'preselection_paperv17'
-#tag = 'study_detlar'
-#tag = 'study_pNN_features_v3'
-#tag = 'study_double_limit_mu_triggering'
-#tag = 'study_double_limit_semileptonic_v2'
-#tag = 'updated_training_Bc'
-#tag = 'test_gamma_tot'
-#tag = 'combination_blinded_gamma_tot_v2'
 tag = 'training_Aug23_unblinded_unbinned'
-#tag = 'ternary_finegrid'
-#tag = 'combination_ANv14_v2'
-#tag = 'study_combination_muononly_v2_inversed'
-#tag = 'paper-v6'
-#tag = 'for_RM'
-#tag = 'test_data_obs'
-#tag = 'test_unbinned_v2'
-#tag = 'cards_combined'
-#tag = 'preselection_thesis'
-#tag = 'Bc_categorisation'
-#tag = 'trigger_SF_test'
 cfg_filename = 'V13_06Feb23_cfg.py'
-#cfg_filename = 'preselection_cfg.py'
-#cfg_filename = 'trigger_sf_cfg.py'
 submit_batch = False
 do_plotter = False
 do_datacards = False
@@ -490,17 +457,6 @@ class BHNLLauncher(object):
         '--subdirlabel {}'.format(self.tag),
         #'--mass_whitelist {}'.format(self.getParserString(self.cfg.mass_white_list)), #FIXME 
         #'--mass_whitelist 1.5',
-        #'--mass_blacklist 1.02,1.76,2.45,3.2,3.85,3.95',
-        #'--mass_blacklist 1.02,1.38,1.761.92,1.95,,2.45,2.95,3.2,3.85,3.95',
-        #'--mass_blacklist 4.5,6.0',
-        #'--mass_blacklist 5.0,5.8,5.9,6.0',
-        #'--mass_blacklist 5.7,5.8,5.9,6.0',
-        #'--mass_blacklist 4.1,4.2,4.9,5.0,5.3,5.5,5.7,5.8,5.9',
-        #'--mass_blacklist 4.1,4.2,4.9,5.0,5.3,5.4,5.5,5.7,5.8,5.9,6.0',
-        #'--mass_blacklist 3.0,4.1,5.9,6.0',
-        #'--mass_blacklist 2.55,3.15,3.3,3.35,3.85,3.95,4.9,5.0,5.3,5.5,5.9,5.8,6.0',
-        #'--mass_blacklist 2.55,3.15,3.3,3.35,3.85,3.95,4.1,4.2,4.3,4.4,4.5,4.9,5.0,5.3,5.5,5.9,6.0',
-        #'--mass_blacklist 2.95,3.15,3.2,3.4,3.5,3.25,3.3,3.4,3.75,3.85,3.95,4.0,5.8,5.9',
         #'--mass_blacklist 2.55,3.15,3.2,3.25,3.3,3.35,3.4,3.45,3.5,3.75,3.8,3.85,3.9,3.95,4.9,5.0,5.3,5.5,5.9',
         #'--coupling_whitelist {}'.format(self.getParserString(self.cfg.coupling_white_list)), #FIXME 
         #'--coupling_blacklist {}'.format(self.getParserString(self.cfg.coupling_black_list)), #FIXME  
