@@ -17,22 +17,55 @@ from tools import Tools
 #"----------------User's decision board-----------------"
 
 output_label = 'V13_06Feb23'
-tag = 'unblinding_Bc_fullscan_nobernstein_v2'
+#tag = 'unblinding_Bc_fullscan_nobernstein_v2'
+#tag = 'blindSR_withBernstein'
+#tag = 'study_normalisation_v1'
+#tag = 'investigations_selection'
+#tag = 'study_statistics_v2'
+#tag = 'study_track_id'
+#tag = 'training_track_id_previoustraining'
+#tag = 'study_id_training_trackmuon_v2'
+#tag = 'study_modeling_control'
+#tag = 'newnorm_training_mu0id_v1'
+#tag = 'statistical_uncertainty_v1'
+#tag = 'test_dirac'
+#tag = 'preselection_paperv17'
+#tag = 'study_detlar'
+#tag = 'study_pNN_features_v3'
+#tag = 'study_double_limit_mu_triggering'
+#tag = 'study_double_limit_semileptonic_v2'
+#tag = 'updated_training_Bc'
+#tag = 'test_gamma_tot'
+#tag = 'combination_blinded_gamma_tot_v2'
+tag = 'training_Aug23_unblinded_unbinned'
+#tag = 'ternary_finegrid'
+#tag = 'combination_ANv14_v2'
+#tag = 'study_combination_muononly_v2_inversed'
+#tag = 'paper-v6'
+#tag = 'for_RM'
+#tag = 'test_data_obs'
+#tag = 'test_unbinned_v2'
+#tag = 'cards_combined'
+#tag = 'preselection_thesis'
+#tag = 'Bc_categorisation'
+#tag = 'trigger_SF_test'
 cfg_filename = 'V13_06Feb23_cfg.py'
-submit_batch = True
+#cfg_filename = 'preselection_cfg.py'
+#cfg_filename = 'trigger_sf_cfg.py'
+submit_batch = False
 do_plotter = False
-do_datacards = True
+do_datacards = False
 do_limits = True
 do_interpretation = False
 
 ### in do_limits
-do_combine_datacards = True
-do_produce_limits = True
-do_plot_limits = True
+do_combine_datacards = False
+do_produce_limits = False
+do_plot_limits = False
 do_plot_fits = True
 
 ### in do_interpretation
-do_interpretation_limits = True
+do_interpretation_limits = False
 do_interpretation_plotter = True
 
 ### other
@@ -40,6 +73,8 @@ do_check_config = False
 do_standard_queue = True
 memory = 20000 #5500
 scenarios = ['Majorana']
+#scenarios = ['Dirac']
+#scenarios = ['Majorana', 'Dirac']
 
 #'------------------------------------------------------'
 
@@ -122,11 +157,17 @@ class BHNLLauncher(object):
 
 
   def getCtauList(self, mass):
+    ctau_list = ''
     from ctau_points import ctau_points
     for ctau_points_list in ctau_points[self.cfg.ctau_points_label]:
       if mass not in ctau_points_list.mass_list: continue
       ctau_points = ctau_points_list.ctau_list
-    return ctau_points
+      for i, ctau_point in enumerate(ctau_points):
+        if i != len(ctau_points)-1:
+          ctau_list += '{},'.format(ctau_point)
+        else:
+          ctau_list += '{}'.format(ctau_point)
+    return ctau_list
 
 
   def getJobId(self, job):
@@ -301,6 +342,7 @@ class BHNLLauncher(object):
         '{}'.format('--plot_pulls' if self.cfg.plot_pulls else ''),
         '{}'.format('--do_categories' if self.cfg.do_categories else ''),
         '{}'.format('--add_Bc' if self.cfg.add_Bc else ''),
+        '{}'.format('--do_normalisation_inclusive' if self.cfg.do_normalisation_inclusive else ''),
         '{}'.format('--plot_prefit' if self.cfg.plot_prefit else ''),
         '{}'.format('--add_CMSlabel' if self.cfg.add_CMSlabel else ''),
         '{}'.format('--add_lumilabel' if self.cfg.add_lumilabel else ''),
@@ -317,9 +359,12 @@ class BHNLLauncher(object):
       os.system(command_submit)
       job_id = 0
     else:
+      if '0to50' in category.label: mem = 20000
+      elif '50to150' in category.label: mem = 7000
+      else: mem = 2500
       command_submit = 'sbatch -p {que} --mem {mem} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnldcs_{lbl} submitter_{lbl}.sh'.format(
-          que = 'standard' if self.do_standard_queue else 'short',
-          mem = self.memory,
+          que = 'standard' if self.do_standard_queue else 'short --time 01:00:00',
+          mem = mem,
           ld = self.logdir_name,
           lbl=label,
           ) 
@@ -383,7 +428,8 @@ class BHNLLauncher(object):
     return job_id
 
 
-  def launchLimitsProducer(self, mass='', ctau='', scenario='', do_dependency=False, job_id=''):
+  #def launchLimitsProducer(self, mass='', ctau='', scenario='', do_dependency=False, job_id=''):
+  def launchLimitsProducer(self, mass='', ctaus='', scenario='', do_dependency=False, job_id=''):
     # get the command to run the limits producer script
     command_limits_producer = ' '.join([
         'python produce_limits.py',
@@ -392,14 +438,17 @@ class BHNLLauncher(object):
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
         '--mass {}'.format(mass),
-        '--ctau {}'.format(ctau), 
+        #'--ctau {}'.format(ctau), 
+        '--ctaus {}'.format(ctaus), 
         '--scenario {}'.format(scenario),
+        '--categories_label {}'.format(self.cfg.categories_label),
         '{}'.format('--use_discrete_profiling' if self.cfg.use_discrete_profiling else ''),
         '{}'.format('--do_blind' if self.cfg.do_blind else ''),
         ])
 
     # write the submitter
-    label = 'limits_producer_' + self.outlabel + '_' + self.tag + '_' + str(mass).replace('.', 'p') + '_' + str(ctau).replace('.', 'p')
+    #label = 'limits_producer_' + self.outlabel + '_' + self.tag + '_' + str(mass).replace('.', 'p') + '_' + str(ctau).replace('.', 'p')
+    label = 'limits_producer_' + self.outlabel + '_' + self.tag + '_' + str(mass).replace('.', 'p')
     self.writeSubmitter(command_limits_producer, label, mass)
 
     # launch submitter
@@ -431,18 +480,31 @@ class BHNLLauncher(object):
   def launchLimitsPlotter(self, scenario='', do_dependency=False, job_id='', fe=None, fu=None, ft=None):
     # get the command to run the limits plotter script
     command_limits_plotter = ' '.join([
+        #'python channel_plotter.py',
         #'python pvalue.py',
-        'python limit_plotter.py',
+        'python scatter_plotter.py',
+        #'python limit_plotter.py',
         '--scenario {}'.format(scenario),
         '--homedir {}'.format(self.homedir),
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
         #'--mass_whitelist {}'.format(self.getParserString(self.cfg.mass_white_list)), #FIXME 
-        #'--mass_whitelist 2.0',
-        #'--mass_blacklist 2.55,3.15,3.3,3.35,3.85,3.95,5.0',
+        #'--mass_whitelist 1.5',
+        #'--mass_blacklist 1.02,1.76,2.45,3.2,3.85,3.95',
+        #'--mass_blacklist 1.02,1.38,1.761.92,1.95,,2.45,2.95,3.2,3.85,3.95',
+        #'--mass_blacklist 4.5,6.0',
+        #'--mass_blacklist 5.0,5.8,5.9,6.0',
+        #'--mass_blacklist 5.7,5.8,5.9,6.0',
+        #'--mass_blacklist 4.1,4.2,4.9,5.0,5.3,5.5,5.7,5.8,5.9',
+        #'--mass_blacklist 4.1,4.2,4.9,5.0,5.3,5.4,5.5,5.7,5.8,5.9,6.0',
+        #'--mass_blacklist 3.0,4.1,5.9,6.0',
+        #'--mass_blacklist 2.55,3.15,3.3,3.35,3.85,3.95,4.9,5.0,5.3,5.5,5.9,5.8,6.0',
+        #'--mass_blacklist 2.55,3.15,3.3,3.35,3.85,3.95,4.1,4.2,4.3,4.4,4.5,4.9,5.0,5.3,5.5,5.9,6.0',
+        #'--mass_blacklist 2.95,3.15,3.2,3.4,3.5,3.25,3.3,3.4,3.75,3.85,3.95,4.0,5.8,5.9',
+        #'--mass_blacklist 2.55,3.15,3.2,3.25,3.3,3.35,3.4,3.45,3.5,3.75,3.8,3.85,3.9,3.95,4.9,5.0,5.3,5.5,5.9',
         #'--coupling_whitelist {}'.format(self.getParserString(self.cfg.coupling_white_list)), #FIXME 
         #'--coupling_blacklist {}'.format(self.getParserString(self.cfg.coupling_black_list)), #FIXME  
-        #'--coupling_blacklist 0.00054,0.00017',
+        #'--coupling_blacklist 0.00034',
         '--fe {}'.format(fe),
         '--fu {}'.format(fu),
         '--ft {}'.format(ft),
@@ -486,11 +548,10 @@ class BHNLLauncher(object):
         '--fe {}'.format(fe),
         '--fu {}'.format(fu),
         '--ft {}'.format(ft),
-        '{}'.format('--do_blind' if self.cfg.do_blind else ''),
         ])
 
     # write the submitter
-    label = 'fits_plotter_' + self.outlabel + '_' + self.tag
+    label = 'fits_plotter_' + self.outlabel + '_' + self.tag + '_m_' + str(mass).replace('.', 'p') 
     self.writeSubmitter(command_fits_plotter, label)
 
     # launch submitter
@@ -513,7 +574,7 @@ class BHNLLauncher(object):
     os.system(command_clean)
 
 
-  def launchInterpretationLimits(self, mass='', ctau='', fe='', fu='', ft=''):
+  def launchInterpretationLimits(self, mass='', ctaus='', fe='', fu='', ft='', scenario=''):
     # get the command to run the limits producer script
     command_interpretation_limits_producer = ' '.join([
         'python interpretation_launcher.py',
@@ -521,10 +582,11 @@ class BHNLLauncher(object):
         '--outdirlabel {}'.format(self.outlabel),
         '--subdirlabel {}'.format(self.tag),
         '--mass {}'.format(mass),
-        '--ctau {}'.format(ctau), 
+        '--ctaus {}'.format(ctaus), 
         '--fe {}'.format(fe),
         '--fu {}'.format(fu),
         '--ft {}'.format(ft),
+        '--scenario {}'.format(scenario),
         '--muon_label {}'.format(self.cfg.muon_eoslabel),
         '--electron_label {}'.format(self.cfg.electron_eoslabel),
         '{}'.format('--use_discrete_profiling' if self.cfg.use_discrete_profiling else ''),
@@ -532,7 +594,7 @@ class BHNLLauncher(object):
         ])
 
     # write the submitter
-    label = 'interpretation_limits_producer_' + self.outlabel + '_' + self.tag + '_' + str(mass).replace('.', 'p') + '_' + str(ctau).replace('.', 'p')
+    label = 'interpretation_limits_producer_' + self.outlabel + '_' + self.tag + '_' + str(mass).replace('.', 'p') + '_' + str(fe).replace('.', 'p') + '_' + str(fu).replace('.', 'p') + '_' + str(ft).replace('.', 'p') + '_' + scenario
     self.writeSubmitter(command_interpretation_limits_producer, label)
 
     # launch submitter
@@ -542,8 +604,9 @@ class BHNLLauncher(object):
       job_id = 0
     else:
       command_submit = 'sbatch -p {que} --account t3 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} submitter_{lbl}.sh'.format(
-          #que = 'standard' if self.do_standard_queue else 'short',
-          que = 'short' if self.do_standard_queue else 'short',
+      #command_submit = 'sbatch -p {que} --account t3 --mem 4000 -o {ld}/{lbl}.txt -e {ld}/{lbl}.txt --job-name=bhnllimits_{lbl} submitter_{lbl}.sh'.format(
+          que = 'standard' if self.do_standard_queue else 'short',
+          #que = 'short' if self.do_standard_queue else 'short',
           ld = self.logdir_name,
           lbl = label,
           ) 
@@ -610,14 +673,15 @@ class BHNLLauncher(object):
         dependency_limits = []
         for signal_label in self.cfg.signal_labels:
           for mass in self.getMassList(signal_label):
+            #if not self.do_datacards: os.system('sleep 5s')
             for scenario in self.scenarios:
-              for ctau in self.getCtauList(mass=mass):
-                print '\n -> Launching the limits production for mass {} and ctau {} ({})'.format(mass, ctau, scenario)
-                if self.submit_batch and self.do_combine_datacards:
-                  job_id = self.launchLimitsProducer(mass=mass, ctau=ctau, scenario=scenario, do_dependency=True, job_id=self.getJobIdsList(dependency_combined_datacards[signal_label]))
-                else:
-                  job_id = self.launchLimitsProducer(mass=mass, ctau=ctau, scenario=scenario, do_dependency=False)
-                dependency_limits.append(job_id)
+              print '\n -> Launching the limits production for mass {} GeV ({})'.format(mass, scenario)
+              ctaus = self.getCtauList(mass=mass)
+              if self.submit_batch and self.do_combine_datacards:
+                job_id = self.launchLimitsProducer(mass=mass, ctaus=ctaus, scenario=scenario, do_dependency=True, job_id=self.getJobIdsList(dependency_combined_datacards[signal_label]))
+              else:
+                job_id = self.launchLimitsProducer(mass=mass, ctaus=ctaus, scenario=scenario, do_dependency=False)
+              dependency_limits.append(job_id)
 
       if self.do_plot_limits:
         for scenario in self.scenarios:
@@ -631,7 +695,7 @@ class BHNLLauncher(object):
         for signal_label in self.cfg.signal_labels:
           for mass in self.getMassList(signal_label):
             for scenario in self.scenarios:
-              print '\n -> Launching the fits plotter ({})'.format(scenario)
+              print '\n -> Launching the fits plotter for mass {} GeV ({})'.format(mass, scenario)
               if self.submit_batch and self.do_produce_limits:
                 job_id = self.launchFitsPlotter(mass=mass, scenario=scenario, do_dependency=True, job_id=self.getJobIdsList(dependency_limits))
               else:
@@ -640,31 +704,34 @@ class BHNLLauncher(object):
     if self.do_interpretation:
       if self.do_interpretation_limits:
         dependency_interpretation_limits = []
-        for coupling_scenario in coupling_scenarios[self.cfg.coupling_scenarios_label]:
-          fe = coupling_scenario.fe
-          fu = coupling_scenario.fu
-          ft = coupling_scenario.ft
-          for signal_label in self.cfg.signal_labels:
-            for mass in self.getMassList(signal_label):
-              for ctau in self.getCtauList(mass=mass):
+        for scenario in self.scenarios:
+          for coupling_scenario in coupling_scenarios[self.cfg.coupling_scenarios_label]:
+            fe = coupling_scenario.fe
+            fu = coupling_scenario.fu
+            ft = coupling_scenario.ft
+            for signal_label in self.cfg.signal_labels:
+              for mass in self.getMassList(signal_label):
+                #for ctau in self.getCtauList(mass=mass):
+                ctaus = self.getCtauList(mass=mass)
                 # add loop on coupling scenario
-                signal_v2 = Tools().getVV(mass=mass, ctau=ctau, ismaj=True)
-                signal_coupling = Tools().getCouplingLabel(signal_v2)
-                print '\n -> Launching the interpretation limits production for (fe={}, fu={}, ft={}) and mass {} and ctau {}'.format(fe, fu, ft, mass, ctau)
-                job_id = self.launchInterpretationLimits(mass=mass, ctau=ctau, fe=fe, fu=fu, ft=ft)
+                #signal_v2 = Tools().getVV(mass=mass, ctau=ctau, ismaj=True)
+                #signal_coupling = Tools().getCouplingLabel(signal_v2)
+                print '\n -> Launching the interpretation limits production for (fe={}, fu={}, ft={}) and mass {} ({})'.format(fe, fu, ft, mass, scenario)
+                job_id = self.launchInterpretationLimits(mass=mass, ctaus=ctaus, fe=fe, fu=fu, ft=ft, scenario=scenario)
                 dependency_interpretation_limits.append(job_id)
-          os.system('sleep 30s')
+            #os.system('sleep 15s')
 
       if self.do_interpretation_plotter:
-        for coupling_scenario in coupling_scenarios[self.cfg.coupling_scenarios_label]:
-          fe = coupling_scenario.fe
-          fu = coupling_scenario.fu
-          ft = coupling_scenario.ft
-          print '\n -> Launching the limits plotter for (fe={}, fu={}, ft={})'.format(fe, fu, ft)
-          if self.submit_batch and self.do_interpretation_limits:
-            job_id = self.launchLimitsPlotter(scenario='Majorana', do_dependency=True, job_id=self.getJobIdsList(dependency_interpretation_limits), fe=fe, fu=fu, ft=ft)
-          else:
-            job_id = self.launchLimitsPlotter(scenario='Majorana', do_dependency=False, fe=fe, fu=fu, ft=ft)
+        for scenario in self.scenarios:
+          for coupling_scenario in coupling_scenarios[self.cfg.coupling_scenarios_label]:
+            fe = coupling_scenario.fe
+            fu = coupling_scenario.fu
+            ft = coupling_scenario.ft
+            print '\n -> Launching the limits plotter for (fe={}, fu={}, ft={}) ({})'.format(fe, fu, ft, scenario)
+            if self.submit_batch and self.do_interpretation_limits:
+              job_id = self.launchLimitsPlotter(scenario=scenario, do_dependency=True, job_id=self.getJobIdsList(dependency_interpretation_limits), fe=fe, fu=fu, ft=ft)
+            else:
+              job_id = self.launchLimitsPlotter(scenario=scenario, do_dependency=False, fe=fe, fu=fu, ft=ft)
 
     print '\nDone'
   
