@@ -180,6 +180,22 @@ selection['baseline_06Feb23'] = Selection(
     ])
 )
 
+selection['baseline_06Feb23_CR'] = Selection(
+    flat = ' && '.join([
+      'mu0_softid==1',
+      'mu_looseid==1',
+      'pi_packedcandhashighpurity==1',
+      '((mu0_charge!=mu_charge && abs(mu0_mu_mass-3.097)>0.15 && abs(mu0_mu_mass-3.686)>0.08 && abs(mu0_mu_mass-1.019)>0.01) || (mu0_charge==mu_charge))',
+      '((mu0_charge==mu_charge && abs(mu0_pi_mass-3.097)>0.05 && abs(mu0_pi_mass-1.76)>0.05) || (mu0_charge!=mu_charge))',
+      'sv_lxy<100',
+      'sv_lxy/sv_lxysig>0',
+      'deltar_mu0_pi>0.01',
+      '((mu_istriggering==1 && mu_pt>7 && abs(mu_eta)<1.5) || (mu_istriggering==0))',
+      '((mu0_istriggering==1 && mu0_pt>7 && abs(mu0_eta)<1.5) || (mu0_istriggering==0))',
+    ])
+)
+
+
 selection['baseline_06Feb23_mu0_triggering'] = Selection(
     flat = ' && '.join([
       'hnl_charge==0',
