@@ -196,7 +196,6 @@ class Tools(object):
     '''
       weight = lumi_data / lumi_mc = N_data * sigma_mc / (N_mc * sigma_data) estimated as N_data / N_mc
     '''
-
     quantity_forweight = Quantity(name_flat='hnl_mass', nbins=1, bin_min=0, bin_max=13000)
     n_obs_data = 0.
     n_err_data = 0.
@@ -222,7 +221,7 @@ class Tools(object):
     return weight
 
 
-  def getSignalWeight(self, signal_files, mass, ctau, sigma_B, lumi, lhe_efficiency=0.08244, is_bc=False):
+  def getSignalWeight(self, signal_files, mass, ctau, sigma_B, lumi, lhe_efficiency=0.08244, is_bu=False, is_bd=False, is_bs=False, is_bc=False):
     '''
       weight = sigma_B * lumi * v_square * BR(B->muNX) * BR(N->mupi) * filter_eff / N_mini 
     '''
@@ -231,56 +230,96 @@ class Tools(object):
 
     # production branching ratio
     from decays import Decays 
-    dec = Decays(mass=mass, mixing_angle_square=1) # we factorise the mixing angle 
-    if not is_bc: BR_prod = dec.BR_tot_mu 
-    else: BR_prod = dec.BR_Bc_mu 
+    dec = Decays(mass=mass, vv=1., fe=0., fu=1., ft=0.) # we factorise the mixing angle 
+    if is_bu:
+      BR_prod = dec.BR_B_mu
+    elif is_bd:
+      BR_prod = dec.BR_B0_mu
+    elif is_bs:
+      BR_prod = dec.BR_Bs_mu
+    elif is_bc:
+      BR_prod = dec.BR_Bc_mu_fq_weighted # fc included as is not accounted for in filter efficiency
+    else: # previous normalisation strategy (faulty treatment of fq)
+      BR_prod = dec.BR_tot_mu_fq_weighted
 
     # decay branching ratio
-    BR_NToMuPi = self.gamma_partial(mass=mass, vv=1.) / self.gamma_total(mass=mass, vv=1.) # the coupling cancels in the ratio
+    BR_NToMuPi = self.gamma_partial(mass=mass, vv=1., fe=0., fu=1., ft=0.) / self.gamma_total(mass=mass, vv=1., fe=0., fu=1., ft=0.) # the coupling cancels in the ratio, valid for Majorana and Dirac
 
     # number of generated events (= n_gen / filter_efficiency = n_miniaod / filter_efficiency)
-    tree_run = ROOT.TChain('run_tree') 
-    for signal_file in signal_files:
-      if not is_bc:
-        tree_run.Add(signal_file.filename)
-      else:
+    n_gen_tot = 0
+    if is_bu:
+      for signal_file in signal_files:
+        n_gen_tot += signal_file.n_miniaod_Bu
+    elif is_bd:
+      for signal_file in signal_files:
+        n_gen_tot += signal_file.n_miniaod_Bd
+    elif is_bs:
+      for signal_file in signal_files:
+        n_gen_tot += signal_file.n_miniaod_Bs
+    elif is_bc:
+      tree_run = ROOT.TChain('run_tree') 
+      for signal_file in signal_files:
         tree_run.Add(signal_file.filename_Bc)
+      n_gen_tot = self.getNminiAODEvts(tree_run)
+    else: # previous normalisation strategy
+      tree_run = ROOT.TChain('run_tree') 
+      for signal_file in signal_files:
+        signal_filename = signal_file.filename
+        tree_run.Add(signal_filename)
+      n_gen_tot = self.getNminiAODEvts(tree_run)
 
-    n_gen_tot = self.getNminiAODEvts(tree_run)
     # take the weighted average of the filter efficiencies of the generated samples
     filter_efficiency = 0.
     for signal_file in signal_files:
-      if not is_bc:
-        the_file = self.getRootFile(signal_file.filename)
-        the_filter_efficiency = signal_file.filter_efficiency
-      else:
-        the_file = self.getRootFile(signal_file.filename_Bc)
+      if is_bu:
+        the_filter_efficiency = signal_file.filter_efficiency_Bu
+        n_gen = signal_file.n_miniaod_Bu
+      elif is_bd:
+        the_filter_efficiency = signal_file.filter_efficiency_Bd
+        n_gen = signal_file.n_miniaod_Bd
+      elif is_bs:
+        the_filter_efficiency = signal_file.filter_efficiency_Bs
+        n_gen = signal_file.n_miniaod_Bs
+      elif is_bc:
         the_filter_efficiency = signal_file.filter_efficiency_Bc
-      the_tree_run = self.getTree(the_file, 'run_tree')
-      n_gen = self.getNminiAODEvts(the_tree_run)
+        the_file = self.getRootFile(signal_file.filename_Bc)
+        the_tree_run = self.getTree(the_file, 'run_tree')
+        n_gen = self.getNminiAODEvts(the_tree_run)
+      else: # previous normalisation strategy
+        the_filter_efficiency = signal_file.filter_efficiency
+        signal_filename = signal_file.filename
+        the_file = self.getRootFile(signal_filename)
+        the_tree_run = self.getTree(the_file, 'run_tree')
+        n_gen = self.getNminiAODEvts(the_tree_run)
+
       filter_efficiency += n_gen * the_filter_efficiency
     filter_efficiency = filter_efficiency / n_gen_tot
     #print 'filter efficiency {}'.format(filter_efficiency)
 
     # in the case where the samples were produced with both the electron and muon channels, apply a correction
-    corr = signal_file.muon_rate # only consider events that were generated in the muon channel 
-    #TODO fix the above if a different one is taken for Bc
+    # only consider events that were generated in the muon channel
+    if not is_bc:
+      corr = signal_file.muon_rate 
+    else:
+      #corr = signal_file.muon_rate_Bc 
+      corr = signal_file.muon_rate
 
     efficiency = filter_efficiency if not is_bc else filter_efficiency * lhe_efficiency 
     n_generated = corr * n_gen_tot / efficiency
-    #print 'n_generated = corr * n_gen_tot / efficiency'
-    #print 'n_generated = {} * {} / {}'.format(corr, n_gen_tot, efficiency)
+    print 'n_generated = corr * n_gen_tot / efficiency'
+    print 'n_generated = {} * {} / {}'.format(corr, n_gen_tot, efficiency)
 
     f_u = 0.4 # B fragmentation fraction
 
     weight = sigma_B / f_u * lumi * v_square * BR_prod * BR_NToMuPi / n_generated 
-    #print 'sigma_B / f_u * lumi * v_square * BR_prod * BR_NToMuPi / n_generated'
-    #print 'weight = {} / 0.4 * {} * {} * {} * {} / {}'.format(sigma_B, lumi, v_square, BR_prod, BR_NToMuPi, n_generated)
+    print 'sigma_B / f_u * lumi * v_square * BR_prod * BR_NToMuPi / n_generated'
+    print 'weight = {} / 0.4 * {} * {} * {} * {} / {}'.format(sigma_B, lumi, v_square, BR_prod, BR_NToMuPi, n_generated)
 
     return weight
 
 
   def getSignalEfficiency(self, signal_files, selection=None, lhe_efficiency=0.08244, is_bc=False):
+    #NOTE this method is not adapted to the exclusive normalisation strategy
 
     tree_signal = ROOT.TChain('signal_tree') 
     tree_run = ROOT.TChain('run_tree') 
@@ -325,33 +364,78 @@ class Tools(object):
     return signal_efficiency
 
 
-  def getCtauWeight(self, signal_files, ctau, strategy='new', is_bc=False):
-    #TODO add treatment for bc?
+  #def getCtauWeight(self, signal_files, ctau, strategy='new', is_bu=False, is_bd=False, is_bs=False, is_bc=False):
+  def getCtauWeight(self, signal_files, ctau, strategy='old', is_bu=False, is_bd=False, is_bs=False, is_bc=False):
     if strategy == 'new':
       # get the total number of gen (=miniaod) events
-      tree_run_tot = ROOT.TChain('run_tree') 
-      for signal_file in signal_files:
-        signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
-        tree_run_tot.Add(signal_filename)
-      n_miniaod_tot = self.getNminiAODEvts(tree_run_tot)
+      n_miniaod_tot = 0
+      if is_bu:
+        for signal_file in signal_files:
+          n_miniaod_tot += signal_file.n_miniaod_Bu
+      elif is_bd:
+        for signal_file in signal_files:
+          n_miniaod_tot += signal_file.n_miniaod_Bd
+      elif is_bs:
+        for signal_file in signal_files:
+          n_miniaod_tot += signal_file.n_miniaod_Bs
+      elif is_bc:
+        tree_run = ROOT.TChain('run_tree') 
+        for signal_file in signal_files:
+          tree_run.Add(signal_file.filename_Bc)
+        n_miniaod_tot = self.getNminiAODEvts(tree_run)
+      else: # previous normalisation strategy
+        tree_run = ROOT.TChain('run_tree') 
+        for signal_file in signal_files:
+          tree_run.Add(signal_file.filename)
+        n_miniaod_tot = self.getNminiAODEvts(tree_run)
 
       filter_efficiency_avg = 0.
       for signal_file in signal_files:
-        the_filter_efficiency = signal_file.filter_efficiency if not is_bc else signal_file.filter_efficiency_Bc
-        signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
-        the_file = self.getRootFile(signal_filename)
-        the_tree_run = self.getTree(the_file, 'run_tree')
-        n_gen = self.getNminiAODEvts(the_tree_run)
+        if is_bu:
+          the_filter_efficiency = signal_file.filter_efficiency_Bu
+          n_gen = signal_file.n_miniaod_Bu
+        elif is_bd:
+          the_filter_efficiency = signal_file.filter_efficiency_Bd
+          n_gen = signal_file.n_miniaod_Bd
+        elif is_bs:
+          the_filter_efficiency = signal_file.filter_efficiency_Bs
+          n_gen = signal_file.n_miniaod_Bs
+        elif is_bc:
+          the_filter_efficiency = signal_file.filter_efficiency_Bc
+          the_file = self.getRootFile(signal_file.filename_Bc)
+          the_tree_run = self.getTree(the_file, 'run_tree')
+          n_gen = self.getNminiAODEvts(the_tree_run)
+        else: # previous normalisation strategy
+          the_filter_efficiency = signal_file.filter_efficiency
+          the_file = self.getRootFile(signal_file.filename)
+          the_tree_run = self.getTree(the_file, 'run_tree')
+          n_gen = self.getNminiAODEvts(the_tree_run)
+
         filter_efficiency_avg += n_gen * the_filter_efficiency
       filter_efficiency_avg = filter_efficiency_avg / n_miniaod_tot
 
       deno_weight = ''
       for ifile, signal_file in enumerate(signal_files):
-        the_filter_efficiency = signal_file.filter_efficiency if not is_bc else signal_file.filter_efficiency_Bc
-        signal_filename = signal_file.filename if not is_bc else signal_file.filename_Bc
-        the_file = self.getRootFile(signal_filename)
-        tree_run = self.getTree(the_file, 'run_tree')
-        n_miniaod = self.getNminiAODEvts(tree_run)
+        if is_bu:
+          the_filter_efficiency = signal_file.filter_efficiency_Bu
+          n_miniaod = signal_file.n_miniaod_Bu
+        elif is_bd:
+          the_filter_efficiency = signal_file.filter_efficiency_Bd
+          n_miniaod = signal_file.n_miniaod_Bd
+        elif is_bs:
+          the_filter_efficiency = signal_file.filter_efficiency_Bs
+          n_miniaod = signal_file.n_miniaod_Bs
+        elif is_bc:
+          the_filter_efficiency = signal_file.filter_efficiency_Bc
+          the_file = self.getRootFile(signal_file.filename_Bc)
+          the_tree_run = self.getTree(the_file, 'run_tree')
+          n_miniaod = self.getNminiAODEvts(the_tree_run)
+        else: # previous normalisation strategy
+          the_filter_efficiency = signal_file.filter_efficiency
+          the_file = self.getRootFile(signal_file.filename)
+          the_tree_run = self.getTree(the_file, 'run_tree')
+          n_miniaod = self.getNminiAODEvts(the_tree_run)
+
         if ifile == 0:
           deno_weight += ' {n0} / {ctau0} * exp(-gen_hnl_ct / {ctau0})'.format(
                 n0 = n_miniaod / the_filter_efficiency,
@@ -362,6 +446,7 @@ class Tools(object):
                 n0 = n_miniaod / the_filter_efficiency,
                 ctau0 = signal_file.ctau,
                 )
+      #print 'ctau weight: ntot = {} / {} = {}'.format(n_miniaod_tot, filter_efficiency_avg, n_miniaod_tot / filter_efficiency_avg)
       weight_ctau = '({ntot} / {ctau1} * exp(-gen_hnl_ct / {ctau1}) * (1. / ({deno_weight})))'.format(
           ntot = n_miniaod_tot / filter_efficiency_avg,
           ctau1 = ctau,
@@ -475,7 +560,7 @@ class Tools(object):
     return hist
 
 
-  def printCMSTag(self, pad, cms_tag, size=0.55, offset=0.08):
+  def printCMSTag(self, pad, cms_tag, size=0.55, offset=0.08, font=52):
     pad.cd()
     tag = ROOT.TLatex()
     tag.SetNDC()
@@ -485,10 +570,29 @@ class Tools(object):
     tag.SetTextSize(size*pad.GetTopMargin())    
     tag.DrawLatex(pad.GetLeftMargin(), 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), 'CMS')
     # print CMS tag
-    tag.SetTextFont(52)
+    tag.SetTextFont(font)
     tag.SetTextSize(0.9*size*pad.GetTopMargin())
     tag.SetTextAlign(11)
     tag.DrawLatex(pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), cms_tag)      
+    pad.Update()
+
+
+  def printInnerCMSTag(self, pad, cms_tag, print_tag=False, x_pos=0.15, y_pos=0.83, size=0.55):
+    pad.cd()
+    tag = ROOT.TLatex()
+    tag.SetNDC()
+    # print CMS
+    tag.SetTextFont(61)
+    tag.SetTextAlign(11) 
+    tag.SetTextSize(size*pad.GetTopMargin())    
+    tag.DrawLatex(x_pos, y_pos, 'CMS')
+    ## print CMS tag
+    tag.SetTextFont(52)
+    tag.SetTextSize(0.9*size*pad.GetTopMargin())
+    tag.SetTextAlign(11)
+    x_pos_tag = x_pos
+    y_pos_tag = y_pos - 0.06
+    tag.DrawLatex(x_pos_tag, y_pos_tag, cms_tag)      
     pad.Update()
 
 
@@ -583,25 +687,32 @@ class Tools(object):
     return ctau
 
 
-  def gamma_total(self, mass, vv):
+  def gamma_total(self, mass, vv=1., fe=0., fu=1., ft=0.):
     '''
     Total width for N (Dirac)
     '''
     from decays import HNLDecays
-    gamma_total =  HNLDecays(mass=mass,mixing_angle_square=vv).decay_rate['tot']  # GeV
+    gamma_total = HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['tot']  # GeV
+    #gamma_total_e = 2*HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['tot_el'] / (float(fe) * vv) if float(fe) != 0. else 0. # GeV
+    #gamma_total_u = 2*HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['tot_mu'] / (float(fu) * vv) if float(fu) != 0. else 0. # GeV
+    #gamma_total_t = 2*HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['tot_tau'] / (float(ft) * vv) if float(ft) != 0. else 0. # GeV
+    #if fu == 0.5:
+    #  print 'vv * (fe * gamma_total_e + fu * gamma_total_u + ft * gamma_total_t) = {} * ({} * {} + {} * {} + {} * {}) = {}'.format(vv, fe, gamma_total_e, fu, gamma_total_u, ft, gamma_total_t, 2*gamma_total)
+    #  print 'gamm_tilde tot = {}'.format(2*gamma_total  / vv)
+    #print gamma_total - vv * (fe * gamma_total_e + fu * gamma_total_u + ft * gamma_total_t)
     return gamma_total
 
 
-  def gamma_partial(self, mass, vv):
+  def gamma_partial(self, mass, vv=1., fe=0., fu=1., ft=0.):
     '''
     Partial width for N->mupi (Dirac)
     '''
     from decays import HNLDecays
-    gamma_partial = HNLDecays(mass=mass,mixing_angle_square=vv).decay_rate['mupi'] # GeV
+    gamma_partial = HNLDecays(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft).decay_rate['mupi'] # GeV
     return gamma_partial
 
 
-  def getVV(self, mass=-99.,ctau=-99., ismaj=True):
+  def getVV(self, mass=-99.,ctau=-99., fe=0., fu=1., ft=0., ismaj=True):
     '''
     Helper function to go from ctau,m -> vv
     '''
@@ -609,17 +720,20 @@ class Tools(object):
     mult = 2. if ismaj else 1.
     ref_m = 1. # GeV
     ref_vv = 1. 
-    ref_ctau = self.ctau_from_gamma(mult*self.gamma_total(mass=ref_m,vv=ref_vv))
+    #print '1/ct = maj * gamma_tot = {} * {}'.format(mult, self.gamma_total(mass=ref_m, vv=ref_vv, fe=fe, fu=fu, ft=ft))
+    ref_ctau = self.ctau_from_gamma(mult*self.gamma_total(mass=ref_m, vv=ref_vv, fe=fe, fu=fu, ft=ft)) 
     k = ref_ctau * np.power(ref_m,5) * ref_vv
     return k/(np.power(mass, 5) * ctau)
 
 
-  def getCtau(self, mass=-99, vv=-99, ismaj=True):
+  def getCtau(self, mass=-99, vv=-99, fe=0., fu=1., ft=0., ismaj=True):
     '''
     Helper function to go from vv,m(GeV) -> ctau (mm)
     '''
     mult = 2. if ismaj else 1.
-    return self.ctau_from_gamma(mult*self.gamma_total(mass=mass,vv=vv))
+    #if fu == 0.5:
+    #  print '1/ct = mult * gamma_tot = {} * {}'.format(mult, self.gamma_total(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft))
+    return self.ctau_from_gamma(mult*self.gamma_total(mass=mass, vv=vv, fe=fe, fu=fu, ft=ft))
 
 
   def getCouplingLabel(self, v2):
@@ -632,5 +746,12 @@ class Tools(object):
 
 if __name__ == '__main__':
   tools = Tools()
-  #print tools.getCtau(4.5, 1e-2)
-  print tools.getVV(2., 1)
+  #print tools.getCtau(2.5, 1e-1)
+  #print tools.getCtau(1.0, 6e-5, fe=0., fu=1., ft=0., ismaj=True)
+  print tools.getVV(3., 1)
+  #mass = 6.
+  #print tools.gamma_partial(mass=mass, vv=1.) / tools.gamma_total(mass=mass, vv=1.)
+  #print tools.gamma_partial(mass=mass, vv=1., fe=0., fu=1., ft=0.) / tools.gamma_total(mass=mass, vv=1., fe=0., fu=1., ft=0.) * 100.
+  
+
+

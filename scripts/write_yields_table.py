@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 from tools import Tools
 from compute_yields import ComputeYields
+from fitter import Fitter
 sys.path.append('../objects')
 from categories import categories
 from samples import data_samples
@@ -16,13 +17,13 @@ tools = Tools()
 
 def getSignalYields(line):
   yields = float(line[5:line.rfind('1.0')-1])
-  return '{:.2e}'.format(yields)
+  return '{:.1e}'.format(yields)
 
 
 def getBackgroundYields(workspace, mass, category_label):
   yields = workspace.data("data_obs_bhnl_m_{}_cat_{}".format(str(mass).replace('.', 'p'), category_label)).createHistogram("hnl_mass").Integral()
   yields = yields * 0.2 #(2 sigma / 10 sigma)
-  return '{:.2e}'.format(yields)
+  return '{:.1e}'.format(yields)
 
 
 def getCategoryTitle(category):
@@ -46,15 +47,16 @@ def writeYieldsTable():
       v2 = tools.getVV(mass, ctau)
       coupling = tools.getCouplingLabel(v2)
       if ictau != len(ctaus)-1:
-        coupling_line += ' & {}'.format(coupling)
+        coupling_line += ' & $|$V$^2|$={}'.format(coupling)
       else:
-        coupling_line += ' & {} \\\ '.format(coupling)
+        coupling_line += ' & $|$V$^2|$={} \\\ '.format(coupling)
     table_yields.write('\hline')
     table_yields.write('\n' + coupling_line)
     table_yields.write('\n' + '\hline')
 
     for icat, category in enumerate(categories): 
       if 'incl' in category.label: continue
+      #if 'lxysiggt150_SS' not in category.label: continue
       signal_yields = OrderedDict()
       data_obs_name = 'workspace_data_obs_bhnl_m_{}_cat_{}.root'.format(str(mass).replace('.', 'p'), category.label)
       try:
@@ -96,6 +98,7 @@ def writeYieldsTable():
 
 
 def writeEfficiencyTable():
+  #TODO update to new norm
   table_efficiency = open('table_efficiency.txt', 'w+')
 
   for mass in masses:
@@ -113,7 +116,8 @@ def writeEfficiencyTable():
 
     for icat, category in enumerate(categories): 
       if 'incl' in category.label: continue
-
+      #if 'OS' not in category.label: continue
+      
       # get the number of background yields before the pNN cut
       resolution = resolution_p0 + mass * resolution_p1
       hnl_mass = Quantity(name_flat='hnl_mass', label='hnl_mass', nbins=80, bin_min=mass-2*resolution, bin_max=mass+2*resolution)
@@ -142,6 +146,7 @@ def writeEfficiencyTable():
       #print efficiency_background
 
       table_entry = ' & {} & {}\%'.format(getCategoryTitle(category), efficiency_background)
+      #table_entry = ''
 
       signal_yields_ini = OrderedDict()
       signal_yields_sel = OrderedDict()
@@ -149,14 +154,51 @@ def writeEfficiencyTable():
       for ctau in ctaus:
         # get the number of signal yields before the pNN cut
         signal_selection = 'ismatched==1 && ' + baseline_selection + ' && ' + category.definition_flat
-        lumi = 40.0
-        signal_yields_ini[ctau] = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=mass, ctau=ctau, lumi=lumi, sigma_B=472.8e9, is_bc=False, strategy='inclusive', add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_fullBpark', weight_pusig='weight_pu_sig_tot', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
+        lumi = 41.6 #40.0
+
+        #signal_yields_ini[ctau] = ComputeYields(signal_label=signal_label, selection=signal_selection).computeSignalYields(mass=mass, ctau=ctau, lumi=lumi, sigma_B=572.0e9, is_bc=False, strategy='inclusive', add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_fullBpark', weight_pusig='weight_pu_sig_tot', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid')[0] 
+        #print signal_yields_ini[ctau]
+
+        fitter = Fitter(signal_label=signal_label,  
+                        selection=signal_selection, 
+                        mass=mass, 
+                        ctau=ctau, 
+                        resolution_p0=resolution_p0, 
+                        resolution_p1=resolution_p1, 
+                        do_cutbased=True, # since we want yields before selection
+                        do_mva=False, 
+                        reweighting_strategy='inclusive', 
+                        lumi_target=lumi, 
+                        sigma_B=572.0e9, 
+                        is_bc=category.is_bc, 
+                        fit_window_size=10, 
+                        nbins=100, 
+                        add_weight_hlt=True, 
+                        add_weight_pu=True, 
+                        add_weight_muid=True, 
+                        weight_hlt='weight_hlt_fullBpark', 
+                        weight_pusig='weight_pu_sig_tot', 
+                        weight_mu0id='weight_mu0_softid', 
+                        weight_muid='weight_mu_looseid',
+                        do_normalisation_inclusive=False
+                        )
+        signal_yields_ini[ctau] = fitter.getSignalYields()[0]
+
+        # apply gen-matching correction
+        signal_yields_ini[ctau] = signal_yields_ini[ctau] * 1.2
+
+        # apply other corrections
+        if category.label in ['lxysig0to50_OS', 'lxysig0to50_SS']: corr = 0.82
+        elif category.label in ['lxysig50to150_OS', 'lxysig50to150_SS']: corr = 0.88
+        elif category.label in ['lxysiggt150_OS', 'lxysiggt150_SS']: corr = 1.
+        signal_yields_ini[ctau] = signal_yields_ini[ctau] * corr
 
         # get the number of signal yields after the pNN cut
         v2 = tools.getVV(mass, ctau)
         coupling = tools.getCouplingLabel(v2)
 
         datacard_name = 'datacard_bhnl_m_{}_ctau_{}_v2_{}_cat_{}.txt'.format(str(mass).replace('.', 'p'), str(ctau).replace('.', 'p'), str(coupling).replace('.', 'p').replace('-', 'm'), category.label)
+        print '{}/{}'.format(path, datacard_name)
         try:
           card = open('{}/{}'.format(path, datacard_name))
           lines = card.readlines()
@@ -165,9 +207,9 @@ def writeEfficiencyTable():
             signal_yields_sel[ctau] = float(getSignalYields(line))
         except:
             signal_yields_sel[ctau] = '-'
-        #print '{} {} ini: {} sel: {}'.format(category.label, ctau, signal_yields_ini[ctau], signal_yields_sel[ctau])
+        print '\n\n\n{} {} ini: {} sel: {}'.format(category.label, ctau, signal_yields_ini[ctau], signal_yields_sel[ctau])
 
-        if signal_yields_sel[ctau] != '-':
+        if signal_yields_sel[ctau] != '-' and signal_yields_ini[ctau] != 0.:
           efficiency_signal[ctau] = round(signal_yields_sel[ctau] / signal_yields_ini[ctau] * 100, 2)
           efficiency_signal[ctau] = str(efficiency_signal[ctau]) + '\%'
         else:
@@ -181,6 +223,7 @@ def writeEfficiencyTable():
         else:
           table_entry += ' & {} \\\ '.format(efficiency_signal[ctau])
 
+      print table_entry
       table_efficiency.write('\n' + table_entry)
       if icat == len(categories)-1:
         table_efficiency.write('\n' + '\hline')
@@ -194,24 +237,32 @@ def writeEfficiencyTable():
 if __name__ == '__main__':
 
   output_label = 'V13_06Feb23' 
-  tag = 'unblinding_Bc_fullscan_nobernstein_v2' 
+  #tag = 'unblinding_Bc_fullscan_nobernstein_v2' 
+  #tag = 'updated_training_Bc' 
+  tag = 'training_Aug23_unblinded'
   #path = '../outputs/{}/datacards/{}'.format(output_label, tag)
   path = '/work/anlyon/outputs/{}/datacards/{}'.format(output_label, tag)
+
+  #masses = [3.0]
+  #ctaus = [0.01]
 
   masses = [1.0, 1.5, 2.0, 3.0, 4.5]
   #ctaus = [1.0, 10.0, 100.0, 1000.0]
   ctaus = [0.01, 10.0, 1000.0, 10000.0]
+  #ctaus = [700., 1000., 1500.0, 2000.0]
+  #ctaus = [0.007, 0.01, 0.015, 0.02]
   categories = categories['categories_0_50_150']
 
   data_label = 'V13_06Feb23'
   data_sample = data_samples[data_label][0]
 
-  baseline_selection = selection['baseline_08Aug22'].flat
+  baseline_selection = selection['baseline_06Feb23'].flat
 
   resolution_p0 = 6.98338e-04
   resolution_p1 = 7.78382e-03 
 
-  signal_label = 'V13_06Feb23_training_large'
+  #signal_label = 'V13_06Feb23_training_large'
+  signal_label = 'V42_06Feb23_tables_norm'
 
   writeYieldsTable()
   #writeEfficiencyTable()

@@ -37,7 +37,10 @@ class BackgroundPlotter(object):
     self.CMS_tag = CMS_tag
 
 
-  def plotStackHistogram(self, sources='', title='', plot_label=''):
+  def plotStackHistogram(self, sources='', title='', plot_label='', do_log=False):
+    ROOT.gStyle.SetPadLeftMargin(0.13)
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
 
     for category in self.categories:
 
@@ -50,7 +53,7 @@ class BackgroundPlotter(object):
       hist_tot_control.SetDirectory(0)
 
       # get the legend
-      legend = self.tools.getRootTLegend(xmin=0.53, ymin=0.6, xmax=0.87, ymax=0.87, size=0.027)
+      legend = self.tools.getRootTLegend(xmin=0.4, ymin=0.48, xmax=0.87, ymax=0.78, size=0.038)
 
       # for each source, collect all the pthat ranges
       hist_tot_all = []
@@ -106,19 +109,23 @@ class BackgroundPlotter(object):
       frame = hist_tot.Clone('frame')
       frame.SetTitle('')
       frame.GetXaxis().SetTitle(quantity.title)
-      frame.GetYaxis().SetLabelSize(0.033)
-      frame.GetXaxis().SetTitleSize(0.042)
+      frame.GetYaxis().SetLabelSize(0.035)
+      frame.GetXaxis().SetTitleSize(0.043)
       frame.GetXaxis().SetTitleOffset(1.1)
       frame.GetYaxis().SetTitle('Normalised to unity')
-      frame.GetYaxis().SetLabelSize(0.033)
-      frame.GetYaxis().SetTitleSize(0.042)
-      frame.GetYaxis().SetTitleOffset(1.1)
-      frame.GetYaxis().SetRangeUser(0., hist_stack.GetMaximum() + 0.15*hist_stack.GetMaximum())
+      frame.GetYaxis().SetLabelSize(0.035)
+      frame.GetYaxis().SetTitleSize(0.043)
+      frame.GetYaxis().SetTitleOffset(1.4)
+      if not do_log:
+        frame.GetYaxis().SetRangeUser(0., hist_stack.GetMaximum() + 0.15*hist_stack.GetMaximum())
+      else:
+        frame.GetYaxis().SetRangeUser(1e-4, hist_stack.GetMaximum() + 10*hist_stack.GetMaximum())
 
       canv = self.tools.createTCanvas('canv_{}_{}'.format(category.label, plot_label), 800, 700)
       canv.cd()
 
       pad = ROOT.TPad("pad","pad",0,0,1,1)
+      if do_log: pad.SetLogy()
       pad.Draw()
       pad.cd()
 
@@ -130,16 +137,21 @@ class BackgroundPlotter(object):
 
       legend.Draw()
 
-      self.tools.printCMSTag(pad, self.CMS_tag, size=0.43)
-      self.tools.printLatexBox(0.55, 0.56, title, size=0.033, pos='left')
-      self.tools.printLatexBox(0.55, 0.5, category.title, size=0.033, pos='left')
+      self.tools.printCMSTag(pad, self.CMS_tag, size=0.43, font=61)
+      self.tools.printLatexBox(0.42, 0.83, title, size=0.038, pos='left')
+      #self.tools.printLatexBox(0.55, 0.5, category.title, size=0.033, pos='left')
+
+      pad.cd()
+      pad.RedrawAxis()
 
       if not path.exists('./myPlots/background_sources'):
         os.system('mkdir -p ./myPlots/background_sources')
 
       canv.cd()
-      canv.SaveAs('myPlots/background_sources/{}_{}.png'.format(plot_label, category.label))
-      canv.SaveAs('myPlots/background_sources/{}_{}.pdf'.format(plot_label, category.label))
+      plot_name = 'background_sources/{}_{}'.format(plot_label, category.label)
+      if do_log: plot_name += '_log'
+      canv.SaveAs('myPlots/{}.png'.format(plot_name))
+      canv.SaveAs('myPlots/{}.pdf'.format(plot_name))
 
 
 
@@ -151,7 +163,7 @@ if __name__ == '__main__':
   baseline_selection = selection['baseline_sources'].flat + ' && hnl_charge == 0'
   categories = categories['inclusive']
 
-  CMS_tag = 'Preliminary'
+  CMS_tag = 'Simulation'
   
   add_weight_hlt = False
   add_weight_pu = False
@@ -229,9 +241,9 @@ if __name__ == '__main__':
   #cand_differentmothers = BackgroundSource('cand_ismatched==1 && cand_mumupi_samemother==0', 'combinatorial', ROOT.kGreen-10)
 
   #cand_unmatched = BackgroundSource('cand_ismatched==0 && cand_ispartially_matched==0', 'non-genmatched', ROOT.kGray)
-  cand_unmatched = BackgroundSource('cand_isnotmatched==1', 'non-genmatched', ROOT.kGray)
+  cand_unmatched = BackgroundSource('cand_isnotmatched==1', 'Instrumental background', ROOT.kGray)
   cand_partiallymatched = BackgroundSource('cand_ispartialmatched==1', 'partially genmatched', ROOT.kCyan-10)
-  cand_combinatorial = BackgroundSource('cand_ispartialmatched==1 || (cand_isfullmatched==1 && cand_mumupi_samemother==0)', 'combinatorial', ROOT.kGreen-10)
+  cand_combinatorial = BackgroundSource('cand_ispartialmatched==1 || (cand_isfullmatched==1 && cand_mumupi_samemother==0)', 'Combinatorial background', ROOT.kGreen-10)
   cand_cascade = BackgroundSource('cand_isfullmatched==1 && cand_mumupi_samemother==1', 'B cascade decay', ROOT.kRed-10)
 
   cand_directBdecay = BackgroundSource('cand_isfullmatched==1 && cand_mumupi_samemother==1 && mu0_directBdecay==1', 'direct B decay', ROOT.kRed-9)
@@ -381,8 +393,9 @@ if __name__ == '__main__':
     #cand_unmatched,
     ]
 
-  hnl_mass = Quantity(name_flat='hnl_mass', label='hnl_mass', title='#mu#pi invariant mass [GeV]', nbins=80, bin_min=0, bin_max=5.4)
-  sv_lxy = Quantity(name_flat='sv_lxy', label='sv_lxy', title='SV l_{xy} [cm]', nbins=80, bin_min=0, bin_max=5)
+  hnl_mass = Quantity(name_flat='hnl_mass', label='hnl_mass', title='#it{m}(#it{#mu}^{#pm}#it{#pi}^{#mp}) (GeV)', nbins=80, bin_min=1., bin_max=6.)
+  sv_lxy = Quantity(name_flat='sv_lxy', label='sv_lxy', title='#it{L}_{#it{xy}} (cm)', nbins=60, bin_min=0, bin_max=15)
+  sv_lxysig = Quantity(name_flat='sv_lxysig', label='sv_lxysig', title='#it{L}_{#it{xy}}/#sigma_{#it{L}_{#it{xy}}}', nbins=60, bin_min=15, bin_max=500)
   mu0_pt = Quantity(name_flat='mu0_pt', label='mu0_pt', title='primary #mu p_{T} [GeV]', nbins=80, bin_min=0, bin_max=30)
   mu0_eta = Quantity(name_flat='mu0_eta', label='mu0_eta', title='primary #mu #eta', nbins=80, bin_min=-2.1, bin_max=2.1)
   mu0_dxysig = Quantity(name_flat='fabs(mu0_dxysig)', label='mu0_dxysig', title='primary #mu dxysig', nbins=80, bin_min=0, bin_max=150)
@@ -395,7 +408,8 @@ if __name__ == '__main__':
 
   quantities = [
     hnl_mass,
-    sv_lxy,
+    #sv_lxy,
+    sv_lxysig,
     #mu0_pt,
     #mu0_eta,
     #mu0_dxysig,
@@ -422,20 +436,21 @@ if __name__ == '__main__':
         CMS_tag = CMS_tag,
         )
 
-    plotter.plotStackHistogram(sources=mu0_matching, title='Primary muon', plot_label='matching_{}_mu0'.format(quantity.label))
-    plotter.plotStackHistogram(sources=mu_matching, title='Displaced muon', plot_label='matching_{}_mu'.format(quantity.label))
-    plotter.plotStackHistogram(sources=pi_matching, title='Displaced pion', plot_label='matching_{}_pi'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=mu0_matching, title='Primary muon', plot_label='matching_{}_mu0'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=mu_matching, title='Displaced muon', plot_label='matching_{}_mu'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=pi_matching, title='Displaced pion', plot_label='matching_{}_pi'.format(quantity.label))
 
-    plotter.plotStackHistogram(sources=mu0_sources, title='Primary muon', plot_label='sources_{}_mu0'.format(quantity.label))
-    plotter.plotStackHistogram(sources=mu0_sources_cascade_fullmatched, title='Primary muon', plot_label='sources_{}_mu0_cascade_fullmatched'.format(quantity.label))
-    plotter.plotStackHistogram(sources=mu0_sources_cascade, title='Primary muon', plot_label='sources_{}_mu0_cascade'.format(quantity.label))
-    plotter.plotStackHistogram(sources=mu_sources, title='Displaced muon', plot_label='sources_{}_mu'.format(quantity.label))
-    plotter.plotStackHistogram(sources=mu_sources_cascade_fullmatched, title='Displaced muon', plot_label='sources_{}_mu_cascade_fullmatched'.format(quantity.label))
-    plotter.plotStackHistogram(sources=mu_sources_cascade, title='Displaced muon', plot_label='sources_{}_mu_cascade'.format(quantity.label))
-    plotter.plotStackHistogram(sources=pi_sources, title='Displaced pion', plot_label='sources_{}_pi'.format(quantity.label))
-    plotter.plotStackHistogram(sources=pi_sources_cascade_fullmatched, title='Displaced pion', plot_label='sources_{}_pi_cascade_fullmatched'.format(quantity.label))
-    plotter.plotStackHistogram(sources=pi_sources_cascade, title='Displaced pion', plot_label='sources_{}_pi_cascade'.format(quantity.label))
-    plotter.plotStackHistogram(sources=cand_sources_general, title='#mu#mu#pi candidate', plot_label='sources_{}_cand_general'.format(quantity.label))
-    plotter.plotStackHistogram(sources=cand_sources_cascade, title='#mu#mu#pi candidate', plot_label='sources_{}_cand_cascade'.format(quantity.label))
-    plotter.plotStackHistogram(sources=cand_sources_combinatorial, title='#mu#mu#pi candidate', plot_label='sources_{}_cand_combinatorial'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=mu0_sources, title='Primary muon', plot_label='sources_{}_mu0'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=mu0_sources_cascade_fullmatched, title='Primary muon', plot_label='sources_{}_mu0_cascade_fullmatched'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=mu0_sources_cascade, title='Primary muon', plot_label='sources_{}_mu0_cascade'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=mu_sources, title='Displaced muon', plot_label='sources_{}_mu'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=mu_sources_cascade_fullmatched, title='Displaced muon', plot_label='sources_{}_mu_cascade_fullmatched'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=mu_sources_cascade, title='Displaced muon', plot_label='sources_{}_mu_cascade'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=pi_sources, title='Displaced pion', plot_label='sources_{}_pi'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=pi_sources_cascade_fullmatched, title='Displaced pion', plot_label='sources_{}_pi_cascade_fullmatched'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=pi_sources_cascade, title='Displaced pion', plot_label='sources_{}_pi_cascade'.format(quantity.label))
+    plotter.plotStackHistogram(sources=cand_sources_general, title='Dimuon channel', plot_label='sources_{}_cand_general'.format(quantity.label))
+    plotter.plotStackHistogram(sources=cand_sources_general, title='Dimuon channel', plot_label='sources_{}_cand_general'.format(quantity.label), do_log=True)
+    #plotter.plotStackHistogram(sources=cand_sources_cascade, title='#mu#mu#pi candidate', plot_label='sources_{}_cand_cascade'.format(quantity.label))
+    #plotter.plotStackHistogram(sources=cand_sources_combinatorial, title='#mu#mu#pi candidate', plot_label='sources_{}_cand_combinatorial'.format(quantity.label))
 

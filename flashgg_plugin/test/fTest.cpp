@@ -31,6 +31,7 @@
 #include "TH1I.h"
 #include "TArrow.h"
 #include "TKey.h"
+#include "TBox.h"
 
 #include "RooCategory.h"
 #include "HiggsAnalysis/CombinedLimit/interface/RooMultiPdf.h"
@@ -77,8 +78,14 @@ RooAbsPdf* getPdf(PdfModelBuilder &pdfsModel, string type, int order, const char
   }
 }
 
-void runFit(RooAbsPdf *pdf, RooDataSet *data, double *NLL, int *stat_t, int MaxTries){
+void runFit(RooRealVar *mass, RooAbsPdf *pdf, RooDataSet *data, double *NLL, int *stat_t, int MaxTries, float fit_window_min, float fit_window_max, float mass_window_min, float mass_window_max){
 /* Basic fitting routine, fit is not extended */
+
+  // define fit region
+  TString fit_region;
+  mass->setRange("left", fit_window_min, mass_window_min);
+  mass->setRange("right", mass_window_max, fit_window_max);
+  fit_region = "left,right";
 
   int ntries=0;
   RooArgSet *params_test = pdf->getParameters((const RooArgSet*)(0));
@@ -87,7 +94,7 @@ void runFit(RooAbsPdf *pdf, RooDataSet *data, double *NLL, int *stat_t, int MaxT
   double minnll=10e8;
   while (stat!=0){
     if (ntries>=MaxTries) break;
-    RooFitResult *fitTest = pdf->fitTo(*data,RooFit::Save(1),RooFit::Minimizer("Minuit2","minimize")); 
+    RooFitResult *fitTest = pdf->fitTo(*data,RooFit::Save(1),RooFit::Minimizer("Minuit2","minimize"),RooFit::Range(fit_region)); 
     stat = fitTest->status();
     minnll = fitTest->minNll();
     if (stat!=0) params_test->assignValueOnly(fitTest->randomizePars());
@@ -422,15 +429,20 @@ void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet
   leg->SetLineColor(1);
   RooPlot *plot = mass->frame();
 
-  mass->setRange("sideband_left", fit_window_min, mass_window_min);
-  mass->setRange("sideband_right", mass_window_max, fit_window_max);
-  if (BLIND) {
-    data->plotOn(plot,Binning(nBinsForPlot),CutRange("sideband_left"));
-    data->plotOn(plot,Binning(nBinsForPlot),CutRange("sideband_right"));
-    data->plotOn(plot,Binning(nBinsForPlot),Invisible());
-  }
-  else data->plotOn(plot,Binning(nBinsForPlot)); 
+  TString fit_region;
+  mass->setRange("left", fit_window_min, mass_window_min);
+  mass->setRange("right", mass_window_max, fit_window_max);
+  fit_region = "left,right";
+
+  TString plot_region;
+  mass->setRange("full", fit_window_min, fit_window_max);
+  plot_region = "full";
+
+  data->plotOn(plot,Binning(nBinsForPlot),CutRange(fit_region)); 
+  data->plotOn(plot,Invisible());
+  
   TCanvas *canv = new TCanvas();
+
   //TPad *pad1 = new TPad("pad1","pad1",0,0,1,1);
   //pad1->SetBottomMargin(0.18);
   //pad1->Draw();
@@ -448,8 +460,8 @@ void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet
     if (icat<=6) col=color[icat];
     else {col=kBlack; style++;}
     catIndex->setIndex(icat);
-    pdfs->getCurrentPdf()->fitTo(*data,RooFit::Minos(0),RooFit::Minimizer("Minuit2","minimize"));  
-    pdfs->getCurrentPdf()->plotOn(plot,LineColor(col),LineStyle(style));//,RooFit::NormRange("fitdata_1,fitdata_2"));
+    pdfs->getCurrentPdf()->fitTo(*data,RooFit::Minos(0),RooFit::Minimizer("Minuit2","minimize"),RooFit::Range(fit_region));  
+    pdfs->getCurrentPdf()->plotOn(plot,LineColor(col),LineStyle(style),RooFit::Range(plot_region),RooFit::NormRange(fit_region));
     TObject *pdfLeg = plot->getObject(int(plot->numItems()-1));
     std::string ext = "";
     if (bestFitPdf==icat) {
@@ -473,6 +485,10 @@ void plot(RooRealVar *mass, RooMultiPdf *pdfs, RooCategory *catIndex, RooDataSet
   plot->GetXaxis()->SetTitle("m_{#mu#pi} (GeV)");
   if (BLIND) plot->SetMinimum(0.0001);
   plot->Draw();
+  TBox* SR_box = new TBox(mass_window_min, 0, mass_window_max, plot->GetMaximum()*0.99);
+  SR_box->SetFillStyle(3005);
+  SR_box->SetFillColor(17);
+  SR_box->Draw("same");
   leg->Draw("same");
   CMS_lumi( canv, 0, 0);
   canv->SaveAs(Form("%s.pdf",name.c_str()));
@@ -545,7 +561,7 @@ void transferMacros(TFile *inFile, TFile *outFile){
   }
 }
 
-int getBestFitFunction(RooMultiPdf *bkg, RooDataSet *data, RooCategory *cat, bool silent=false){
+int getBestFitFunction(RooRealVar *mass, RooMultiPdf *bkg, RooDataSet *data, RooCategory *cat, bool silent, float fit_window_min, float fit_window_max, float mass_window_min, float mass_window_max){
 /* Get index of the best fit pdf (minimum NLL, including correction) among functions in the multipdf.
    All fits are performed again. */
 
@@ -585,7 +601,7 @@ int getBestFitFunction(RooMultiPdf *bkg, RooDataSet *data, RooCategory *cat, boo
     //minim.minimize("Minuit2","minimize");
     double minNll=0; //(nllm->getVal())+bkg->getCorrection();
     int fitStatus=1;    
-    runFit(bkg->getCurrentPdf(),data,&minNll,&fitStatus,/*max iterations*/7);
+    runFit(mass,bkg->getCurrentPdf(),data,&minNll,&fitStatus,/*max iterations*/7,fit_window_min,fit_window_max,mass_window_min,mass_window_max);
     // Add the penalty
 
     minNll=minNll+bkg->getCorrection();
@@ -731,17 +747,17 @@ int main(int argc, char* argv[]){
 
   // Set up which families of functions you want to test
   vector<string> functionClasses;
-  functionClasses.push_back("Bernstein");
+  //functionClasses.push_back("Bernstein");
   functionClasses.push_back("Exponential");
   functionClasses.push_back("PowerLaw");
   functionClasses.push_back("Laurent");
   //functionClasses.push_back("Chebychev");
   //functionClasses.push_back("Polynomial");
   map<string,string> namingMap;
-  namingMap.insert(pair<string,string>("Bernstein","pol"));
-  namingMap.insert(pair<string,string>("Exponential","exp"));
+  //namingMap.insert(pair<string,string>("Bernstein","pol"));
+  //namingMap.insert(pair<string,string>("Exponential","exp"));
   namingMap.insert(pair<string,string>("PowerLaw","pow"));
-  namingMap.insert(pair<string,string>("Laurent","lau"));
+  //namingMap.insert(pair<string,string>("Laurent","lau"));
   //namingMap.insert(pair<string,string>("Chebychev","che"));
   //namingMap.insert(pair<string,string>("Polynomial","pol"));
 
@@ -752,7 +768,7 @@ int main(int argc, char* argv[]){
   vector<map<string,RooAbsPdf*> > pdfs_vec;
 
   PdfModelBuilder pdfsModel;
-  RooRealVar *mass = (RooRealVar*)inWS->var("hnl_mass");
+  RooRealVar *mass = (RooRealVar*)inWS->var(Form("hnl_mass_muon_channel_m_%s",mN_label.c_str()));
   std:: cout << "[INFO] Got mass from ws " << mass << std::endl;
   pdfsModel.setObsVar(mass);
   double upperEnvThreshold = 0.1; // upper threshold on prob_ftest to include function in envelope (looser than truth function)
@@ -841,7 +857,7 @@ int main(int argc, char* argv[]){
 
           //bkgPdf->Print();
           int fitStatus = 0;
-          runFit(bkgPdf,data,&thisNll,&fitStatus,/*max iterations*/7);//bkgPdf->fitTo(*data,Save(true),RooFit::Minimizer("Minuit2","minimize"));
+          runFit(mass,bkgPdf,data,&thisNll,&fitStatus,/*max iterations*/7,fit_window_min,fit_window_max,mass_window_min,mass_window_max);//bkgPdf->fitTo(*data,Save(true),RooFit::Minimizer("Minuit2","minimize"));
           if (fitStatus!=0) std::cout << "[WARNING] Warning -- Fit status for " << bkgPdf->GetName() << " at " << fitStatus <<std::endl;
        
           chi2 = 2.*(prevNll-thisNll);
@@ -897,7 +913,7 @@ int main(int argc, char* argv[]){
             // Fit and chi-square calculation is repeated
             //RooFitResult *fitRes;
             int fitStatus=0;
-            runFit(bkgPdf,data,&thisNll,&fitStatus,/*max iterations*/7);//bkgPdf->fitTo(*data,Save(true),RooFit::Minimizer("Minuit2","minimize"));
+            runFit(mass,bkgPdf,data,&thisNll,&fitStatus,/*max iterations*/7,fit_window_min,fit_window_max,mass_window_min,mass_window_max);//bkgPdf->fitTo(*data,Save(true),RooFit::Minimizer("Minuit2","minimize"));
             //thisNll = fitRes->minNll();
             if (fitStatus!=0) std::cout << "[WARNING] Warning -- Fit status for " << bkgPdf->GetName() << " at " << fitStatus <<std::endl;
             double myNll = 2.*thisNll;
@@ -962,7 +978,7 @@ int main(int argc, char* argv[]){
       RooRealVar nBackground(Form("qcd_multipdf_bhnl_m_%s_cat_%s_norm",mN_label.c_str(),catname.c_str()),"nbkg",data->sumEntries(),0,3*data->sumEntries()); //TODO do we want to keep this strategy?, make sure normalisation is correct
       //nBackground.removeRange(); // bug in roofit will break combine until dev branch brought in
       //double check the best pdf!
-      int bestFitPdfIndex = getBestFitFunction(pdf,data,&catIndex,!verbose);
+      int bestFitPdfIndex = getBestFitFunction(mass,pdf,data,&catIndex,!verbose,fit_window_min,fit_window_max,mass_window_min,mass_window_max);
       catIndex.setIndex(bestFitPdfIndex);
       std::cout << "// ------------------------------------------------------------------------- //" <<std::endl; 
       std::cout << "[INFO] Created MultiPdf " << pdf->GetName() << ", in Category " << cat << " with a total of " << catIndex.numTypes() << " pdfs"<< std::endl;

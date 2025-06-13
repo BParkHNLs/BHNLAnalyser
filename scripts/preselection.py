@@ -20,7 +20,7 @@ class Quantity(object):
                               
 
 class Selection(Tools):
-  def __init__(self, files, quantity, preexisting_selection=None, npoints=50, sample_type='nano', write_cut_analysis=False, proposed_cut=None):
+  def __init__(self, files, quantity, preexisting_selection=None, npoints=50, sample_type='flat', write_cut_analysis=False, proposed_cut=None):
     self.tools                 = Tools()
     self.files                 = files
     self.quantity              = quantity
@@ -448,8 +448,8 @@ if __name__ == '__main__':
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V07_18Aug21/ParkingBPH1_Run2018A/merged/bparknano_looseselection_dsaonly.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/bparknano_data_1file_looseselection.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V09_06Nov21/ParkingBPH1_Run2018A/merged/flat_bparknano_data_1file_looseselection.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/merged/bparknano_loosepreselection_1file.root', # used for AN-v3
-      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22.root', # for baseline selection cutflow
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V11_24Apr22/ParkingBPH1_Run2018D/merged/bparknano_loosepreselection_1file.root', # used for AN-v3
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/Chunk0_n500/flat/flat_bparknano_08Aug22.root', # for baseline selection cutflow
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/data/V12_08Aug22/ParkingBPH1_Run2018D/merged/bparknano_data_nocutatall_1000evts.root', # get the loose selection efficiency
       process = 'background',
       )
@@ -461,8 +461,8 @@ if __name__ == '__main__':
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass3.0_ctau100.0/nanoFiles/merged/bparknano_looseselection.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V39_Bc/mass3.0_ctau100.0/nanoFiles/merged/bparknano_loosepreselection.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n32/bparknano_nj1.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_5files.root', # used for AN-v3, preselection
-      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22.root', # for baseline selection cutflow
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_5files.root', # used for AN-v3, preselection
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL3p0_ctau100p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22.root', # for baseline selection cutflow
       process = 'signal',
       signal_mass = 3,
       signal_ctau = 100,
@@ -475,8 +475,8 @@ if __name__ == '__main__':
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass4.5_ctau1.0/nanoFiles/merged/bparknano_looseselection.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V39_Bc/mass4.5_ctau1.0/nanoFiles/merged/bparknano_loosepreselection.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n15/bparknano_nj1.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_2files.root', # used for AN-v3, preselection
-      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22.root', # for baseline selection cutflow 
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_2files.root', # used for AN-v3, preselection
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL4p5_ctau1p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22.root', # for baseline selection cutflow 
       process = 'signal',
       signal_mass = 4.5,
       signal_ctau = 1,
@@ -488,8 +488,8 @@ if __name__ == '__main__':
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToNMuX_NToEMuPi_SoftQCD_b_mN1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/V37/mass1.0_ctau1000.0/nanoFiles/merged/bparknano_looseselection.root',
       #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/Chunk0_n324/bparknano_nj1.root',
-      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_30files.root', # used for AN-v3, preselection
-      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22.root', # for baseline selection cutflow
+      #sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V00_looseselection/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/bparknano_30files.root', # used for AN-v3, preselection
+      sample_name = '/pnfs/psi.ch/cms/trivcat/store/user/anlyon/BHNLsGen/signal_central/V12_08Aug22/BToHNLEMuX_HNLToEMuPi_SoftQCD_b_mHNL1p0_ctau1000p0mm_TuneCP5_13TeV-pythia8-evtgen/merged/flat_bparknano_08Aug22.root', # for baseline selection cutflow
       process = 'signal',
       signal_mass = 1,
       signal_ctau = 1000,
@@ -594,6 +594,8 @@ if __name__ == '__main__':
   dphi_mu_pi  = Quantity('abs(BToMuMuPi_dphi_mu_pi)', 'abs(deltaphi_mu_pi)', 'dphi_mu_pi', '|#Delta #phi(#mu, #pi)|', '<', '', 0, 3) 
   dphi_trgmu_pi  = Quantity('abs(BToMuMuPi_dphi_trgmu_pi)', 'abs(deltaphi_trgmu_pi)', 'dphi_trgmu_pi', '|#Delta #phi(trg#mu, #pi)|', '<', '', 0, 3) 
 
+  dr_mu0_pi  = Quantity('abs(BToMuMuPi_dr_trgmu_pi)', 'abs(deltar_mu0_pi)', 'dr_mu0_pi', '|#DeltaR(#mu_{0}, #pi)|', '>', '', 0, 0.1) 
+
   #'mu0_softid == 1',
   #'mu_looseid == 1',
   #'pi_packedcandhashighpurity == 1',
@@ -608,8 +610,8 @@ if __name__ == '__main__':
   printEfficiency = True
   printScan = False
 
-  doPreselection = True
-  doBaselineSelection = False
+  doPreselection = False
+  doBaselineSelection = True
   doLooseSelection = False
 
   if doPreselection:
@@ -1120,6 +1122,11 @@ if __name__ == '__main__':
     if printCutflow: Selection(files, sv_err, preexisting_selection=baseline_selection, proposed_cut=cut_sv_err).printCutflowLine()
     if printEfficiency: Selection(files, sv_err, preexisting_selection=baseline_selection, proposed_cut=cut_sv_err).printEfficiencyLine()
     baseline_selection.append(PreselectedQuantity(sv_err, cut_sv_err))
+
+    cut_dr_mu0_pi = 0.01
+    if printCutflow: Selection(files, dr_mu0_pi, preexisting_selection=baseline_selection, proposed_cut=cut_dr_mu0_pi).printCutflowLine()
+    if printEfficiency: Selection(files, dr_mu0_pi, preexisting_selection=baseline_selection, proposed_cut=cut_dr_mu0_pi).printEfficiencyLine()
+    baseline_selection.append(PreselectedQuantity(dr_mu0_pi, cut_dr_mu0_pi))
 
 
   if doLooseSelection:

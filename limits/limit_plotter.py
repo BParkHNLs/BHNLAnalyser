@@ -10,9 +10,13 @@ import otherExp_limits as db
 from collections import OrderedDict
 import matplotlib
 matplotlib.use('pdf')
+from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from intersection import intersection
 from utils import getMassList
+sys.path.append('../scripts')
+from decays import HNLDecays 
+from line_effects import TickedStroke, Normal
 
 
 def getOptions():
@@ -56,10 +60,32 @@ class LimitPlotter(object):
       self.fe = str(round(float(fe), 1)).replace('.', 'p')
       self.fu = str(round(float(fu), 1)).replace('.', 'p')
       self.ft = str(round(float(ft), 1)).replace('.', 'p')
+    self.plot_1D = False
 
 
   def sortList(self, input):
     return float(input)
+
+
+  def getCouplingTarget(self, mass, coupling):
+    val_coupling = float(coupling)
+
+    if self.do_coupling_scenario:
+      val_fe = float(self.fe.replace('p', '.'))
+      val_fu = float(self.fu.replace('p', '.'))
+      val_ft = float(self.ft.replace('p', '.'))
+      if val_fe == 0.3: val_fe = 1./3.
+      if val_fu == 0.3: val_fu = 1./3.
+      if val_ft == 0.3: val_ft = 1./3.
+      decay_width_ini = HNLDecays(mass=float(mass), fe=0., fu=1., ft=0.).decay_rate['tot']
+      decay_width_new = HNLDecays(mass=float(mass), fe=val_fe, fu=val_fu, ft=val_ft).decay_rate['tot']
+      corr = decay_width_ini / decay_width_new
+      val_coupling = corr * val_coupling 
+
+    if self.scenario == 'Dirac':
+      val_coupling = 2.0 * val_coupling
+
+    return val_coupling
 
 
   def get_intersection(self, couplings, values, crossing=1):
@@ -109,16 +135,17 @@ class LimitPlotter(object):
 
 
   def process(self):
-    #signal_type = self.signal_type 
-    #lumi =  '41.6 fb'+r'$^{-1}$'
     #lumi =  '5.3 fb'+r'$^{-1}$'+' projected to 41.6 fb'+r'$^{-1}$'
-    lumi =  '40.0 fb'+r'$^{-1}$'
+    #lumi =  '40.0 fb'+r'$^{-1}$'
+    lumi =  '41.6 fb'+r'$^{-1}$'
 
     # get the files 
     if not self.do_coupling_scenario:
       pathToResults = '{}/outputs/{}/limits/{}/results/'.format(self.homedir, self.outdirlabel, self.subdirlabel) 
     else:
       pathToResults = '{}/outputs/{}/limits/{}/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
+      #FIXME
+      #pathToResults = '{}/outputs/{}/limits/{}/muon/results_{}_{}_{}/'.format(self.homedir, self.outdirlabel, self.subdirlabel, self.fe, self.fu, self.ft) 
 
     fileName = 'result*{}*.txt'.format(self.scenario)
 
@@ -143,7 +170,8 @@ class LimitPlotter(object):
       if self.mass_blacklist != 'None':
         if mass in self.mass_blacklist.split(','): continue
 
-      #if float(mass) < 3. or float(mass) > 3.5: continue
+      #if float(mass) < 1.5 or float(mass) > 2.25: continue
+      if float(mass) > 3.: continue
 
       print '\nmass {}'.format(mass)
 
@@ -160,8 +188,8 @@ class LimitPlotter(object):
      
         # for each mass, get the list of the couplings and ctaus from the file name
         ctau = limitFile[limitFile.find('ctau_')+5:limitFile.find('_', limitFile.find('ctau_')+5)]
-        coupling = limitFile[limitFile.find('v2_')+3:limitFile.find('.txt')]
-        val_coupling = float(coupling)
+        coupling = limitFile[limitFile.rfind('v2_')+3:limitFile.find('.txt')]
+        val_coupling = self.getCouplingTarget(mass=mass, coupling=coupling)
       
         # get white/black listed coupling
         if self.coupling_whitelist!='None':
@@ -172,9 +200,6 @@ class LimitPlotter(object):
         
         try:
           thefile = open('{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, ctau, coupling), 'r')
-          #print '{}/result_{}_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, ctau, coupling)
-          #thefile = open('{}/result_m_{}_ctau_{}_v2_{}.txt'.format(pathToResults, mass, ctau, coupling), 'r')
-          #thefile = open('{}/result_m_{}_v2_{}.txt'.format(pathToResults, mass, coupling), 'r')
           
           # get the necessary information from the result files
           val_obs       = None
@@ -223,15 +248,11 @@ class LimitPlotter(object):
         except:
           print 'Cannot open {}result_{}_m_{}_v2_{}.txt'.format(pathToResults, self.scenario, mass, coupling)
 
-
-      print '-> will plot 1D limit for mass {}'.format(mass)
-      
       if not self.do_blind:
-          graph = zip(v2s, minus_two, minus_one, central, plus_one, plus_two, obs)
+        graph = zip(v2s, minus_two, minus_one, central, plus_one, plus_two, obs)
       else:
         graph = zip(v2s, minus_two, minus_one, central, plus_one, plus_two)    
       graph.sort(key = lambda x : float(x[0])) # sort by coupling
-    
 
       v2s       = [jj[0] for jj in graph]
       minus_two = [jj[1] for jj in graph]
@@ -241,57 +262,49 @@ class LimitPlotter(object):
       plus_two  = [jj[5] for jj in graph]
       if not self.do_blind:
           obs = [jj[6] for jj in graph]
-      
-      print '\n-> Plots will be saved in {}'.format(plotDir)
-          
-      plt.clf()
-      ax = plt.axes()
-      print '   couplings: {}'.format(v2s)
-      coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
-      plt.fill_between(v2s, minus_two, plus_two, color='gold', label=r'$\pm 2 \sigma$')
-      plt.fill_between(v2s, minus_one, plus_one, color='forestgreen' , label=r'$\pm 1 \sigma$')
-      plt.plot(v2s, central, color='red', label='central expected', linewidth=2)
-      if not self.do_blind:
-          plt.plot(v2s, obs, color='black', label='observed')    
-      
-      plt.axhline(y=1, color='black', linestyle='-')
-      plt.xlabel(r'$|V|^2$')
-      plt.ylabel('exclusion limit 95% CL')
 
-      #plt.title('HNL m = %s GeV %s' %(mass, signal_type))
-      if self.do_coupling_scenario:
-        plt.title(r'Majorana HN, m = %s GeV, %s' %(mass, coupling_scenario))
-      else:
-        if str(mass) == '1': 
-          mass = '1.0'
-        if str(mass) == '2': 
-          mass = '2.0'
-        if str(mass) == '3': 
-          mass = '3.0'
-        #plt.title(r'Majorana HN, m = %s GeV' %(mass,))
-        plt.title('Majorana HN, m = {} GeV'.format(mass))
-      plt.legend()
-      plt.ticklabel_format(axis='x', style='sci', scilimits=(0,0))
-      #ax.text(0.5, 0.5, coupling_scenario, style='normal', bbox={'facecolor': 'white', 'alpha': 1., 'pad': 10}, transform=ax.transAxes)
-      #plt.xlim(1e-5, 3e-4)
-      #plt.ylim(1e-1, 1e4)
-      #plt.yscale('linear')
-      #if self.fe == None and self.fu == None and self.ft == None:
-      #  name_lin = 'limit_m_{}_lin'.format(mass.replace('.', 'p')) 
-      #else:
-      #  name_lin = 'limit_m_{}_scenario_{}_{}_{}_lin'.format(mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
-      #plt.savefig('{}/{}.pdf'.format(plotDir, name_lin))
-      #plt.savefig('{}/{}.png'.format(plotDir, name_lin))
-      plt.yscale('log')
-      plt.xscale('log')
-      if not self.do_coupling_scenario:
-        name_log = 'limit_{}_m_{}_log'.format(self.scenario, mass.replace('.', 'p')) 
-      else:
-        name_log = 'limit_{}_m_{}_scenario_{}_{}_{}_log'.format(self.scenario, mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
-      print '--> {}/{}.png created'.format(plotDir, name_log)
-      plt.savefig('{}/{}.pdf'.format(plotDir, name_log))
-      plt.savefig('{}/{}.png'.format(plotDir, name_log))
-      
+      if self.plot_1D:
+        print '-> will plot 1D limit for mass {}'.format(mass)
+        
+        print '\n-> Plots will be saved in {}'.format(plotDir)
+            
+        plt.clf()
+        ax = plt.axes()
+        print '   couplings: {}'.format(v2s)
+        coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
+        plt.fill_between(v2s, minus_two, plus_two, color='gold', label=r'$\pm 2 \sigma$')
+        plt.fill_between(v2s, minus_one, plus_one, color='forestgreen' , label=r'$\pm 1 \sigma$')
+        plt.plot(v2s, central, color='red', label='central expected', linewidth=2)
+        if not self.do_blind:
+            plt.plot(v2s, obs, color='black', label='observed')    
+        
+        plt.axhline(y=1, color='black', linestyle='-')
+        plt.xlabel(r'$|V|^2$')
+        plt.ylabel('exclusion limit 95% CL')
+
+        #plt.title('HNL m = %s GeV %s' %(mass, signal_type))
+        if self.do_coupling_scenario:
+          plt.title(r'%s N, m = %s GeV, %s' %(self.scenario, mass, coupling_scenario))
+        else:
+          if str(mass) == '1': 
+            mass = '1.0'
+          if str(mass) == '2': 
+            mass = '2.0'
+          if str(mass) == '3': 
+            mass = '3.0'
+          plt.title('{} N, m = {} GeV'.format(self.scenario, mass))
+        plt.legend()
+        plt.ticklabel_format(axis='x', style='sci', scilimits=(0,0))
+        plt.yscale('log')
+        plt.xscale('log')
+        if not self.do_coupling_scenario:
+          name_log = 'limit_{}_m_{}_log'.format(self.scenario, mass.replace('.', 'p')) 
+        else:
+          name_log = 'limit_{}_m_{}_scenario_{}_{}_{}_log'.format(self.scenario, mass.replace('.', 'p'), self.fe, self.fu, self.ft) 
+        print '--> {}/{}.png created'.format(plotDir, name_log)
+        plt.savefig('{}/{}.pdf'.format(plotDir, name_log))
+        plt.savefig('{}/{}.png'.format(plotDir, name_log))
+        
 
       # save the crossing for 2D limits
       limits2D[mass] = OrderedDict()
@@ -362,8 +375,8 @@ class LimitPlotter(object):
       limits2D[mass]['exp_plus_two' ] = x_plus_two 
       if not self.do_blind:
         limits2D[mass]['obs'] = x_obs 
+        print 'obs {}'.format(x_obs)
 
-      #print '({}, {}, {}): {}'.format(self.fe, self.fu, self.ft, x_central)
 
     print '\nwill plot 2D limits' 
     with open('{}/results.pck'.format(plotDir), 'w') as ff:
@@ -371,8 +384,15 @@ class LimitPlotter(object):
 
     masses_obs       = []
     masses_central   = []
-    masses_one_sigma = []
-    masses_two_sigma = []
+    masses_plus_one_sigma = []
+    masses_minus_one_sigma = []
+    masses_plus_two_sigma = []
+    masses_minus_two_sigma = []
+
+    boundary_plus_two = []
+    boundary_plus_one = []
+    boundary_minus_two = []
+    boundary_minus_one = []
 
     minus_two = []
     minus_one = []
@@ -385,42 +405,46 @@ class LimitPlotter(object):
     # then right to left to catch the upper exclusion bound
     for mass in sorted(limits2D.keys(), key=self.sortList):
 
-        if self.do_coupling_scenario:
-          exclusion_coupling_filename = '{}/exclusion_m_{}_{}_{}_{}.txt'.format(plotDir, str(mass).replace('.', 'p'), self.fe, self.fu, self.ft)
-          exclusion_coupling_file = open(exclusion_coupling_filename, 'w+')
-        
-        #if len(limits2D[mass]['exp_central'])>0 and len(limits2D[mass]['exp_minus_one'])>0 and len(limits2D[mass]['exp_plus_one' ])>0 and len(limits2D[mass]['exp_minus_two'])>0 and len(limits2D[mass]['exp_plus_two' ])>0:
-        #central.append(limits2D[mass]['exp_central'])
-        #minus_one.append(limits2D[mass]['exp_minus_one'])
-        #plus_one.append(limits2D[mass]['exp_plus_one' ])
-        #minus_two.append(limits2D[mass]['exp_minus_two'])
-        #plus_two.append(limits2D[mass]['exp_plus_two' ])
+        central_value = limits2D[mass]['exp_central']
+        if central_value != -99.:
+          central.append(central_value)
+          masses_central.append(float(mass))
 
-        #masses_central.append(float(mass))
-        #masses_one_sigma.append(float(mass))
-        #masses_two_sigma.append(float(mass))
-
-        central.append(limits2D[mass]['exp_central'])
-        masses_central.append(float(mass))
         if limits2D[mass]['exp_plus_one' ] != -99. and limits2D[mass]['exp_plus_two' ] != -99.:
-          minus_two.append(limits2D[mass]['exp_minus_two'])
-          minus_one.append(limits2D[mass]['exp_minus_one'])
-          plus_one.append(limits2D[mass]['exp_plus_one' ])
-          plus_two.append(limits2D[mass]['exp_plus_two' ])
+          plus_two_value = limits2D[mass]['exp_plus_two' ]
+          plus_one_value = limits2D[mass]['exp_plus_one' ]
 
-          masses_one_sigma.append(float(mass))
-          masses_two_sigma.append(float(mass))
+          minus_two_value = limits2D[mass]['exp_minus_two']
+          minus_one_value = limits2D[mass]['exp_minus_one']
+
+          if plus_two_value != -99.:
+            plus_two.append(plus_two_value)
+            boundary_plus_two.append(central_value)
+            masses_plus_two_sigma.append(float(mass))
+
+          if minus_two_value != -99.:
+            minus_two.append(minus_two_value)
+            boundary_minus_two.append(central_value)
+            masses_minus_two_sigma.append(float(mass))
+
+          if plus_one_value != -99.:
+            plus_one.append(plus_one_value)
+            boundary_plus_one.append(central_value)
+            masses_plus_one_sigma.append(float(mass))
+
+          if minus_one_value != -99.:
+            minus_one.append(minus_one_value)
+            boundary_minus_one.append(central_value)
+            masses_minus_one_sigma.append(float(mass))
 
         if not self.do_blind:
-          obs.append(limits2D[mass]['obs'])
-          masses_obs.append(float(mass))
+          obs_value = limits2D[mass]['obs']
+          if obs_value != -99.:
+            obs.append(obs_value)
+            masses_obs.append(float(mass))
 
-        if self.do_coupling_scenario:
-          exclusion_coupling_file.write('\n{} {} {} {}'.format(self.fe.replace('p', '.'), self.fu.replace('p', '.'), self.ft.replace('p', '.'), limits2D[mass]['exp_central']))
-          exclusion_coupling_file.close()
-          print '--> {} created'.format(exclusion_coupling_filename) 
+        #print '{} {} {} {} {} {} {}'.format(mass, minus_two_value, minus_one_value, central_value, plus_one_value, plus_two_value, obs_value)
 
-       
     '''
     for mass in sorted(limits2D.keys(), key=self.sortList, reverse=True):
 
@@ -442,65 +466,158 @@ class LimitPlotter(object):
         masses_two_sigma.append(float(mass))
     '''
 
+    for i, the_obs in enumerate(obs):
+      if the_obs == min(obs): print 'min obs {} for mass {}'.format(min(obs), masses_obs[i])
+    #  if masses_obs[i] == 1.42: print 'obs for 1.42',the_obs
+    #  if masses_obs[i] == 1.95: print 'obs for 1.95',the_obs
 
     # plot the 2D limits
-    print masses_central
+    #print masses_central
     #print 'the_central = np.array({})'.format(central)
-    #print 'the_minus_two = np.array({})'.format(minus_two)
-    #print 'the_minus_one = np.array({})'.format(minus_one)
-    #print 'the_plus_one = np.array({})'.format(plus_one)
-    #print 'the_plus_two = np.array({})'.format(plus_two)
     plt.clf()
-    f, ax = plt.subplots(figsize=(9, 8))
+    #f, ax = plt.subplots(figsize=(13, 9))
+    f, ax = plt.subplots(figsize=(12, 10.5))
+    ax.tick_params(axis='y',direction='in', which='both', pad=7, left=True, right=True) # both means major and minor
+    ax.tick_params(axis='x',direction='in', which='both', pad=7, bottom=True, top=True)
+    y_range_min = 1e-6
+    y_range_max = 1e-2
     if not self.do_coupling_scenario:
-      self.fe = '0.0'
-      self.fu = '1.0'
-      self.ft = '0.0'
-    coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
-    ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
-    ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
-    ax.text(0.26, 0.73, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.25, 0.63, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
-    ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
-    plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--')
-    f1 = plt.fill_between(masses_two_sigma, minus_two, plus_two, color='gold'       , label=r'95% expected')
-    f2 = plt.fill_between(masses_one_sigma, minus_one, plus_one, color='forestgreen', label=r'68% expected')
-    p1, = plt.plot(masses_central, central, color='red', label='Median expected', linewidth=2)
-    #p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='black', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
-    #p3, = plt.plot(db.masses_delphiprompt, db.exp_delphiprompt, color='blueviolet', label='Delphi prompt', linewidth=1.3, linestyle='dashed')
-    #if 'mmm' in self.channels or 'mem' in self.channels:
-    #  p4, = plt.plot(db.masses_atlasdisplacedmuonLNV, db.exp_atlasdisplacedmuonLNV, color='firebrick', label='Atlas displaced muon LNV', linewidth=1.3, linestyle='dashed')
-    #  p5, = plt.plot(db.masses_atlasdisplacedmuonLNC, db.exp_atlasdisplacedmuonLNC, color='darkorange', label='Atlas displaced muon LNC', linewidth=1.3, linestyle='dashed')
-    #  p7, = plt.plot(db.masses_cmspromptmuon, db.exp_cmspromptmuon, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
-    #else: 
-    #  p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
-
+      self.fe = '0' #'0.0'
+      self.fu = '1' #'1.0'
+      self.ft = '0' #'0.0'
+    if self.fe == '0p5': fe_label = '1/2'
+    elif self.fe == '0p3': fe_label = '1/3'
+    elif self.fe == '0p0': fe_label = '0'
+    elif self.fe == '1p0': fe_label = '1'
+    else: fe_label = self.fe.replace('p', '.')
+    if self.fu == '0p5': fu_label = '1/2'
+    elif self.fu == '0p3': fu_label = '1/3'
+    elif self.fu == '0p0': fu_label = '0'
+    elif self.fu == '1p0': fu_label = '1'
+    else: fu_label = self.fu.replace('p', '.')
+    if self.ft == '0p5': ft_label = '1/2'
+    elif self.ft == '0p3': ft_label = '1/3'
+    elif self.ft == '0p0': ft_label = '0'
+    elif self.ft == '1p0': ft_label = '1'
+    else: ft_label = self.ft.replace('p', '.')
+    #coupling_scenario = r'($r_{e}$={fe}, $r_{mu}$={fu}, $r_{tau}$={ft})'.format(e='e', fe=fe_label, mu=r'\mu', fu=fu_label, tau=r'\tau', ft=ft_label)
+    coupling_scenario = r'($r_{e}$, $r_{mu}$, $r_{tau}$) = ({fe}, {fu}, {ft})'.format(e='e', fe=fe_label, mu=r'\mu', fu=fu_label, tau=r'\tau', ft=ft_label)
+    ax.text(0.1, 0.89, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=33, fontweight='bold')
+    #ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
+    ax.text(0.75, 0.85, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25)
+    #ax.text(0.25, 0.66, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
+    scenario_label = 'Dirac-like' if self.scenario == 'Dirac' else 'Majorana'
+    ax.text(0.75, 0.93, scenario_label, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=25, fontweight='bold')
+    #plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--', zorder=10)
+    f1 = plt.fill_between(masses_minus_two_sigma, minus_two, boundary_minus_two, color='gold'     , label=r'95% expected', zorder=0.5)
+    f2 = plt.fill_between(masses_minus_one_sigma, minus_one, boundary_minus_one, color='forestgreen', label=r'68% expected', zorder=0.5)
+    f3 = plt.fill_between(masses_plus_two_sigma, boundary_plus_two, plus_two, color='gold'       , label=r'95% expected', zorder=0.5)
+    f4 = plt.fill_between(masses_plus_one_sigma, boundary_plus_one, plus_one, color='forestgreen', label=r'68% expected', zorder=0.5)
+    p1, = plt.plot(masses_central, central, color='red', label='Median expected', linewidth=2, zorder=0.5)
     if not self.do_blind:
-      p8, = plt.plot(masses_obs, obs, color='black', label='Observed', linewidth=2)
+      p8, = plt.plot(masses_obs, obs, color='black', label='Observed', linewidth=2, zorder=0.5)
 
-    if not self.do_blind:
-      first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=20)
-    else:
-      first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=20)
+    #veto_D0 = plt.gca().add_patch(Rectangle((1.74, 1.01e-5), 1.8-1.74, 9e-4-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
+    #veto_Jpsi = plt.gca().add_patch(Rectangle((3.05, 1.01e-5), 3.15-3.05, 1e-3-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
+    #veto_Psi2S = plt.gca().add_patch(Rectangle((3.65, 1.01e-5), 3.75-3.65, 9e-2-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
+
+    #if not self.do_blind:
+    #  first_legend = plt.legend(handles=[p8, p1, f1, f2], loc='lower right', fontsize=18)
+    #else:
+    #  first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=18)
+
+    if self.scenario == 'Majorana':
+      if not self.do_coupling_scenario:
+        p2, = plt.plot(db.masses_atlas_Majorana, db.obs_atlas_Majorana, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        #p2_2, = plt.plot(db.masses_atlas_upper, db.exp_atlas_upper, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p3, = plt.plot(db.masses_cmsdisplaced_Majorana, db.obs_cmsdisplaced_Majorana, color='darkmagenta', label='CMS, JHEP (2022) 081', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p4, = plt.plot(db.masses_lhcb, db.exp_lhcb, color='blue', label='LHCb, Phys. Rev. Lett. (2014) 131802', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p5, = plt.plot(db.masses_belle, db.exp_belle, color='deepskyblue', label='Belle, Phys. Rev. D (2013) 071102', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p6, = plt.plot(db.masses_EXO_22_017_Majorana, db.obs_EXO_22_017_Majorana, color='magenta', label='CMS, arXiv:2402.18658', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+
+        # legend outside of frame
+        #box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        #second_legend = ax.legend(handles=[p3, p6, p2, p4, p5], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend inside of frame
+        #second_legend = ax.legend(handles=[p3, p6, p2, p4, p5], loc='lower right', fontsize=18)
+        #ax = plt.gca().add_artist(second_legend)
+
+      else:
+        if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p0_0p5_0p5, db.obs_EXO_21_013_Majorana_0p0_0p5_0p5, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p5_0p5_0p0, db.obs_EXO_21_013_Majorana_0p5_0p5_0p0, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
+          p2, = plt.plot(db.masses_EXO_21_013_Majorana_0p3_0p3_0p3, db.obs_EXO_21_013_Majorana_0p3_0p3_0p3, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+
+        # legend outside of frame
+        #box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        #second_legend = ax.legend(handles=[p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend inside of frame
+        #second_legend = ax.legend(handles=[p2], loc='lower right', fontsize=18)
+        #ax = plt.gca().add_artist(second_legend)
+
+        #second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
+        #ax = plt.gca().add_artist(second_legend)
+
+    elif self.scenario == 'Dirac':
+      if not self.do_coupling_scenario:
+        p2, = plt.plot(db.masses_atlas_Dirac, db.obs_atlas_Dirac, color='darkorange', label='ATLAS, Phys. Rev. Lett. (2023) 061803', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p3, = plt.plot(db.masses_cmsdisplaced_Dirac, db.obs_cmsdisplaced_Dirac, color='blueviolet', label='CMS, JHEP (2022) 081', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        p4, = plt.plot(db.masses_EXO_22_017_Dirac, db.obs_EXO_22_017_Dirac, color='magenta', label='CMS, arXiv:2402.18658', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+
+        # legend outside of frame
+        #box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        #second_legend = ax.legend(handles=[p3, p4, p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend inside of frame
+        #second_legend = ax.legend(handles=[p3, p4, p2], loc='lower right', fontsize=18)
+        #ax = plt.gca().add_artist(second_legend)
+
+      else:
+        if self.fe == '0p0' and self.fu == '0p5' and self.ft == '0p5':
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p0_0p5_0p5, db.obs_EXO_21_013_Dirac_0p0_0p5_0p5, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        elif self.fe == '0p5' and self.fu == '0p5' and self.ft == '0p0':
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p5_0p5_0p0, db.obs_EXO_21_013_Dirac_0p5_0p5_0p0, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+        elif self.fe == '0p3' and self.fu == '0p3' and self.ft == '0p3':
+          p2, = plt.plot(db.masses_EXO_21_013_Dirac_0p3_0p3_0p3, db.obs_EXO_21_013_Dirac_0p3_0p3_0p3, color='brown', label='CMS, arXiv:2312.07484', linewidth=1.5, path_effects=[TickedStroke(spacing=13, length=1, angle=135), Normal()], zorder=10)
+
+        #second_legend = plt.legend(handles=[p1], loc='lower left', fontsize=18)
+
+        # legend outside of frame
+        #box = ax.get_position()
+        #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        #second_legend = ax.legend(handles=[p2], loc='center', bbox_to_anchor=(1.2, 0.5), fontsize=18)
+        # legend inside of frame
+        #second_legend = ax.legend(handles=[p2], loc='lower right', fontsize=18)
+        #ax = plt.gca().add_artist(second_legend)
+
+    #if not self.do_blind:
+    #  first_legend = plt.legend(handles=[p8, p1, f1, f2], loc='lower left', fontsize=18)
+    #else:
+    #  first_legend = plt.legend(handles=[p1, f2, f1], loc='lower left', fontsize=18)
     #ax = plt.gca().add_artist(first_legend)
-    #if 'mmm' in self.channels or 'mem' in self.channels:
-    #  second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
-    #else: 
-    #  second_legend = plt.legend(handles=[p2, p3, p7], loc='upper left')
+    ##plt.gca().add_artist(first_legend)
 
-    plt.title(lumi + ' (13 TeV)', loc='right', fontsize=23)
-    plt.ylabel(r'$|V|^2$', fontsize=23)
-    plt.yticks(fontsize=17)
-    #plt.ylim(1e-10, 1e-0)
-    plt.ylim(1e-5, 1e-0)
+    veto_D0 = plt.gca().add_patch(Rectangle((1.74, 1.01e-5), 1.8-1.74, 9e-4-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
+    veto_Jpsi = plt.gca().add_patch(Rectangle((3.05, 1.01e-5), 3.15-3.05, 1e-3-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
+    veto_Psi2S = plt.gca().add_patch(Rectangle((3.65, 1.01e-5), 3.75-3.65, 9e-2-1.01e-5, edgecolor='white', facecolor='white', zorder=1)) 
+
+    plt.title(lumi + ' (13 TeV)', loc='right', fontsize=25)
+    plt.ylabel(r'$|V_\mathrm{N}|^2$', fontsize=27)
+    plt.yticks(fontsize=21)
+    plt.ylim(y_range_min, y_range_max)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-    plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
-    #plt.xlim(0, max(masses_central))
-    plt.xlim(min(masses_central), max(masses_central))
-    plt.xticks(fontsize=17)
+    plt.xlabel(r'$m_{\mathrm{N}}$ (GeV)', fontsize=27)
+    #plt.xlim(min(masses_central), max(masses_central))
+    plt.xlim(1, 6)
+    plt.xticks(fontsize=21)
     plt.yscale('log')
     plt.xscale('linear')
-    plt.grid(True)
+    #ax.set_zorder(1000)
+    #plt.grid(True, color='dimgrey', linewidth=0.1, zorder=3)
     if not self.do_coupling_scenario:
       name_2d = '2d_hnl_limit_{}'.format(self.scenario) 
     else:
@@ -510,68 +627,68 @@ class LimitPlotter(object):
     print '--> {}/{}.png created'.format(plotDir, name_2d)
 
 
-    # smoothing the structures
-    plt.clf()
-    smooth_index = 4
-    f, ax = plt.subplots(figsize=(9, 8))
-    if not self.do_coupling_scenario:
-      self.fe = '0.0'
-      self.fu = '1.0'
-      self.ft = '0.0'
-    coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
-    ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
-    ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
-    ax.text(0.26, 0.73, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
-    ax.text(0.25, 0.63, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
-    ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
-    plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--')
-    f1 = plt.fill_between(masses_two_sigma, self.smooth(minus_two, smooth_index), self.smooth(plus_two, smooth_index), color='gold', label=r'95% expected')
-    f2 = plt.fill_between(masses_one_sigma, self.smooth(minus_one, smooth_index), self.smooth(plus_one, smooth_index), color='forestgreen', label=r'68% expected')
-    #f1 = plt.fill_between(masses_two_sigma, self.smooth(minus_two, smooth_index), self.smooth(plus_two, smooth_index-1), color='gold', label=r'95% expected')
-    #f2 = plt.fill_between(masses_one_sigma, self.smooth(minus_one, smooth_index), self.smooth(plus_one, smooth_index-1), color='forestgreen', label=r'68% expected')
-    p1, = plt.plot(masses_central, self.smooth(central, smooth_index), color='red', label='Median expected', linewidth=2)
-    #p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='black', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
-    #p3, = plt.plot(db.masses_delphiprompt, db.exp_delphiprompt, color='blueviolet', label='Delphi prompt', linewidth=1.3, linestyle='dashed')
-    #if 'mmm' in self.channels or 'mem' in self.channels:
-    #  p4, = plt.plot(db.masses_atlasdisplacedmuonLNV, db.exp_atlasdisplacedmuonLNV, color='firebrick', label='Atlas displaced muon LNV', linewidth=1.3, linestyle='dashed')
-    #  p5, = plt.plot(db.masses_atlasdisplacedmuonLNC, db.exp_atlasdisplacedmuonLNC, color='darkorange', label='Atlas displaced muon LNC', linewidth=1.3, linestyle='dashed')
-    #  p7, = plt.plot(db.masses_cmspromptmuon, db.exp_cmspromptmuon, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
-    #else: 
-    #  p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
+    ## smoothing the structures
+    #plt.clf()
+    #smooth_index = 4
+    #f, ax = plt.subplots(figsize=(9, 8))
+    #if not self.do_coupling_scenario:
+    #  self.fe = '0.0'
+    #  self.fu = '1.0'
+    #  self.ft = '0.0'
+    #coupling_scenario = r'(f$_{e}$={fe}, f$_{mu}$={fu}, f$_{tau}$={ft})'.format(e='e', fe=self.fe.replace('p', '.'), mu=r'\mu', fu=self.fu.replace('p', '.'), tau=r'\tau', ft=self.ft.replace('p', '.'))
+    #ax.text(0.1, 0.93, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=30, fontweight='bold')
+    #ax.text(0.17, 0.84, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=25, fontstyle='italic')
+    #ax.text(0.26, 0.73, coupling_scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=20)
+    #ax.text(0.25, 0.63, 'Lepton universality tests', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='blue', fontsize=18)
+    #ax.text(0.84, 0.93, self.scenario, horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, color='black', fontsize=23, fontweight='bold')
+    #plt.axhline(y=1e-2, color='blue', linewidth=3, linestyle='--')
+    #f1 = plt.fill_between(masses_two_sigma, self.smooth(minus_two, smooth_index), self.smooth(plus_two, smooth_index), color='gold', label=r'95% expected')
+    #f2 = plt.fill_between(masses_one_sigma, self.smooth(minus_one, smooth_index), self.smooth(plus_one, smooth_index), color='forestgreen', label=r'68% expected')
+    ##f1 = plt.fill_between(masses_two_sigma, self.smooth(minus_two, smooth_index), self.smooth(plus_two, smooth_index-1), color='gold', label=r'95% expected')
+    ##f2 = plt.fill_between(masses_one_sigma, self.smooth(minus_one, smooth_index), self.smooth(plus_one, smooth_index-1), color='forestgreen', label=r'68% expected')
+    #p1, = plt.plot(masses_central, self.smooth(central, smooth_index), color='red', label='Median expected', linewidth=2)
+    ##p2, = plt.plot(db.masses_delphidisplaced, db.exp_delphidisplaced, color='black', label='Delphi displaced', linewidth=1.3, linestyle='dashed')
+    ##p3, = plt.plot(db.masses_delphiprompt, db.exp_delphiprompt, color='blueviolet', label='Delphi prompt', linewidth=1.3, linestyle='dashed')
+    ##if 'mmm' in self.channels or 'mem' in self.channels:
+    ##  p4, = plt.plot(db.masses_atlasdisplacedmuonLNV, db.exp_atlasdisplacedmuonLNV, color='firebrick', label='Atlas displaced muon LNV', linewidth=1.3, linestyle='dashed')
+    ##  p5, = plt.plot(db.masses_atlasdisplacedmuonLNC, db.exp_atlasdisplacedmuonLNC, color='darkorange', label='Atlas displaced muon LNC', linewidth=1.3, linestyle='dashed')
+    ##  p7, = plt.plot(db.masses_cmspromptmuon, db.exp_cmspromptmuon, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
+    ##else: 
+    ##  p7, = plt.plot(db.masses_cmspromptelectron, db.exp_cmspromptelectron, color='blue', label='CMS prompt muon', linewidth=1.3, linestyle='dashed')
 
-    if not self.do_blind:
-      p8, = plt.plot(masses_obs, obs, color='black', label='observed', linewidth=2)
+    #if not self.do_blind:
+    #  p8, = plt.plot(masses_obs, obs, color='black', label='observed', linewidth=2)
 
-    if not self.do_blind:
-      first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=20)
-    else:
-      first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=20)
-    #ax = plt.gca().add_artist(first_legend)
-    #if 'mmm' in self.channels or 'mem' in self.channels:
-    #  second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
-    #else: 
-    #  second_legend = plt.legend(handles=[p2, p3, p7], loc='upper left')
+    #if not self.do_blind:
+    #  first_legend = plt.legend(handles=[p1, p8, f1, f2], loc='lower right', fontsize=20)
+    #else:
+    #  first_legend = plt.legend(handles=[p1, f2, f1], loc='lower right', fontsize=20)
+    ##ax = plt.gca().add_artist(first_legend)
+    ##if 'mmm' in self.channels or 'mem' in self.channels:
+    ##  second_legend = plt.legend(handles=[p2, p3, p4, p5, p7], loc='lower left')
+    ##else: 
+    ##  second_legend = plt.legend(handles=[p2, p3, p7], loc='upper left')
 
-    plt.title(lumi + ' (13 TeV)', loc='right', fontsize=23)
-    plt.ylabel(r'$|V|^2$', fontsize=23)
-    plt.yticks(fontsize=17)
-    #plt.ylim(1e-10, 1e-0)
-    plt.ylim(1e-5, 1e-0)
-    plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
-    plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
-    #plt.xlim(0, max(masses_central))
-    plt.xlim(min(masses_central), max(masses_central))
-    plt.xticks(fontsize=17)
-    plt.yscale('log')
-    plt.xscale('linear')
-    plt.grid(True)
-    if not self.do_coupling_scenario:
-      name_2d = '2d_hnl_limit_{}_smoothed'.format(self.scenario) 
-    else:
-      name_2d = '2d_hnl_limit_scenario_{}_{}_{}_{}_smoothed'.format(self.scenario, self.fe, self.fu, self.ft) 
-    plt.savefig('{}/{}.pdf'.format(plotDir, name_2d))
-    plt.savefig('{}/{}.png'.format(plotDir, name_2d))
-    print '--> {}/{}.png created'.format(plotDir, name_2d)
+    #plt.title(lumi + ' (13 TeV)', loc='right', fontsize=23)
+    #plt.ylabel(r'$|V|^2$', fontsize=23)
+    #plt.yticks(fontsize=17)
+    ##plt.ylim(1e-10, 1e-0)
+    #plt.ylim(1e-5, 1e-0)
+    #plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
+    #plt.xlabel(r'$m_{N}$ (GeV)', fontsize=23)
+    ##plt.xlim(0, max(masses_central))
+    #plt.xlim(min(masses_central), max(masses_central))
+    #plt.xticks(fontsize=17)
+    #plt.yscale('log')
+    #plt.xscale('linear')
+    #plt.grid(True)
+    #if not self.do_coupling_scenario:
+    #  name_2d = '2d_hnl_limit_{}_smoothed'.format(self.scenario) 
+    #else:
+    #  name_2d = '2d_hnl_limit_scenario_{}_{}_{}_{}_smoothed'.format(self.scenario, self.fe, self.fu, self.ft) 
+    #plt.savefig('{}/{}.pdf'.format(plotDir, name_2d))
+    #plt.savefig('{}/{}.png'.format(plotDir, name_2d))
+    #print '--> {}/{}.png created'.format(plotDir, name_2d)
 
 
     #print '\n-> Plots saved in {}'.format(plotDir)

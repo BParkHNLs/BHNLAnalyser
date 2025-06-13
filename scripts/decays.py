@@ -137,17 +137,20 @@ tq                = Particle('tq'              , 'quark',  m_tq_pdg)
 ## DECAYS ##
 
 class Decays(object):
-  def __init__(self, mass, mixing_angle_square): # add model label? 
+  def __init__(self, mass, vv=1, fe=0, fu=1, ft=0): # add model label?
     self.mass = mass
-    self.mixing_angle_square = mixing_angle_square
+    self.vv = vv
+    self.fe = fe
+    self.fu = fu
+    self.ft = ft
 
     # define the HNL
     hnl = Particle('hnl', 'lepton', self.mass)
     
     # get the model
-    V_el_square = self.mixing_angle_square
-    V_mu_square = self.mixing_angle_square
-    V_tau_square = self.mixing_angle_square
+    V_el_square = self.fe * self.vv
+    V_mu_square = self.fu * self.vv
+    V_tau_square = self.ft * self.vv
 
     # list of the decays of interest
     # leptonic
@@ -222,31 +225,62 @@ class Decays(object):
     self.Bs_to_DsstartHNL = Decay(B_sub_s_meson, [D_sub_sstar_meson, tau], hnl, V_tau_square, Vcb_pdg, 'semileptonic_vector', formFactorLabel='Bs_to_Dsstar') 
     self.Bs_to_KstartHNL  = Decay(B_sub_s_meson, [Kstar_meson, tau]      , hnl, V_tau_square, Vub_pdg, 'semileptonic_vector', formFactorLabel='Bs_to_Kstar' )
 
-    self.BR_tot_mu = B_meson.fraction       * (self.B_to_uHNL.BR    + self.B_to_D0uHNL.BR  + self.B_to_pi0uHNL.BR     + self.B_to_rho0uHNL.BR   + self.B_to_D0staruHNL.BR) \
+    self.BR_tot_mu_fq_weighted = B_meson.fraction       * (self.B_to_uHNL.BR    + self.B_to_D0uHNL.BR  + self.B_to_pi0uHNL.BR     + self.B_to_rho0uHNL.BR   + self.B_to_D0staruHNL.BR) \
                    + B0_meson.fraction      * (self.B0_to_piuHNL.BR + self.B0_to_DuHNL.BR  + self.B0_to_DstaruHNL.BR  + self.B0_to_rhouHNL.BR                            ) \
                    + B_sub_s_meson.fraction * (self.Bs_to_KuHNL.BR  + self.Bs_to_DsuHNL.BR + self.Bs_to_DsstaruHNL.BR + self.Bs_to_KstaruHNL.BR                          ) 
 
-    self.BR_B_mu = B_meson.fraction       * (self.B_to_uHNL.BR    + self.B_to_D0uHNL.BR  + self.B_to_pi0uHNL.BR     + self.B_to_rho0uHNL.BR   + self.B_to_D0staruHNL.BR) 
+    self.BR_B_mu = self.B_to_uHNL.BR    + self.B_to_D0uHNL.BR  + self.B_to_pi0uHNL.BR     + self.B_to_rho0uHNL.BR   + self.B_to_D0staruHNL.BR
 
-    self.BR_B0_mu = B0_meson.fraction      * (self.B0_to_piuHNL.BR + self.B0_to_DuHNL.BR  + self.B0_to_DstaruHNL.BR  + self.B0_to_rhouHNL.BR                            ) 
+    self.BR_B0_mu = self.B0_to_piuHNL.BR + self.B0_to_DuHNL.BR  + self.B0_to_DstaruHNL.BR  + self.B0_to_rhouHNL.BR 
 
-    self.BR_Bs_mu = B_sub_s_meson.fraction * (self.Bs_to_KuHNL.BR  + self.Bs_to_DsuHNL.BR + self.Bs_to_DsstaruHNL.BR + self.Bs_to_KstaruHNL.BR                          ) 
+    self.BR_Bs_mu = self.Bs_to_KuHNL.BR  + self.Bs_to_DsuHNL.BR + self.Bs_to_DsstaruHNL.BR + self.Bs_to_KstaruHNL.BR
 
-    self.BR_Bc_mu = B_sub_c_meson.fraction * self.Bc_to_uHNL.BR
+    self.BR_B_mu_fq_weighted = B_meson.fraction * (self.B_to_uHNL.BR    + self.B_to_D0uHNL.BR  + self.B_to_pi0uHNL.BR     + self.B_to_rho0uHNL.BR   + self.B_to_D0staruHNL.BR)
+
+    self.BR_B0_mu_fq_weighted = B0_meson.fraction * (self.B0_to_piuHNL.BR + self.B0_to_DuHNL.BR  + self.B0_to_DstaruHNL.BR  + self.B0_to_rhouHNL.BR)
+
+    self.BR_Bs_mu_fq_weighted = B_sub_s_meson.fraction * (self.Bs_to_KuHNL.BR  + self.Bs_to_DsuHNL.BR + self.Bs_to_DsstaruHNL.BR + self.Bs_to_KstaruHNL.BR)
+
+    self.BR_Bc_mu_fq_weighted = B_sub_c_meson.fraction * self.Bc_to_uHNL.BR
+
+    # leptonic channels
+    self.BR_Bq_mu_fq_weighted_leptonic = (B_meson.fraction * self.B_to_uHNL.BR) + (B_sub_c_meson.fraction * self.Bc_to_uHNL.BR)
+
+    # semileptonic channels
+    self.BR_B_mu_fq_weighted_semileptonic = B_meson.fraction * (self.B_to_D0uHNL.BR  + self.B_to_pi0uHNL.BR     + self.B_to_rho0uHNL.BR   + self.B_to_D0staruHNL.BR)
+
+    self.BR_B0_mu_fq_weighted_semileptonic = B0_meson.fraction * (self.B0_to_piuHNL.BR + self.B0_to_DuHNL.BR  + self.B0_to_DstaruHNL.BR  + self.B0_to_rhouHNL.BR)
+
+    self.BR_Bs_mu_fq_weighted_semileptonic = B_sub_s_meson.fraction * (self.Bs_to_KuHNL.BR  + self.Bs_to_DsuHNL.BR + self.Bs_to_DsstaruHNL.BR + self.Bs_to_KstaruHNL.BR)
+
+    self.BR_Bq_mu_fq_weighted_semileptonic = self.BR_B_mu_fq_weighted_semileptonic + self.BR_B0_mu_fq_weighted_semileptonic + self.BR_Bs_mu_fq_weighted_semileptonic 
+
+    # all channels
+    self.BR_Bq_mu_fq_weighted_tot = self.BR_Bq_mu_fq_weighted_leptonic + self.BR_Bq_mu_fq_weighted_semileptonic
+
+    # rates
+    self.BR_Bq_mu_fq_weighted_leptonic_rate = self.BR_Bq_mu_fq_weighted_leptonic / self.BR_Bq_mu_fq_weighted_tot
+
+    self.BR_Bq_mu_fq_weighted_semileptonic_rate = self.BR_Bq_mu_fq_weighted_semileptonic / self.BR_Bq_mu_fq_weighted_tot
+
+
 
 ## HNL DECAYS ##
 class HNLDecays(object):
-  def __init__(self, mass, mixing_angle_square): 
+  def __init__(self, mass, vv=1., fe=0., fu=1., ft=0.): 
     self.mass = mass
-    self.mixing_angle_square = mixing_angle_square
+    self.vv = vv
+    self.fe = fe
+    self.fu = fu
+    self.ft = ft
 
     # define the HNL
     hnl = Particle('hnl', 'lepton', self.mass)
     
     # get the model
-    V_mu_square =  self.mixing_angle_square
-    V_tau_square = 0.#self.mixing_angle_square # uncomment for figure 13 right
-    V_el_square =  0.#self.mixing_angle_square # uncomment for figure 13 right 
+    V_el_square =  self.fe * self.vv
+    V_mu_square =  self.fu * self.vv
+    V_tau_square = self.ft * self.vv
     QCD_corr = QCD_corr_table[mass] if not PESKIN else 0.
     #QCD_corr = 0.18 if not PESKIN else 0.
     special_V_mu_square = V_mu_square if not PESKIN else 0.
@@ -357,4 +391,146 @@ class HNLDecays(object):
     self.decay_rate['tot_had'] = self.decay_rate['cc_had'] + self.decay_rate['nc_had']
 
     self.decay_rate['tot'] = self.decay_rate['tot_lep'] + self.decay_rate['tot_neu'] + self.decay_rate['tot_had']
-    #self.ctau = ctau_from_gamma(gamma=self.decay_rate) 
+
+    ## electron only
+    decay_rates['cc_lep_el'] = [ 
+                              HNLDecay(hnl, [el,mu,nu_mu],   V_el_square, 1, 'cc_lep').decay_rate, 
+                              HNLDecay(hnl, [el,tau,nu_tau], V_el_square, 1, 'cc_lep').decay_rate, 
+                              ]
+    self.decay_rate['cc_lep_el'] = sum(decay_rates['cc_lep_el'])
+
+    decay_rates['cc_had_el'] = [ 
+                              HNLDecay(hnl, [el,uq,dq], V_el_square, Vud_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [el,uq,sq], V_el_square, Vus_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [el,uq,bq], V_el_square, Vub_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [el,cq,dq], V_el_square, Vcd_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [el,cq,sq], V_el_square, Vcs_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [el,cq,bq], V_el_square, Vcb_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [tau,cq,bq], V_tau_square, Vcb_pdg, 'cc_had').decay_rate,
+                            ]  
+    self.decay_rate['cc_had_el'] = sum(decay_rates['cc_had_el']) * (1 + QCD_corr)  # (three-loop correction for quark->hadrons, with alphas_s(m_tau=1.8 GeV) )    
+
+    decay_rates['nc_lep_el'] = [ 
+                              HNLDecay(hnl, [nu_el,el,el],   V_el_square, 1, 'nc_lep').decay_rate,
+                              HNLDecay(hnl, [nu_el,mu,mu],   V_el_square, 1, 'nc_lep').decay_rate,
+                              HNLDecay(hnl, [nu_el,tau,tau], V_el_square, 1, 'nc_lep').decay_rate,
+                            ]
+    self.decay_rate['nc_lep_el'] = sum(decay_rates['nc_lep_el'])
+
+    decay_rates['nc_had_el'] = [ 
+                              # Vel
+                              HNLDecay(hnl, [nu_el,uq,uq],      V_el_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_el,dq,dq],      V_el_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_el,cq,cq],      V_el_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_el,sq,sq],      V_el_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_el,bq,bq],      V_el_square, 1, 'nc_had').decay_rate, 
+                            ]
+    self.decay_rate['nc_had_el'] = sum(decay_rates['nc_had_el']) * (1 + QCD_corr)  # (three-loop correction for quark->hadrons, with alphas_s(m_tau=1.8 GeV) )    
+
+    decay_rates['nc_neu_el'] = [
+                              HNLDecay(hnl, [nu_el,nu_el,nu_el],   V_el_square, 1, 'nc_neu').decay_rate,
+                              HNLDecay(hnl, [nu_el,nu_mu,nu_mu],   V_el_square, 1, 'nc_neu').decay_rate,
+                              HNLDecay(hnl, [nu_el,nu_tau,nu_tau], V_el_square, 1, 'nc_neu').decay_rate,
+                            ]
+    self.decay_rate['nc_neu_el'] = sum(decay_rates['nc_neu_el'])
+
+    # partial sums
+    self.decay_rate['tot_lep_el'] = self.decay_rate['cc_lep_el'] + self.decay_rate['nc_lep_el']
+    self.decay_rate['tot_neu_el'] = self.decay_rate['nc_neu_el']
+    self.decay_rate['tot_had_el'] = self.decay_rate['cc_had_el'] + self.decay_rate['nc_had_el']
+
+    self.decay_rate['tot_el'] = self.decay_rate['tot_lep_el'] + self.decay_rate['tot_neu_el'] + self.decay_rate['tot_had_el']
+
+    ## muon only
+    decay_rates['cc_lep_mu'] = [ 
+                              HNLDecay(hnl, [mu,el,nu_el],   V_mu_square, 1, 'cc_lep').decay_rate, 
+                              HNLDecay(hnl, [mu,tau,nu_tau], special_V_mu_square, 1, 'cc_lep').decay_rate, 
+                            ]
+    self.decay_rate['cc_lep_mu'] = sum(decay_rates['cc_lep_mu'])
+
+    decay_rates['cc_had_mu'] = [ 
+                              HNLDecay(hnl, [mu,uq,dq], V_mu_square, Vud_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [mu,uq,sq], V_mu_square, Vus_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [mu,uq,bq], V_mu_square, Vub_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [mu,cq,dq], V_mu_square, Vcd_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [mu,cq,sq], V_mu_square, Vcs_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [mu,cq,bq], V_mu_square, Vcb_pdg, 'cc_had').decay_rate,
+                            ]  
+    self.decay_rate['cc_had_mu'] = sum(decay_rates['cc_had_mu']) * (1 + QCD_corr)  # (three-loop correction for quark->hadrons, with alphas_s(m_tau=1.8 GeV) )    
+
+    decay_rates['nc_lep_mu'] = [ 
+                              HNLDecay(hnl, [nu_mu,el,el],   V_mu_square, 1, 'nc_lep').decay_rate,
+                              HNLDecay(hnl, [nu_mu,mu,mu],   V_mu_square, 1, 'nc_lep').decay_rate,
+                              HNLDecay(hnl, [nu_mu,tau,tau], special_V_mu_square, 1, 'nc_lep').decay_rate,
+                            ]
+    self.decay_rate['nc_lep_mu'] = sum(decay_rates['nc_lep_mu'])
+
+    decay_rates['nc_had_mu'] = [ 
+                              HNLDecay(hnl, [nu_mu,uq,uq],      V_mu_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_mu,dq,dq],      V_mu_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_mu,cq,cq],      V_mu_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_mu,sq,sq],      V_mu_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_mu,bq,bq],      V_mu_square, 1, 'nc_had').decay_rate, 
+                            ]
+    self.decay_rate['nc_had_mu'] = sum(decay_rates['nc_had_mu']) * (1 + QCD_corr)  # (three-loop correction for quark->hadrons, with alphas_s(m_tau=1.8 GeV) )    
+
+    decay_rates['nc_neu_mu'] = [
+                              HNLDecay(hnl, [nu_mu,nu_el,nu_el],   V_mu_square, 1, 'nc_neu').decay_rate,
+                              HNLDecay(hnl, [nu_mu,nu_mu,nu_mu],   V_mu_square, 1, 'nc_neu').decay_rate,
+                              HNLDecay(hnl, [nu_mu,nu_tau,nu_tau], V_mu_square, 1, 'nc_neu').decay_rate,
+                            ]
+    self.decay_rate['nc_neu_mu'] = sum(decay_rates['nc_neu_mu'])
+
+    # partial sums
+    self.decay_rate['tot_lep_mu'] = self.decay_rate['cc_lep_mu'] + self.decay_rate['nc_lep_mu']
+    self.decay_rate['tot_neu_mu'] = self.decay_rate['nc_neu_mu']
+    self.decay_rate['tot_had_mu'] = self.decay_rate['cc_had_mu'] + self.decay_rate['nc_had_mu']
+
+    self.decay_rate['tot_mu'] = self.decay_rate['tot_lep_mu'] + self.decay_rate['tot_neu_mu'] + self.decay_rate['tot_had_mu']
+
+    ## tau only
+    decay_rates['cc_lep_tau'] = [ 
+                              HNLDecay(hnl, [tau,el,nu_el],  V_tau_square,1, 'cc_lep').decay_rate, 
+                              HNLDecay(hnl, [tau,mu,nu_mu],  V_tau_square,1, 'cc_lep').decay_rate, 
+                            ]
+    self.decay_rate['cc_lep_tau'] = sum(decay_rates['cc_lep_tau'])
+
+    decay_rates['cc_had_tau'] = [ 
+                              HNLDecay(hnl, [tau,uq,dq], V_tau_square, Vud_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [tau,uq,sq], V_tau_square, Vus_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [tau,uq,bq], V_tau_square, Vub_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [tau,cq,dq], V_tau_square, Vcd_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [tau,cq,sq], V_tau_square, Vcs_pdg, 'cc_had').decay_rate,
+                              HNLDecay(hnl, [tau,cq,bq], V_tau_square, Vcb_pdg, 'cc_had').decay_rate,
+                            ]  
+    self.decay_rate['cc_had_tau'] = sum(decay_rates['cc_had_tau']) * (1 + QCD_corr)  # (three-loop correction for quark->hadrons, with alphas_s(m_tau=1.8 GeV) )    
+
+    decay_rates['nc_lep_tau'] = [ 
+                              HNLDecay(hnl, [nu_tau,el,el],   V_tau_square, 1, 'nc_lep').decay_rate,
+                              HNLDecay(hnl, [nu_tau,mu,mu],   V_tau_square, 1, 'nc_lep').decay_rate,
+                              HNLDecay(hnl, [nu_tau,tau,tau], V_tau_square, 1, 'nc_lep').decay_rate,
+                            ]
+    self.decay_rate['nc_lep_tau'] = sum(decay_rates['nc_lep_tau'])
+
+    decay_rates['nc_had_tau'] = [ 
+                              HNLDecay(hnl, [nu_tau,uq,uq],     V_tau_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_tau,dq,dq],     V_tau_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_tau,cq,cq],     V_tau_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_tau,sq,sq],     V_tau_square, 1, 'nc_had').decay_rate,
+                              HNLDecay(hnl, [nu_tau,bq,bq],     V_tau_square, 1, 'nc_had').decay_rate, 
+                            ]
+    self.decay_rate['nc_had_tau'] = sum(decay_rates['nc_had_tau']) * (1 + QCD_corr)  # (three-loop correction for quark->hadrons, with alphas_s(m_tau=1.8 GeV) )    
+
+    decay_rates['nc_neu_tau'] = [
+                              HNLDecay(hnl, [nu_tau,nu_el,nu_el],   V_tau_square, 1, 'nc_neu').decay_rate,
+                              HNLDecay(hnl, [nu_tau,nu_mu,nu_mu],   V_tau_square, 1, 'nc_neu').decay_rate,
+                              HNLDecay(hnl, [nu_tau,nu_tau,nu_tau], V_tau_square, 1, 'nc_neu').decay_rate,
+                            ]
+    self.decay_rate['nc_neu_tau'] = sum(decay_rates['nc_neu_tau'])
+
+    # partial sums
+    self.decay_rate['tot_lep_tau'] = self.decay_rate['cc_lep_tau'] + self.decay_rate['nc_lep_tau']
+    self.decay_rate['tot_neu_tau'] = self.decay_rate['nc_neu_tau']
+    self.decay_rate['tot_had_tau'] = self.decay_rate['cc_had_tau'] + self.decay_rate['nc_had_tau']
+
+    self.decay_rate['tot_tau'] = self.decay_rate['tot_lep_tau'] + self.decay_rate['tot_neu_tau'] + self.decay_rate['tot_had_tau']

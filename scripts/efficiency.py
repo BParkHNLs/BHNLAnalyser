@@ -312,11 +312,11 @@ class EfficiencyAnalyser(Tools):
       hist.Draw('text' +'same')
 
       hist.SetTitle(self.title)
-      hist.GetXaxis().SetTitle('l_{xy} [cm]')
+      hist.GetXaxis().SetTitle('#it{L}_{xy} (cm)')
       hist.GetXaxis().SetLabelSize(0.037)
       hist.GetXaxis().SetTitleSize(0.042)
       hist.GetXaxis().SetTitleOffset(1.1)
-      if matching == 'candidate': ylabel = '#mu#pi pT [GeV]' #if self.process_type == 'mupi' else '#mu#mu#pi pT [GeV]'
+      if matching == 'candidate': ylabel = '#mu^{#pm}#pi^{#mp} #it{p}_{T} (GeV)' #if self.process_type == 'mupi' else '#mu#mu#pi pT [GeV]'
       elif matching == 'trigger_muon': ylabel = 'trigger #mu pT [GeV]'
       elif matching == 'muon': ylabel = '#mu pT [GeV]'
       elif matching == 'pion': ylabel = '#pi pT [GeV]'
@@ -470,6 +470,9 @@ class EfficiencyAnalyser(Tools):
 
 
   def plotMuonIDEfficiency(self, muon_type, muon_id, binning):
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
+
     if muon_type not in ['primary_muon', 'displaced_muon']:
       raise RuntimeError('Muon type "{}" not valid.'.format(muon_type))
 
@@ -523,7 +526,9 @@ class EfficiencyAnalyser(Tools):
     for ibin, bin_ in enumerate(bins):
       bin_min, bin_max = bin_
 
-      if binning == 'pt': qte = '{part}_pt'
+      #if binning == 'pt': qte = '{part}_pt'
+      if binning == 'pt' and muon_type == 'displaced_muon': qte = 'mu_pt'
+      elif binning == 'pt' and muon_type == 'primary_muon': qte = 'mu0_pt'
       elif binning == 'displacement': qte = 'sv_lxy'
 
       if muon_type == 'primary_muon': part = 'mu0'
@@ -610,10 +615,10 @@ class EfficiencyAnalyser(Tools):
 
     pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
     pad.Draw()
-    pad.SetGrid()
+    #pad.SetGrid()
     pad.cd()
 
-    leg = self.tools.getRootTLegend(xmin=0.15, ymin=0.4, xmax=0.4, ymax=0.6, size=0.035)
+    leg = self.tools.getRootTLegend(xmin=0.42, ymin=0.35, xmax=0.77, ymax=0.65, size=0.039)
 
     graph_m1 = ROOT.TGraphAsymmErrors()
     for ibin, bin_ in enumerate(bins):
@@ -629,7 +634,7 @@ class EfficiencyAnalyser(Tools):
     graph_m1.SetLineColor(ROOT.kOrange+0)
     graph_m1.SetMarkerStyle(20)
     graph_m1.SetMarkerColor(ROOT.kOrange+0)
-    leg.AddEntry(graph_m1, 'mass 1 GeV, ctau 1000 mm')
+    leg.AddEntry(graph_m1, 'Signal - 1 GeV, 1000 mm')
 
     graph_m3 = ROOT.TGraphAsymmErrors()
     for ibin, bin_ in enumerate(bins):
@@ -645,7 +650,7 @@ class EfficiencyAnalyser(Tools):
     graph_m3.SetLineColor(ROOT.kRed+1)
     graph_m3.SetMarkerStyle(20)
     graph_m3.SetMarkerColor(ROOT.kRed+1)
-    leg.AddEntry(graph_m3, 'mass 3 GeV, ctau 100 mm')
+    leg.AddEntry(graph_m3, 'Signal - 3 GeV, 100 mm')
 
     graph_m4p5 = ROOT.TGraphAsymmErrors()
     for ibin, bin_ in enumerate(bins):
@@ -661,7 +666,7 @@ class EfficiencyAnalyser(Tools):
     graph_m4p5.SetLineColor(ROOT.kRed+4)
     graph_m4p5.SetMarkerStyle(20)
     graph_m4p5.SetMarkerColor(ROOT.kRed+4)
-    leg.AddEntry(graph_m4p5, 'mass 4.5 GeV, ctau 1 mm')
+    leg.AddEntry(graph_m4p5, 'Signal - 4.5 GeV, 1 mm')
 
     graph_fake = ROOT.TGraphAsymmErrors()
     for ibin, bin_ in enumerate(bins):
@@ -678,7 +683,7 @@ class EfficiencyAnalyser(Tools):
     graph_fake.SetMarkerStyle(45)
     graph_fake.SetMarkerSize(2)
     graph_fake.SetMarkerColor(ROOT.kBlue+2)
-    leg.AddEntry(graph_fake, 'fake rate')
+    leg.AddEntry(graph_fake, 'Fake rate')
 
     graph_m1.Draw('AP')  
     graph_m3.Draw('P same')  
@@ -689,12 +694,17 @@ class EfficiencyAnalyser(Tools):
     if muon_type == 'primary_muon': label1 = 'Primary muon'
     elif muon_type == 'displaced_muon': label1 = 'Displaced muon'
 
-    graph_m1.SetTitle('{} ({} ID)'.format(label1, muon_id))
+    #graph_m1.SetTitle('{} ({} ID)'.format(label1, muon_id))
+    graph_m1.SetTitle(' ')
+    print muon_type
+    print binning
     if binning == 'pt':
-      if muon_type == 'primary_muon': xlabel = 'primary muon p_{T} [GeV]'
-      elif muon_type == 'displaced_muon': xlabel = 'displaced muon p_{T} [GeV]'
+      if muon_type == 'primary_muon': xlabel = '#it{p}_{T}(#it{#mu_{B}) (GeV)'
+      #elif muon_type == 'displaced_muon': xlabel = '#it{p}_{T}(#it{#mu}_^{#pm}) (GeV)'
+      elif muon_type == 'displaced_muon': xlabel = '#it{p_{T}}(#it{#mu}) (GeV)'
     elif binning == 'displacement':
-      xlabel = 'SV l_{xy} [cm]'
+      xlabel = '#it{L}_{#it{xy}} (cm)'
+    print xlabel
     graph_m1.GetXaxis().SetTitle(xlabel)
     graph_m1.GetXaxis().SetLabelSize(0.037)
     graph_m1.GetXaxis().SetTitleSize(0.042)
@@ -778,7 +788,7 @@ if __name__ == '__main__':
 
     muon_type = 'displaced_muon'
     muon_id = 'loose'
-    binning = 'displacement' #'pt'
+    binning = 'pt' #'displacement' #'pt'
 
     analyser.plotMuonIDEfficiency(
         muon_type = muon_type, 

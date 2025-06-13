@@ -1,0 +1,139 @@
+import matplotlib
+from matplotlib import pyplot as plt
+from matplotlib.colors import rgb2hex
+import numpy as np
+import math
+
+## Default colormap, other options here: http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+s = matplotlib.__version__.split('.')
+if int(s[0]) >= 2 or (int(s[0]) >= 1 and int(s[1]) >= 5):
+    DEFAULT_COLOR_MAP_NAME = "viridis"
+else:
+    DEFAULT_COLOR_MAP_NAME = "jet"
+
+
+## Matplotlib Colormapping ##
+
+def get_cmap(cmap=None):
+    """
+    Loads a matplotlib colormap if specified or supplies the default.
+
+    Parameters
+    ----------
+    cmap: string or matplotlib.colors.Colormap instance
+        The name of the Matplotlib colormap to look up.
+
+    Returns
+    -------
+    The desired Matplotlib colormap
+
+    Raises
+    ------
+    ValueError if colormap name is not recognized by Matplotlib
+    """
+
+    if isinstance(cmap, matplotlib.colors.Colormap):
+        return cmap
+    if isinstance(cmap, str):
+        cmap_name = cmap
+    else:
+        cmap_name = DEFAULT_COLOR_MAP_NAME
+    return plt.get_cmap(cmap_name)
+
+
+def colormapper(value, lower=0, upper=1, cmap=None, ternary_style=None):
+    """
+    Maps values to colors by normalizing within [a,b], obtaining rgba from the
+    given matplotlib color map for heatmap polygon coloring.
+
+    Parameters
+    ----------
+    value: float
+        The value to be colormapped
+    lower: float
+        Lower bound of colors
+    upper: float
+        Upper bound of colors
+    cmap: String or matplotlib.colors.Colormap (optional)
+        Colormap object to prevent repeated lookup
+
+    Returns
+    -------
+    hex_, float
+        The value mapped to an appropriate RGBA color value
+    """
+
+    cmap = get_cmap(cmap)
+    if upper - lower == 0 or value == -99.:
+        rgba = cmap(0)
+    else:
+        if not ternary_style.log:
+          rgba = cmap((value - lower) / float(upper - lower))
+        else:
+          rgba = cmap((math.log(value) - math.log(lower)) / float(math.log(upper) - math.log(lower)))
+    hex_ = rgb2hex(rgba)
+    return hex_
+
+
+def colorbar_hack(ax, vmin, vmax, cmap, scientific=False, cbarlabel=None, norm=None,
+                  ternary_style=None, **kwargs):
+    """
+    Colorbar hack to insert colorbar on ternary plot.
+
+    Called by heatmap, not intended for direct usage.
+
+    Parameters
+    ----------
+    vmin: float
+        Minimum value to portray in colorbar
+    vmax: float
+        Maximum value to portray in colorbar
+    cmap: Matplotlib colormap
+        Matplotlib colormap to use
+
+    """
+
+    # https://stackoverflow.com/questions/41467616/matplotlib-colorbar-ticks-format-when-using-scientific-notation
+    # https://stackoverflow.com/questions/38577978/matplotlib-any-way-to-use-integers-and-decimals-in-colorbar-ticks
+    # https://stackoverflow.com/questions/45815396/how-to-change-the-the-number-of-colorbar-digits-of-the-mantissa-using-offset-not
+    # https://stackoverflow.com/questions/29188757/specify-format-of-floats-for-tick-labels
+    # https://matplotlib.org/stable/users/explain/colors/colorbar_only.html#extended-colorbar-with-continuous-colorscale
+    # https://stackoverflow.com/questions/73809584/how-to-set-scientific-notation-limits-for-colorbar
+    # https://matplotlib.org/stable/api/ticker_api.html#matplotlib.ticker.ScalarFormatter.set_powerlimits
+    # http://stackoverflow.com/questions/8342549/matplotlib-add-colorbar-to-a-sequence-of-line-plots
+
+    if ternary_style.scientific:
+      vmin = vmin * 1./ternary_style.exponent
+      vmax = vmax * 1./ternary_style.exponent
+
+    if norm is None:
+      if not ternary_style.log:
+        norm = plt.Normalize(vmin=vmin, vmax=vmax)
+      else:
+        norm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm._A = []
+    cb = plt.colorbar(sm, ax=ax, **kwargs)
+    if cbarlabel is not None:
+        cb.set_label(cbarlabel)
+    if ternary_style.scientific:
+        if ternary_style.fixed_range and ternary_style.exponent == 1e3:
+          cb.locator = matplotlib.ticker.FixedLocator([0.1, 1.0, 10.0])
+          full_range = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.])
+          minorticks = norm(full_range)
+          cb.ax.yaxis.set_ticks(minorticks, minor=True)
+        elif ternary_style.fixed_range and ternary_style.exponent == 1:
+          #cb.locator = matplotlib.ticker.FixedLocator([100.0, 1000.0, 10000.0])
+          #full_range = np.array([100., 200., 300., 400., 500., 600., 700., 800., 900., 1000., 2000., 3000., 4000., 5000., 6000., 7000., 8000., 9000., 10000.])
+          cb.locator = matplotlib.ticker.FixedLocator([0.1, 1.0, 10.0])
+          full_range = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.])
+          minorticks = norm(full_range)
+          cb.ax.yaxis.set_ticks(minorticks, minor=True)
+        else:
+          cb.locator = matplotlib.ticker.LinearLocator(numticks=7)
+        cb.formatter = matplotlib.ticker.FormatStrFormatter("%.1f")
+        cb.update_ticks()
+
+
+
