@@ -67,8 +67,17 @@ class InterpretationLauncher(object):
     self.path_motherdir = '/work/anlyon/BHNLDatacards/BHNLDatacards/'
 
 
-  def getSignalCoupling(self, mass, ctau):
+  def getSignalCouplingNominal(self, mass, ctau):
     signal_v2 = self.tools.getVV(mass=mass, ctau=ctau, ismaj=True)
+    signal_coupling = self.tools.getCouplingLabel(signal_v2)
+
+    return signal_coupling
+
+
+  def getSignalCouplingTarget(self, mass, ctau):
+    signal_v2 = self.tools.getVV(mass=mass, ctau=ctau, ismaj=True)
+    if self.scenario == 'Dirac':
+      signal_v2 = 2.0 * signal_v2
     signal_coupling = self.tools.getCouplingLabel(signal_v2)
 
     return signal_coupling
@@ -107,7 +116,9 @@ class InterpretationLauncher(object):
     for ctau in self.ctaus:
       ctau = float(ctau)
 
-      self.v2 = self.getSignalCoupling(mass=self.mass, ctau=ctau)
+      self.v2 = self.getSignalCouplingNominal(mass=self.mass, ctau=ctau)
+      #self.v2_nominal = self.getSignalCouplingNominal(mass=self.mass, ctau=ctau)
+      #self.v2_target = self.getSignalCouplingTarget(mass=self.mass, ctau=ctau)
 
       datacard_name_muon = self.templatename_muon.format(sc=self.scenario, mass=str(self.mass).replace('.', 'p'), ctau=str(ctau).replace('.', 'p'), v2=str(self.v2).replace('.', 'p').replace('-', 'm'))
       #if not self.checkDatacard(datacard_name=datacard_name_muon, flavour_channel='muon'):

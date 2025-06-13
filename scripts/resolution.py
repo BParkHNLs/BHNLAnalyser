@@ -920,6 +920,8 @@ class Fitter(Tools):
     
   def getCategoryResolutionGraph(self, categories):
     ROOT.gStyle.SetPadLeftMargin(0.15) 
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
 
     masses = self.getMassList()
     colours = [ROOT.kBlack, ROOT.kBlue, ROOT.kMagenta, ROOT.kRed, ROOT.kOrange-1, ROOT.kOrange+8, ROOT.kGreen-2]
@@ -963,6 +965,7 @@ class Fitter(Tools):
         #resolution_dict[mass] = resolution / float(len(self.signal_files))
         #resolution_err_dict[mass] = resolution_err / float(len(self.signal_files))
         resolution = resolution / float(n_files)
+        resolution *= 1000 # convert in MeV
         resolution_err = resolution_err / float(n_files)
         if resolution < resolution_min: resolution_min = resolution
         if resolution > resolution_max: resolution_max = resolution
@@ -975,12 +978,16 @@ class Fitter(Tools):
         graph_resolution.SetPointError(point, 0, 0, resolution_err, resolution_err)
         graph_resolution.SetMarkerStyle(20)
         graph_resolution.SetMarkerColor(colours[icat])
-        graph_resolution.GetXaxis().SetTitle('Signal mass (GeV)')
-        graph_resolution.GetYaxis().SetTitle('Resolution (averaged on ctau) [GeV]')
+        #graph_resolution.GetXaxis().SetTitle('Signal mass (GeV)')
+        graph_resolution.GetXaxis().SetTitle('#it{m}_{N} (GeV)')
+        graph_resolution.GetXaxis().SetTitleSize(0.043)
+        #graph_resolution.GetYaxis().SetTitle('Resolution (averaged on ctau) [GeV]')
+        graph_resolution.GetYaxis().SetTitle('#sigma (MeV)')
+        graph_resolution.GetYaxis().SetTitleSize(0.043)
         graph_resolution.GetYaxis().SetRangeUser(resolution_min-0.3*resolution_min, resolution_max+0.3*resolution_max)
 
       graphs.append(graph_resolution)
-      leg.AddEntry(graph_resolution, category.title)
+      #leg.AddEntry(graph_resolution, category.title)
   
       #f = ROOT.TF1("f","[0] + 0*x",0,6);
       #graph_resolution.Fit('f')
@@ -991,6 +998,7 @@ class Fitter(Tools):
     canv = self.tools.createTCanvas(name="canv_resolution", dimx=900, dimy=800)
     for igraph, graph in enumerate(graphs):
       graph.Fit('pol1')
+      leg.AddEntry(graph, '#sigma = 7.8#it{m}_{N} + 0.7')
       if igraph == 0:
         graph.Draw('AP')
       else:
@@ -998,6 +1006,7 @@ class Fitter(Tools):
     leg.Draw()
     name = 'graph_resolution_category'
     canv.SaveAs("{}/{}.png".format(outputdir, name))
+    canv.SaveAs("{}/{}.pdf".format(outputdir, name))
 
 
   def studyYieldsParametrisation(self, categories):
@@ -1158,7 +1167,7 @@ if __name__ == '__main__':
     ##'V42_06Feb23_m1p48',
     ##'V42_06Feb23_m1p53',
     ##'V42_06Feb23_m1p56',
-    'V42_06Feb23_m1p59',
+    #'V42_06Feb23_m1p59',
     ###'V42_06Feb23_m1p62',
     ##'V42_06Feb23_m1p65',
     ###'V42_06Feb23_m1p68',
@@ -1192,7 +1201,7 @@ if __name__ == '__main__':
     ##'V42_06Feb23_m2p9',
     ##'V42_06Feb23_m2p95',
     ##'V42_06Feb23_m3p05',
-    'V42_06Feb23_m3p1',
+    #'V42_06Feb23_m3p1',
     ##'V42_06Feb23_m3p15',
     #'V42_06Feb23_m3p2',
     ##'V42_06Feb23_m3p25',
@@ -1232,7 +1241,7 @@ if __name__ == '__main__':
   #fitter.getCategoryGraph(categories=categories)
   #fitter.getCategoryAverageCtau(categories=categories)
   #fitter.getFittedResolutionGraph()
-  #fitter.getCategoryResolutionGraph(categories=categories)
+  fitter.getCategoryResolutionGraph(categories=categories)
   #fitter.studyYieldsParametrisation(categories=categories)
   
 
@@ -1358,7 +1367,7 @@ if __name__ == '__main__':
   fitter = Fitter(signal_labels=signal_labels, baseline_selection=baseline_selection, nbins=150, outdirlabel=outdirlabel)
   ##fitter.getResolutionGraph()
   ##fitter.getResolutionFit()
-  fitter.plotAllSignal()
+  #fitter.plotAllSignal()
 
 
 

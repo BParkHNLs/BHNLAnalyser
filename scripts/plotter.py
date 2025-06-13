@@ -372,7 +372,8 @@ class Plotter(Tools):
         if not do_tdrstyle:
           legend.AddEntry(hist_qcd_tot, 'QCD MC - {}'.format(self.getQCDMCLabel(self.white_list[0], self.white_list[len(self.white_list)-1], qcd_file.label)))
         else:
-          legend.AddEntry(hist_qcd_tot, 'Background - QCD MC')
+          #legend.AddEntry(hist_qcd_tot, 'Background - QCD MC')
+          legend.AddEntry(hist_qcd_tot, 'MC')
         
       ## create stack histogram  
       hist_qcd_stack = ROOT.THStack('hist_qcd_stack', '')
@@ -415,7 +416,7 @@ class Plotter(Tools):
     elif plot_data and plot_sig and do_tdrstyle and not do_log and do_shape: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+0.2*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     elif plot_data and plot_sig and do_tdrstyle and do_log and not do_shape: frame.GetYaxis().SetRangeUser(1000, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+1000*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
     elif plot_data and plot_sig and do_tdrstyle and do_log and do_shape: frame.GetYaxis().SetRangeUser(1e-4, self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True)+50*self.getMaxRangeY(signal_hists, hist_data_tot, do_log, use_sig=True))
-    #elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e2, 1e7)
+    elif plot_data and plot_sig: frame.GetYaxis().SetRangeUser(1e2, 1e7)
 
     #ROOT.gStyle.SetPadLeftMargin(0.16) 
     ROOT.gStyle.SetOptStat(0)
@@ -483,7 +484,8 @@ class Plotter(Tools):
     #  self.tools.printLatexBox(0.60, 0.84, title, size=0.04 if plot_ratio else 0.038)
 
     if do_tdrstyle and not do_shape: self.tools.printLatexBox(0.36, 0.85, 'Dimuon channel', size=0.038, pos='left', font=42)
-    if do_tdrstyle and do_shape: self.tools.printLatexBox(0.43, 0.85, 'Dimuon channel', size=0.038, pos='left', font=42)
+    #if do_tdrstyle and do_shape: self.tools.printLatexBox(0.43, 0.85, 'Dimuon channel', size=0.038, pos='left', font=42)
+    if do_tdrstyle and do_shape: self.tools.printLatexBox(0.43, 0.88, 'charge(#it{#mu}^{#pm}#it{#pi}^{#mp}) #neq 0', size=0.038, pos='left', font=42)
     if not do_shape and do_tdrstyle: self.tools.printLatexBox(0.405, 0.575, '(#it{r}_{e}, #it{r}_{#mu}, #it{r}_{#tau}) = (0, 1, 0), Majorana', size=0.038, pos='left', font=42)
     #self.tools.printLatexBox(0.38, 0.535, '(#it{r}_{e}, #it{r}_{#mu}, #it{r}_{#tau}) = (0, 1, 0), Majorana', size=0.041, pos='left', font=42)
     #legend = self.tools.getRootTLegend(xmin=0.4, ymin=0.63, xmax=0.75, ymax=0.86, size=0.038)
@@ -531,16 +533,18 @@ class Plotter(Tools):
       hist_ratio.SetTitle('')
       hist_ratio.GetXaxis().SetTitle(self.quantity.title)
 
-      hist_ratio.GetXaxis().SetLabelSize(0.1)
+      hist_ratio.GetXaxis().SetLabelSize(0.11)
       hist_ratio.GetXaxis().SetTitleSize(0.13)
-      hist_ratio.GetXaxis().SetTitleOffset(0.73)
-      hist_ratio.GetYaxis().SetTitle('Data/MC')
-      hist_ratio.GetYaxis().SetLabelSize(0.1)
+      hist_ratio.GetXaxis().SetTitleOffset(0.8)
+      hist_ratio.GetYaxis().SetTitle('Data / MC')
+      hist_ratio.GetYaxis().SetLabelSize(0.11)
       hist_ratio.GetYaxis().SetTitleSize(0.13)
       hist_ratio.GetYaxis().SetTitleOffset(0.345)
+      hist_ratio.GetYaxis().SetNdivisions(6)
       val_min = hist_ratio.GetBinContent(hist_ratio.GetMinimumBin())
       val_max = hist_ratio.GetBinContent(hist_ratio.GetMaximumBin())
-      hist_ratio.GetYaxis().SetRangeUser(val_min-0.15*val_min, val_max+0.15*val_max)
+      #hist_ratio.GetYaxis().SetRangeUser(val_min-0.15*val_min, val_max+0.15*val_max)
+      hist_ratio.GetYaxis().SetRangeUser(0.3, 2.5)
 
       hist_ratio.Draw('PE')
 

@@ -61,7 +61,7 @@ class FitPlotter(object):
     self.lumi = 41.6
     self.flavour_channel = 'Dimuon channel'
     # if true, only plot for the ctau the closest to the exclusion
-    self.plot_exclusion = True
+    self.plot_exclusion = False
 
 
   def getEventLabel(self, axis):
@@ -77,10 +77,14 @@ class FitPlotter(object):
   def setStyle(self):
     #ROOT.gStyle.SetPadTopMargin(0.05) 
     #ROOT.gStyle.SetPadBottomMargin(0.13) 
-    ROOT.gStyle.SetPadRightMargin(0.04) 
-    ROOT.gStyle.SetPadLeftMargin(0.11) 
+    #ROOT.gStyle.SetPadRightMargin(0.04) 
+    #ROOT.gStyle.SetPadLeftMargin(0.11) 
     ROOT.gStyle.SetPadTickX(1)
     ROOT.gStyle.SetPadTickY(1)
+    ROOT.gStyle.SetPadTopMargin(0.08)
+    ROOT.gStyle.SetPadBottomMargin(0.13)
+    ROOT.gStyle.SetPadLeftMargin(0.12)
+    ROOT.gStyle.SetPadRightMargin(0.03)
 
 
   def getCoupling(self, couplings, values, crossing=1):
@@ -194,7 +198,7 @@ class FitPlotter(object):
 
     if rooplot_found:
       canv_name = 'canv_{}_{}_{}'.format(category.label, fit, signal_ctau)
-      canv = self.tools.createTCanvas(name=canv_name, dimx=800, dimy=700)
+      canv = self.tools.createTCanvas(name=canv_name, dimx=700, dimy=700)
       pad = ROOT.TPad('pad', 'pad', 0, 0, 1, 1)
       pad.Draw()
       pad.cd()
@@ -224,16 +228,17 @@ class FitPlotter(object):
       rooplot.GetYaxis().SetTitleSize(0.047)
       rooplot.GetYaxis().SetTitleOffset(1.1)
       if fit == 'prefit':
-        rooplot.GetYaxis().SetRangeUser(0, rooplot.GetMaximum() + 0.5*rooplot.GetMaximum())
+        #rooplot.GetYaxis().SetRangeUser(0, rooplot.GetMaximum() + 0.5*rooplot.GetMaximum())
+        rooplot.GetYaxis().SetRangeUser(0, 15.9)
       else:
         rooplot.GetYaxis().SetRangeUser(0, rooplot.GetMaximum() + 0.8*rooplot.GetMaximum())
       rooplot.Draw()
 
       self.tools.printLatexBox(0.15, 0.76, category.title, size=0.037, pos='left', font=42)
       if 'Bc' in category.label:
-        b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mu} mass > 5.7 GeV'
+        b_mass_label = '#it{m}(#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mu}) > 5.7 GeV'
       else:
-        b_mass_label = '#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp} mass #leq 5.7 GeV'
+        b_mass_label = '#it{m}(#it{#mu}_{B}#it{#mu}^{#pm}#it{#pi}^{#mp}) < 5.7 GeV'
       self.tools.printLatexBox(0.15, 0.7, b_mass_label, size=0.037, pos='left', font=42)
       self.tools.printLatexBox(0.15, 0.645, self.flavour_channel, size=0.037, pos='left', font=42)
       if fit == 'prefit':
@@ -289,8 +294,9 @@ class FitPlotter(object):
       for category in self.categories:
         if 'incl' in category.label: continue
         if self.mass < 3 and 'Bc' in category.label: continue
-        #if '0to150_OS' not in category.label: continue
-        if 'gt150_OS' not in category.label: continue
+        if '0to50_OS' not in category.label: continue
+        #if 'gt150_OS' not in category.label: continue
+        #if 'Bc' not in category.label: continue
 
         self.plot(filename=filename, category=category, fit='prefit')
         self.plot(filename=filename, category=category, fit='fit_s')

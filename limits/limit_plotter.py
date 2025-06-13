@@ -171,7 +171,7 @@ class LimitPlotter(object):
         if mass in self.mass_blacklist.split(','): continue
 
       #if float(mass) < 1.5 or float(mass) > 2.25: continue
-      #if float(mass) > 3.: continue
+      if float(mass) > 3.: continue
 
       print '\nmass {}'.format(mass)
 
@@ -611,7 +611,8 @@ class LimitPlotter(object):
     plt.ylim(y_range_min, y_range_max)
     plt.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
     plt.xlabel(r'$m_{\mathrm{N}}$ (GeV)', fontsize=27)
-    plt.xlim(min(masses_central), max(masses_central))
+    #plt.xlim(min(masses_central), max(masses_central))
+    plt.xlim(1, 6)
     plt.xticks(fontsize=21)
     plt.yscale('log')
     plt.xscale('linear')

@@ -179,7 +179,7 @@ class DatacardsMaker(Tools):
     self.do_tdrstyle = do_tdrstyle
 
     # option to allow the process of additional ctau points without reprocessing the data
-    self.process_signal_only = False
+    self.process_signal_only = True
   
     ROOT.gROOT.SetBatch(True)
 
@@ -245,14 +245,14 @@ class DatacardsMaker(Tools):
   def getSignalMassCoupling(self, signal_point):
     signal_mass = signal_point.mass
     signal_ctau = signal_point.ctau
-    signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+    signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True) # datacards are created for the nominal case (Majorana, (0, 1, 0) coupling scenario)
     signal_coupling = self.tools.getCouplingLabel(signal_v2)
 
     return signal_mass, signal_coupling
 
 
   def getSignalCoupling(self, signal_mass, signal_ctau):
-    signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True)
+    signal_v2 = self.tools.getVV(mass=signal_mass, ctau=signal_ctau, ismaj=True) # datacards are created for the nominal case (Majorana, (0, 1, 0) coupling scenario)
     signal_coupling = self.tools.getCouplingLabel(signal_v2)
 
     return signal_coupling

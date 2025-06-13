@@ -301,7 +301,8 @@ class Tools(object):
     if not is_bc:
       corr = signal_file.muon_rate 
     else:
-      corr = signal_file.muon_rate_Bc 
+      #corr = signal_file.muon_rate_Bc 
+      corr = signal_file.muon_rate
 
     efficiency = filter_efficiency if not is_bc else filter_efficiency * lhe_efficiency 
     n_generated = corr * n_gen_tot / efficiency
@@ -363,7 +364,8 @@ class Tools(object):
     return signal_efficiency
 
 
-  def getCtauWeight(self, signal_files, ctau, strategy='new', is_bu=False, is_bd=False, is_bs=False, is_bc=False):
+  #def getCtauWeight(self, signal_files, ctau, strategy='new', is_bu=False, is_bd=False, is_bs=False, is_bc=False):
+  def getCtauWeight(self, signal_files, ctau, strategy='old', is_bu=False, is_bd=False, is_bs=False, is_bc=False):
     if strategy == 'new':
       # get the total number of gen (=miniaod) events
       n_miniaod_tot = 0
@@ -558,7 +560,7 @@ class Tools(object):
     return hist
 
 
-  def printCMSTag(self, pad, cms_tag, size=0.55, offset=0.08):
+  def printCMSTag(self, pad, cms_tag, size=0.55, offset=0.08, font=52):
     pad.cd()
     tag = ROOT.TLatex()
     tag.SetNDC()
@@ -568,7 +570,7 @@ class Tools(object):
     tag.SetTextSize(size*pad.GetTopMargin())    
     tag.DrawLatex(pad.GetLeftMargin(), 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), 'CMS')
     # print CMS tag
-    tag.SetTextFont(52)
+    tag.SetTextFont(font)
     tag.SetTextSize(0.9*size*pad.GetTopMargin())
     tag.SetTextAlign(11)
     tag.DrawLatex(pad.GetLeftMargin()+offset, 1-pad.GetTopMargin()+0.2*pad.GetTopMargin(), cms_tag)      

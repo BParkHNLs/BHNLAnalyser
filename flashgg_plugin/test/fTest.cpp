@@ -755,9 +755,9 @@ int main(int argc, char* argv[]){
   //functionClasses.push_back("Polynomial");
   map<string,string> namingMap;
   //namingMap.insert(pair<string,string>("Bernstein","pol"));
-  namingMap.insert(pair<string,string>("Exponential","exp"));
+  //namingMap.insert(pair<string,string>("Exponential","exp"));
   namingMap.insert(pair<string,string>("PowerLaw","pow"));
-  namingMap.insert(pair<string,string>("Laurent","lau"));
+  //namingMap.insert(pair<string,string>("Laurent","lau"));
   //namingMap.insert(pair<string,string>("Chebychev","che"));
   //namingMap.insert(pair<string,string>("Polynomial","pol"));
 

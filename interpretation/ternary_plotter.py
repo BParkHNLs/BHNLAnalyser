@@ -356,7 +356,8 @@ class TernaryPlotter(object):
     plt.title(' ', loc='right')
     if self.exclusion == 'coupling': 
       ax.text(0.09, 1.08, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=2.0*self.fontsize, fontweight='bold')
-      #ax.text(0.15, 0.91, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.5*self.fontsize, fontstyle='italic')
+      ax.text(0.205, 1.0, 'Supplementary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.5*self.fontsize, fontstyle='italic')
+      ax.text(0.191, 0.92, 'arXiv:2403.04584', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.2*self.fontsize)
     else:
       ax.text(0.09, 1.05, 'CMS', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=2.0*self.fontsize, fontweight='bold')
       #ax.text(0.15, 0.91, 'Preliminary', horizontalalignment='center', verticalalignment='center', transform=ax.transAxes, fontsize=1.5*self.fontsize, fontstyle='italic')

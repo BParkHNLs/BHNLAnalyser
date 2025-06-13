@@ -580,8 +580,30 @@ class ComputeYields(Tools):
     return efficiency, err_efficiency
 
 
+  def getMCWeight(self, mass, ctau, signal_files, lumi, is_bu=False, is_bd=False, is_bs=False, is_bc=False, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', sigma_B=572.0e9, lhe_efficiency=0.08244):
+    weight_sig_list = ['gen_hnl_ct']
+    print '{} {} {}'.format(is_bu, is_bd, is_bs)
+    weight_ctau = self.tools.getCtauWeight(signal_files=signal_files, ctau=ctau, is_bu=is_bu, is_bd=is_bd, is_bs=is_bs, is_bc=is_bc)
+    weight_signal = self.tools.getSignalWeight(signal_files=signal_files, mass=mass, ctau=ctau, sigma_B=sigma_B, lumi=lumi, lhe_efficiency=lhe_efficiency, is_bu=is_bu, is_bd=is_bd, is_bs=is_bs, is_bc=is_bc)
+    #weight_sig = '({}) * ({})'.format(weight_signal, weight_ctau)
+    weight_sig = '({})'.format(weight_signal)
+    if add_weight_hlt: 
+      weight_sig += ' * ({})'.format(weight_hlt)
+      weight_sig_list.append(weight_hlt)
+    if add_weight_pu: 
+      weight_sig += ' * ({})'.format(weight_pusig)
+      weight_sig_list.append(weight_pusig)
+    if add_weight_muid: 
+      weight_sig += ' * ({}) * ({})'.format(weight_mu0id, weight_muid)
+      weight_sig_list.append(weight_mu0id)
+      weight_sig_list.append(weight_muid)
+
+    return weight_sig, weight_sig_list
+
+
   def computeSignalYields(self, mass='', ctau='', lumi=0.774, sigma_B=472.8e9, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', strategy='exclusive_fromlargerctau', is_bc=False):
     '''
+      (previous normalisation method)
       signal yields computed as sigma_HNL * lumi * efficiency
     '''
 
@@ -625,6 +647,89 @@ class ComputeYields(Tools):
     n_sig = hist.IntegralAndError(0, 1000, err)
 
     return n_sig, err
+
+
+  def getSignalYieldsFromHist(self, mass, ctau, is_bu=False, is_bd=False, is_bs=False, is_bc=False, lumi=41.6, strategy='inclusive', add_weight_hlt=True, add_weight_pu=True, add_weight_muid=True, weight_hlt='weight_hlt_fullBpark', weight_pusig='weight_pu_sig_tot', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', sigma_B=572.0e9, lhe_efficiency=0.08244):
+    '''
+      Returns the normalised number of signal yields in the fit window
+    '''
+    # define range, take full window
+    fit_window_min = 0.
+    fit_window_max = 10.
+
+    # get the signal files
+    signal_files = self.tools.getSignalFileList(signal_label=self.signal_label, mass=mass, ctau=ctau, strategy=strategy, is_bc=is_bc)
+
+    # define selection
+    cond_sig = 'ismatched==1'
+    selection_sig = cond_sig + ' && ' + self.selection
+    if is_bu: selection_sig += ' && isbu==1'
+    if is_bd: selection_sig += ' && isbd==1'
+    if is_bs: selection_sig += ' && isbs==1'
+    
+    # define signal weights
+    weight_sig, weight_sig_list = self.getMCWeight(mass=mass, ctau=ctau, signal_files=signal_files, lumi=lumi, is_bu=is_bu, is_bd=is_bd, is_bs=is_bs, is_bc=is_bc, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, add_weight_muid=add_weight_muid, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid, sigma_B=sigma_B, lhe_efficiency=lhe_efficiency)
+
+    # get the tree
+    treename = 'signal_tree'
+    #if self.do_cutbased:
+    tree_sig = ROOT.TChain(treename)
+    for signal_file in signal_files:
+      filename = signal_file.filename if not is_bc else signal_file.filename_Bc
+      tree_sig.Add(filename)
+    #elif self.do_mva:
+    #  score_label = self.getSignalLabel()
+    #  filename_sig = self.mva_tools.getFileWithScore(files=signal_files, training_label=self.training_label, do_parametric=self.do_parametric, mass=self.signal_mass, category_label=self.category_label, selection=selection_sig, weights=weight_sig_list, label=score_label, treename=treename, is_bc=is_bc, force_overwrite=True) 
+    #  file_sig = self.tools.getRootFile(filename_sig)
+    #  tree_sig = self.tools.getTree(file_sig, treename)
+
+    # create histogram
+    hist_name = 'hist_signal'
+    nbins = 100
+    hist = ROOT.TH1D(hist_name, hist_name, nbins, fit_window_min, fit_window_max)
+    branch_name = 'hnl_mass'
+    #tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig if self.do_cutbased else self.mva_tools.getScoreSelection(selection_sig), wght=weight_sig))
+    tree_sig.Project(hist_name, branch_name , '({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig))
+    #print 'sel sig: ({sel}) * ({wght})'.format(sel=selection_sig, wght=weight_sig)
+
+    # get the number of yields
+    n_sig = hist.Integral()
+
+    # apply gen-matching correction
+    n_sig = n_sig * 1.2
+
+    #if is_bu: print 'n_sig (Bu) = {}'.format(n_sig) 
+    #elif is_bd: print 'n_sig (Bd) = {}'.format(n_sig) 
+    #elif is_bs: print 'n_sig (Bs) = {}'.format(n_sig) 
+    #elif is_bc: print 'n_sig (Bc) = {}'.format(n_sig) 
+    #else: print 'n_sig = {}'.format(n_sig)
+
+    return n_sig
+
+
+  def getSignalYields(self, mass='', ctau='', lumi=41.6, sigma_B=572.0e9, add_weight_hlt=False, add_weight_pu=False, add_weight_muid=False, weight_hlt='weight_hlt_D', weight_pusig='weight_pu_sig_D', weight_mu0id='weight_mu0_softid', weight_muid='weight_mu_looseid', strategy='exclusive_fromlargerctau', lhe_efficiency=0.08244, is_bc=False):
+    #if self.do_normalisation_inclusive:
+    #  n_sig, stat = self.getSignalYieldsFromHist(is_bc=is_bc)
+    #else:
+    if not is_bc:
+      n_sig_bu = self.getSignalYieldsFromHist(mass=mass, ctau=ctau, is_bu=True, is_bd=False, is_bs=False, is_bc=False, lumi=lumi, strategy=strategy, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, add_weight_muid=add_weight_muid, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid, sigma_B=sigma_B, lhe_efficiency=lhe_efficiency)
+      try:
+        n_sig_bd = self.getSignalYieldsFromHist(mass=mass, ctau=ctau, is_bu=False, is_bd=True, is_bs=False, is_bc=False, lumi=lumi, strategy=strategy, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, add_weight_muid=add_weight_muid, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid, sigma_B=sigma_B, lhe_efficiency=lhe_efficiency)
+      except:
+        n_sig_bd = 0
+        stat_bd = 0
+      try:
+        n_sig_bs = self.getSignalYieldsFromHist(mass=mass, ctau=ctau, is_bu=False, is_bd=False, is_bs=True, is_bc=False, lumi=lumi, strategy=strategy, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, add_weight_muid=add_weight_muid, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid, sigma_B=sigma_B, lhe_efficiency=lhe_efficiency)
+      except:
+        n_sig_bs = 0
+        stat_bs = 0
+      n_sig = n_sig_bu + n_sig_bd + n_sig_bs
+    else:
+      n_sig = self.getSignalYieldsFromHist(mass=mass, ctau=ctau, is_bu=False, is_bd=False, is_bs=False, is_bc=True, lumi=lumi, strategy=strategy, add_weight_hlt=add_weight_hlt, add_weight_pu=add_weight_pu, add_weight_muid=add_weight_muid, weight_hlt=weight_hlt, weight_pusig=weight_pusig, weight_mu0id=weight_mu0id, weight_muid=weight_muid, sigma_B=sigma_B, lhe_efficiency=lhe_efficiency)
+
+    #print 'n_sig (tot) = {}'.format(n_sig)
+
+    return n_sig
 
 
 

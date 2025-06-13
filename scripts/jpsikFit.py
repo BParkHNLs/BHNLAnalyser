@@ -205,8 +205,10 @@ def drawPlot(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label='',leg=None
   #ROOT.gPad.SetLeftMargin(0.15)
   #frame.GetYaxis().SetTitleOffset(1.6)
   c.cd(1)
-  ROOT.gPad.SetLeftMargin(0.15)
-  ROOT.gPad.SetBottomMargin(0.10)
+  #ROOT.gPad.SetLeftMargin(0.15)
+  #ROOT.gPad.SetBottomMargin(0.10)
+  ROOT.gStyle.SetPadLeftMargin(0.13)
+  ROOT.gStyle.SetPadBottomMargin(0.13)
   ROOT.gPad.SetPad(0.01,0.2,0.99,0.99)
   frame.GetXaxis().SetTitleSize(0.04);
   frame.GetXaxis().SetTitle('m_{K J/#psi} (GeV)')
@@ -249,6 +251,7 @@ def drawPlot(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label='',leg=None
            
   c.SaveAs('{}/fit{}.png'.format(outdir, label))
   c.SaveAs('{}/fit{}.pdf'.format(outdir, label))
+  c.SaveAs('{}/fit{}.C'.format(outdir, label))
 
 
 def drawPlotCMSStyle(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label='',leg=None):
@@ -262,9 +265,11 @@ def drawPlotCMSStyle(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label='',
   #ROOT.gPad.SetBottomMargin(0.10)
   #ROOT.gPad.SetPad(0.01,0.2,0.99,0.99)
   frame.SetTitle(' ')
-  frame.GetXaxis().SetTitleSize(0.04);
-  frame.GetXaxis().SetTitle('m_{K^{#pm}#mu^{+}#mu^{-}} (GeV)')
-  frame.GetYaxis().SetTitleSize(0.04);
+  frame.GetXaxis().SetLabelSize(0.04)
+  frame.GetXaxis().SetTitleSize(0.045)
+  frame.GetXaxis().SetTitle('#it{m}(K^{#pm}#it{#mu}^{+}#it{#mu}^{-}) (GeV)')
+  frame.GetYaxis().SetLabelSize(0.04)
+  frame.GetYaxis().SetTitleSize(0.045)
   frame.GetYaxis().SetTitle('Events / {} GeV'.format(round((6.-5.)/float(nbins) ,4))) 
   frame.GetYaxis().SetTitleOffset(1.55)
   max_val = frame.GetMaximum()
@@ -289,8 +294,9 @@ def drawPlotCMSStyle(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label='',
     defaultLabels([labelmodel[whichSignalModel],labelchi2+labelprob], 0.60, 0.25)
 
   #printCMSTagInFrame(pad, 'Preliminary', size=0.55, offset=0.11)
-  printInnerCMSTag(pad, 'Preliminary', print_tag=True, x_pos=0.19, y_pos=0.83, size=0.55)
-  printLumiTag(pad, 0.774, size=0.43, offset=0.53)
+  #printInnerCMSTag(pad, 'Preliminary', print_tag=True, x_pos=0.19, y_pos=0.83, size=0.55)
+  printInnerCMSTag(pad, '', print_tag=True, x_pos=0.19, y_pos=0.83, size=0.55)
+  printLumiTag(pad, 0.774, size=0.48, offset=0.51)
 
   outdir = './myPlots/fit_sigmaBu'
   if not path.exists(outdir):
@@ -298,6 +304,7 @@ def drawPlotCMSStyle(frame,frame2,chisq,prob,sigmaBpm,sigmaBpmErr,lumi,label='',
            
   canv.SaveAs('{}/fit_control_channel.png'.format(outdir, label))
   canv.SaveAs('{}/fit_control_channel.pdf'.format(outdir, label))
+  canv.SaveAs('{}/fit_control_channel.C'.format(outdir, label))
 
 
 
@@ -313,7 +320,8 @@ if __name__ == '__main__':
   #ROOT.gROOT.ProcessLine('setTDRStyle()')
   ROOT.gStyle.SetTitleXOffset(1.1);
   ROOT.gStyle.SetTitleYOffset(1.45);
-
+  ROOT.gStyle.SetPadTickX(1)
+  ROOT.gStyle.SetPadTickY(1)
 
 
   #############
@@ -737,14 +745,14 @@ if __name__ == '__main__':
     results = fitmodel.fitTo(Rdata, RF.Extended(True), RF.Save()) 
     frame = mass.frame(RF.Title(''))
     #Rdata.plotOn(frame, RF.MarkerSize(0.5), RF.XErrorSize(0), RF.Name('data'), RF.Binning(Rdata.getSize()) 
-    Rdata.plotOn(frame, RF.MarkerSize(0.5), RF.XErrorSize(0), RF.Name('data'), RF.Binning(nbins)) 
+    Rdata.plotOn(frame, RF.MarkerSize(1.0), RF.XErrorSize(0), RF.Name('data'), RF.Binning(nbins)) 
     fitmodel.plotOn(frame, RF.Components('fitmodel_signal'),RF.LineColor(ROOT.kOrange+7), RF.LineStyle(ROOT.kDashed), RF.Name('signal'))
-    fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_comb'),RF.LineColor(ROOT.kRed+1), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_comb'))
+    fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_comb'),RF.LineColor(ROOT.kMagenta), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_comb'))
     fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_prec'),RF.LineColor(ROOT.kGreen-2), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_prec'))
     if doAddJpsiPi: 
       fitmodel.plotOn(frame, RF.Components('fitmodel_bkg_peak'), RF.LineColor(ROOT.kMagenta), RF.LineStyle(ROOT.kDashed), RF.Name('bkg_peak'))
     fitmodel.plotOn(frame, RF.Components('fitmodel'), RF.LineColor(ROOT.kBlue), RF.Name('full_fit')) # full model at the end !
-    Rdata.plotOn(frame, RF.MarkerSize(0.5), RF.XErrorSize(0), RF.Name('data'), RF.Binning(nbins)) 
+    Rdata.plotOn(frame, RF.MarkerSize(1.0), RF.XErrorSize(0), RF.Name('data'), RF.Binning(nbins)) 
     if doDrawParameters:
       fitmodel.paramOn(frame, RF.ShowConstants(ROOT.kTRUE),RF.Format('NEU',RF.AutoPrecision()),RF.Layout(0.65,0.93,0.92))
       frame.getAttText().SetTextSize(0.02) #

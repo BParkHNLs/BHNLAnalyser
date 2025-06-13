@@ -675,6 +675,8 @@ class Systematics(Tools):
   def studySelectionSyst(self, categories, baseline_selection):
     ROOT.gStyle.SetOptStat(0)
     #ROOT.TH1.SetDefaultSumw2()
+    ROOT.gStyle.SetPadTickX(1)
+    ROOT.gStyle.SetPadTickY(1)
 
     #training_label = 'V13_06Feb23_2023Apr06_14h13m31s'
     #training_label = 'V13_06Feb23_2023Jul18_15h36m17s'
@@ -764,6 +766,7 @@ class Systematics(Tools):
       pad_up = ROOT.TPad("pad_up","pad_up",0,0.25,1,1)
       #pad_up.SetTopMargin(0.13)
       pad_up.SetBottomMargin(0.03)
+      pad_up.SetLogy()
       pad_up.Draw()
       canv.cd()
       pad_down = ROOT.TPad("pad_down","pad_down",0,0,1,0.25)
@@ -855,13 +858,14 @@ class Systematics(Tools):
       hist_score_mc.SetFillStyle(3005)
       hist_score_mc.GetXaxis().SetLabelSize(0.0)
       hist_score_mc.GetXaxis().SetTitleSize(0.0)
-      hist_score_mc.GetYaxis().SetTitle('Entries')
-      hist_score_mc.GetYaxis().SetLabelSize(0.037)
+      hist_score_mc.GetYaxis().SetTitle('Events / Bin')
+      hist_score_mc.GetYaxis().SetLabelSize(0.042)
       hist_score_mc.GetYaxis().SetTitleSize(0.043)
       hist_score_mc.GetYaxis().SetTitleOffset(1.1)
       range_min = min(hist_score_mc.GetMinimum(), hist_score_data.GetMinimum())
       range_max = max(hist_score_mc.GetMaximum(), hist_score_data.GetMaximum())
-      hist_score_mc.GetYaxis().SetRangeUser(range_min-0.15*range_min, range_max+0.15*range_max)
+      #hist_score_mc.GetYaxis().SetRangeUser(range_min-0.15*range_min, range_max+0.15*range_max)
+      hist_score_mc.GetYaxis().SetRangeUser(range_min-0.15*range_min, range_max+3*range_max)
 
       hist_score_data.SetMarkerStyle(20)
       hist_score_data.SetMarkerSize(2)
@@ -888,13 +892,14 @@ class Systematics(Tools):
       hist_ratio.SetTitle('')
       hist_ratio.GetXaxis().SetTitle('pNN score')
 
-      hist_ratio.GetXaxis().SetLabelSize(0.1)
+      hist_ratio.GetXaxis().SetLabelSize(0.13)
       hist_ratio.GetXaxis().SetTitleSize(0.13)
       hist_ratio.GetXaxis().SetTitleOffset(0.73)
-      hist_ratio.GetYaxis().SetTitle('Data/MC')
-      hist_ratio.GetYaxis().SetLabelSize(0.1)
+      hist_ratio.GetYaxis().SetTitle('Data / MC')
+      hist_ratio.GetYaxis().SetLabelSize(0.13)
       hist_ratio.GetYaxis().SetTitleSize(0.13)
       hist_ratio.GetYaxis().SetTitleOffset(0.345)
+      hist_ratio.GetYaxis().SetNdivisions(6)
       val_min = hist_ratio.GetBinContent(hist_ratio.GetMinimumBin())
       val_max = hist_ratio.GetBinContent(hist_ratio.GetMaximumBin())
       hist_ratio.GetYaxis().SetRangeUser(val_min-0.15*val_min, val_max+0.15*val_max)
